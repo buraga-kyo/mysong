@@ -33,6 +33,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -46,4 +47,53 @@ namespace mysong::tui {
 inline constexpr std::string_view kPontaDextra = "";
 inline constexpr std::string_view kPontaEsquerda = "";
 
+// O sentido em que a fita aponta. Um só por fita: misturar os dous lavraria o
+// losango que a regra (a) proscreve.
+enum class Sentido { Dextra, Esquerda };
+
+// Um segmento: o rotulo que mostra, o fundo que o veste, a tinta que o
+// escreve. O rotulo entra COMO SE HA DE MOSTRAR, guarnição inclusa: a folga
+// dos flancos é do desenhista, e o primitivo não lha acrescenta ás escondidas.
+struct Segmento {
+  std::string rotulo;
+  std::string_view fundo = tokens::v900;
+  std::string_view tinta = tokens::text_bright;
+};
+
+// Um PEDAÇO já composto: o texto e o par de côres com que se emitte. Os dous
+// predicados dizem o que o pedaço É, para que a prova conte sem adivinhar:
+// `juncao` marca o glifo de encaixe, e `cauda` distingue o remate final das
+// junções INTERNAS, que são as que valem no N menos um.
+struct Pedaco {
+  std::string texto;
+  std::string_view fundo;
+  std::string_view tinta;
+  bool juncao = false;
+  bool cauda = false;
+};
+
+// rebaixar — desce UM degrau na rampa violeta, que é a regra (c): o enchimento
+// fica abaixo da orla. No degrau mais fundo satura, em vez de sahir da rampa.
+std::string_view rebaixar(std::string_view degrau);
+
+// A FITA: junta segmentos e compõe pedaços. Não pinta nem trunca.
+class Fita {
+ public:
+  explicit Fita(Sentido sentido = Sentido::Dextra, bool cauda = true);
+  Fita& junta(Segmento segmento);
+  Fita& glifo(std::string outro);  // terminal sem Nerd Font troca aqui
+  std::vector<Pedaco> compor() const;
+  std::size_t largura_exigida() const;  // em CODEPOINTS, não em collunas
+  const std::vector<Segmento>& segmentos() const noexcept { return segmentos_; }
+ private:
+  std::vector<Segmento> segmentos_;
+  std::string glifo_;
+  Sentido sentido_;
+  bool cauda_;
+};
+
 }  // namespace mysong::tui
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
