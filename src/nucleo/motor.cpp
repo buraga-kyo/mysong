@@ -40,7 +40,37 @@ bool assenta(::mpv_handle* punho, const char* nome, const char* valor,
   return false;
 }
 
+// Lê um dobro do mpv. Propriedade que ainda não existe devolve zero, e não
+// erro: quem nada toca não tem posição, e zero é o retracto d'esse nada.
+double le_dobro(::mpv_handle* punho, const char* nome) {
+  double valor = 0.0;
+  if (mpv_get_property(punho, nome, MPV_FORMAT_DOUBLE, &valor) < 0) return 0.0;
+  return valor;
+}
+
 }  // namespace
+
+MotorMpv::MotorMpv(::mpv_handle* punho) noexcept : punho_(punho) {}
+
+// O cedente sahe com punho nullo, e é d'ahi que o destructor nunca desfaz duas
+// vezes o mesmo punho.
+MotorMpv::MotorMpv(MotorMpv&& outro) noexcept
+    : Motor(),
+      punho_(outro.punho_),
+      estado_(outro.estado_),
+      posicao_(outro.posicao_),
+      duracao_(outro.duracao_) {
+  outro.punho_ = nullptr;
+}
+
+MotorMpv::~MotorMpv() {
+  if (punho_ != nullptr) mpv_terminate_destroy(punho_);
+}
+
+unsigned long MotorMpv::versao_da_interface() noexcept {
+  return mpv_client_api_version();
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
