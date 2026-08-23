@@ -92,3 +92,43 @@ TEST_CASE("a fita de um só segmento não tem encaixe algum") {
   CHECK(internas(pedacos) == 0);
   CHECK(pedacos.size() == 2);  // o rotulo, e o remate de cauda
 }
+
+TEST_CASE("a fita vazia não tem sequer remate") {
+  CHECK(fita_de(0).compor().empty());
+  CHECK(fita_de(0).largura_exigida() == 0);
+}
+
+TEST_CASE("rotulo vazio é segmento, e não segmento inexistente") {
+  al::Fita fita;
+  fita.junta({"", tk::v700}).junta({"", tk::data2}).junta({"", tk::v500});
+  const auto pedacos = fita.compor();
+  CHECK(internas(pedacos) == 2);
+  CHECK(pedacos.front().texto.empty());
+  CHECK(fita.largura_exigida() == 3);  // tres glifos, e rotulo algum
+}
+
+TEST_CASE("a côr do encaixe é a côr do segmento que elle segue") {
+  const al::Fita fita = fita_de(5);
+  const auto pedacos = fita.compor();
+  const auto& segmentos = fita.segmentos();
+  std::size_t qual = 0;
+  for (const al::Pedaco& pedaco : pedacos) {
+    if (!pedaco.juncao || pedaco.cauda) continue;
+    CHECK(pedaco.tinta == segmentos[qual].fundo);      // a tinta vem de trás
+    CHECK(pedaco.fundo == segmentos[qual + 1].fundo);  // a cama, da frente
+    ++qual;
+  }
+  CHECK(qual == segmentos.size() - 1);
+}
+
+TEST_CASE("a seta é de uma só direcção, e nunca losango de duas pontas") {
+  for (const al::Pedaco& pedaco : fita_de(4).compor())
+    CHECK(pedaco.texto.find(al::kPontaEsquerda) == std::string::npos);
+  const auto esquerda = fita_de(4, al::Sentido::Esquerda).compor();
+  for (const al::Pedaco& pedaco : esquerda)
+    CHECK(pedaco.texto.find(al::kPontaDextra) == std::string::npos);
+  // O losango proscripto seria a ponta esquerda encostada na dextra.
+  for (std::size_t i = 1; i < esquerda.size(); ++i)
+    CHECK_FALSE(esquerda[i - 1].texto == al::kPontaEsquerda &&
+                esquerda[i].texto == al::kPontaDextra);
+}
