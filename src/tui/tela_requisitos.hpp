@@ -22,7 +22,12 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <string>
 #include <string_view>
+
+#include <ftxui/dom/elements.hpp>
+
+#include "nucleo/sonda.hpp"
 
 namespace mysong::tui {
 
@@ -34,6 +39,21 @@ inline constexpr std::string_view kLimiteDaSonda =
     "usá-la; essa segunda consulta não existe para programa algum que corra "
     "dentro do terminal. Vendo aqui \"presente\" e ainda assim quadrículo "
     "vazio na tela, o logar a olhar é a configuração de fonte do emulador.";
+
+// elemento_dos_requisitos — o QUADRO. Nomeia cada falta, veste-a da côr da sua
+// gravidade, escreve o remedio abaixo, e remata pela frase do limite. Havendo
+// impedimento, é a unica cousa que o operador ha de ver.
+ftxui::Element elemento_dos_requisitos(const nucleo::Relatorio& relatorio);
+
+// texto_do_relatorio — o diagnostico em texto puro, do modo --sonda. Diz TODOS
+// os requisitos, presentes inclusos, que é metade do valor de um diagnostico;
+// e remata pela mesma frase do limite. Nenhuma sequencia de escape sahe d'aqui.
+std::string texto_do_relatorio(const nucleo::Relatorio& relatorio);
+
+// texto_dos_avisos — as linhas curtas que precedem o tocador quando ha sómente
+// aviso. Não interrompe cousa alguma: escreve-se e o tocador sobe. Não havendo
+// aviso, devolve cadeia vazia, e nada se escreve.
+std::string texto_dos_avisos(const nucleo::Relatorio& relatorio);
 
 }  // namespace mysong::tui
 
