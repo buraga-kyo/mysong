@@ -8,7 +8,10 @@
 // INVARIANTE ...... o par tinta/fundo do glifo de junção sahe IMMEDIATAMENTE
 //                   antes d'elle, sem repouso pelo meio: é o analogo terminal
 //                   da ordem de pintura invertida que o metrics.lua impõe ao
-//                   cairo, e repouso no meio abriria a emenda visivel.
+//                   cairo, e repouso no meio abriria a emenda visivel. E a
+//                   eleição do glifo mora n'UM só logar, dentro de compor():
+//                   espalhada por dous ramos, a unicidade que o cabeçalho
+//                   promette deixaria de ter guarda que a prova possa matar.
 // Q.E.D. .......... a largura conta-se sobre os proprios pedaços compostos, e
 //                   não por conta apartada que envelheceria em silencio.
 // ══════════════════════════════════════════════════════════════════════════
@@ -36,19 +39,10 @@ std::string_view rebaixar(std::string_view degrau) {
   return degrau;  // côr de fóra da rampa não se rebaixa: devolve-se intacta.
 }
 
-Fita::Fita(Sentido sentido, bool cauda)
-    : glifo_(sentido == Sentido::Dextra ? std::string(kPontaDextra)
-                                       : std::string(kPontaEsquerda)),
-      sentido_(sentido),
-      cauda_(cauda) {}
+Fita::Fita(Sentido sentido, bool cauda) : sentido_(sentido), cauda_(cauda) {}
 
 Fita& Fita::junta(Segmento segmento) {
   segmentos_.push_back(std::move(segmento));
-  return *this;
-}
-
-Fita& Fita::glifo(std::string outro) {
-  glifo_ = std::move(outro);
   return *this;
 }
 
@@ -60,13 +54,18 @@ std::vector<Pedaco> Fita::compor() const {
   if (segmentos_.empty()) return fita;  // fita vazia não tem sequer cauda.
   const std::size_t quantos = segmentos_.size();
   fita.reserve(quantos * 2 + 1);
+  // A ELEIÇÃO, e ella sózinha: um glifo por fita, tirado do sentido com que a
+  // fita nasceu. Não ha campo que o guarde, nem porta que o troque; d'onde o
+  // losango de duas pontas não tem por onde se exprimir.
+  const std::string_view eleito =
+      sentido_ == Sentido::Dextra ? kPontaDextra : kPontaEsquerda;
   const auto rotulo = [&](std::size_t i) {
     fita.push_back({segmentos_[i].rotulo, segmentos_[i].fundo,
                     segmentos_[i].tinta, false, false});
   };
   const auto juncao = [&](std::string_view cama, std::string_view herdada,
                           bool remate) {
-    fita.push_back({glifo_, cama, herdada, true, remate});
+    fita.push_back({std::string(eleito), cama, herdada, true, remate});
   };
   if (sentido_ == Sentido::Esquerda) {
     if (cauda_) juncao(tokens::transparent, segmentos_.front().fundo, true);
