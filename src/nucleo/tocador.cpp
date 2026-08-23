@@ -76,6 +76,34 @@ bool Tocador::anterior() {
   return fila_.anterior() && tocar_corrente();
 }
 
+// Pausar só faz sentido a tocar; retomar, só a pausado. Fóra d'ahi a ordem se
+// recusa em vez de se mandar ao motor uma transição que elle não pode honrar.
+bool Tocador::pausar() {
+  if (estado_ != Estado::Tocando || !motor_.pausar()) return false;
+  assenta_estado(Estado::Pausado);
+  return true;
+}
+
+bool Tocador::retomar() {
+  if (estado_ != Estado::Pausado || !motor_.retomar()) return false;
+  assenta_estado(Estado::Tocando);
+  return true;
+}
+
+// O alvo apara-se pela duração ANTES de descer ao motor, com a fonte unica de
+// aparo que mora no tractado do motor.
+bool Tocador::buscar(double segundos) {
+  if (estado_ == Estado::Parado) return false;
+  return motor_.buscar(aparar_busca(segundos, motor_.duracao()));
+}
+
+// O volume guarda-se aqui, e não sómente no motor: é elle que a faixa seguinte
+// ha de herdar. E é do MOTOR, nunca do systema.
+bool Tocador::volume(int porcento) {
+  volume_ = aparar_volume(porcento);
+  return motor_.volume(volume_);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
