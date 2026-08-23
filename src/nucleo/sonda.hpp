@@ -34,6 +34,24 @@ namespace mysong::nucleo {
 // sómente duas: o Impedimento tranca a porta, o Aviso apenas a rannge.
 enum class Gravidade { Impedimento, Aviso };
 
+// Um REQUISITO da obra. A `chave` é o nome curto, que serve de identidade á
+// prova e á forçagem; o `nome` é como se annuncia ao olho humano; o `remedio` é
+// UMA linha que diz o que se faz, e não um tractado de installação.
+struct Requisito {
+  std::string_view chave;
+  std::string_view nome;
+  Gravidade gravidade;
+  std::string_view remedio;
+};
+
+// O ESTADO colhido de um requisito. Guarda-se o requisito INTEIRO junto do
+// veredicto, de sorte que quem receba o relatorio não precise consultar taboa
+// alguma para saber o nome, a gravidade e o remedio d'aquillo que falta.
+struct Estado {
+  Requisito requisito;
+  bool presente;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
