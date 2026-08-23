@@ -8,7 +8,10 @@
 // INVARIANTE ...... o par tinta/fundo do glifo de junção sahe IMMEDIATAMENTE
 //                   antes d'elle, sem repouso pelo meio: é o analogo terminal
 //                   da ordem de pintura invertida que o metrics.lua impõe ao
-//                   cairo, e repouso no meio abriria a emenda visivel.
+//                   cairo, e repouso no meio abriria a emenda visivel. E a
+//                   eleição do glifo mora n'UM só logar, dentro de compor():
+//                   espalhada por dous ramos, a unicidade que o cabeçalho
+//                   promette deixaria de ter guarda que a prova possa matar.
 // Q.E.D. .......... a largura conta-se sobre os proprios pedaços compostos, e
 //                   não por conta apartada que envelheceria em silencio.
 // ══════════════════════════════════════════════════════════════════════════

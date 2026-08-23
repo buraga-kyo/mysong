@@ -13,7 +13,8 @@
 // cópia. Não se promette fidelidade geometrica; promettem-se as tres REGRAS do
 // systema de desenho que a traducção conserva:
 //   (a) seta de UMA direcção: borda esquerda reta, ponta afiada á direita.
-//       JAMAIS losango de duas pontas, que é erro pregresso registrado.
+//       JAMAIS losango de duas pontas, que é erro pregresso registrado, e que
+//       aqui não se pede por bem-comportamento: não ha como o exprimir.
 //   (b) a côr da seta é a côr do segmento que ella SEGUE: a junção sahe com a
 //       tinta do anterior e o fundo do seguinte. É d'isto que a fita parece
 //       continua, em vez de rectangulos costurados.
@@ -23,9 +24,18 @@
 // CONTRA-DOMÍNIO .. a sequencia ordenada de PEDAÇOS, inspeccionavel sem
 //                   terminal e sem a janella — o que torna a regra (b)
 //                   asserção verificavel, em vez de boa intenção.
-// INVARIANTE ...... fita de N segmentos emitte exactamente N menos um pedaços
-//                   de junção INTERNA. A junção de CAUDA, que remata a fita em
-//                   ponta, conta-se á parte e nunca entra n'aquelle N-1.
+// INVARIANTE ...... dous, e o segundo é ESTRUCTURAL.
+//                   (i) fita de N segmentos emitte exactamente N menos um
+//                   pedaços de junção INTERNA. A junção de CAUDA, que remata a
+//                   fita em ponta, conta-se á parte e nunca entra n'aquelle N-1.
+//                   (ii) a fita elege UM glifo de ponta ao nascer, e o elege do
+//                   seu Sentido. Não ha campo que o guarde nem methodo que o
+//                   troque: a eleição vive dentro de compor(), em expressão
+//                   unica, e o Sentido é imutavel depois do construtor. D'onde
+//                   o losango de duas pontas é INEXPRIMIVEL, e não meramente
+//                   improvavel: não ha estado d'esta classe que o represente.
+//                   A fonte com os glifos de seta é REQUISITO MÍNIMO declarado
+//                   no README, e não caso a contornar aqui dentro.
 // Q.E.D. .......... a guarnição do rotulo e o córte por largura ficam com quem
 //                   desenha, e não com este primitivo: cortar aqui obrigaria a
 //                   cortar no meio de um par tinta/fundo, que é a emenda
@@ -42,8 +52,11 @@
 
 namespace mysong::tui {
 
-// Os glifos da fita, da JetBrainsMono Nerd Font. U+E0B0 aponta á dextra;
-// U+E0B2, á esquerda. NUNCA os dous no mesmo sentido de fita.
+// Os glifos da fita, da JetBrainsMono Nerd Font, que esta Casa EXIGE instalada.
+// U+E0B0 aponta á dextra; U+E0B2, á esquerda. NUNCA os dous no mesmo sentido de
+// fita. Sem a fonte, o terminal desenha quadrículo vazio, o chamado tofu: é o
+// que se vê, está dito no README, e não se contorna por codigo — adivinhar a
+// presença da fonte por largura de glifo é heurística que engana.
 // Escrevem-se por PONTO DE CODIGO, e não pelo glifo cru: moram na area de uso
 // privado, onde editor, tubo e terminal os engolem sem dar signal, e o que
 // resta é cadeia vazia — falha que passaria calada por toda a fita.
