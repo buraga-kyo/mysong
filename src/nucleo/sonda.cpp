@@ -15,7 +15,9 @@
 #include "nucleo/sonda.hpp"
 
 #include <cstddef>
+#include <string>
 
+#include <dlfcn.h>
 #include <fontconfig/fontconfig.h>
 
 namespace mysong::nucleo {
@@ -156,6 +158,22 @@ bool ha_familia_de_fonte(std::string_view agulha) {
   if (padrao != nullptr) FcPatternDestroy(padrao);
   FcConfigDestroy(configuracao);
   return achou;
+}
+
+// ha_bibliotheca — tenta CARREGAR a bibliotheca pelo seu soname, e logo a
+// solta. Não se liga a libmpv em tempo de ligação, e é escolha de proposito: o
+// carregador dinamico mataria o processo antes do main na machina crua, que é
+// exactamente o mal que esta sonda combate. Perguntar por dlopen devolve a
+// ausencia como RESPOSTA, e não como morte antes da primeira linha.
+//
+// Acha-se a runtime, e não os cabeçalhos de compilação: para um binario já
+// compilado, que é o caso, a runtime é o que importa.
+bool ha_bibliotheca(std::string_view soname) {
+  const std::string nome(soname);
+  void* punho = dlopen(nome.c_str(), RTLD_LAZY | RTLD_LOCAL);
+  if (punho == nullptr) return false;
+  dlclose(punho);
+  return true;
 }
 
 }  // namespace
