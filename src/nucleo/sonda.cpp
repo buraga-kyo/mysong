@@ -30,6 +30,13 @@ const std::vector<Requisito>& requisitos() {
        Especie::Bibliotheca, "libmpv.so.2",
        "installe a libmpv: sudo apt install libmpv2 (ou libmpv-dev, para "
        "compilar)"},
+      {"yt-dlp", "yt-dlp (o enchedor do acervo)", Gravidade::Aviso,
+       Especie::Executavel, "yt-dlp",
+       "installe o yt-dlp: pipx install yt-dlp (sem elle não se enche o "
+       "acervo)"},
+      {"chafa", "chafa (o mostrador de capa)", Gravidade::Aviso,
+       Especie::Executavel, "chafa",
+       "installe o chafa: sudo apt install chafa (sem elle não se vê capa)"},
   };
   return taboa;
 }
