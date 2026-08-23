@@ -87,13 +87,11 @@ class Fita {
  public:
   explicit Fita(Sentido sentido = Sentido::Dextra, bool cauda = true);
   Fita& junta(Segmento segmento);
-  Fita& glifo(std::string outro);  // terminal sem Nerd Font troca aqui
   std::vector<Pedaco> compor() const;
   std::size_t largura_exigida() const;  // em CODEPOINTS, não em collunas
   const std::vector<Segmento>& segmentos() const noexcept { return segmentos_; }
  private:
   std::vector<Segmento> segmentos_;
-  std::string glifo_;
   Sentido sentido_;
   bool cauda_;
 };
