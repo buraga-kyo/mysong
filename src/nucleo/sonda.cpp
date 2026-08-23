@@ -209,6 +209,39 @@ bool ha_executavel(std::string_view nome) {
   return false;
 }
 
+// A FORÇAGEM. Sem ella o caminho do impedimento não se demonstraria á mão nesta
+// machina, onde os quatro requisitos estão presentes: haveria de se desinstalar
+// a libmpv para ver a tela, o que ninguem faz por gosto. Nomeando-se as chaves
+// em MYSONG_SONDA_FORCA, o binario finge a ausencia sem que o systema se mexa.
+//
+// É o UNICO logar d'esta obra que lê variavel de ambiente, e fica de proposito
+// fóra de sondar(), que se conserva pura. Chave desconhecida ignora-se em
+// silencio: erro de dedo na forçagem não ha de derrubar o programa.
+bool nomeado_na_forcagem(std::string_view chave) {
+  const char* const forcagem = std::getenv("MYSONG_SONDA_FORCA");
+  if (forcagem == nullptr) return false;
+  std::string_view resto(forcagem);
+  while (!resto.empty()) {
+    const std::size_t corte = resto.find(',');
+    const std::string_view nomeada = resto.substr(
+        0, corte == std::string_view::npos ? resto.size() : corte);
+    if (nomeada == chave) return true;
+    if (corte == std::string_view::npos) break;
+    resto.remove_prefix(corte + 1);
+  }
+  return false;
+}
+
+// forcado — traduz especie e alvo na chave da taboa, e pergunta pela forçagem.
+// A consulta recebe o ALVO, e a forçagem nomeia a CHAVE, que é a que o operador
+// digita: a taboa faz a ponte entre as duas.
+bool forcado(Especie especie, std::string_view alvo) {
+  for (const Requisito& requisito : requisitos())
+    if (requisito.especie == especie && requisito.alvo == alvo)
+      return nomeado_na_forcagem(requisito.chave);
+  return false;
+}
+
 }  // namespace
 
 }  // namespace mysong::nucleo
