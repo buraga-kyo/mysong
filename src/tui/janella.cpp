@@ -12,7 +12,11 @@
 // Q.E.D. .......... a marca vem do núcleo e a tela apenas a exibe; logo, o que
 //                   a prova de fumo afirma e o que o olho vê não podem divergir.
 // ══════════════════════════════════════════════════════════════════════════
+#include <iostream>
 #include <string>
+#include <string_view>
+
+#include <unistd.h>
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
@@ -71,10 +75,33 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
 
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
-  if (relatorio.ha_impedimento()) return recusar_e_sahir(relatorio);
+
+  // O modo de diagnostico: texto puro, tela nenhuma, e codigo differente de
+  // zero havendo impedimento, para que sirva de guarda em script.
+  if (argc > 1 && std::string_view(argv[1]) == "--sonda") {
+    std::cout << tui::texto_do_relatorio(relatorio);
+    return relatorio.ha_impedimento() ? 1 : 0;
+  }
+
+  if (relatorio.ha_impedimento()) {
+    // Sem terminal não se ergue tela alguma: quem redirigiu a sahida a arquivo
+    // receberia lixo de escape e nenhuma tecla poderia dar. Vae o texto ao
+    // stderr, que é onde o diagnostico se procura, e sahe-se.
+    if (isatty(STDOUT_FILENO) == 0) {
+      std::cerr << tui::texto_do_relatorio(relatorio);
+      return 1;
+    }
+    return recusar_e_sahir(relatorio);
+  }
+
+  // O aviso NÃO interrompe: escreve-se e o tocador sobe. Tecla alguma se pede,
+  // porque ella se pediria em toda abertura, e o que se aperta todo dia
+  // aprende-se a apertar sem ler.
+  const std::string avisos = tui::texto_dos_avisos(relatorio);
+  if (!avisos.empty()) std::cerr << avisos;
   return erguer_tocador();
 }
 
