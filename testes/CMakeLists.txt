@@ -20,7 +20,7 @@ doctest_discover_tests(mysong_testes)
 # ─── Provas do núcleo de reprodução (issue #3) ──────────────────────────────
 # Por target_sources, e não na lista do add_executable, para ACRESCENTAR sem
 # tocar linha alguma que outra lavra esteja a editar.
-target_sources(mysong_testes PRIVATE prova_fila.cpp)
+target_sources(mysong_testes PRIVATE prova_fila.cpp prova_tocador.cpp)
 
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
