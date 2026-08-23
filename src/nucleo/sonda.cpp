@@ -16,6 +16,8 @@
 
 #include <cstddef>
 
+#include <fontconfig/fontconfig.h>
+
 namespace mysong::nucleo {
 
 // A TABOA. Os IMPEDIMENTOS primeiro, que é a ordem em que a tela os mostra: a
@@ -117,6 +119,43 @@ bool contem_insensivel(std::string_view palheiro, std::string_view agulha) {
     if (passo == agulha.size()) return true;
   }
   return false;
+}
+
+// ha_familia_de_fonte — pergunta ao fontconfig se alguma familia installada
+// traz a agulha no nome.
+//
+// DO LIMITE, que se declara aqui e se repete na tela: o fontconfig sabe o que
+// está installado no SYSTEMA, e não o que o emulador de terminal elegeu. Essa
+// segunda consulta NÃO EXISTE: nenhum programa que corra dentro do terminal
+// alcança a fonte que o emulador escolheu. Apanha-se pois o caso commum, que é
+// a fonte ausente, e fica de fóra o caso da fonte presente com o terminal
+// apontado a outra. Heuristica por largura de glifo seria falso negativo pior
+// que a lacuna, e por isso se recusa.
+//
+// Fontconfig que não inicialize conta-se FALTA, e nunca presença: o silencio
+// d'elle é ignorancia nossa, e ignorancia não se resolve por optimismo.
+bool ha_familia_de_fonte(std::string_view agulha) {
+  FcConfig* configuracao = FcInitLoadConfigAndFonts();
+  if (configuracao == nullptr) return false;
+  FcPattern* padrao = FcPatternCreate();
+  FcObjectSet* campos = FcObjectSetBuild(FC_FAMILY, nullptr);
+  FcFontSet* achadas = (padrao != nullptr && campos != nullptr)
+                           ? FcFontList(configuracao, padrao, campos)
+                           : nullptr;
+  bool achou = false;
+  for (int posicao = 0;
+       achadas != nullptr && posicao < achadas->nfont && !achou; ++posicao) {
+    FcChar8* familia = nullptr;
+    if (FcPatternGetString(achadas->fonts[posicao], FC_FAMILY, 0, &familia) ==
+            FcResultMatch &&
+        familia != nullptr)
+      achou = contem_insensivel(reinterpret_cast<const char*>(familia), agulha);
+  }
+  if (achadas != nullptr) FcFontSetDestroy(achadas);
+  if (campos != nullptr) FcObjectSetDestroy(campos);
+  if (padrao != nullptr) FcPatternDestroy(padrao);
+  FcConfigDestroy(configuracao);
+  return achou;
 }
 
 }  // namespace
