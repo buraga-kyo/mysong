@@ -165,6 +165,11 @@ TEST_CASE("o losango não se exprime: a fita tem um só glifo de encaixe") {
   // junção, remate inclusive. Não havendo por onde entrar um segundo, as duas
   // pontas não se encostam. Prova-se pois a unicidade, que é o que a obra pode
   // perder num descuido — eleger o glifo por junção, e não por fita.
+  //
+  // Este caso é o GUARDA da eleição, e desde a #20 é guarda sem limite a
+  // declarar: houve uma porta, Fita::glifo(), por onde se podia passar cadeia
+  // com as duas pontas juntas, e a porta sahiu com o campo que a sustentava.
+  // Mudada a expressão que elege a ponta pelo Sentido, é aqui que morre.
   for (const al::Sentido sentido : {al::Sentido::Dextra, al::Sentido::Esquerda}) {
     const std::string_view eleito =
         sentido == al::Sentido::Dextra ? al::kPontaDextra : al::kPontaEsquerda;
