@@ -32,6 +32,23 @@ void dorme(int millesimos) {
   std::this_thread::sleep_for(std::chrono::milliseconds(millesimos));
 }
 
+// Bate o relogio durante o tempo pedido, e imprime o que se lê a cada batida.
+// Devolve a ultima posição vista, para que o chamador a possa comparar.
+double relogio(nu::Tocador& tocador, nu::MotorMpv& motor, int millesimos,
+               const char* rotulo) {
+  double ultima = 0.0;
+  for (int passado = 0; passado < millesimos; passado += 250) {
+    tocador.pulsa();
+    ultima = tocador.posicao();
+    std::printf("  %-9s pos=%6.2f dur=%6.2f estado=%-7s playlist-count=%s\n",
+                rotulo, ultima, tocador.duracao(),
+                std::string(nu::nome_do_estado(tocador.estado())).c_str(),
+                motor.propriedade("playlist-count").c_str());
+    dorme(250);
+  }
+  return ultima;
+}
+
 }  // namespace
 
 // ══════════════════════════════════════════════════════════════════════════
