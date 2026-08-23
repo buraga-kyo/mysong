@@ -183,6 +183,38 @@ bool MotorMpv::volume(int porcento) {
   return mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >= 0;
 }
 
+double MotorMpv::posicao() const { return posicao_; }
+double MotorMpv::duracao() const { return duracao_; }
+Estado MotorMpv::estado() const { return estado_; }
+
+// Drena a fila de avisos do mpv e assenta o que d'ella se aprende. Devolve ao
+// chamador tão logo a fila esvazie: o prazo zero é o que faz d'esta funcção uma
+// batida, e não uma espera.
+void MotorMpv::bombear() {
+  if (punho_ == nullptr) return;
+  for (;;) {
+    ::mpv_event* evento = mpv_wait_event(punho_, 0.0);
+    if (evento->event_id == MPV_EVENT_NONE) return;
+
+    if (evento->event_id == MPV_EVENT_PROPERTY_CHANGE) {
+      const auto* propriedade =
+          static_cast<::mpv_event_property*>(evento->data);
+      if (propriedade == nullptr || propriedade->data == nullptr ||
+          propriedade->format != MPV_FORMAT_DOUBLE) {
+        continue;
+      }
+      const double valor = *static_cast<double*>(propriedade->data);
+      const std::string_view nome(propriedade->name);
+      if (nome == "time-pos") posicao_ = valor;
+      if (nome == "duration") duracao_ = valor;
+    } else if (evento->event_id == MPV_EVENT_END_FILE ||
+               evento->event_id == MPV_EVENT_SHUTDOWN) {
+      estado_ = Estado::Parado;
+      posicao_ = 0.0;
+    }
+  }
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
