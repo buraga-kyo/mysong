@@ -90,3 +90,26 @@ TEST_CASE("inquerito sem consulta alguma accusa falta, e não dá por bom") {
   CHECK(relatorio.ha_impedimento());
   CHECK(relatorio.faltas().size() == nu::requisitos().size());
 }
+
+TEST_CASE("faltando a fonte, ha impedimento e o remedio vem nomeado") {
+  const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"fonte"}));
+  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  REQUIRE(faltas.size() == 1);
+  CHECK(faltas.front().requisito.chave == "fonte");
+  CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Impedimento);
+  CHECK_FALSE(faltas.front().requisito.remedio.empty());
+  CHECK(relatorio.ha_impedimento());
+  CHECK(relatorio.ha_falta());
+}
+
+// A GRAVIDADE da libmpv é asserção, e não detalhe: sem machina de som não ha
+// tocador algum, sómente moldura. Rebaixada a aviso, este caso morre, e é por
+// elle que a prova por mutação passa.
+TEST_CASE("a libmpv é impedimento, e nunca aviso") {
+  const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"libmpv"}));
+  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  REQUIRE(faltas.size() == 1);
+  CHECK(faltas.front().requisito.chave == "libmpv");
+  CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Impedimento);
+  CHECK(relatorio.ha_impedimento());
+}
