@@ -29,6 +29,9 @@ class MotorDuble final : public mysong::nucleo::Motor {
  public:
   std::vector<std::string> tocados;
   bool recusa_tocar = false;
+  int volume_recebido = -1;
+  double alvo_buscado = -1.0;
+  double duracao_dita = 10.0;
 
   bool tocar(const std::string& caminho) override {
     if (recusa_tocar) return false;
@@ -37,6 +40,20 @@ class MotorDuble final : public mysong::nucleo::Motor {
     estado_ = Estado::Tocando;
     return true;
   }
+
+  bool pausar() override { estado_ = Estado::Pausado; return true; }
+  bool retomar() override { estado_ = Estado::Tocando; return true; }
+  bool buscar(double segundos) override { alvo_buscado = segundos; return true; }
+  bool volume(int porcento) override { volume_recebido = porcento; return true; }
+
+  double posicao() const override { return posicao_; }
+  double duracao() const override { return duracao_dita; }
+  Estado estado() const override { return estado_; }
+  void bombear() override {}
+
+  // Torniquetes de que só a prova se serve, para mover o mundo de mentira.
+  void avanca(double delta) { posicao_ += delta; }
+  void termina() { estado_ = Estado::Parado; }
 
  private:
   double posicao_ = 0.0;
