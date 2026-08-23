@@ -15,6 +15,12 @@
 #include "tui/tela_requisitos.hpp"
 
 #include <string>
+#include <utility>
+#include <vector>
+
+#include <ftxui/screen/color.hpp>
+
+#include "tui/tokens.hpp"
 
 namespace mysong::tui {
 
@@ -25,6 +31,13 @@ namespace {
 std::string_view rotulo_da_gravidade(nucleo::Gravidade gravidade) {
   return gravidade == nucleo::Gravidade::Impedimento ? "impedimento"
                                                      : "aviso      ";
+}
+
+// tinta — verte o token de côr no que o FTXUI pinta. Côr alguma se escreve por
+// literal nesta tela: sahem todas da taboada de tui::tokens.
+ftxui::Color tinta(std::string_view token) {
+  const tokens::Triade cor = tokens::rgb(token);
+  return ftxui::Color::RGB(cor.r, cor.g, cor.b);
 }
 
 }  // namespace
@@ -73,6 +86,41 @@ std::string texto_dos_avisos(const nucleo::Relatorio& relatorio) {
   if (!texto.empty())
     texto += "        (mysong --sonda dá o relatorio inteiro)\n";
   return texto;
+}
+
+// elemento_dos_requisitos — o QUADRO. Escreve-se por paragrafo, e não por linha
+// rigida, de proposito: tela de erro que quebra em terminal estreito falha
+// exactamente quando alguem está com problema. O texto reflue, e nenhum remedio
+// se perde por córte.
+ftxui::Element elemento_dos_requisitos(const nucleo::Relatorio& relatorio) {
+  const bool impede = relatorio.ha_impedimento();
+  std::vector<ftxui::Element> linhas;
+  linhas.push_back(
+      ftxui::paragraph(impede ? "o mysong não pode abrir: falta ao systema o "
+                                "que elle exige"
+                              : "o mysong abre, mas ha requisito a faltar") |
+      ftxui::bold | ftxui::color(tinta(impede ? tokens::crit : tokens::warn)));
+  linhas.push_back(ftxui::separatorEmpty());
+  for (const nucleo::Estado& estado : relatorio.faltas()) {
+    const bool grave =
+        estado.requisito.gravidade == nucleo::Gravidade::Impedimento;
+    linhas.push_back(
+        ftxui::paragraph(std::string(grave ? "FALTA " : "aviso ") +
+                         std::string(estado.requisito.nome)) |
+        ftxui::color(tinta(grave ? tokens::crit : tokens::warn)));
+    linhas.push_back(
+        ftxui::paragraph("  " + std::string(estado.requisito.remedio)) |
+        ftxui::color(tinta(tokens::text_muted)));
+    linhas.push_back(ftxui::separatorEmpty());
+  }
+  linhas.push_back(ftxui::paragraph(std::string(kLimiteDaSonda)) |
+                   ftxui::color(tinta(tokens::text_muted)));
+  if (impede) {
+    linhas.push_back(ftxui::separatorEmpty());
+    linhas.push_back(ftxui::paragraph("tecle qualquer cousa para sahir") |
+                     ftxui::color(tinta(tokens::text_faint)));
+  }
+  return ftxui::vbox(std::move(linhas)) | ftxui::border;
 }
 
 }  // namespace mysong::tui
