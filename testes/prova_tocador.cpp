@@ -51,15 +51,28 @@ class MotorDuble final : public mysong::nucleo::Motor {
   double posicao() const override { return posicao_; }
   double duracao() const override { return duracao_dita; }
   Estado estado() const override { return estado_; }
-  void bombear() override {}
+  // O bombear do dublê NÃO é vazio. Vazio, elle nunca produzia o unico
+  // acontecimento em que posição e estado mudam na MESMA batida, e por isso a
+  // bateria inteira era cega ao pregão de retracto composto.
+  void bombear() override {
+    if (!fim_pendente_) return;
+    fim_pendente_ = false;
+    posicao_ = 0.0;
+    estado_ = Estado::Parado;
+  }
 
   // Torniquetes de que só a prova se serve, para mover o mundo de mentira.
   void avanca(double delta) { posicao_ += delta; }
   void termina() { estado_ = Estado::Parado; }
 
+  // Agenda o fim NATURAL da faixa, tal qual a libmpv o dá: posição a zero e
+  // estado a Parado, ambos na batida seguinte, e não em batidas differentes.
+  void acaba_na_proxima_batida() { fim_pendente_ = true; }
+
  private:
   double posicao_ = 0.0;
   Estado estado_ = Estado::Parado;
+  bool fim_pendente_ = false;
 };
 
 }  // namespace
