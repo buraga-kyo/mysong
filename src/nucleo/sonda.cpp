@@ -14,6 +14,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/sonda.hpp"
 
+#include <cstddef>
+
 namespace mysong::nucleo {
 
 // A TABOA. Os IMPEDIMENTOS primeiro, que é a ordem em que a tela os mostra: a
@@ -92,6 +94,32 @@ std::vector<Estado> Relatorio::faltas() const {
         colhidas.push_back(estado);
   return colhidas;
 }
+
+namespace {
+
+// contem_insensivel — busca a agulha no palheiro, cega á caixa em ASCII. Faz-se
+// á mão, e não por std::tolower, porque aquelle depende do locale corrente: sob
+// locale turco o 'I' desce a caractere que não é 'i', e a familia "NERD" fugiria
+// da busca por razão que ninguem havia de suspeitar. Nome de familia de fonte é
+// ASCII no que nos importa, e a caixa é a unica variação que se tolera.
+bool contem_insensivel(std::string_view palheiro, std::string_view agulha) {
+  const auto baixa = [](char letra) {
+    return letra >= 'A' && letra <= 'Z' ? static_cast<char>(letra | 0x20)
+                                        : letra;
+  };
+  if (agulha.empty() || agulha.size() > palheiro.size()) return false;
+  for (std::size_t inicio = 0; inicio + agulha.size() <= palheiro.size();
+       ++inicio) {
+    std::size_t passo = 0;
+    while (passo < agulha.size() &&
+           baixa(palheiro[inicio + passo]) == baixa(agulha[passo]))
+      ++passo;
+    if (passo == agulha.size()) return true;
+  }
+  return false;
+}
+
+}  // namespace
 
 }  // namespace mysong::nucleo
 
