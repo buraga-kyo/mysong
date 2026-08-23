@@ -1,0 +1,14 @@
+# Arvore de compilacao (gerada; jamais versionada)
+build/
+build-*/
+
+# Cache de ferramenta
+.cache/
+compile_commands.json
+.ccls-cache/
+CMakeUserPresets.json
+
+# Restos do editor e do systema
+*.swp
+*~
+.DS_Store
