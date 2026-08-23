@@ -26,7 +26,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <functional>
 #include <string_view>
+#include <vector>
 
 namespace mysong::nucleo {
 
@@ -60,6 +62,39 @@ struct Estado {
   Requisito requisito;
   bool presente;
 };
+
+// O RELATORIO: a taboa INTEIRA, e não sómente o que falta. Quem quer a falta
+// pede faltas(); quem quer o diagnostico completo, que é o caso do modo
+// --sonda, tem os estados todos, presentes inclusos.
+struct Relatorio {
+  std::vector<Estado> estados;
+
+  bool ha_falta() const;
+  bool ha_impedimento() const;
+  std::vector<Estado> faltas() const;  // impedimentos primeiro, ordem estavel
+};
+
+// O INQUERITO: as tres consultas que a sonda faz ao mundo, embrulhadas de sorte
+// que a prova as substitua por dublê em duas linhas, sem herança e sem macro.
+// Consulta VAZIA responde ausente, e nunca presente: inquerito mal montado ha
+// de accusar falta, jamais dar por bom aquillo que não sabe.
+struct Inquerito {
+  std::function<bool(std::string_view)> familia_de_fonte;
+  std::function<bool(std::string_view)> bibliotheca;
+  std::function<bool(std::string_view)> executavel;
+};
+
+// A taboa dos requisitos d'esta obra, na ordem em que se declaram.
+const std::vector<Requisito>& requisitos();
+
+// Sonda os requisitos pelo inquerito dado. Pura quanto ao mundo: nem ambiente,
+// nem tela, nem sahida do programa. Nunca lança pela borda.
+Relatorio sondar(const Inquerito& inquerito);
+
+// O inquerito que consulta o systema de verdade, e o UNICO logar d'esta obra a
+// ler variavel de ambiente: MYSONG_SONDA_FORCA nomeia, por chave curta e
+// separadas por virgula, os requisitos que se hão de ter por ausentes.
+Inquerito inquerito_do_systema();
 
 }  // namespace mysong::nucleo
 
