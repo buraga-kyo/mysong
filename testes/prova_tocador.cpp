@@ -141,4 +141,41 @@ TEST_CASE("o motor que recusa não deixa o tocador a crer que toca") {
   CHECK(duble.tocados.empty());
 }
 
+TEST_CASE("o pregão chega a quem escuta") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+
+  int faixas = 0;
+  int estados = 0;
+  int posicoes = 0;
+  tocador.escuta([&](const mysong::nucleo::Evento& evento) {
+    switch (evento.aviso) {
+      case Aviso::FaixaMudou: ++faixas; break;
+      case Aviso::EstadoMudou: ++estados; break;
+      case Aviso::PosicaoAndou: ++posicoes; break;
+      case Aviso::FalhouAoTocar: break;
+    }
+  });
+
+  CHECK(tocador.tocar_corrente());
+  duble.avanca(1.5);
+  tocador.pulsa();
+
+  CHECK(faixas == 1);
+  CHECK(estados == 1);
+  CHECK(posicoes == 1);
+}
+
+TEST_CASE("zero ouvintes não é erro: tudo corre igual") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+
+  CHECK(tocador.tocar_corrente());
+  duble.avanca(1.0);
+  tocador.pulsa();
+  CHECK(tocador.estado() == Estado::Tocando);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
