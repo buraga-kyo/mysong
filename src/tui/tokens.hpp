@@ -20,6 +20,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <string>
 #include <string_view>
 
 namespace mysong::tui::tokens {
@@ -78,5 +79,42 @@ constexpr std::string_view launcher_ring_on = "#ff9e2c", launcher_glow = "#ff7a1
 // eleição e ao hover. E o traço de UPLOAD (lima-neon), par do laranja data3.
 constexpr std::string_view data4_deep = "#8c1a58", data3_deep = "#8c430e";
 constexpr std::string_view graph_up = "#d8ff2f";
+
+// ── Receitas nomeadas de opacidade, portadas de palette.alpha: extirpam a
+// dispersão dos valores crus. No terminal ellas NÃO pintam sozinhas — não ha
+// canal de opacidade; entram sempre por mistura(), sobre um fundo conhecido.
+namespace alfa {
+constexpr double panel = 0.92, panel_hi = 0.95, bar = 0.8, clock_bar = 0.85;
+constexpr double dash = 0.9, chip_bg = 0.06, chip_border = 0.20;
+constexpr double divider_tail = 0.22, bevel_hi = 0.7, bevel_lo = 0.9, tick = 0.9;
+constexpr double rail = 0.5, graph_area = 0.22, graph_halo = 0.18, well = 0.96;
+constexpr double well_border = 0.22, segment = 0.90, tab = 0.88;
+constexpr double hover_delta = 0.08, overlay = 0.55, scrim = 0.7;
+}  // namespace alfa
+
+// A tríade de octetos que a sequência SGR de truecolor demanda.
+struct Triade {
+  unsigned char r = 0, g = 0, b = 0;
+};
+
+// octeto — lê um par de dígitos hexadecimaes. Tolera-se caixa alta e baixa.
+constexpr unsigned octeto(char alto, char baixo) {
+  const auto valor = [](char c) -> unsigned {
+    return c <= '9' ? static_cast<unsigned>(c - '0')
+                    : static_cast<unsigned>((c | 0x20) - 'a' + 10);
+  };
+  return valor(alto) * 16u + valor(baixo);
+}
+
+// rgb — decompõe "#RRGGBB" na tríade, como o fazia palette.rgb para o cairo.
+// Tolera-se o prefixo '#' e o oitavo byte de opacidade: sómente a tríade se
+// restitue ao chamador, que é tudo quanto o terminal sabe pintar.
+constexpr Triade rgb(std::string_view hex) {
+  if (!hex.empty() && hex.front() == '#') hex.remove_prefix(1);
+  if (hex.size() < 6) return {};
+  return {static_cast<unsigned char>(octeto(hex[0], hex[1])),
+          static_cast<unsigned char>(octeto(hex[2], hex[3])),
+          static_cast<unsigned char>(octeto(hex[4], hex[5]))};
+}
 
 }  // namespace mysong::tui::tokens
