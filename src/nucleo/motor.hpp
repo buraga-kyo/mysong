@@ -22,8 +22,16 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
+
+// O punho da libmpv, declarado adiante e não incluido: assim mpv/client.h não
+// entra por este cabecalho em unidade alguma que não precise d'elle, e a
+// bateria de provas compila sem os directorios de inclusão do mpv.
+extern "C" {
+struct mpv_handle;
+}
 
 namespace mysong::nucleo {
 
@@ -109,6 +117,44 @@ class Motor {
 
  protected:
   Motor() = default;
+};
+
+// A POTENCIA DE CARNE, sobre a libmpv. Nasce SÓ pela fabrica: não ha
+// construtor publico, e por isso o motor invalido não é exprimivel. Quem não
+// conseguiu abrir não tem objecto, e não um objecto a que se deva perguntar se
+// serve; a pergunta que ninguem faz é o defeito que apparece longe da causa.
+class MotorMpv final : public Motor {
+ public:
+  // Vazio se a libmpv recusar. A razão, se se pedir, sahe legivel por olho.
+  static std::optional<MotorMpv> abrir(std::string* razao = nullptr);
+
+  // A versão da interface da libmpv com que se compilou, para relatorio.
+  static unsigned long versao_da_interface() noexcept;
+
+  ~MotorMpv() override;
+
+  // Move consentido, e sómente elle: é o que a fabrica precisa para devolver.
+  MotorMpv(MotorMpv&& outro) noexcept;
+  MotorMpv& operator=(MotorMpv&&) = delete;
+
+  bool tocar(const std::string& caminho) override;
+  bool pausar() override;
+  bool retomar() override;
+  bool buscar(double segundos) override;
+  bool volume(int porcento) override;
+
+  double posicao() const override;
+  double duracao() const override;
+  Estado estado() const override;
+  void bombear() override;
+
+ private:
+  explicit MotorMpv(::mpv_handle* punho) noexcept;
+
+  ::mpv_handle* punho_ = nullptr;
+  Estado estado_ = Estado::Parado;
+  double posicao_ = 0.0;
+  double duracao_ = 0.0;
 };
 
 }  // namespace mysong::nucleo
