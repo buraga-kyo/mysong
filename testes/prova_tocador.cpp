@@ -225,4 +225,39 @@ TEST_CASE("buscar apara-se pela duração, e recusa-se parado") {
   CHECK(duble.alvo_buscado == doctest::Approx(0.0));
 }
 
+// Nenhum pregão ha de levar meio retracto novo e meio velho. Aqui a faixa já
+// passou dos dous segundos e meio, logo «Tocando com posição zero» não pode ser
+// verdade, e «Parado com posição andada» tambem não: qualquer dos dous denuncia
+// pregão emittido pelo meio do assentamento.
+TEST_CASE("ao fim natural da faixa, pregão algum sahe com retracto composto") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+  CHECK(tocador.tocar_corrente());
+  duble.avanca(2.5);
+  tocador.pulsa();  // antes de escutar: assenta a posição em dous e meio
+
+  int compostos = 0;
+  int estados = 0;
+  int posicoes = 0;
+  tocador.escuta([&](const mysong::nucleo::Evento& evento) {
+    const bool parado_mas_andado =
+        evento.estado == Estado::Parado && evento.posicao != 0.0;
+    const bool tocando_mas_no_zero =
+        evento.estado == Estado::Tocando && evento.posicao == 0.0;
+    if (parado_mas_andado || tocando_mas_no_zero) ++compostos;
+    if (evento.aviso == Aviso::EstadoMudou) ++estados;
+    if (evento.aviso == Aviso::PosicaoAndou) ++posicoes;
+  });
+
+  duble.acaba_na_proxima_batida();
+  tocador.pulsa();
+
+  CHECK(tocador.estado() == Estado::Parado);
+  CHECK(tocador.posicao() == doctest::Approx(0.0));
+  CHECK(estados == 1);
+  CHECK(posicoes == 1);
+  CHECK(compostos == 0);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
