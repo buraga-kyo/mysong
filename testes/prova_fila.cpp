@@ -40,6 +40,52 @@ TEST_CASE("a fila guarda a ordem que o cliente definiu") {
   CHECK(fila.corrente() == "primeira.wav");
 }
 
+TEST_CASE("a fila anda nos dous sentidos e volta ao ponto de partida") {
+  auto fila = com_tres();
+  CHECK(fila.proxima());
+  CHECK(fila.corrente() == "segunda.wav");
+  CHECK(fila.proxima());
+  CHECK(fila.corrente() == "terceira.wav");
+  CHECK(fila.anterior());
+  CHECK(fila.anterior());
+  CHECK(fila.corrente() == "primeira.wav");
+  CHECK(fila.indice() == 0);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+TEST_CASE("fila vazia responde, e não erra") {
+  mysong::nucleo::Fila fila;
+  CHECK(fila.vazia());
+  CHECK(fila.tamanho() == 0);
+  CHECK(fila.corrente().empty());
+  CHECK_FALSE(fila.proxima());
+  CHECK_FALSE(fila.anterior());
+  CHECK_FALSE(fila.ir_para(0));
+}
+
+TEST_CASE("a fila não envolve do ultimo ao primeiro") {
+  auto fila = com_tres();
+  CHECK(fila.ir_para(2));
+  CHECK_FALSE(fila.proxima());
+  CHECK(fila.indice() == 2);
+  CHECK(fila.corrente() == "terceira.wav");
+}
+
+TEST_CASE("a fila não recua além do primeiro") {
+  auto fila = com_tres();
+  CHECK_FALSE(fila.anterior());
+  CHECK(fila.indice() == 0);
+  CHECK_FALSE(fila.ir_para(3));
+  CHECK(fila.indice() == 0);
+}
+
+TEST_CASE("esvaziada, a fila torna ao estado de vazia") {
+  auto fila = com_tres();
+  CHECK(fila.proxima());
+  fila.esvazia();
+  CHECK(fila.vazia());
+  CHECK(fila.indice() == 0);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
