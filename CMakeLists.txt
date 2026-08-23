@@ -43,6 +43,17 @@ target_compile_options(mysong PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong PRIVATE mysong_core
   ftxui::component ftxui::dom ftxui::screen)
 
+# doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
+FetchContent_Declare(doctest
+  GIT_REPOSITORY https://github.com/doctest/doctest
+  GIT_TAG v2.5.3
+  GIT_SHALLOW TRUE
+  SYSTEM)
+FetchContent_MakeAvailable(doctest)
+
+enable_testing()
+add_subdirectory(testes)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
