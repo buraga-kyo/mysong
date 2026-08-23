@@ -41,6 +41,30 @@ const std::vector<Requisito>& requisitos() {
   return taboa;
 }
 
+// consultar — pergunta ao inquerito pela especie que o requisito declara. A
+// consulta VAZIA responde ausente: inquerito mal montado accusa falta, e nunca
+// dá por bom aquillo que não sabe.
+namespace {
+bool consultar(const Inquerito& inquerito, const Requisito& requisito) {
+  const auto& quem = requisito.especie == Especie::FamiliaDeFonte
+                         ? inquerito.familia_de_fonte
+                     : requisito.especie == Especie::Bibliotheca
+                         ? inquerito.bibliotheca
+                         : inquerito.executavel;
+  return quem ? quem(requisito.alvo) : false;
+}
+}  // namespace
+
+// sondar — a laçada. Uma pergunta por requisito da taboa, na ordem d'ella, e
+// nada mais: não pinta, não escreve, não lê ambiente, não sahe do programa.
+Relatorio sondar(const Inquerito& inquerito) {
+  Relatorio relatorio;
+  relatorio.estados.reserve(requisitos().size());
+  for (const Requisito& requisito : requisitos())
+    relatorio.estados.push_back({requisito, consultar(inquerito, requisito)});
+  return relatorio;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
