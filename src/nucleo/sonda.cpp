@@ -244,6 +244,24 @@ bool forcado(Especie especie, std::string_view alvo) {
 
 }  // namespace
 
+// inquerito_do_systema — arma as tres consultas de verdade, cada uma guardada
+// pela forçagem. A conjuncção corta curto: forçado ausente, nem se pergunta ao
+// systema, e assim a forçagem é fingimento COMPLETO, e não resposta que o
+// systema depois contradiga.
+Inquerito inquerito_do_systema() {
+  Inquerito inquerito;
+  inquerito.familia_de_fonte = [](std::string_view alvo) {
+    return !forcado(Especie::FamiliaDeFonte, alvo) && ha_familia_de_fonte(alvo);
+  };
+  inquerito.bibliotheca = [](std::string_view alvo) {
+    return !forcado(Especie::Bibliotheca, alvo) && ha_bibliotheca(alvo);
+  };
+  inquerito.executavel = [](std::string_view alvo) {
+    return !forcado(Especie::Executavel, alvo) && ha_executavel(alvo);
+  };
+  return inquerito;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
