@@ -15,9 +15,13 @@
 #include "nucleo/sonda.hpp"
 
 #include <cstddef>
+#include <cstdlib>
 #include <string>
 
 #include <dlfcn.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <fontconfig/fontconfig.h>
 
 namespace mysong::nucleo {
@@ -174,6 +178,35 @@ bool ha_bibliotheca(std::string_view soname) {
   if (punho == nullptr) return false;
   dlclose(punho);
   return true;
+}
+
+// ha_executavel — procura o nome nos directorios do PATH e exige permissão de
+// EXECUÇÃO, e não mera existencia: arquivo que está lá e não corre é ausente
+// para quem precisa correr, e directorio homonymo tambem o é, dahi a exigencia
+// de arquivo regular. PATH ausente do ambiente trata-se como cadeia vazia; e
+// componente VAZIO, que é o "::" do meio, não se lê como directorio corrente,
+// que seria porta aberta a mau costume.
+bool ha_executavel(std::string_view nome) {
+  const char* const caminho = std::getenv("PATH");
+  if (caminho == nullptr) return false;
+  std::string_view resto(caminho);
+  while (!resto.empty()) {
+    const std::size_t corte = resto.find(':');
+    const std::string_view pasta = resto.substr(
+        0, corte == std::string_view::npos ? resto.size() : corte);
+    if (!pasta.empty()) {
+      std::string tentativa(pasta);
+      tentativa += '/';
+      tentativa.append(nome);
+      struct stat marca = {};
+      if (::stat(tentativa.c_str(), &marca) == 0 && S_ISREG(marca.st_mode) &&
+          ::access(tentativa.c_str(), X_OK) == 0)
+        return true;
+    }
+    if (corte == std::string_view::npos) break;
+    resto.remove_prefix(corte + 1);
+  }
+  return false;
 }
 
 }  // namespace
