@@ -99,6 +99,48 @@ std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
   return MotorMpv(punho);
 }
 
+namespace {
+
+// Espera a faixa carregar. Devolve verdadeiro sómente se ella carregou de
+// facto: sem esta espera, quem lesse o relogio logo apoz tocar não acharia
+// propriedade alguma, e o relogio pareceria quebrado quando estava por nascer.
+bool aguarda_carga(::mpv_handle* punho, double prazo) {
+  for (;;) {
+    ::mpv_event* evento = mpv_wait_event(punho, prazo);
+    switch (evento->event_id) {
+      case MPV_EVENT_FILE_LOADED:
+        return true;
+      case MPV_EVENT_NONE:      // o prazo acabou
+      case MPV_EVENT_END_FILE:  // arquivo que não existe ou não se entende
+      case MPV_EVENT_SHUTDOWN:
+        return false;
+      default:
+        break;  // os demais avisos da carga não interessam a esta espera
+    }
+  }
+}
+
+}  // namespace
+
+// «replace» é o que mantem a playlist do mpv com uma entrada só: a ordem das
+// faixas é NOSSA, e não d'elle.
+bool MotorMpv::tocar(const std::string& caminho) {
+  const char* ordem[] = {"loadfile", caminho.c_str(), "replace", nullptr};
+  if (punho_ == nullptr || mpv_command(punho_, ordem) < 0) return false;
+
+  if (!aguarda_carga(punho_, 5.0)) {
+    estado_ = Estado::Parado;
+    posicao_ = 0.0;
+    duracao_ = 0.0;
+    return false;
+  }
+
+  posicao_ = le_dobro(punho_, "time-pos");
+  duracao_ = le_dobro(punho_, "duration");
+  estado_ = Estado::Tocando;
+  return true;
+}
+
 unsigned long MotorMpv::versao_da_interface() noexcept {
   return mpv_client_api_version();
 }
