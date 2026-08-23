@@ -68,7 +68,12 @@ int erguer_tocador() {
 // Aqui a espera de tecla fica, ao contrario do caminho do aviso: o programa não
 // vae abrir de jeito nenhum, e a interrupção é a propria mensagem.
 int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
-  auto tela = ftxui::ScreenInteractive::FitComponent();
+  // Fullscreen, e não Fit de altura alguma: a altura que um paragrafo pede só se
+  // sabe DEPOIS de se saber a largura em que elle reflue, e nenhum ajuste
+  // automatico o adivinha; com Fit, o quadro sahia cortado no pé e a nota do
+  // limite perdia as ultimas linhas, que é justamente o que ella existe para
+  // dizer. Tomando-se a tela toda, cabe tudo, e o pé deixa de ser sorte.
+  auto tela = ftxui::ScreenInteractive::Fullscreen();
   auto pintor = ftxui::Renderer(
       [&relatorio] { return tui::elemento_dos_requisitos(relatorio); });
   auto quadro = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
@@ -79,6 +84,10 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
     return true;
   });
   tela.Loop(quadro);
+  // A tela cheia se desfaz ao sahir, e a mensagem iria com ella. Repete-se pois
+  // o relatorio em texto, que fica no écran depois do programa: quem foi
+  // installar o que falta ha de o ter debaixo dos olhos, e não de memoria.
+  std::cerr << tui::texto_do_relatorio(relatorio);
   return 1;
 }
 
