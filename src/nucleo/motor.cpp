@@ -104,14 +104,25 @@ namespace {
 // Espera a faixa carregar. Devolve verdadeiro sómente se ella carregou de
 // facto: sem esta espera, quem lesse o relogio logo apoz tocar não acharia
 // propriedade alguma, e o relogio pareceria quebrado quando estava por nascer.
+//
+// Trocar de faixa com outra A TOCAR faz o mpv annunciar o fim da ANTERIOR
+// antes de começar a nova. Por isso se espera primeiro pelo começo, e só
+// depois se lê o fim como falha: sem esta distinção, toda troca de faixa em
+// pleno som se daria por falhada, que é o coração do que a issue pede.
 bool aguarda_carga(::mpv_handle* punho, double prazo) {
+  bool comecou = false;
   for (;;) {
     ::mpv_event* evento = mpv_wait_event(punho, prazo);
     switch (evento->event_id) {
+      case MPV_EVENT_START_FILE:
+        comecou = true;
+        break;
       case MPV_EVENT_FILE_LOADED:
         return true;
-      case MPV_EVENT_NONE:      // o prazo acabou
-      case MPV_EVENT_END_FILE:  // arquivo que não existe ou não se entende
+      case MPV_EVENT_END_FILE:
+        if (comecou) return false;  // o fim é da faixa NOVA: falhou de facto
+        break;                      // é a anterior que se despede; segue-se
+      case MPV_EVENT_NONE:          // o prazo acabou
       case MPV_EVENT_SHUTDOWN:
         return false;
       default:
