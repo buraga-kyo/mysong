@@ -178,4 +178,38 @@ TEST_CASE("zero ouvintes não é erro: tudo corre igual") {
   CHECK(tocador.estado() == Estado::Tocando);
 }
 
+TEST_CASE("o volume apara-se, e a faixa nova o herda") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+
+  CHECK(tocador.volume(140));
+  CHECK(tocador.volume() == 100);
+  CHECK(duble.volume_recebido == 100);
+
+  CHECK(tocador.volume(-5));
+  CHECK(tocador.volume() == 0);
+  CHECK(duble.volume_recebido == 0);
+
+  duble.volume_recebido = -1;
+  CHECK(tocador.tocar_corrente());
+  CHECK(duble.volume_recebido == 0);  // a faixa nova herdou o volume corrente
+}
+
+TEST_CASE("buscar apara-se pela duração, e recusa-se parado") {
+  MotorDuble duble;
+  duble.duracao_dita = 5.0;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+
+  CHECK_FALSE(tocador.buscar(2.0));  // parado, nada ha que buscar
+  CHECK(duble.alvo_buscado == doctest::Approx(-1.0));
+
+  CHECK(tocador.tocar_corrente());
+  CHECK(tocador.buscar(99.0));
+  CHECK(duble.alvo_buscado == doctest::Approx(4.95));
+  CHECK(tocador.buscar(-3.0));
+  CHECK(duble.alvo_buscado == doctest::Approx(0.0));
+}
+
 // ══════════════════════════════════════════════════════════════════════════
