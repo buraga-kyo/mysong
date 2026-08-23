@@ -22,6 +22,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cstddef>
 #include <initializer_list>
 #include <string_view>
 #include <vector>
@@ -59,3 +60,33 @@ nu::Inquerito inquerito_faltando(std::initializer_list<std::string_view> chaves)
 
 }  // namespace
 
+
+TEST_CASE("com tudo presente, nada falta e nada impede") {
+  const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({}));
+  CHECK(relatorio.estados.size() == nu::requisitos().size());
+  CHECK_FALSE(relatorio.ha_falta());
+  CHECK_FALSE(relatorio.ha_impedimento());
+  CHECK(relatorio.faltas().empty());
+  for (const nu::Estado& estado : relatorio.estados) CHECK(estado.presente);
+}
+
+TEST_CASE("a taboa traz os quatro requisitos, de chave unica e remedio dado") {
+  const std::vector<nu::Requisito>& taboa = nu::requisitos();
+  REQUIRE(taboa.size() == 4);
+  for (std::size_t aqui = 0; aqui < taboa.size(); ++aqui) {
+    CHECK_FALSE(taboa[aqui].chave.empty());
+    CHECK_FALSE(taboa[aqui].nome.empty());
+    CHECK_FALSE(taboa[aqui].alvo.empty());
+    CHECK_FALSE(taboa[aqui].remedio.empty());
+    for (std::size_t adeante = aqui + 1; adeante < taboa.size(); ++adeante)
+      CHECK(taboa[aqui].chave != taboa[adeante].chave);
+  }
+}
+
+// A guarda da consulta VAZIA: inquerito mal montado ha de accusar falta, e
+// nunca dar por bom aquillo que não sabe. É a escolha segura das duas.
+TEST_CASE("inquerito sem consulta alguma accusa falta, e não dá por bom") {
+  const nu::Relatorio relatorio = nu::sondar(nu::Inquerito{});
+  CHECK(relatorio.ha_impedimento());
+  CHECK(relatorio.faltas().size() == nu::requisitos().size());
+}
