@@ -21,6 +21,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "nucleo/fila.hpp"
 #include "nucleo/motor.hpp"
 
@@ -33,9 +36,45 @@ class Tocador {
   Tocador(const Tocador&) = delete;
   Tocador& operator=(const Tocador&) = delete;
 
+  // A fila é do tocador, e o cliente a arma por esta porta.
+  Fila& fila() noexcept;
+  const Fila& fila() const noexcept;
+
+  // Registra quem escuta. Zero ouvintes é caso legitimo.
+  void escuta(Ouvinte ouvinte);
+
+  // Manda tocar a faixa corrente da fila. Falso em fila vazia.
+  bool tocar_corrente();
+
+  // Andam pela fila e mandam tocar a faixa nova. Falso na borda, e ahi NADA se
+  // manda ao motor: a faixa que tocava continua a tocar.
+  bool proxima();
+  bool anterior();
+
+  bool pausar();
+  bool retomar();
+  bool buscar(double segundos);
+  bool volume(int porcento);
+
+  Estado estado() const noexcept;
+  int volume() const noexcept;
+  double posicao() const;
+  double duracao() const;
+
+  // Uma batida do relogio: drena o motor e annuncia o que se moveu. Chama-se
+  // de fóra, na cadencia de quem chama.
+  void pulsa();
+
  private:
+  void annuncia(Aviso aviso, std::string razao = {});
+  void assenta_estado(Estado novo);
+
   Motor& motor_;
   Fila fila_;
+  std::vector<Ouvinte> ouvintes_;
+  Estado estado_ = Estado::Parado;
+  int volume_ = 100;
+  double ultima_posicao_ = 0.0;
 };
 
 }  // namespace mysong::nucleo
