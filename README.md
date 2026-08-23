@@ -4,9 +4,10 @@ Tocador de musicas para o TERMINAL, escrito em C++17, gratuito e local. Nao ha
 nuvem, nao ha conta, nao ha telemetria: a musica esta no seu disco e o programa
 mora na sua janella de terminal, com a estetica arrowline do RADICAL-OS.
 
-Neste ponto do caminho o repositorio e casa recem-erguida: o binario abre,
-escreve a sua marca, espera uma tecla e sahe limpo. Audio, catalogo e espectro
-vem nas tarefas seguintes.
+A obra cresce tarefa a tarefa, e cada uma acrescenta feicao ao mesmo binario.
+Este arquivo nao narra em que ponto do caminho ella esta, porque tal narrativa
+envelhece a cada tarefa que entra: diz o que nao caduca, isto e, o que se exige
+instalado, como se compila, como se roda, e como se roda a bateria de provas.
 
 ## O que exige instalado
 
@@ -86,9 +87,9 @@ arquivo, `sqlite3` guarda o catalogo, `libpipewire` fala com o servidor de som,
 `fftw3` transforma a onda em espectro, `dbus-1` publica o que toca para o
 resto da area de trabalho, `libcurl` busca na rede, `fontconfig` acha a fonte.
 
-Advertencia honesta: NESTE ponto do caminho o `CMakeLists.txt` ainda nao cobra
-nenhuma d'ellas, porque o binario so abre janella. Estao listadas para que quem
-prepara a maquina o faca uma vez, e nao oito vezes.
+A taboada esta inteira de proposito, e nao restricta ao que o `CMakeLists.txt`
+cobra em cada momento: ella existe para que quem prepara a maquina o faca UMA
+vez, pela linha do apt mais abaixo, e nao volte aqui a cada tarefa que entra.
 
 ### Obrigatorio: os programas que o mysong chama
 
