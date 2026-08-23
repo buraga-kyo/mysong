@@ -20,7 +20,13 @@
 
 #include "nucleo/marca.hpp"
 
-int main() {
+namespace {
+
+// erguer_tocador — o tocador de hoje, palavra por palavra como estava no main.
+// Extrahe-se para funcção propria porque agora ha caminho que NÃO chega aqui: o
+// impedimento pinta outra tela e sahe, e convem que o olho veja num relance
+// que aquelle caminho não toca nesta.
+int erguer_tocador() {
   auto tela = ftxui::ScreenInteractive::FitComponent();
   auto pintor = ftxui::Renderer([] {
     return ftxui::vbox({
@@ -37,6 +43,10 @@ int main() {
   tela.Loop(janella);
   return 0;
 }
+
+}  // namespace
+
+int main() { return erguer_tocador(); }
 
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
