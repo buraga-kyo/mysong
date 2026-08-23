@@ -56,8 +56,12 @@ target_link_libraries(fita_arrowline PRIVATE mysong_core)
 # em tempo de execução justamente para não morrer antes do main sem ella.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
-target_sources(mysong_core PRIVATE src/nucleo/sonda.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/sonda.cpp src/tui/tela_requisitos.cpp)
 target_link_libraries(mysong_core PRIVATE PkgConfig::FONTCONFIG ${CMAKE_DL_LIBS})
+# A tela dos requisitos pinta com o FTXUI, e por isso o nucleo passa a ligá-lo em
+# PUBLIC: é o que permitte á bateria pintar o quadro FÓRA de terminal e aferir o
+# que elle diz, em vez de o julgar pelo olho de quem o abriu.
+target_link_libraries(mysong_core PUBLIC ftxui::dom ftxui::screen)
 
 # doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
 FetchContent_Declare(doctest
