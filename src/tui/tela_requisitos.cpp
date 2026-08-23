@@ -29,6 +29,28 @@ std::string_view rotulo_da_gravidade(nucleo::Gravidade gravidade) {
 
 }  // namespace
 
+// texto_do_relatorio — o diagnostico. Diz TODOS os requisitos, e não sómente os
+// que faltam: saber que a libmpv está presente é metade do valor d'isto.
+std::string texto_do_relatorio(const nucleo::Relatorio& relatorio) {
+  std::string texto = "mysong: sonda dos requisitos do systema\n\n";
+  for (const nucleo::Estado& estado : relatorio.estados) {
+    texto += "  ";
+    texto.append(rotulo_da_gravidade(estado.requisito.gravidade));
+    texto += estado.presente ? "  presente  " : "  FALTA     ";
+    texto.append(estado.requisito.nome);
+    texto += '\n';
+    if (!estado.presente) {
+      texto += "                 remedio: ";
+      texto.append(estado.requisito.remedio);
+      texto += '\n';
+    }
+  }
+  texto += '\n';
+  texto.append(kLimiteDaSonda);
+  texto += "\n\nOs requisitos minimos d'esta obra estão no README.\n";
+  return texto;
+}
+
 }  // namespace mysong::tui
 
 // ══════════════════════════════════════════════════════════════════════════
