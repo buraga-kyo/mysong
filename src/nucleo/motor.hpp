@@ -33,6 +33,26 @@ enum class Estado { Parado, Tocando, Pausado };
 // O nome do estado, para relatorio de prova e para olho humano.
 std::string_view nome_do_estado(Estado estado) noexcept;
 
+// O que se annuncia a quem escuta. Quatro avisos, e nenhum d'elles carrega
+// quem os ouve: o nucleo emitte ao vento, e quem quiser recolhe.
+enum class Aviso { FaixaMudou, EstadoMudou, PosicaoAndou, FalhouAoTocar };
+
+// O pregão: o aviso, e o retracto do mundo no instante em que se deu. Vae por
+// valor e completo, de sorte que o ouvinte nada precise interrogar de volta —
+// interrogar de volta seria o ouvinte conhecer o nucleo, e não sómente o
+// nucleo ignorar o ouvinte.
+struct Evento {
+  Aviso aviso = Aviso::EstadoMudou;
+  Estado estado = Estado::Parado;
+  std::string faixa;        // vazia quando nenhuma faixa esta em curso
+  double posicao = 0.0;     // em segundos, contados do inicio da faixa
+  std::string razao;        // preenchida sómente em FalhouAoTocar
+};
+
+// Quem escuta. Zero ouvintes é caso legitimo e não erro: a emissão ao vento,
+// sem ninguem que a recolha, é o estado normal da bateria de provas.
+using Ouvinte = std::function<void(const Evento&)>;
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
