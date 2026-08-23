@@ -64,6 +64,15 @@ add_subdirectory(testes)
 # ACRESCENTA sem tocar linha alguma que outra lavra esteja a editar.
 target_sources(mysong_core PRIVATE src/nucleo/fila.cpp src/nucleo/tocador.cpp)
 
+# A libmpv vem do systema, achada por pkg-config e NUNCA por caminho chumbado.
+# Entra como SYSTEM para que os seus cabecalhos se calem sob -Wall -Wextra, do
+# mesmo modo que a FTXUI e o doctest. PRIVATE porque só motor.cpp a inclue: o
+# cabecalho do motor declara o punho adiante, e não o inclue.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+target_sources(mysong_core PRIVATE src/nucleo/motor.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::MPV)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
