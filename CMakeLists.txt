@@ -34,7 +34,7 @@ FetchContent_Declare(ftxui
   SYSTEM)
 FetchContent_MakeAvailable(ftxui)
 
-add_library(mysong_core STATIC src/nucleo/marca.cpp)
+add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp)
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(mysong_core PRIVATE ${MYSONG_AVISOS})
 

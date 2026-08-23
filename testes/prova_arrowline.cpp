@@ -17,10 +17,39 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cstddef>
+#include <string>
+#include <vector>
+
 #include "tui/arrowline.hpp"
 #include "tui/tokens.hpp"
 
 namespace tk = mysong::tui::tokens;
+namespace al = mysong::tui;
+
+namespace {
+
+// Arma uma fita de N segmentos com fundos deliberadamente DISTINCTOS entre si,
+// de sorte que uma troca de côr não passe por coincidencia.
+al::Fita fita_de(std::size_t quantos, al::Sentido sentido = al::Sentido::Dextra) {
+  static const std::string_view cores[] = {tk::v700, tk::data2, tk::glow_hot,
+                                           tk::v500, tk::data5, tk::v900,
+                                           tk::data3, tk::ok};
+  al::Fita fita(sentido);
+  for (std::size_t i = 0; i < quantos; ++i)
+    fita.junta({"S" + std::to_string(i), cores[i % 8], tk::text_bright});
+  return fita;
+}
+
+// Conta as junções INTERNAS: as de encaixe que não são o remate de cauda.
+std::size_t internas(const std::vector<al::Pedaco>& pedacos) {
+  std::size_t quantas = 0;
+  for (const al::Pedaco& pedaco : pedacos)
+    if (pedaco.juncao && !pedaco.cauda) ++quantas;
+  return quantas;
+}
+
+}  // namespace
 
 TEST_CASE("a taboada conserva as côres que a fonte decretou") {
   CHECK(tk::base == "#0c0617");
@@ -47,4 +76,19 @@ TEST_CASE("a côr decompõe-se em tríade, e a opacidade resolve-se opaca") {
   CHECK(tk::mistura("#ffffff", "#000000", 0.5).r == 128);
   CHECK(tk::mistura("#ffffff", "#000000", 2.0).r == 255);   // alfa confinado
   CHECK(tk::mistura("#ffffff", "#000000", -1.0).r == 0);
+}
+
+TEST_CASE("a fita de N segmentos emitte N menos um encaixes") {
+  for (std::size_t quantos = 1; quantos <= 8; ++quantos) {
+    const auto pedacos = fita_de(quantos).compor();
+    CHECK(internas(pedacos) == quantos - 1);
+    for (const al::Pedaco& pedaco : pedacos)
+      if (pedaco.juncao) CHECK(pedaco.texto == al::kPontaDextra);
+  }
+}
+
+TEST_CASE("a fita de um só segmento não tem encaixe algum") {
+  const auto pedacos = fita_de(1).compor();
+  CHECK(internas(pedacos) == 0);
+  CHECK(pedacos.size() == 2);  // o rotulo, e o remate de cauda
 }
