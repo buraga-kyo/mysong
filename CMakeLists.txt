@@ -34,7 +34,7 @@ FetchContent_Declare(ftxui
   SYSTEM)
 FetchContent_MakeAvailable(ftxui)
 
-add_library(mysong_core STATIC src/nucleo/marca.cpp)
+add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp)
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(mysong_core PRIVATE ${MYSONG_AVISOS})
 
@@ -42,6 +42,11 @@ add_executable(mysong src/tui/janella.cpp)
 target_compile_options(mysong PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong PRIVATE mysong_core
   ftxui::component ftxui::dom ftxui::screen)
+
+# Exemplo da fita arrowline: a peça que o olho do operador ha de julgar.
+add_executable(fita_arrowline exemplos/fita_arrowline.cpp)
+target_compile_options(fita_arrowline PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(fita_arrowline PRIVATE mysong_core)
 
 # doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
 FetchContent_Declare(doctest
