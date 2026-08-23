@@ -48,6 +48,17 @@ double le_dobro(::mpv_handle* punho, const char* nome) {
   return valor;
 }
 
+// Pede aviso das duas grandezas do relogio. Devolve o codigo da primeira que
+// recusar, e não zero engolido: sem estes avisos o motor nunca reportaria
+// posição nem duração, e o relogio ficaria mudo EM SILENCIO, que é o modo de
+// falhar que esta Casa não aceita.
+int observa_relogio(::mpv_handle* punho) {
+  const int pela_posicao =
+      mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
+  if (pela_posicao < 0) return pela_posicao;
+  return mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
+}
+
 }  // namespace
 
 MotorMpv::MotorMpv(::mpv_handle* punho) noexcept : punho_(punho) {}
@@ -94,8 +105,14 @@ std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
     return std::nullopt;
   }
 
-  mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
-  mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
+  const int visto = observa_relogio(punho);
+  if (visto < 0) {
+    if (razao) {
+      *razao = std::string("mpv_observe_property: ") + mpv_error_string(visto);
+    }
+    mpv_terminate_destroy(punho);
+    return std::nullopt;
+  }
   return MotorMpv(punho);
 }
 
