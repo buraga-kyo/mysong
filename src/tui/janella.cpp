@@ -1,26 +1,50 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DA JANELLA — src/tui/janella.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// A porta do programa. Abre a janella no terminal, escreve a marca do núcleo,
-// aguarda tecla, e sahe. É o ÚNICO modulo do reino que possue main(), de sorte
-// que a bateria de provas, que traz o seu proprio main, jamais colida com ele.
+// A porta do programa. Sonda os requisitos ANTES de tudo, e sómente depois
+// decide: havendo impedimento, pinta a tela dos requisitos e sahe; havendo
+// sómente aviso, escreve-o e ergue o tocador; não havendo falta, ergue o
+// tocador e nada mais apparece. É o ÚNICO modulo do reino que possue main(), de
+// sorte que a bateria de provas, que traz o seu proprio main, jamais colida.
 //
-// DOMÍNIO ......... as teclas que o terminal entrega enquanto a janella vive.
-// CONTRA-DOMÍNIO .. o status de sahida do processo: zero, sempre.
-// INVARIANTE ...... a tecla 'q' encerra a laçada e nenhuma outra o faz. O texto
-//                   mostrado é o de nucleo::marca(), nunca um literal proprio.
-// Q.E.D. .......... a marca vem do núcleo e a tela apenas a exibe; logo, o que
-//                   a prova de fumo afirma e o que o olho vê não podem divergir.
+// DOMÍNIO ......... os argumentos da linha de commando, o estado do systema tal
+//                   como a sonda o colhe, e as teclas que o terminal entrega.
+// CONTRA-DOMÍNIO .. o status de sahida: ZERO abrindo o tocador ou correndo o
+//                   diagnostico sem impedimento; differente de zero havendo
+//                   impedimento, e tambem no diagnostico que o encontre.
+// INVARIANTE ...... havendo impedimento, o tocador NÃO se ergue, nem por um
+//                   quadro: a funcção da recusa não chama a do tocador, e a
+//                   garantia é estructural e não de vigilancia. Sem terminal,
+//                   tela alguma se ergue: o texto vae ao stderr.
+// Q.E.D. .......... a sonda correndo antes do FTXUI, quem roda numa machina crua
+//                   lê o que falta e o remedio, em vez de ver quadrículo vazio
+//                   e adivinhar; e a decisão de abrir depende de UM predicado
+//                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
+#include <iostream>
 #include <string>
+#include <string_view>
+
+#include <unistd.h>
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 
 #include "nucleo/marca.hpp"
+#include "nucleo/sonda.hpp"
+#include "tui/tela_requisitos.hpp"
 
-int main() {
+namespace nucleo = mysong::nucleo;
+namespace tui = mysong::tui;
+
+namespace {
+
+// erguer_tocador — o tocador de hoje, palavra por palavra como estava no main.
+// Extrahe-se para funcção propria porque agora ha caminho que NÃO chega aqui: o
+// impedimento pinta outra tela e sahe, e convem que o olho veja num relance
+// que aquelle caminho não toca nesta.
+int erguer_tocador() {
   auto tela = ftxui::ScreenInteractive::FitComponent();
   auto pintor = ftxui::Renderer([] {
     return ftxui::vbox({
@@ -36,6 +60,67 @@ int main() {
   });
   tela.Loop(janella);
   return 0;
+}
+
+// recusar_e_sahir — pinta a tela dos requisitos, espera tecla e sahe com codigo
+// differente de zero. É a UNICA cousa que apparece havendo impedimento: o
+// tocador não se ergue nem por um quadro, e por isso esta funcção não o chama.
+// Aqui a espera de tecla fica, ao contrario do caminho do aviso: o programa não
+// vae abrir de jeito nenhum, e a interrupção é a propria mensagem.
+int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
+  // Fullscreen, e não Fit de altura alguma: a altura que um paragrafo pede só se
+  // sabe DEPOIS de se saber a largura em que elle reflue, e nenhum ajuste
+  // automatico o adivinha; com Fit, o quadro sahia cortado no pé e a nota do
+  // limite perdia as ultimas linhas, que é justamente o que ella existe para
+  // dizer. Tomando-se a tela toda, cabe tudo, e o pé deixa de ser sorte.
+  auto tela = ftxui::ScreenInteractive::Fullscreen();
+  auto pintor = ftxui::Renderer(
+      [&relatorio] { return tui::elemento_dos_requisitos(relatorio); });
+  auto quadro = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
+    if (!tecla.is_character() && tecla != ftxui::Event::Return &&
+        tecla != ftxui::Event::Escape)
+      return false;
+    tela.Exit();
+    return true;
+  });
+  tela.Loop(quadro);
+  // A tela cheia se desfaz ao sahir, e a mensagem iria com ella. Repete-se pois
+  // o relatorio em texto, que fica no écran depois do programa: quem foi
+  // installar o que falta ha de o ter debaixo dos olhos, e não de memoria.
+  std::cerr << tui::texto_do_relatorio(relatorio);
+  return 1;
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+  const nucleo::Relatorio relatorio =
+      nucleo::sondar(nucleo::inquerito_do_systema());
+
+  // O modo de diagnostico: texto puro, tela nenhuma, e codigo differente de
+  // zero havendo impedimento, para que sirva de guarda em script.
+  if (argc > 1 && std::string_view(argv[1]) == "--sonda") {
+    std::cout << tui::texto_do_relatorio(relatorio);
+    return relatorio.ha_impedimento() ? 1 : 0;
+  }
+
+  if (relatorio.ha_impedimento()) {
+    // Sem terminal não se ergue tela alguma: quem redirigiu a sahida a arquivo
+    // receberia lixo de escape e nenhuma tecla poderia dar. Vae o texto ao
+    // stderr, que é onde o diagnostico se procura, e sahe-se.
+    if (isatty(STDOUT_FILENO) == 0) {
+      std::cerr << tui::texto_do_relatorio(relatorio);
+      return 1;
+    }
+    return recusar_e_sahir(relatorio);
+  }
+
+  // O aviso NÃO interrompe: escreve-se e o tocador sobe. Tecla alguma se pede,
+  // porque ella se pediria em toda abertura, e o que se aperta todo dia
+  // aprende-se a apertar sem ler.
+  const std::string avisos = tui::texto_dos_avisos(relatorio);
+  if (!avisos.empty()) std::cerr << avisos;
+  return erguer_tocador();
 }
 
 // ══════════════════════════════════════════════════════════════════════════

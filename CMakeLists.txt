@@ -48,6 +48,21 @@ add_executable(fita_arrowline exemplos/fita_arrowline.cpp)
 target_compile_options(fita_arrowline PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_arrowline PRIVATE mysong_core)
 
+# ── A SONDA dos requisitos. Acrescenta-se por target_sources e por uma segunda
+# chamada de target_link_libraries, e NÃO na linha do add_library nem na lista de
+# ligação que já existe: tarefas irmãs mexem neste mesmo arquivo agora, e linha
+# NOVA não collide onde linha alterada collidiria. Fontconfig é o unico pacote de
+# systema que este alvo exige; o dl vem para o dlopen da libmpv, que se carrega
+# em tempo de execução justamente para não morrer antes do main sem ella.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
+target_sources(mysong_core PRIVATE src/nucleo/sonda.cpp src/tui/tela_requisitos.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::FONTCONFIG ${CMAKE_DL_LIBS})
+# A tela dos requisitos pinta com o FTXUI, e por isso o nucleo passa a ligá-lo em
+# PUBLIC: é o que permitte á bateria pintar o quadro FÓRA de terminal e aferir o
+# que elle diz, em vez de o julgar pelo olho de quem o abriu.
+target_link_libraries(mysong_core PUBLIC ftxui::dom ftxui::screen)
+
 # doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
 FetchContent_Declare(doctest
   GIT_REPOSITORY https://github.com/doctest/doctest
