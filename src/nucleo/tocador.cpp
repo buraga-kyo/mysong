@@ -49,6 +49,33 @@ void Tocador::assenta_estado(Estado novo) {
   annuncia(Aviso::EstadoMudou);
 }
 
+// Manda tocar o que a fila aponta. O volume corrente vae com a faixa nova, que
+// de outra sorte nasceria no volume de fabrica do motor.
+bool Tocador::tocar_corrente() {
+  if (fila_.vazia()) return false;
+  const std::string caminho(fila_.corrente());
+  if (!motor_.tocar(caminho)) {
+    assenta_estado(Estado::Parado);
+    annuncia(Aviso::FalhouAoTocar, "o motor recusou " + caminho);
+    return false;
+  }
+  ultima_posicao_ = 0.0;
+  motor_.volume(volume_);
+  assenta_estado(Estado::Tocando);
+  annuncia(Aviso::FaixaMudou);
+  return true;
+}
+
+// A fila anda PRIMEIRO, e só depois se manda tocar. Na borda ella não anda,
+// nada se manda, e a faixa em curso segue intacta.
+bool Tocador::proxima() {
+  return fila_.proxima() && tocar_corrente();
+}
+
+bool Tocador::anterior() {
+  return fila_.anterior() && tocar_corrente();
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
