@@ -53,6 +53,36 @@ struct Evento {
 // sem ninguem que a recolha, é o estado normal da bateria de provas.
 using Ouvinte = std::function<void(const Evento&)>;
 
+// A POTENCIA, abstracta. É por este ponto de substituição que a bateria põe um
+// dublê no logar do mpv; sem elle, a prova da fila exigiria placa de som, e o
+// aceite que pede motor dublê não teria onde se prender.
+//
+// Toda ordem devolve se foi acceita. Toda leitura é const e jamais falha: quem
+// nada toca lê posição zero, e não erro.
+class Motor {
+ public:
+  virtual ~Motor() = default;
+  Motor(const Motor&) = delete;
+  Motor& operator=(const Motor&) = delete;
+
+  virtual bool tocar(const std::string& caminho) = 0;
+  virtual bool pausar() = 0;
+  virtual bool retomar() = 0;
+  virtual bool buscar(double segundos) = 0;
+  virtual bool volume(int porcento) = 0;
+
+  virtual double posicao() const = 0;
+  virtual double duracao() const = 0;
+  virtual Estado estado() const = 0;
+
+  // Drena o que a potencia tiver a dizer. Chama-se de fóra, em cadencia de
+  // quem chama: o motor não cria linha de execução propria.
+  virtual void bombear() = 0;
+
+ protected:
+  Motor() = default;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
