@@ -118,6 +118,31 @@ int main(int argc, char** argv) {
   std::printf("  resumo do relogio: antes=%.2f pausa=%.2f depois=%.2f\n",
               antes_da_pausa, na_pausa, depois);
 
+  std::printf("[C5] buscar salta para onde se pediu\n");
+  if (!tocador.buscar(3.0)) {
+    std::fprintf(stderr, "buscar recusou\n");
+    return 6;
+  }
+  dorme(400);
+  tocador.pulsa();
+  std::printf("  apoz buscar(3.0) pos=%.2f\n", tocador.posicao());
+
+  std::printf("[C5b] buscar além do fim apara-se, e não estoura\n");
+  tocador.buscar(999.0);
+  dorme(400);
+  tocador.pulsa();
+  std::printf("  apoz buscar(999.0) pos=%.2f dur=%.2f estado=%s\n",
+              tocador.posicao(), tocador.duracao(),
+              std::string(nu::nome_do_estado(tocador.estado())).c_str());
+
+  std::printf("[C6] o volume do MOTOR se move, e o do systema fica\n");
+  for (const int pedido : {100, 40, 80, 140, -5}) {
+    tocador.volume(pedido);
+    std::printf("  pedi %4d, o tocador guarda %3d, o mpv diz %s\n", pedido,
+                tocador.volume(), motor.propriedade("volume").c_str());
+  }
+  tocador.volume(80);
+
   return 0;
 }
 
