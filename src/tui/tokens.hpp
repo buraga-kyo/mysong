@@ -38,4 +38,45 @@ constexpr std::string_view v300 = "#b491f9", v400 = "#9d6ff6", v500 = "#8b5cf6";
 constexpr std::string_view v600 = "#7c3aed", v700 = "#6d28d9", v800 = "#5b21b6";
 constexpr std::string_view v900 = "#4c1d95", v950 = "#2e1065", v975 = "#2b0c45";
 
+// ── Néon e fulgor: as côres do halo luminoso, ditas na língua estrangeira
+// "glow". O glow_hot, magenta das montanhas ao poente, é das urgências.
+constexpr std::string_view glow_ice = "#d6c2ff", glow_soft = "#b794ff";
+constexpr std::string_view glow_core = "#a855f7", glow_hot = "#ff2fa0";
+
+// ── O texto: hierarchia de legibilidade, do brilhante ao desvanecido.
+constexpr std::string_view text_bright = "#e9dcff", text_primary = "#cbb6ff";
+constexpr std::string_view text_heading = "#b794ff", text_body = "#9a82c4";
+constexpr std::string_view text_muted = "#6f5a96", text_faint = "#463566";
+constexpr std::string_view text_disabled = "#2f2348";
+
+// ── Linhas, bordas e biséis: a geometria das arestas e do relevo apparente.
+constexpr std::string_view line_faint = "#241640", line_dim = "#3a1f63";
+constexpr std::string_view line_base = "#5b21b6", line_bright = "#7c3aed";
+constexpr std::string_view bevel_hi = "#9d6ff6", bevel_lo = "#160c28";
+constexpr std::string_view grid = "#3a1f63";
+
+// ── Séries de dados: aos gráphicos concede-se o espectro inteiro do poente —
+// o violeta do núcleo (data1, soberano), amarello-sol, laranja, magenta, o
+// CYAN dos olhos do eidolon (data5) e o vermelho do quadro solar.
+constexpr std::string_view data1 = "#a855f7", data2 = "#ffd319", data3 = "#ff7a1a";
+constexpr std::string_view data4 = "#ff2fa0", data5 = "#2ef2da", data6 = "#ff3d3d";
+
+// ── Os estados (subtis): bom curso, advertência e crise.
+constexpr std::string_view ok = "#2ee6a8", warn = "#ffd319";
+constexpr std::string_view crit = "#ff3948", info = "#8b5cf6";
+
+// ── Sentinella de plena transparência. No terminal ella não se pinta: vale
+// por ORDEM DE REPOUSO, e quem a receba emitte o reset em vez de tríade.
+constexpr std::string_view transparent = "#00000000";
+
+// ── A família alaranjada do lançador, calibrada ao céu poente da estampa.
+constexpr std::string_view launcher_ring = "#b35414", launcher_ring_hi = "#ff7a1a";
+constexpr std::string_view launcher_ring_on = "#ff9e2c", launcher_glow = "#ff7a1a";
+
+// ── Os tons APAGADOS do horizonte (o poente ao cahir da noite): data4/data3
+// rebaixadas a ~55/100, para o repouso dos widgets; o horizonte vivo fica á
+// eleição e ao hover. E o traço de UPLOAD (lima-neon), par do laranja data3.
+constexpr std::string_view data4_deep = "#8c1a58", data3_deep = "#8c430e";
+constexpr std::string_view graph_up = "#d8ff2f";
+
 }  // namespace mysong::tui::tokens
