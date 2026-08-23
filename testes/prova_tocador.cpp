@@ -23,7 +23,9 @@
 #include "nucleo/tocador.hpp"
 namespace {
 
+using mysong::nucleo::Aviso;
 using mysong::nucleo::Estado;
+using mysong::nucleo::Tocador;
 // O DUBLÊ. Registra o que lhe mandaram, para que a prova o interrogue.
 class MotorDuble final : public mysong::nucleo::Motor {
  public:
@@ -64,4 +66,46 @@ class MotorDuble final : public mysong::nucleo::Motor {
 
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+TEST_CASE("o motor recebe cada faixa da fila, nos dous sentidos") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+  tocador.fila().junta("duas.wav");
+  tocador.fila().junta("tres.wav");
+
+  CHECK(tocador.tocar_corrente());
+  CHECK(tocador.proxima());
+  CHECK(tocador.proxima());
+  CHECK(tocador.anterior());
+  CHECK(tocador.anterior());
+
+  const std::vector<std::string> esperado = {"uma.wav", "duas.wav", "tres.wav",
+                                             "duas.wav", "uma.wav"};
+  CHECK(duble.tocados == esperado);
+  CHECK(tocador.fila().corrente() == "uma.wav");
+}
+
+TEST_CASE("na borda da fila NADA se manda ao motor") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+
+  CHECK(tocador.tocar_corrente());
+  CHECK_FALSE(tocador.proxima());
+  CHECK_FALSE(tocador.anterior());
+  CHECK(duble.tocados.size() == 1);
+  CHECK(tocador.estado() == Estado::Tocando);
+}
+
+TEST_CASE("fila vazia não faz o tocador mandar nada") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+
+  CHECK_FALSE(tocador.tocar_corrente());
+  CHECK_FALSE(tocador.proxima());
+  CHECK_FALSE(tocador.anterior());
+  CHECK(duble.tocados.empty());
+  CHECK(tocador.estado() == Estado::Parado);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
