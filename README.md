@@ -105,6 +105,25 @@ lado de fora sem avisar. O yt-dlp precisa de ser recente, e o caminho e:
 uv tool install yt-dlp     # ou, se preferir: pipx install yt-dlp
 ```
 
+### Obrigatorio: o terminal, e o servidor de som
+
+| Peca             | Exigencia      | Verificado aqui com                     |
+|------------------|----------------|-----------------------------------------|
+| Terminal         | truecolor      | Alacritty 0.13.2 dentro de tmux 3.4     |
+| `COLORTERM`      | `truecolor`    | O programa emitte sempre `38;2;R;G;B`   |
+| Servidor de som  | PipeWire       | PipeWire 1.0.5                          |
+
+O truecolor e exigencia dura: a taboada de cores d'esta Casa e de vinte e
+quatro bits, e o programa NAO degrada para as 256 cores do cubo. N'um terminal
+pobre as cores sahem erradas, e isso e limitacao declarada, nao defeito.
+
+Alacritty dentro de tmux funcciona, e e o arranjo em que a obra se confere.
+Mas fica registado o que NAO passa n'esse arranjo: protocolo de imagem algum.
+Nem o kitty graphics, nem o sixel: o tmux os engole. D'onde a capa do album
+nao se desenha por protocolo, e sim por MEIO-BLOCO (o caractere `▀` com
+tinta e fundo differentes, dous pixeis por celula), que e o que o chafa faz e
+o que atravessa o tmux inteiro.
+
 ### Tudo o que vem do apt, n'uma linha
 
 ```sh
