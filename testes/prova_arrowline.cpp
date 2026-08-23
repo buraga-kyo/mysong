@@ -121,6 +121,34 @@ TEST_CASE("a côr do encaixe é a côr do segmento que elle segue") {
   CHECK(qual == segmentos.size() - 1);
 }
 
+TEST_CASE("no sentido esquerda a côr do encaixe é a do segmento que elle abre") {
+  // Espelho da regra (b), e provado nos VALORES: a fita arma-se com tres côres
+  // escolhidas aqui, e o que se espera de cada encaixe vae escripto á mão,
+  // d'ellas deduzido pela regra, e não colhido do que a obra devolveu.
+  al::Fita fita(al::Sentido::Esquerda);
+  fita.junta({"um", tk::v500}).junta({"dous", tk::data2}).junta({"tres", tk::glow_hot});
+  const auto p = fita.compor();
+  REQUIRE(p.size() == 6);  // o remate, tres rotulos, e dous encaixes internos
+  // O remate encara o terminal, e n'este sentido vem PRIMEIRO, com a tinta do
+  // segmento que elle abre, que é o primeiro de todos.
+  CHECK(p[0].juncao);
+  CHECK(p[0].cauda);
+  CHECK(p[0].tinta == tk::v500);
+  CHECK(p[0].fundo == tk::transparent);
+  CHECK(p[1].texto == "um");
+  // A ponta aponta á esquerda: logo pertence ao segmento que ella ABRE, á sua
+  // direita, e assenta na cama do que fica atrás. Invertido o par, falha aqui.
+  CHECK(p[2].juncao);
+  CHECK_FALSE(p[2].cauda);
+  CHECK(p[2].tinta == tk::data2);
+  CHECK(p[2].fundo == tk::v500);
+  CHECK(p[3].texto == "dous");
+  CHECK(p[4].juncao);
+  CHECK(p[4].tinta == tk::glow_hot);
+  CHECK(p[4].fundo == tk::data2);
+  CHECK(p[5].texto == "tres");
+}
+
 TEST_CASE("a seta é de uma só direcção, e nunca losango de duas pontas") {
   for (const al::Pedaco& pedaco : fita_de(4).compor())
     CHECK(pedaco.texto.find(al::kPontaEsquerda) == std::string::npos);
