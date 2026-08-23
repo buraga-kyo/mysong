@@ -108,4 +108,37 @@ TEST_CASE("fila vazia não faz o tocador mandar nada") {
   CHECK(tocador.estado() == Estado::Parado);
 }
 
+TEST_CASE("as transições de estado, todas quatro") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.fila().junta("uma.wav");
+
+  CHECK(tocador.estado() == Estado::Parado);
+  CHECK(tocador.tocar_corrente());
+  CHECK(tocador.estado() == Estado::Tocando);
+
+  CHECK(tocador.pausar());
+  CHECK(tocador.estado() == Estado::Pausado);
+  CHECK_FALSE(tocador.pausar());  // pausar quem já pausou não é transição
+
+  CHECK(tocador.retomar());
+  CHECK(tocador.estado() == Estado::Tocando);
+  CHECK_FALSE(tocador.retomar());
+
+  duble.termina();  // a faixa acaba por si, como acaba no mundo
+  tocador.pulsa();
+  CHECK(tocador.estado() == Estado::Parado);
+}
+
+TEST_CASE("o motor que recusa não deixa o tocador a crer que toca") {
+  MotorDuble duble;
+  duble.recusa_tocar = true;
+  Tocador tocador(duble);
+  tocador.fila().junta("inexistente.wav");
+
+  CHECK_FALSE(tocador.tocar_corrente());
+  CHECK(tocador.estado() == Estado::Parado);
+  CHECK(duble.tocados.empty());
+}
+
 // ══════════════════════════════════════════════════════════════════════════
