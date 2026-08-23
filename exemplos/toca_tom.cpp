@@ -143,6 +143,22 @@ int main(int argc, char** argv) {
   }
   tocador.volume(80);
 
+  std::printf("[C7/C8] a fila anda nos dous sentidos\n");
+  while (tocador.proxima()) {
+    relogio(tocador, motor, 750, "adiante");
+  }
+  std::printf("  cheguei ao fim: proxima() recusa, faixa=%s\n",
+              std::string(tocador.fila().corrente()).c_str());
+
+  while (tocador.anterior()) {
+    relogio(tocador, motor, 750, "atras");
+  }
+  std::printf("  voltei ao inicio: anterior() recusa, faixa=%s\n",
+              std::string(tocador.fila().corrente()).c_str());
+
+  std::printf("[C7] playlist-count do mpv ao fim de tudo: %s\n",
+              motor.propriedade("playlist-count").c_str());
+  std::printf("corrida completa\n");
   return 0;
 }
 
