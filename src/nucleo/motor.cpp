@@ -67,6 +67,38 @@ MotorMpv::~MotorMpv() {
   if (punho_ != nullptr) mpv_terminate_destroy(punho_);
 }
 
+// A FABRICA. Unico caminho para um MotorMpv existir; quem falha não tem
+// objecto, e não um objecto a que se deva perguntar se serve.
+std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
+  ::mpv_handle* punho = mpv_create();
+  if (punho == nullptr) {
+    if (razao) *razao = "mpv_create não deu punho algum";
+    return std::nullopt;
+  }
+
+  // ANTES de mpv_initialize, sem o que as opções se ignoram em silencio.
+  // «ao=pipewire» é load-bearing: veja a segunda invariante do tractado.
+  if (!assenta(punho, "ao", "pipewire", razao) ||
+      !assenta(punho, "video", "no", razao) ||
+      !assenta(punho, "idle", "yes", razao)) {
+    mpv_terminate_destroy(punho);
+    return std::nullopt;
+  }
+
+  const int codigo = mpv_initialize(punho);
+  if (codigo < 0) {
+    if (razao) {
+      *razao = std::string("mpv_initialize: ") + mpv_error_string(codigo);
+    }
+    mpv_terminate_destroy(punho);
+    return std::nullopt;
+  }
+
+  mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
+  mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
+  return MotorMpv(punho);
+}
+
 unsigned long MotorMpv::versao_da_interface() noexcept {
   return mpv_client_api_version();
 }
