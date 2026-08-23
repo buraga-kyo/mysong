@@ -135,3 +135,39 @@ TEST_CASE("faltando o chafa, ha aviso, e a porta não se tranca") {
   CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Aviso);
   CHECK_FALSE(relatorio.ha_impedimento());
 }
+
+// Faltando tudo, a tela ha de mostrar tudo, e na ordem em que se lê: primeiro
+// o que impede, depois o que sómente avisa. Quem está impedido de abrir ha de
+// ler primeiro aquillo que o impede.
+TEST_CASE("faltando os quatro, os impedimentos vêm adeante dos avisos") {
+  const nu::Relatorio relatorio =
+      nu::sondar(inquerito_faltando({"chafa", "libmpv", "fonte", "yt-dlp"}));
+  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  REQUIRE(faltas.size() == 4);
+  CHECK(faltas[0].requisito.gravidade == nu::Gravidade::Impedimento);
+  CHECK(faltas[1].requisito.gravidade == nu::Gravidade::Impedimento);
+  CHECK(faltas[2].requisito.gravidade == nu::Gravidade::Aviso);
+  CHECK(faltas[3].requisito.gravidade == nu::Gravidade::Aviso);
+  CHECK(relatorio.ha_impedimento());
+}
+
+// A ordem é ESTAVEL, e não mera consequencia do dia: duas colheitas do mesmo
+// relatorio devolvem a mesma enfiada de chaves, byte por byte.
+TEST_CASE("a ordem das faltas repete-se identica em duas colheitas") {
+  const nu::Relatorio relatorio =
+      nu::sondar(inquerito_faltando({"yt-dlp", "fonte", "chafa"}));
+  const std::vector<nu::Estado> primeira = relatorio.faltas();
+  const std::vector<nu::Estado> segunda = relatorio.faltas();
+  REQUIRE(primeira.size() == segunda.size());
+  for (std::size_t passo = 0; passo < primeira.size(); ++passo)
+    CHECK(primeira[passo].requisito.chave == segunda[passo].requisito.chave);
+  CHECK(primeira.front().requisito.chave == "fonte");
+}
+
+// Impedimento acompanhado de aviso AINDA impede: um só basta para trancar.
+TEST_CASE("o impedimento tranca a porta ainda que venha com avisos") {
+  const nu::Relatorio relatorio =
+      nu::sondar(inquerito_faltando({"libmpv", "chafa"}));
+  CHECK(relatorio.faltas().size() == 2);
+  CHECK(relatorio.ha_impedimento());
+}
