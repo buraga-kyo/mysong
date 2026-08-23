@@ -10,10 +10,14 @@ vem nas tarefas seguintes.
 
 ## O que exige instalado
 
-Duas listas, e a fronteira entre ellas e firme. Sem o OBRIGATORIO o programa
-nao compila, ou compila e nao toca. O OPCIONAL acrescenta feicao, e quem nao o
-quiser nao perde nada do que ja funcciona. Quem so deseja compilar e ouvir para
-na primeira lista.
+Duas listas, e a fronteira entre ellas e firme. Sem o OBRIGATORIO da-se um de
+tres: o programa nao compila; compila e nao toca; ou RECUSA ABRIR. O OPCIONAL
+acrescenta feicao, e quem nao o quiser nao perde nada do que ja funcciona. Quem
+so deseja compilar e ouvir para na primeira lista.
+
+O terceiro modo e o da fonte, e a recusa e ACTIVA, nao apenas politica: ao
+arrancar, o `mysong` sonda os seus requisitos, e faltando a fonte pinta a tela
+das faltas, diz o que falta, e sahe sem erguer o tocador.
 
 Todas as versoes abaixo foram VERIFICADAS na maquina do autor (Ubuntu 24.04).
 Nao sao minimos theoricos: sao os numeros que se sabe funccionarem.
@@ -28,12 +32,14 @@ remendadas de Nerd Font. Isto e REQUISITO, e nao preferencia de gosto.
 |--------|---------------------------|---------------------------------------|
 | Fonte  | JetBrainsMono Nerd Font   | Qualquer Nerd Font serve; esta e a de referencia |
 
-**Sem ella, o que se ve**: no logar de cada ponta afiada, um quadriculo vazio,
-o chamado tofu (`□`). A fita continua correcta nas cores e nos rotulos, mas as
-junccoes viram caixas, e a estetica arrowline morre. O programa nao adivinha a
-presenca da fonte: o terminal nao expoe essa informacao de modo confiavel, e
-inferi-la por largura de glifo e heuristica que engana. O requisito e declarado
-aqui, e conferido pelo seu olho.
+**Sem ella, o que degradaria** (e que o senhor nao chegara a ver, porque o
+programa nao abre): no logar de cada ponta afiada, um quadriculo vazio, o
+chamado tofu (`□`). A fita continuaria correcta nas cores e nos rotulos, mas as
+junccoes viriam caixas, e a estetica arrowline morreria. E por isso que a fonte
+entra como bloqueio, e nao como aviso: o que se perde e justamente o desenho.
+O programa nao adivinha a presenca da fonte por largura de glifo, que seria
+heuristica a enganar: sonda os requisitos ao arrancar, e o que aqui se declara
+e o que ella cobra.
 
 **Como se instala** (a de referencia, para um usuario so):
 
