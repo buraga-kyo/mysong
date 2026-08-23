@@ -34,6 +34,20 @@ class Fila {
   bool vazia() const noexcept;
   std::size_t tamanho() const noexcept;
 
+  // O indice da faixa corrente. Sem sentido em fila vazia, e por isso a
+  // vazia() se pergunta primeiro.
+  std::size_t indice() const noexcept;
+
+  // A faixa corrente. Cadeia vazia quando a fila está vazia — resposta, e não
+  // erro. A vista vale enquanto a fila não se alterar.
+  std::string_view corrente() const noexcept;
+
+  bool proxima() noexcept;
+  bool anterior() noexcept;
+  bool ir_para(std::size_t alvo) noexcept;
+
+  void esvazia() noexcept;
+
  private:
   std::vector<std::string> faixas_;
   std::size_t indice_ = 0;
