@@ -107,39 +107,38 @@ MotorMpv::~MotorMpv() {
 // A FABRICA. Unico caminho para um MotorMpv existir; quem falha não tem
 // objecto, e não um objecto a que se deva perguntar se serve.
 std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
-  ::mpv_handle* punho = mpv_create();
-  if (punho == nullptr) {
+  // Da cama ao MotorMpv, o punho tem dono a todo instante: nenhum caminho de
+  // sahida d'esta funcção o deixa aberto, e nenhum d'elles o desfaz duas vezes.
+  Cama cama(mpv_create());
+  if (cama.punho() == nullptr) {
     if (razao) *razao = "mpv_create não deu punho algum";
     return std::nullopt;
   }
 
   // ANTES de mpv_initialize, sem o que as opções se ignoram em silencio.
   // «ao=pipewire» é load-bearing: veja a segunda invariante do tractado.
-  if (!assenta(punho, "ao", "pipewire", razao) ||
-      !assenta(punho, "video", "no", razao) ||
-      !assenta(punho, "idle", "yes", razao)) {
-    mpv_terminate_destroy(punho);
+  if (!assenta(cama.punho(), "ao", "pipewire", razao) ||
+      !assenta(cama.punho(), "video", "no", razao) ||
+      !assenta(cama.punho(), "idle", "yes", razao)) {
     return std::nullopt;
   }
 
-  const int codigo = mpv_initialize(punho);
+  const int codigo = mpv_initialize(cama.punho());
   if (codigo < 0) {
     if (razao) {
       *razao = std::string("mpv_initialize: ") + mpv_error_string(codigo);
     }
-    mpv_terminate_destroy(punho);
     return std::nullopt;
   }
 
-  const int visto = observa_relogio(punho);
+  const int visto = observa_relogio(cama.punho());
   if (visto < 0) {
     if (razao) {
       *razao = std::string("mpv_observe_property: ") + mpv_error_string(visto);
     }
-    mpv_terminate_destroy(punho);
     return std::nullopt;
   }
-  return MotorMpv(punho);
+  return MotorMpv(cama.solta());
 }
 
 namespace {
