@@ -90,18 +90,20 @@ int main(int argc, char** argv) {
     std::fprintf(stderr, "a primeira faixa NÃO tocou\n");
     return 3;
   }
-  std::printf("ao=%s duracao=%s\n", motor.propriedade("current-ao").c_str(),
-              motor.propriedade("duration").c_str());
-
   std::printf("[C2] o relogio anda\n");
   const double antes_da_pausa = relogio(tocador, motor, 1500, "tocando");
+
+  std::printf("[C1] ao=%s duracao=%s\n",
+              motor.propriedade("current-ao").c_str(),
+              motor.propriedade("duration").c_str());
 
   std::printf("[C3] pausar congela o relogio\n");
   if (!tocador.pausar()) {
     std::fprintf(stderr, "pausar recusou\n");
     return 4;
   }
-  tocador.pulsa();
+  dorme(300);    // deixa a fila de avisos assentar: os que já vinham a caminho
+  tocador.pulsa();  // trazem posições de ANTES da pausa, e falseariam a leitura
   const double na_pausa = tocador.posicao();
   dorme(1200);
   tocador.pulsa();
