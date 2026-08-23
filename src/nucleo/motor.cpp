@@ -187,6 +187,15 @@ double MotorMpv::posicao() const { return posicao_; }
 double MotorMpv::duracao() const { return duracao_; }
 Estado MotorMpv::estado() const { return estado_; }
 
+std::string MotorMpv::propriedade(const char* nome) const {
+  if (punho_ == nullptr) return {};
+  char* texto = mpv_get_property_string(punho_, nome);
+  if (texto == nullptr) return {};
+  std::string colhido(texto);
+  mpv_free(texto);
+  return colhido;
+}
+
 // Drena a fila de avisos do mpv e assenta o que d'ella se aprende. Devolve ao
 // chamador tão logo a fila esvazie: o prazo zero é o que faz d'esta funcção uma
 // batida, e não uma espera.

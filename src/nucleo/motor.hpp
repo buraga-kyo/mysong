@@ -148,6 +148,12 @@ class MotorMpv final : public Motor {
   Estado estado() const override;
   void bombear() override;
 
+  // JANELLA DE LEITURA: qualquer propriedade do mpv, em texto, e cadeia vazia
+  // quando ella não existe. Só LÊ, e nunca escreve, de sorte que abri-la não
+  // dá a ninguem poder que a interface do Motor já não desse. É por ella que a
+  // prova assere «playlist-count» e demonstra que a fila não desceu ao mpv.
+  std::string propriedade(const char* nome) const;
+
  private:
   explicit MotorMpv(::mpv_handle* punho) noexcept;
 
