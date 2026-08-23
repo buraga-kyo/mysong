@@ -75,8 +75,11 @@ struct Pedaco {
   bool cauda = false;
 };
 
-// rebaixar — desce UM degrau na rampa violeta, que é a regra (c): o enchimento
-// fica abaixo da orla. No degrau mais fundo satura, em vez de sahir da rampa.
+// rebaixar — desce ao degrau de CENTENA seguinte da rampa violeta, que é dizer
+// DOUS assentos do arranjo, e não um: os intermedios (v600, v800) o olho não
+// distingue da vizinhança. É a regra (c), o enchimento sob a orla. Assim v500
+// dá v700, e v700 dá v900. No degrau mais fundo satura, em vez de sahir da
+// rampa, e côr de fóra da rampa devolve-se intacta.
 std::string_view rebaixar(std::string_view degrau);
 
 // A FITA: junta segmentos e compõe pedaços. Não pinta nem trunca.
