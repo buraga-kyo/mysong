@@ -48,6 +48,32 @@ double le_dobro(::mpv_handle* punho, const char* nome) {
   return valor;
 }
 
+// A CAMA do punho enquanto a fabrica o arma. Desfaz o que ainda não achou
+// dono, por QUALQUER caminho de sahida, excepção inclusa; e solta-se quando o
+// MotorMpv toma posse. É o que faz a segunda invariante do tractado ser verdade
+// em vez de intenção: sem ella, uma excepção erguida entre o mpv_create e a
+// recusa deixaria o punho aberto e ninguem a quem cobrar.
+class Cama {
+ public:
+  explicit Cama(::mpv_handle* punho) noexcept : punho_(punho) {}
+  ~Cama() {
+    if (punho_ != nullptr) mpv_terminate_destroy(punho_);
+  }
+  Cama(const Cama&) = delete;
+  Cama& operator=(const Cama&) = delete;
+
+  ::mpv_handle* punho() const noexcept { return punho_; }
+
+  ::mpv_handle* solta() noexcept {
+    ::mpv_handle* cedido = punho_;
+    punho_ = nullptr;
+    return cedido;
+  }
+
+ private:
+  ::mpv_handle* punho_;
+};
+
 // Pede aviso das duas grandezas do relogio. Devolve o codigo da primeira que
 // recusar, e não zero engolido: sem estes avisos o motor nunca reportaria
 // posição nem duração, e o relogio ficaria mudo EM SILENCIO, que é o modo de
