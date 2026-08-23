@@ -71,8 +71,9 @@ std::string pintar(const nu::Relatorio& relatorio, int largura) {
 
 // larguras_visiveis — conta as COLLUNAS de cada linha, e não os bytes: as
 // sequencias de escape não occupam célula, e caractere acentuado gasta dous
-// bytes numa collunha só. Contar bytes daria falso alarme em toda linha que
-// trouxesse um "ç", que são quasi todas nesta casa.
+// bytes numa collunha só, e o FTXUI remata cada linha em \r\n, de sorte que o
+// retorno de carro tambem se salta. Contar bytes daria falso alarme em toda
+// linha que trouxesse um "ç", que são quasi todas nesta casa.
 std::vector<std::size_t> larguras_visiveis(const std::string& pintura) {
   std::vector<std::size_t> larguras{0};
   for (std::size_t passo = 0; passo < pintura.size(); ++passo) {
@@ -81,6 +82,7 @@ std::vector<std::size_t> larguras_visiveis(const std::string& pintura) {
       while (passo < pintura.size() && pintura[passo] != 'm') ++passo;
       continue;
     }
+    if (octeto == '\r') continue;  // o FTXUI remata a linha em \r\n
     if (octeto == '\n') {
       larguras.push_back(0);
       continue;
@@ -91,3 +93,40 @@ std::vector<std::size_t> larguras_visiveis(const std::string& pintura) {
 }
 
 }  // namespace
+
+// A TELA ESTREITA, que é o caso que ninguem lembra e o que mais importa: tela
+// de erro que quebra em quarenta collunas falha exactamente quando alguem está
+// com problema. Afere-se em quarenta e em cem, e o que se exige é o mesmo.
+TEST_CASE("o quadro cabe em quarenta collunas, e nada d'elle se perde") {
+  const nu::Relatorio relatorio =
+      nu::sondar(faltando({"fonte", "libmpv", "yt-dlp", "chafa"}));
+  for (const int largura : {40, 100}) {
+    const std::string pintura = pintar(relatorio, largura);
+    for (const std::size_t medida : larguras_visiveis(pintura))
+      CHECK(medida <= static_cast<std::size_t>(largura));
+    for (const nu::Requisito& requisito : nu::requisitos())
+      CHECK(pintura.find(std::string(requisito.nome.substr(0, 5))) !=
+            std::string::npos);
+    CHECK(pintura.find("nerdfonts.com") != std::string::npos);
+    CHECK(pintura.find("emulador") != std::string::npos);
+  }
+}
+
+// As côres são as da issue #2, e afferem-se pela sequencia que o écran emitte:
+// impedimento em crit, aviso em warn, remedio em text_muted. O token entra por
+// tui::tokens, e nunca por literal, de sorte que mudança na taboada apanhe a
+// prova junto.
+TEST_CASE("o impedimento veste crit, o aviso veste warn, o remedio muted") {
+  const std::string pintura =
+      pintar(nu::sondar(faltando({"libmpv", "chafa"})), 100);
+  CHECK(pintura.find(tk::tinta(tk::crit)) != std::string::npos);
+  CHECK(pintura.find(tk::tinta(tk::warn)) != std::string::npos);
+  CHECK(pintura.find(tk::tinta(tk::text_muted)) != std::string::npos);
+}
+
+TEST_CASE("não havendo impedimento, o quadro não pede tecla alguma") {
+  const std::string com = pintar(nu::sondar(faltando({"libmpv"})), 100);
+  const std::string sem = pintar(nu::sondar(faltando({"chafa"})), 100);
+  CHECK(com.find("tecle") != std::string::npos);
+  CHECK(sem.find("tecle") == std::string::npos);
+}
