@@ -51,6 +51,30 @@ std::string texto_do_relatorio(const nucleo::Relatorio& relatorio) {
   return texto;
 }
 
+// texto_dos_avisos — as linhas curtas que precedem o tocador, sem o
+// interromper. NÃO espera tecla, e a razão vae dita por extenso para que
+// ninguem a reintroduza por zelo: aquella tecla não seria uma vez, seria em TODA
+// abertura do tocador, e quem a aperta todo dia aprende a apertá-la sem ler.
+// Aviso que se descarta cego custa attenção e não entrega informação, o que é
+// pior que aviso nenhum. O logar proprio do aviso duravel é um indicador que
+// fique visivel enquanto a falta existir, e essa casa ainda não existe nesta
+// obra: melhor um aviso que espera pela casa certa que um aviso que nasce
+// estorvo.
+std::string texto_dos_avisos(const nucleo::Relatorio& relatorio) {
+  std::string texto;
+  for (const nucleo::Estado& estado : relatorio.faltas()) {
+    if (estado.requisito.gravidade != nucleo::Gravidade::Aviso) continue;
+    texto += "mysong: falta ";
+    texto.append(estado.requisito.nome);
+    texto += "\n        ";
+    texto.append(estado.requisito.remedio);
+    texto += '\n';
+  }
+  if (!texto.empty())
+    texto += "        (mysong --sonda dá o relatorio inteiro)\n";
+  return texto;
+}
+
 }  // namespace mysong::tui
 
 // ══════════════════════════════════════════════════════════════════════════
