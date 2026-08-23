@@ -145,6 +145,44 @@ unsigned long MotorMpv::versao_da_interface() noexcept {
   return mpv_client_api_version();
 }
 
+// Pausar e retomar são a MESMA propriedade do mpv, com bandeira contraria.
+bool MotorMpv::pausar() {
+  int sim = 1;
+  if (punho_ == nullptr ||
+      mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &sim) < 0) {
+    return false;
+  }
+  estado_ = Estado::Pausado;
+  return true;
+}
+
+bool MotorMpv::retomar() {
+  int nao = 0;
+  if (punho_ == nullptr ||
+      mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &nao) < 0) {
+    return false;
+  }
+  estado_ = Estado::Tocando;
+  return true;
+}
+
+// O alvo apara-se pela duração que o mpv nos deu, e não pela que o chamador
+// supõe. Ao mpv desce cadeia, que é como a sua ordem de busca fala.
+bool MotorMpv::buscar(double segundos) {
+  if (punho_ == nullptr) return false;
+  const std::string alvo = std::to_string(aparar_busca(segundos, duracao_));
+  const char* ordem[] = {"seek", alvo.c_str(), "absolute", nullptr};
+  return mpv_command(punho_, ordem) >= 0;
+}
+
+// O volume do MOTOR, jamais o do systema: o do systema pertence ao vol.sh, e
+// nenhuma linha d'este arquivo o nomeia.
+bool MotorMpv::volume(int porcento) {
+  if (punho_ == nullptr) return false;
+  double valor = static_cast<double>(aparar_volume(porcento));
+  return mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >= 0;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
