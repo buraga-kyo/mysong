@@ -49,7 +49,46 @@ double relogio(nu::Tocador& tocador, nu::MotorMpv& motor, int millesimos,
   return ultima;
 }
 
+const char* nome_do_aviso(nu::Aviso aviso) {
+  switch (aviso) {
+    case nu::Aviso::FaixaMudou: return "faixa-mudou";
+    case nu::Aviso::EstadoMudou: return "estado-mudou";
+    case nu::Aviso::PosicaoAndou: return "posicao-andou";
+    case nu::Aviso::FalhouAoTocar: return "falhou-ao-tocar";
+  }
+  return "?";
+}
+
 }  // namespace
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::fprintf(stderr, "uso: toca_tom <faixa> [faixa...]\n");
+    return 2;
+  }
+
+  std::string razao;
+  auto talvez = nu::MotorMpv::abrir(&razao);
+  if (!talvez) {
+    std::fprintf(stderr, "não abri a libmpv: %s\n", razao.c_str());
+    return 1;
+  }
+  nu::MotorMpv& motor = *talvez;
+  std::printf("libmpv interface=%lu\n", nu::MotorMpv::versao_da_interface());
+
+  nu::Tocador tocador(motor);
+  tocador.escuta([](const nu::Evento& evento) {
+    std::printf("    « %-15s estado=%-7s faixa=%s pos=%.2f %s\n",
+                nome_do_aviso(evento.aviso),
+                std::string(nu::nome_do_estado(evento.estado)).c_str(),
+                evento.faixa.c_str(), evento.posicao, evento.razao.c_str());
+  });
+  for (int i = 1; i < argc; ++i) tocador.fila().junta(argv[i]);
+  std::printf("fila com %zu faixa(s)\n", tocador.fila().tamanho());
+
+  return 0;
+}
+
 
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

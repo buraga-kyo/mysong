@@ -73,6 +73,12 @@ pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 target_sources(mysong_core PRIVATE src/nucleo/motor.cpp)
 target_link_libraries(mysong_core PRIVATE PkgConfig::MPV)
 
+# A prova de som: linha de commando, e SEM FTXUI. Que não linke a janella é
+# parte do aceite, e por isso se lê aqui e se confirma com ldd.
+add_executable(toca_tom exemplos/toca_tom.cpp)
+target_compile_options(toca_tom PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(toca_tom PRIVATE mysong_core)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
