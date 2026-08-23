@@ -63,8 +63,13 @@ nu::Inquerito faltando(std::initializer_list<std::string_view> chaves) {
 // pintar — o écran de papel: largura escolhida, altura quanto o quadro pedir.
 std::string pintar(const nu::Relatorio& relatorio, int largura) {
   ftxui::Element quadro = tl::elemento_dos_requisitos(relatorio);
-  ftxui::Screen ecran = ftxui::Screen::Create(
-      ftxui::Dimension::Fixed(largura), ftxui::Dimension::Fit(quadro));
+  // A altura vae FIXA e folgada, e não ajustada ao elemento: a altura que o
+  // paragrafo pede só se sabe depois de se saber a largura em que elle reflue,
+  // e pedi-la antes cortava o quadro no pé. Sobra de linhas em branco não
+  // atrapalha asserção alguma; córte silencioso atrapalharia todas.
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
+                            ftxui::Dimension::Fixed(60));
   ftxui::Render(ecran, quadro);
   return ecran.ToString();
 }
@@ -107,8 +112,14 @@ TEST_CASE("o quadro cabe em quarenta collunas, e nada d'elle se perde") {
     for (const nu::Requisito& requisito : nu::requisitos())
       CHECK(pintura.find(std::string(requisito.nome.substr(0, 5))) !=
             std::string::npos);
-    CHECK(pintura.find("nerdfonts.com") != std::string::npos);
-    CHECK(pintura.find("emulador") != std::string::npos);
+    // Exigem-se as CAUDAS, e não sómente as cabeças: remedio cortado no pé
+    // parece presente a quem procure a primeira palavra d'elle. Procuram-se
+    // PALAVRAS soltas, e não frases: em quarenta collunas o paragrafo reflue, e
+    // frase de varias palavras atravessa a quebra de linha, donde a busca por
+    // ella falharia sobre texto que está inteiro na tela.
+    CHECK(pintura.find("fc-cache") != std::string::npos);
+    CHECK(pintura.find("capa)") != std::string::npos);
+    CHECK(pintura.find("emulador.") != std::string::npos);
   }
 }
 
