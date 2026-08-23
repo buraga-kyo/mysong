@@ -1,16 +1,25 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DA JANELLA — src/tui/janella.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// A porta do programa. Abre a janella no terminal, escreve a marca do núcleo,
-// aguarda tecla, e sahe. É o ÚNICO modulo do reino que possue main(), de sorte
-// que a bateria de provas, que traz o seu proprio main, jamais colida com ele.
+// A porta do programa. Sonda os requisitos ANTES de tudo, e sómente depois
+// decide: havendo impedimento, pinta a tela dos requisitos e sahe; havendo
+// sómente aviso, escreve-o e ergue o tocador; não havendo falta, ergue o
+// tocador e nada mais apparece. É o ÚNICO modulo do reino que possue main(), de
+// sorte que a bateria de provas, que traz o seu proprio main, jamais colida.
 //
-// DOMÍNIO ......... as teclas que o terminal entrega enquanto a janella vive.
-// CONTRA-DOMÍNIO .. o status de sahida do processo: zero, sempre.
-// INVARIANTE ...... a tecla 'q' encerra a laçada e nenhuma outra o faz. O texto
-//                   mostrado é o de nucleo::marca(), nunca um literal proprio.
-// Q.E.D. .......... a marca vem do núcleo e a tela apenas a exibe; logo, o que
-//                   a prova de fumo afirma e o que o olho vê não podem divergir.
+// DOMÍNIO ......... os argumentos da linha de commando, o estado do systema tal
+//                   como a sonda o colhe, e as teclas que o terminal entrega.
+// CONTRA-DOMÍNIO .. o status de sahida: ZERO abrindo o tocador ou correndo o
+//                   diagnostico sem impedimento; differente de zero havendo
+//                   impedimento, e tambem no diagnostico que o encontre.
+// INVARIANTE ...... havendo impedimento, o tocador NÃO se ergue, nem por um
+//                   quadro: a funcção da recusa não chama a do tocador, e a
+//                   garantia é estructural e não de vigilancia. Sem terminal,
+//                   tela alguma se ergue: o texto vae ao stderr.
+// Q.E.D. .......... a sonda correndo antes do FTXUI, quem roda numa machina crua
+//                   lê o que falta e o remedio, em vez de ver quadrículo vazio
+//                   e adivinhar; e a decisão de abrir depende de UM predicado
+//                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
 #include <iostream>
 #include <string>
