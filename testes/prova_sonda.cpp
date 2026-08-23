@@ -30,3 +30,32 @@
 
 namespace nu = mysong::nucleo;
 
+namespace {
+
+// inquerito_faltando — arma um inquerito de dublê que responde AUSENTE sómente
+// aos requisitos cujas chaves se nomeiam, e presente a todos os demais. A
+// traducção de alvo para chave faz-se pela taboa, tal como o binario a faz.
+nu::Inquerito inquerito_faltando(std::initializer_list<std::string_view> chaves) {
+  const std::vector<std::string_view> ausentes(chaves.begin(), chaves.end());
+  const auto responde = [ausentes](nu::Especie especie, std::string_view alvo) {
+    for (const nu::Requisito& requisito : nu::requisitos())
+      if (requisito.especie == especie && requisito.alvo == alvo)
+        for (const std::string_view chave : ausentes)
+          if (chave == requisito.chave) return false;
+    return true;
+  };
+  nu::Inquerito inquerito;
+  inquerito.familia_de_fonte = [responde](std::string_view alvo) {
+    return responde(nu::Especie::FamiliaDeFonte, alvo);
+  };
+  inquerito.bibliotheca = [responde](std::string_view alvo) {
+    return responde(nu::Especie::Bibliotheca, alvo);
+  };
+  inquerito.executavel = [responde](std::string_view alvo) {
+    return responde(nu::Especie::Executavel, alvo);
+  };
+  return inquerito;
+}
+
+}  // namespace
+
