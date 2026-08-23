@@ -74,6 +74,26 @@ FetchContent_MakeAvailable(doctest)
 enable_testing()
 add_subdirectory(testes)
 
+# ─── O núcleo de reprodução (issue #3) ──────────────────────────────────────
+# Entra por target_sources, e não na lista do add_library: assim esta issue
+# ACRESCENTA sem tocar linha alguma que outra lavra esteja a editar.
+target_sources(mysong_core PRIVATE src/nucleo/fila.cpp src/nucleo/tocador.cpp)
+
+# A libmpv vem do systema, achada por pkg-config e NUNCA por caminho chumbado.
+# Entra como SYSTEM para que os seus cabecalhos se calem sob -Wall -Wextra, do
+# mesmo modo que a FTXUI e o doctest. PRIVATE porque só motor.cpp a inclue: o
+# cabecalho do motor declara o punho adiante, e não o inclue.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+target_sources(mysong_core PRIVATE src/nucleo/motor.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::MPV)
+
+# A prova de som: linha de commando, e SEM FTXUI. Que não linke a janella é
+# parte do aceite, e por isso se lê aqui e se confirma com ldd.
+add_executable(toca_tom exemplos/toca_tom.cpp)
+target_compile_options(toca_tom PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(toca_tom PRIVATE mysong_core)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
