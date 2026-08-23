@@ -128,7 +128,9 @@ TEST_CASE("a seta é de uma só direcção, e nunca losango de duas pontas") {
   for (const al::Pedaco& pedaco : esquerda)
     CHECK(pedaco.texto.find(al::kPontaDextra) == std::string::npos);
   // O losango proscripto seria a ponta esquerda encostada na dextra.
-  for (std::size_t i = 1; i < esquerda.size(); ++i)
-    CHECK_FALSE(esquerda[i - 1].texto == al::kPontaEsquerda &&
-                esquerda[i].texto == al::kPontaDextra);
+  for (std::size_t i = 1; i < esquerda.size(); ++i) {
+    const bool encostadas = esquerda[i - 1].texto == al::kPontaEsquerda &&
+                            esquerda[i].texto == al::kPontaDextra;
+    CHECK_FALSE(encostadas);
+  }
 }
