@@ -61,6 +61,29 @@ A biblioteca de interface (FTXUI) e a de teste (doctest) NAO vem do gerenciador
 de pacotes: o CMake as busca por FetchContent, cada uma presa a uma etiqueta
 fixa. Logo, a primeira configuracao precisa de rede; as seguintes, nao.
 
+E as bibliotecas de systema, que o `pkg-config` acha e o CMake vai cobrando
+tarefa a tarefa conforme a obra cresce (audio, etiquetas, catalogo, espectro):
+
+| Biblioteca        | Versao aqui | Modulo pkg-config  | Pacote do apt        |
+|-------------------|-------------|--------------------|----------------------|
+| libmpv            | 2.2.0       | `mpv`              | `libmpv-dev`         |
+| taglib            | 1.13.1      | `taglib`           | `libtag1-dev`        |
+| sqlite3           | 3.45.1      | `sqlite3`          | `libsqlite3-dev`     |
+| libpipewire       | 1.0.5       | `libpipewire-0.3`  | `libpipewire-0.3-dev`|
+| fftw3             | 3.3.10      | `fftw3`            | `libfftw3-dev`       |
+| dbus-1            | 1.14.10     | `dbus-1`           | `libdbus-1-dev`      |
+| libcurl           | 8.5.0       | `libcurl`          | `libcurl4-openssl-dev`|
+| fontconfig        | 2.15.0      | `fontconfig`       | `libfontconfig-dev`  |
+
+Cada uma serve a uma feicao: `libmpv` toca, `taglib` le as etiquetas do
+arquivo, `sqlite3` guarda o catalogo, `libpipewire` fala com o servidor de som,
+`fftw3` transforma a onda em espectro, `dbus-1` publica o que toca para o
+resto da area de trabalho, `libcurl` busca na rede, `fontconfig` acha a fonte.
+
+Advertencia honesta: NESTE ponto do caminho o `CMakeLists.txt` ainda nao cobra
+nenhuma d'ellas, porque o binario so abre janella. Estao listadas para que quem
+prepara a maquina o faca uma vez, e nao oito vezes.
+
 ## Como se compila
 
 ```sh
