@@ -141,3 +141,36 @@ TEST_CASE("os glifos da fita são os pontos de codigo que a Nerd Font tem") {
   CHECK(al::kPontaDextra == "\xee\x82\xb0");
   CHECK(al::kPontaEsquerda == "\xee\x82\xb2");
 }
+
+TEST_CASE("o remate de cauda sahe em ponta, e fóra da conta do N menos um") {
+  const auto pedacos = fita_de(3).compor();
+  const al::Pedaco& remate = pedacos.back();
+  CHECK(remate.juncao);
+  CHECK(remate.cauda);
+  CHECK(remate.tinta == tk::glow_hot);  // o fundo do terceiro segmento
+  CHECK(remate.fundo == tk::transparent);
+  CHECK(internas(pedacos) == 2);
+  al::Fita rasa(al::Sentido::Dextra, false);
+  rasa.junta({"um", tk::v700}).junta({"dous", tk::data2});
+  const auto rasos = rasa.compor();
+  CHECK_FALSE(rasos.back().juncao);  // sem cauda, remata em aresta reta
+  CHECK(internas(rasos) == 1);
+}
+
+TEST_CASE("o enchimento fica um degrau rebaixado da orla") {
+  CHECK(al::rebaixar(tk::v500) == tk::v700);
+  CHECK(al::rebaixar(tk::v700) == tk::v900);
+  CHECK(al::rebaixar(tk::v900) == tk::v975);         // no fundo da rampa satura
+  CHECK(al::rebaixar(tk::v975) == tk::v975);
+  CHECK(al::rebaixar(tk::glow_hot) == tk::glow_hot);  // fóra da rampa, intacta
+}
+
+TEST_CASE("a côr veste-se em sequencia SGR de truecolor") {
+  CHECK(tk::tinta(tk::v500) == "\x1b[38;2;139;92;246m");
+  CHECK(tk::fundo_de(tk::v500) == "\x1b[48;2;139;92;246m");
+  CHECK(tk::repouso == "\x1b[0m");
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
