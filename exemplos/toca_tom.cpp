@@ -86,6 +86,38 @@ int main(int argc, char** argv) {
   for (int i = 1; i < argc; ++i) tocador.fila().junta(argv[i]);
   std::printf("fila com %zu faixa(s)\n", tocador.fila().tamanho());
 
+  if (!tocador.tocar_corrente()) {
+    std::fprintf(stderr, "a primeira faixa NÃO tocou\n");
+    return 3;
+  }
+  std::printf("ao=%s duracao=%s\n", motor.propriedade("current-ao").c_str(),
+              motor.propriedade("duration").c_str());
+
+  std::printf("[C2] o relogio anda\n");
+  const double antes_da_pausa = relogio(tocador, motor, 1500, "tocando");
+
+  std::printf("[C3] pausar congela o relogio\n");
+  if (!tocador.pausar()) {
+    std::fprintf(stderr, "pausar recusou\n");
+    return 4;
+  }
+  tocador.pulsa();
+  const double na_pausa = tocador.posicao();
+  dorme(1200);
+  tocador.pulsa();
+  std::printf("  pausado pos=%.2f e 1,2s depois pos=%.2f estado=%s\n", na_pausa,
+              tocador.posicao(),
+              std::string(nu::nome_do_estado(tocador.estado())).c_str());
+
+  std::printf("[C4] retomar destrava o relogio\n");
+  if (!tocador.retomar()) {
+    std::fprintf(stderr, "retomar recusou\n");
+    return 5;
+  }
+  const double depois = relogio(tocador, motor, 1000, "retomado");
+  std::printf("  resumo do relogio: antes=%.2f pausa=%.2f depois=%.2f\n",
+              antes_da_pausa, na_pausa, depois);
+
   return 0;
 }
 
