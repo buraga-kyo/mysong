@@ -43,6 +43,11 @@ target_compile_options(mysong PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong PRIVATE mysong_core
   ftxui::component ftxui::dom ftxui::screen)
 
+# Exemplo da fita arrowline: a peça que o olho do operador ha de julgar.
+add_executable(fita_arrowline exemplos/fita_arrowline.cpp)
+target_compile_options(fita_arrowline PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(fita_arrowline PRIVATE mysong_core)
+
 # doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
 FetchContent_Declare(doctest
   GIT_REPOSITORY https://github.com/doctest/doctest
