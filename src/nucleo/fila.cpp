@@ -40,6 +40,31 @@ std::string_view Fila::corrente() const noexcept {
   return faixas_[indice_];
 }
 
+// Os tres passos. Cada um verifica a borda ANTES de mover o indice, e por isso
+// a invariante nunca se quebra, nem num instante intermediario.
+bool Fila::proxima() noexcept {
+  if (faixas_.empty() || indice_ + 1 >= faixas_.size()) return false;
+  ++indice_;
+  return true;
+}
+
+bool Fila::anterior() noexcept {
+  if (faixas_.empty() || indice_ == 0) return false;
+  --indice_;
+  return true;
+}
+
+bool Fila::ir_para(std::size_t alvo) noexcept {
+  if (alvo >= faixas_.size()) return false;
+  indice_ = alvo;
+  return true;
+}
+
+void Fila::esvazia() noexcept {
+  faixas_.clear();
+  indice_ = 0;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
