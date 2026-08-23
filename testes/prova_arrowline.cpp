@@ -7,8 +7,11 @@
 // DOMÍNIO ......... a taboada de tokens e as fitas que aqui se armam.
 // CONTRA-DOMÍNIO .. o veredicto do doctest, e por elle o do ctest.
 // INVARIANTE ...... o que se afirma é a REGRA do systema de desenho, não a
-//                   apparencia: contagem de junções, herança de côr, e a
-//                   proscripção do losango de duas pontas.
+//                   apparencia: a contagem das junções, e a herança da côr nos
+//                   DOUS sentidos. Do losango de duas pontas não se lavra
+//                   asserção de ausencia, que sahiria vazia; a garantia é
+//                   ESTRUCTURAL, e o que se prova é a unicidade do glifo que a
+//                   sustenta.
 // Q.E.D. .......... provado o par tinta/fundo de cada junção, a continuidade
 //                   da fita deixa de depender do olho de quem a lê. O que o
 //                   olho ainda deve julgar — se a fonte resolve o glifo, se o
@@ -149,17 +152,29 @@ TEST_CASE("no sentido esquerda a côr do encaixe é a do segmento que elle abre"
   CHECK(p[5].texto == "tres");
 }
 
-TEST_CASE("a seta é de uma só direcção, e nunca losango de duas pontas") {
+TEST_CASE("a seta é de uma só direcção: nenhum pedaço traz a ponta opposta") {
   for (const al::Pedaco& pedaco : fita_de(4).compor())
     CHECK(pedaco.texto.find(al::kPontaEsquerda) == std::string::npos);
-  const auto esquerda = fita_de(4, al::Sentido::Esquerda).compor();
-  for (const al::Pedaco& pedaco : esquerda)
+  for (const al::Pedaco& pedaco : fita_de(4, al::Sentido::Esquerda).compor())
     CHECK(pedaco.texto.find(al::kPontaDextra) == std::string::npos);
-  // O losango proscripto seria a ponta esquerda encostada na dextra.
-  for (std::size_t i = 1; i < esquerda.size(); ++i) {
-    const bool encostadas = esquerda[i - 1].texto == al::kPontaEsquerda &&
-                            esquerda[i].texto == al::kPontaDextra;
-    CHECK_FALSE(encostadas);
+}
+
+TEST_CASE("o losango não se exprime: a fita tem um só glifo de encaixe") {
+  // A garantia contra o losango é ESTRUCTURAL, e não asserção de ausencia: a
+  // fita elege UM glifo ao nascer, pelo seu sentido, e serve-se d'elle em toda
+  // junção, remate inclusive. Não havendo por onde entrar um segundo, as duas
+  // pontas não se encostam. Prova-se pois a unicidade, que é o que a obra pode
+  // perder num descuido — eleger o glifo por junção, e não por fita.
+  for (const al::Sentido sentido : {al::Sentido::Dextra, al::Sentido::Esquerda}) {
+    const std::string_view eleito =
+        sentido == al::Sentido::Dextra ? al::kPontaDextra : al::kPontaEsquerda;
+    std::size_t encaixes = 0;
+    for (const al::Pedaco& pedaco : fita_de(5, sentido).compor()) {
+      if (!pedaco.juncao) continue;
+      CHECK(pedaco.texto == eleito);
+      ++encaixes;
+    }
+    CHECK(encaixes == 5);  // quatro internas, e o remate
   }
 }
 
