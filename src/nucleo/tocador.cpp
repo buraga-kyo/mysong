@@ -31,6 +31,24 @@ void Tocador::escuta(Ouvinte ouvinte) {
   if (ouvinte) ouvintes_.push_back(std::move(ouvinte));
 }
 
+// O pregão. Leva o retracto inteiro, e lê o estado em vez de o adivinhar.
+void Tocador::annuncia(Aviso aviso, std::string razao) {
+  Evento evento;
+  evento.aviso = aviso;
+  evento.estado = estado_;
+  evento.faixa = std::string(fila_.corrente());
+  evento.posicao = ultima_posicao_;
+  evento.razao = std::move(razao);
+  for (const Ouvinte& ouvinte : ouvintes_) ouvinte(evento);
+}
+
+// Só annuncia se de facto mudou, e SEMPRE depois de assentar.
+void Tocador::assenta_estado(Estado novo) {
+  if (novo == estado_) return;
+  estado_ = novo;
+  annuncia(Aviso::EstadoMudou);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
