@@ -134,3 +134,10 @@ TEST_CASE("a seta é de uma só direcção, e nunca losango de duas pontas") {
     CHECK_FALSE(encostadas);
   }
 }
+
+TEST_CASE("os glifos da fita são os pontos de codigo que a Nerd Font tem") {
+  CHECK(al::kPontaDextra.size() == 3);  // U+E0B0, em tres bytes de UTF-8
+  CHECK(al::kPontaEsquerda.size() == 3);
+  CHECK(al::kPontaDextra == "\xee\x82\xb0");
+  CHECK(al::kPontaEsquerda == "\xee\x82\xb2");
+}

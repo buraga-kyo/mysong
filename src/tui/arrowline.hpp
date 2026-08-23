@@ -44,8 +44,11 @@ namespace mysong::tui {
 
 // Os glifos da fita, da JetBrainsMono Nerd Font. U+E0B0 aponta á dextra;
 // U+E0B2, á esquerda. NUNCA os dous no mesmo sentido de fita.
-inline constexpr std::string_view kPontaDextra = "";
-inline constexpr std::string_view kPontaEsquerda = "";
+// Escrevem-se por PONTO DE CODIGO, e não pelo glifo cru: moram na area de uso
+// privado, onde editor, tubo e terminal os engolem sem dar signal, e o que
+// resta é cadeia vazia — falha que passaria calada por toda a fita.
+inline constexpr std::string_view kPontaDextra = "\ue0b0";
+inline constexpr std::string_view kPontaEsquerda = "\ue0b2";
 
 // O sentido em que a fita aponta. Um só por fita: misturar os dous lavraria o
 // losango que a regra (a) proscreve.
