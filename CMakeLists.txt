@@ -7,10 +7,16 @@
 #                   executavel) e mysong_testes (a bateria de provas).
 # INVARIANTE ...... os avisos -Wall -Wextra incidem SO nos alvos desta Casa, por
 #                   target_compile_options e nunca por flag global: terceiros
-#                   entram como SYSTEM e calam-se. Toda dependencia vem presa a
-#                   ETIQUETA fixa, jamais a um ramo.
+#                   entram como SYSTEM e calam-se. Toda dependencia de
+#                   FetchContent vem presa a ETIQUETA fixa, jamais a um ramo.
 # Q.E.D. .......... quem clona e roda os dois commandos do README obtem o mesmo
-#                   binario que o auctor, sem pacote do systema a installar.
+#                   binario que o auctor. Duas classes de dependencia, e a
+#                   fronteira e firme: as de INTERFACE e de PROVA (FTXUI,
+#                   doctest) vem por FetchContent em etiqueta fixa e pacote
+#                   algum pedem ao systema; as de SYSTEMA vem por pkg-config e
+#                   pedem, e sao a libmpv e o fontconfig, mais o que a obra
+#                   vier a cobrar. A taboada do README diz quaes, e de que
+#                   pacote do apt cada uma sahe.
 # ══════════════════════════════════════════════════════════════════════════
 cmake_minimum_required(VERSION 3.25)
 project(mysong VERSION 0.1.0 LANGUAGES CXX)
@@ -50,10 +56,10 @@ target_link_libraries(fita_arrowline PRIVATE mysong_core)
 
 # ── A SONDA dos requisitos. Acrescenta-se por target_sources e por uma segunda
 # chamada de target_link_libraries, e NÃO na linha do add_library nem na lista de
-# ligação que já existe: tarefas irmãs mexem neste mesmo arquivo agora, e linha
-# NOVA não collide onde linha alterada collidiria. Fontconfig é o unico pacote de
-# systema que este alvo exige; o dl vem para o dlopen da libmpv, que se carrega
-# em tempo de execução justamente para não morrer antes do main sem ella.
+# ligação que já existe: é regra d'esta Casa que lavra nova ACRESCENTE linha em
+# vez de alterar linha alheia, porque linha nova não collide onde linha alterada
+# collidiria. D'esta lavra vem o fontconfig, com que a sonda acha a fonte; e vem
+# o dl, com que ella pergunta por dlopen pela presença da libmpv.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FONTCONFIG REQUIRED IMPORTED_TARGET fontconfig)
 target_sources(mysong_core PRIVATE src/nucleo/sonda.cpp src/tui/tela_requisitos.cpp)
@@ -75,8 +81,8 @@ enable_testing()
 add_subdirectory(testes)
 
 # ─── O núcleo de reprodução (issue #3) ──────────────────────────────────────
-# Entra por target_sources, e não na lista do add_library: assim esta issue
-# ACRESCENTA sem tocar linha alguma que outra lavra esteja a editar.
+# Entra por target_sources, e não na lista do add_library, pela mesma regra da
+# sonda: ACRESCENTAR linha, e não alterar linha que outra lavra possa editar.
 target_sources(mysong_core PRIVATE src/nucleo/fila.cpp src/nucleo/tocador.cpp)
 
 # A libmpv vem do systema, achada por pkg-config e NUNCA por caminho chumbado.
