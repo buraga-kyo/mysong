@@ -60,4 +60,34 @@ nu::Inquerito faltando(std::initializer_list<std::string_view> chaves) {
   return inquerito;
 }
 
+// pintar — o écran de papel: largura escolhida, altura quanto o quadro pedir.
+std::string pintar(const nu::Relatorio& relatorio, int largura) {
+  ftxui::Element quadro = tl::elemento_dos_requisitos(relatorio);
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(largura), ftxui::Dimension::Fit(quadro));
+  ftxui::Render(ecran, quadro);
+  return ecran.ToString();
+}
+
+// larguras_visiveis — conta as COLLUNAS de cada linha, e não os bytes: as
+// sequencias de escape não occupam célula, e caractere acentuado gasta dous
+// bytes numa collunha só. Contar bytes daria falso alarme em toda linha que
+// trouxesse um "ç", que são quasi todas nesta casa.
+std::vector<std::size_t> larguras_visiveis(const std::string& pintura) {
+  std::vector<std::size_t> larguras{0};
+  for (std::size_t passo = 0; passo < pintura.size(); ++passo) {
+    const unsigned char octeto = static_cast<unsigned char>(pintura[passo]);
+    if (octeto == 0x1b) {  // salta a sequencia de escape até o seu remate
+      while (passo < pintura.size() && pintura[passo] != 'm') ++passo;
+      continue;
+    }
+    if (octeto == '\n') {
+      larguras.push_back(0);
+      continue;
+    }
+    if ((octeto & 0xc0) != 0x80) ++larguras.back();  // não é continuação
+  }
+  return larguras;
+}
+
 }  // namespace
