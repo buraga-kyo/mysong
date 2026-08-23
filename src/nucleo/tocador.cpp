@@ -109,18 +109,25 @@ int Tocador::volume() const noexcept { return volume_; }
 double Tocador::posicao() const { return motor_.posicao(); }
 double Tocador::duracao() const { return motor_.duracao(); }
 
-// Uma batida: drena o motor, annuncia o que andou, e assenta o estado que o
-// motor de facto tem. A ordem importa: a posição sobe antes do pregão, para
-// que o retracto que sahe já traga a posição nova.
+// Uma batida: drena o motor, colhe o que mudou, assenta AMBOS, e só então
+// annuncia. Assentar ambos antes de qualquer pregão é o que cumpre a
+// invariante do cabecalho: ao fim natural da faixa a posição vae a zero e o
+// estado vae a Parado na MESMA batida, e um pregão emittido pelo meio levaria
+// metade do retracto novo e metade do velho, que é composto que nunca foi
+// verdade. Assentar o estado primeiro não bastaria: o EstadoMudou sahiria com
+// a posição velha, que é o mesmo defeito virado do outro lado.
 void Tocador::pulsa() {
   motor_.bombear();
   const Estado visto = motor_.estado();
   const double agora = motor_.posicao();
-  if (agora != ultima_posicao_) {
-    ultima_posicao_ = agora;
-    annuncia(Aviso::PosicaoAndou);
-  }
-  assenta_estado(visto);
+  const bool mudou_estado = visto != estado_;
+  const bool andou = agora != ultima_posicao_;
+
+  estado_ = visto;
+  ultima_posicao_ = agora;
+
+  if (mudou_estado) annuncia(Aviso::EstadoMudou);
+  if (andou) annuncia(Aviso::PosicaoAndou);
 }
 
 }  // namespace mysong::nucleo
