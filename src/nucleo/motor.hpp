@@ -30,8 +30,36 @@ namespace mysong::nucleo {
 // O estado do motor. Tres, e não mais: quem não toca nem pausa, está parado.
 enum class Estado { Parado, Tocando, Pausado };
 
-// O nome do estado, para relatorio de prova e para olho humano.
-std::string_view nome_do_estado(Estado estado) noexcept;
+// O nome do estado, para relatorio de prova e para olho humano. Inline, e não
+// em unidade de traducção: assim a bateria o lê sem linkar a libmpv, que é
+// quem mora no motor.cpp.
+inline std::string_view nome_do_estado(Estado estado) noexcept {
+  switch (estado) {
+    case Estado::Tocando: return "Tocando";
+    case Estado::Pausado: return "Pausado";
+    case Estado::Parado:  break;
+  }
+  return "Parado";
+}
+
+// O APARO das bordas, em fonte UNICA. Ordem de operador humano fóra de faixa é
+// rotina e não catastrophe: apara-se, e não se ergue excepção, porque erguer
+// obrigaria toda tecla de toda tela futura a envolver-se em try.
+inline int aparar_volume(int porcento) noexcept {
+  if (porcento < 0) return 0;
+  if (porcento > 100) return 100;
+  return porcento;
+}
+
+// Buscar além do fim apara-se ao fim menos uma folga, para que o alvo caia
+// DENTRO do arquivo: mandar ao mpv um alvo fóra d'elle é pedir-lhe o fim da
+// faixa, que é resposta differente da que o operador pediu.
+inline double aparar_busca(double alvo, double duracao) noexcept {
+  const double folga = 0.05;
+  if (alvo < 0.0) return 0.0;
+  if (duracao > folga && alvo > duracao - folga) return duracao - folga;
+  return alvo;
+}
 
 // O que se annuncia a quem escuta. Quatro avisos, e nenhum d'elles carrega
 // quem os ouve: o nucleo emitte ao vento, e quem quiser recolhe.
