@@ -59,6 +59,11 @@ FetchContent_MakeAvailable(doctest)
 enable_testing()
 add_subdirectory(testes)
 
+# ─── O núcleo de reprodução (issue #3) ──────────────────────────────────────
+# Entra por target_sources, e não na lista do add_library: assim esta issue
+# ACRESCENTA sem tocar linha alguma que outra lavra esteja a editar.
+target_sources(mysong_core PRIVATE src/nucleo/fila.cpp)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
