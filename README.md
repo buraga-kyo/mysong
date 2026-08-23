@@ -13,7 +13,7 @@ vem nas tarefas seguintes.
 | Peca              | Versao minima | Observacao                              |
 |-------------------|---------------|------------------------------------------|
 | Compilador C++17  | GCC 9 / Clang 10 | Verificado com GCC 13.3.0             |
-| CMake             | 3.20          | Verificado com 3.28.3                    |
+| CMake             | 3.25          | Verificado com 3.28.3                    |
 | Git               | qualquer      | O CMake busca as dependencias por ele    |
 | Rede              | so na 1a vez  | FetchContent baixa FTXUI e doctest       |
 
