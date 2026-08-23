@@ -65,6 +65,34 @@ Relatorio sondar(const Inquerito& inquerito) {
   return relatorio;
 }
 
+bool Relatorio::ha_falta() const {
+  for (const Estado& estado : estados)
+    if (!estado.presente) return true;
+  return false;
+}
+
+// ha_impedimento — a pergunta que decide se o programa abre. Aviso não conta
+// aqui, e impedimento conta ainda que venha acompanhado de avisos.
+bool Relatorio::ha_impedimento() const {
+  for (const Estado& estado : estados)
+    if (!estado.presente &&
+        estado.requisito.gravidade == Gravidade::Impedimento)
+      return true;
+  return false;
+}
+
+// faltas — os impedimentos adeante dos avisos, cada grupo na ordem da taboa.
+// Duas passagens, e não ordenação: ordenar pediria comparador estavel para dar
+// exactamente este resultado, por mais palavras e menos evidencia.
+std::vector<Estado> Relatorio::faltas() const {
+  std::vector<Estado> colhidas;
+  for (const Gravidade gravidade : {Gravidade::Impedimento, Gravidade::Aviso})
+    for (const Estado& estado : estados)
+      if (!estado.presente && estado.requisito.gravidade == gravidade)
+        colhidas.push_back(estado);
+  return colhidas;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
