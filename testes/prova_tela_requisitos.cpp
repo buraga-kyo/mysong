@@ -130,3 +130,36 @@ TEST_CASE("não havendo impedimento, o quadro não pede tecla alguma") {
   CHECK(com.find("tecle") != std::string::npos);
   CHECK(sem.find("tecle") == std::string::npos);
 }
+
+// O LIMITE da sonda ha de estar dito nos DOUS logares, e não em um: quem lê o
+// quadro e quem lê o diagnostico merecem a mesma verdade.
+TEST_CASE("o limite da sonda vem declarado no quadro pintado") {
+  const nu::Relatorio relatorio = nu::sondar(faltando({"fonte"}));
+  const std::string pintura = pintar(relatorio, 100);
+  CHECK(pintura.find("emulador") != std::string::npos);
+  CHECK(pintura.find("installada no systema") != std::string::npos);
+}
+
+TEST_CASE("o limite da sonda vem declarado no relatorio em texto") {
+  const nu::Relatorio relatorio = nu::sondar(faltando({}));
+  const std::string texto = tl::texto_do_relatorio(relatorio);
+  CHECK(texto.find(std::string(tl::kLimiteDaSonda)) != std::string::npos);
+}
+
+TEST_CASE("o relatorio em texto diz todos os requisitos, presentes inclusos") {
+  const std::string texto = tl::texto_do_relatorio(nu::sondar(faltando({})));
+  for (const nu::Requisito& requisito : nu::requisitos())
+    CHECK(texto.find(std::string(requisito.nome)) != std::string::npos);
+  CHECK(texto.find("presente") != std::string::npos);
+  CHECK(texto.find("FALTA") == std::string::npos);
+}
+
+// O texto do diagnostico é PURO: quem o redirija a arquivo não ha de encontrar
+// escape algum, nem tela alternativa, nem côr.
+TEST_CASE("o relatorio em texto não traz sequencia de escape alguma") {
+  const std::string texto =
+      tl::texto_do_relatorio(nu::sondar(faltando({"libmpv", "chafa"})));
+  CHECK(texto.find('\x1b') == std::string::npos);
+  CHECK(texto.find("FALTA") != std::string::npos);
+  CHECK(texto.find("remedio") != std::string::npos);
+}
