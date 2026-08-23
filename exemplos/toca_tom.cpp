@@ -129,14 +129,6 @@ int main(int argc, char** argv) {
   tocador.pulsa();
   std::printf("  apoz buscar(3.0) pos=%.2f\n", tocador.posicao());
 
-  std::printf("[C5b] buscar além do fim apara-se, e não estoura\n");
-  tocador.buscar(999.0);
-  dorme(400);
-  tocador.pulsa();
-  std::printf("  apoz buscar(999.0) pos=%.2f dur=%.2f estado=%s\n",
-              tocador.posicao(), tocador.duracao(),
-              std::string(nu::nome_do_estado(tocador.estado())).c_str());
-
   std::printf("[C6] o volume do MOTOR se move, e o do systema fica\n");
   for (const int pedido : {100, 40, 80, 140, -5}) {
     tocador.volume(pedido);
@@ -157,6 +149,14 @@ int main(int argc, char** argv) {
   }
   std::printf("  voltei ao inicio: anterior() recusa, faixa=%s\n",
               std::string(tocador.fila().corrente()).c_str());
+
+  std::printf("[C5b] buscar além do fim apara-se, e não estoura\n");
+  tocador.buscar(999.0);
+  dorme(400);
+  tocador.pulsa();
+  std::printf("  apoz buscar(999.0) pos=%.2f dur=%.2f estado=%s\n",
+              tocador.posicao(), tocador.duracao(),
+              std::string(nu::nome_do_estado(tocador.estado())).c_str());
 
   std::printf("[C7] playlist-count do mpv ao fim de tudo: %s\n",
               motor.propriedade("playlist-count").c_str());
