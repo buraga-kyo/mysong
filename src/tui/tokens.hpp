@@ -117,4 +117,35 @@ constexpr Triade rgb(std::string_view hex) {
           static_cast<unsigned char>(octeto(hex[4], hex[5]))};
 }
 
+// mistura — resolve a opacidade em côr OPACA, compondo `frente` sobre um
+// `fundo` CONHECIDO. É o analogo terminal de palette.a(hex, alpha): visto que
+// o SGR sómente aceita a tríade, a côr de oito dígitos jamais sahe d'aqui.
+// Confina-se o alfa ao intervallo fechado [0,1], tal como na fonte.
+constexpr Triade mistura(std::string_view frente, std::string_view fundo,
+                         double alfa) {
+  alfa = alfa < 0.0 ? 0.0 : (alfa > 1.0 ? 1.0 : alfa);
+  const Triade f = rgb(frente), t = rgb(fundo);
+  const auto pesa = [&](unsigned char a, unsigned char b) {
+    return static_cast<unsigned char>(a * alfa + b * (1.0 - alfa) + 0.5);
+  };
+  return {pesa(f.r, t.r), pesa(f.g, t.g), pesa(f.b, t.b)};
+}
+
+// sgr — a sequencia de escape que veste a célula. O papel 38 é a TINTA, com
+// que se pinta o glifo; o 48 é o FUNDO, que é a sua cama; e o repouso desfaz
+// ambos. As componentes escrevem-se em decimal, sem zero á esquerda.
+inline std::string sgr(int papel, Triade c) {
+  return "\x1b[" + std::to_string(papel) + ";2;" + std::to_string(c.r) + ';' +
+         std::to_string(c.g) + ';' + std::to_string(c.b) + 'm';
+}
+inline std::string tinta(std::string_view hex) { return sgr(38, rgb(hex)); }
+inline std::string fundo_de(std::string_view hex) { return sgr(48, rgb(hex)); }
+constexpr std::string_view repouso = "\x1b[0m";
+
 }  // namespace mysong::tui::tokens
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
+//   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
+//                                                          — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
