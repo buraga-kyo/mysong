@@ -34,13 +34,22 @@ namespace mysong::nucleo {
 // sómente duas: o Impedimento tranca a porta, o Aviso apenas a rannge.
 enum class Gravidade { Impedimento, Aviso };
 
+// A ESPECIE de consulta que apura o requisito: ha tres maneiras de perguntar
+// ao systema, e cada requisito diz qual d'ellas lhe cabe. Sem isto, sondar()
+// teria de conhecer cada requisito pelo nome, e acrescentar requisito novo
+// obrigaria a mexer na laçada em vez de mexer sómente na taboa.
+enum class Especie { FamiliaDeFonte, Bibliotheca, Executavel };
+
 // Um REQUISITO da obra. A `chave` é o nome curto, que serve de identidade á
-// prova e á forçagem; o `nome` é como se annuncia ao olho humano; o `remedio` é
-// UMA linha que diz o que se faz, e não um tractado de installação.
+// prova e á forçagem; o `nome` é como se annuncia ao olho humano; o `alvo` é o
+// que se procura de facto, e vai crú á consulta; e o `remedio` é UMA linha que
+// diz o que se faz, e não um tractado de installação.
 struct Requisito {
   std::string_view chave;
   std::string_view nome;
   Gravidade gravidade;
+  Especie especie;
+  std::string_view alvo;
   std::string_view remedio;
 };
 
