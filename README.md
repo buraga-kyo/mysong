@@ -84,6 +84,39 @@ Advertencia honesta: NESTE ponto do caminho o `CMakeLists.txt` ainda nao cobra
 nenhuma d'ellas, porque o binario so abre janella. Estao listadas para que quem
 prepara a maquina o faca uma vez, e nao oito vezes.
 
+### Obrigatorio: os programas que o mysong chama
+
+| Programa | Versao aqui | Para que                                        |
+|----------|-------------|-------------------------------------------------|
+| mpv      | 0.37.0      | Toca. E o motor de audio, chamado por libmpv    |
+
+### Opcional: o que so acrescenta feicao
+
+| Programa | Versao aqui | Feicao que traz, e o que se perde sem elle       |
+|----------|-------------|--------------------------------------------------|
+| chafa    | 1.19.0      | Desenha a capa do album. Sem elle, nao ha capa; o resto toca igual |
+| yt-dlp   | 2026.08.19  | Busca audio do YouTube. Sem elle, so o disco local |
+
+**Advertencia sobre o yt-dlp, e ella importa**: NAO o instale pelo apt. A
+versao empacotada e velha demais e quebra contra o YouTube, que muda o seu
+lado de fora sem avisar. O yt-dlp precisa de ser recente, e o caminho e:
+
+```sh
+uv tool install yt-dlp     # ou, se preferir: pipx install yt-dlp
+```
+
+### Tudo o que vem do apt, n'uma linha
+
+```sh
+sudo apt install build-essential cmake git libmpv-dev libtag1-dev \
+  libsqlite3-dev libpipewire-0.3-dev libfftw3-dev libdbus-1-dev \
+  libcurl4-openssl-dev libfontconfig-dev mpv chafa
+```
+
+Ficam de fora d'esta linha, de proposito: a fonte (que vem do release das Nerd
+Fonts, secao acima), o yt-dlp (que do apt sahe velho), e o FTXUI com o doctest
+(que o CMake busca por FetchContent).
+
 ## Como se compila
 
 ```sh
