@@ -104,6 +104,25 @@ bool Tocador::volume(int porcento) {
   return motor_.volume(volume_);
 }
 
+Estado Tocador::estado() const noexcept { return estado_; }
+int Tocador::volume() const noexcept { return volume_; }
+double Tocador::posicao() const { return motor_.posicao(); }
+double Tocador::duracao() const { return motor_.duracao(); }
+
+// Uma batida: drena o motor, annuncia o que andou, e assenta o estado que o
+// motor de facto tem. A ordem importa: a posição sobe antes do pregão, para
+// que o retracto que sahe já traga a posição nova.
+void Tocador::pulsa() {
+  motor_.bombear();
+  const Estado visto = motor_.estado();
+  const double agora = motor_.posicao();
+  if (agora != ultima_posicao_) {
+    ultima_posicao_ = agora;
+    annuncia(Aviso::PosicaoAndou);
+  }
+  assenta_estado(visto);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════

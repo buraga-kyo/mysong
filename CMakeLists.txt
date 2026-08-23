@@ -62,7 +62,7 @@ add_subdirectory(testes)
 # ─── O núcleo de reprodução (issue #3) ──────────────────────────────────────
 # Entra por target_sources, e não na lista do add_library: assim esta issue
 # ACRESCENTA sem tocar linha alguma que outra lavra esteja a editar.
-target_sources(mysong_core PRIVATE src/nucleo/fila.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/fila.cpp src/nucleo/tocador.cpp)
 
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
