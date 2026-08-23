@@ -113,3 +113,25 @@ TEST_CASE("a libmpv é impedimento, e nunca aviso") {
   CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Impedimento);
   CHECK(relatorio.ha_impedimento());
 }
+
+// Os avisos não trancam a porta, e é o que aqui se afirma: ha falta, e NÃO ha
+// impedimento. O programa que se recusasse a abrir por falta de chafa estaria
+// a negar musica a quem sómente ficaria sem ver capa.
+TEST_CASE("faltando o yt-dlp, ha aviso, e a porta não se tranca") {
+  const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"yt-dlp"}));
+  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  REQUIRE(faltas.size() == 1);
+  CHECK(faltas.front().requisito.chave == "yt-dlp");
+  CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Aviso);
+  CHECK(relatorio.ha_falta());
+  CHECK_FALSE(relatorio.ha_impedimento());
+}
+
+TEST_CASE("faltando o chafa, ha aviso, e a porta não se tranca") {
+  const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"chafa"}));
+  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  REQUIRE(faltas.size() == 1);
+  CHECK(faltas.front().requisito.chave == "chafa");
+  CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Aviso);
+  CHECK_FALSE(relatorio.ha_impedimento());
+}
