@@ -161,3 +161,39 @@ TEST_CASE("painel de uma célulla veste a base da rampa") {
     CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v700)));
   }
 }
+
+// A NEGATIVA, que é o coração do C3 e o que mais escapa a teste: mudando-se a
+// magnitude e conservando-se a LINHA, a tinta NÃO muda. É isto que estabelece
+// que o gradiente é do continente e não do conteudo. Ancorado na barra, a linha
+// 2 de uma barra de tres célullas seria o TOPO d'ella e sahiria em v400, ao
+// passo que a mesma linha 2 de uma barra de cinco sahiria a meia rampa, e as
+// duas asserções abaixo divergirião.
+//
+// As magnitudes: 0,899 pinta cinco célullas (a conta está no caso acima), e 0,5
+// pinta tres, a saber teto 40, 0,5 vezes 40 = 20 degraus, dous blocos cheios e
+// resto quatro. Ambas alcançam a linha 2, e é o que as torna comparaveis.
+TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
+  const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
+  const es::Quadro alta = es::compor(bandas_uniformes(0.899f), largura, 5);
+  const es::Quadro baixa = es::compor(bandas_uniformes(0.5f), largura, 5);
+
+  for (std::size_t c = 0; c < largura; ++c) {
+    // As duas pintam a linha 2 e a linha 4, e é premissa do caso.
+    REQUIRE(alta.em(2, c).pinta);
+    REQUIRE(baixa.em(2, c).pinta);
+    REQUIRE(baixa.em(4, c).pinta);
+
+    // A linha 2 veste a MESMA tinta nas duas, e a linha 4 tambem. Confere-se
+    // contra o alvo escripto de fóra, e ainda uma contra a outra.
+    CHECK(es::mesma_tinta(baixa.em(2, c).tinta,
+                          tk::mistura(tk::v400, tk::v700, 0.5)));
+    CHECK(es::mesma_tinta(alta.em(2, c).tinta, baixa.em(2, c).tinta));
+    CHECK(es::mesma_tinta(baixa.em(4, c).tinta, tk::rgb(tk::v700)));
+    CHECK(es::mesma_tinta(alta.em(4, c).tinta, baixa.em(4, c).tinta));
+
+    // E a barra BAIXA de facto pára antes do topo: não é que ella seja egual
+    // por ser egualmente alta. Sem esta linha o caso passaria por coincidencia.
+    CHECK(baixa.em(1, c).pinta == false);
+    CHECK(alta.em(1, c).pinta == true);
+  }
+}
