@@ -122,6 +122,49 @@ void Analisador::Punho::em_global(void* dados, std::uint32_t id, std::uint32_t,
   eu->elege();
 }
 
+void Analisador::Punho::em_global_removido(void* dados, std::uint32_t id) {
+  auto* eu = static_cast<Punho*>(dados);
+  if (eu == nullptr) return;
+  eu->nossos_clientes.erase(id);
+  eu->nos.erase(id);
+  eu->seriaes.erase(id);
+  // Cliente que sahe leva os seus nós. Sem esta varredura, o nó de um cliente
+  // morto ficaria na taboada para sempre, e a taboada crescia a cada faixa: o nó
+  // do mpv nasce e morre com cada uma d'ellas.
+  for (auto it = eu->nos.begin(); it != eu->nos.end();) {
+    if (it->second == id) {
+      eu->seriaes.erase(it->first);
+      it = eu->nos.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  eu->elege();
+}
+
+void Analisador::Punho::elege() {
+  // O de SERIAL MAIOR entre os nossos, que é o mais novo. Na troca de faixa o
+  // mpv ergue o nó novo ANTES de matar o velho, donde ha um instante com dous
+  // nós nossos no grafo; tomar o mais novo é tomar a faixa que começa, e não a
+  // que acaba.
+  std::uint32_t melhor = SPA_ID_INVALID;
+  unsigned long long maior = 0;
+  for (const auto& par : nos) {
+    if (nossos_clientes.count(par.second) == 0) continue;
+    const auto achado = seriaes.find(par.first);
+    const unsigned long long serial = achado != seriaes.end() ? achado->second : 0;
+    if (melhor == SPA_ID_INVALID || serial > maior) {
+      melhor = par.first;
+      maior = serial;
+    }
+  }
+  if (melhor == no_preso) return;
+  solta();
+  no_preso = melhor;
+  serial_preso = melhor != SPA_ID_INVALID ? maior : 0;
+  if (melhor != SPA_ID_INVALID) prende(serial_preso);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
