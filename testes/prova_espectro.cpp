@@ -92,3 +92,44 @@ TEST_CASE("o seno de 440 Hz acende a banda que o contém, e não as de longe") {
   CHECK(bandas[alvo] > 0.5f);
   CHECK(bandas[alvo] - longe.first >= VINTE_DECIBEIS);
 }
+
+TEST_CASE("o baixo com o agudo respondem cada um na sua banda") {
+  // 100 Hz é o caso do baixo, onde as bandas valem uma raia cada; 6000 Hz é o
+  // do agudo, onde a banda tem sessenta e cinco raias. As duas pontas hão de
+  // responder, e é aqui que a escolha do PICO em vez da media se prova: com
+  // media, a banda de 6000 sahiria dividida por sessenta e cinco.
+  for (const float hertz : {100.0f, 6000.0f}) {
+    nu::Espectro espectro(48000.0f, 2);
+    const auto bloco = seno(hertz, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT);
+    espectro.alimenta(bloco.data(), bloco.size());
+
+    const auto bandas = espectro.bandas();
+    const std::size_t alvo = espectro.banda_de(hertz);
+    REQUIRE(alvo < nu::QUANTAS_BANDAS);
+    const auto longe = maior_de_longe(bandas, alvo);
+    INFO("hertz=" << hertz << " alvo=" << alvo << " valor=" << bandas[alvo]
+                  << " maior de longe=" << longe.first << " na banda " << longe.second);
+    CHECK(bandas[alvo] > 0.5f);
+    CHECK(bandas[alvo] - longe.first >= VINTE_DECIBEIS);
+
+    // E o alvo é o MAIOR de todos, visinhos inclusive: sem esta linha, uma obra
+    // que acendesse a banda ao lado com mais força passaria no caso de cima.
+    for (std::size_t b = 0; b < nu::QUANTAS_BANDAS; ++b) {
+      if (b == alvo) continue;
+      CHECK(bandas[b] <= bandas[alvo]);
+    }
+  }
+}
+
+TEST_CASE("as bordas das bandas não decrescem, e nenhuma banda fica vazia") {
+  for (const float taxa : {44100.0f, 48000.0f, 96000.0f}) {
+    nu::Espectro espectro(taxa, 2);
+    const auto& bordas = espectro.bordas();
+    REQUIRE(bordas.size() == nu::QUANTAS_BANDAS + 1);
+    for (std::size_t b = 0; b < nu::QUANTAS_BANDAS; ++b) {
+      INFO("taxa=" << taxa << " banda=" << b << " de " << bordas[b] << " a " << bordas[b + 1]);
+      CHECK(bordas[b + 1] > bordas[b]);
+      CHECK(bordas[b + 1] <= nu::JANELA_DA_FFT / 2);
+    }
+  }
+}
