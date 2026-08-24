@@ -98,15 +98,15 @@ void Analisador::Punho::em_global(void* dados, std::uint32_t id, std::uint32_t,
     // nosso processo, donde o cliente que ella abre no PipeWire traz o nosso
     // proprio pid. É por aqui que a identidade entra, e não pelo nome «mpv»,
     // que na machina de quem ouve musica ha muitos.
-    const char* pid = ::spa_dict_lookup(props, PW_KEY_APP_PROCESS_ID);
+    const char* pid = spa_dict_lookup(props, PW_KEY_APP_PROCESS_ID);
     if (pid != nullptr &&
         std::strtoul(pid, nullptr, 10) == static_cast<unsigned long>(eu->nosso_pid)) {
       eu->nossos_clientes.insert(id);
     }
   } else if (std::strcmp(tipo, PW_TYPE_INTERFACE_Node) == 0) {
-    const char* classe = ::spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
-    const char* cliente = ::spa_dict_lookup(props, PW_KEY_CLIENT_ID);
-    const char* serial = ::spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL);
+    const char* classe = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+    const char* cliente = spa_dict_lookup(props, PW_KEY_CLIENT_ID);
+    const char* serial = spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL);
     if (classe == nullptr || cliente == nullptr) return;
     if (std::strcmp(classe, "Stream/Output/Audio") != 0) return;
     eu->nos[id] = static_cast<std::uint32_t>(std::strtoul(cliente, nullptr, 10));
@@ -167,7 +167,7 @@ void Analisador::Punho::elege() {
 
 void Analisador::Punho::solta() {
   if (fluxo == nullptr) return;
-  ::pw_stream_destroy(fluxo);
+  pw_stream_destroy(fluxo);
   fluxo = nullptr;
   // O ouvido morre com o fluxo que o pendurava: destruir o fluxo já o desliga,
   // e removê-lo de novo seria mexer em lista que já não existe.
@@ -206,13 +206,13 @@ void Analisador::Punho::prende(unsigned long long serial) {
   // MICROPHONE, que também se move com a musica (por vasamento acustico do fone
   // para o microphone) e portanto passa na prova ingenua e falha na do aceite.
   // Foi o defeito que mais perto passou de entrar n'esta obra.
-  ::pw_properties* props = ::pw_properties_new(
+  ::pw_properties* props = pw_properties_new(
       PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
       PW_KEY_MEDIA_ROLE, "Music", PW_KEY_NODE_NAME, "mysong-analisador",
       PW_KEY_TARGET_OBJECT, alvo, PW_KEY_STREAM_CAPTURE_SINK, "false", nullptr);
-  fluxo = ::pw_stream_new(nucleo, "mysong-analisador", props);
+  fluxo = pw_stream_new(nucleo, "mysong-analisador", props);
   if (fluxo == nullptr) return;
-  ::pw_stream_add_listener(fluxo, &ouvido_do_fluxo, &eventos_do_fluxo(), this);
+  pw_stream_add_listener(fluxo, &ouvido_do_fluxo, &eventos_do_fluxo(), this);
 
   // Pede-se F32 em 48000 e dous canaes, e o adaptador do PipeWire converte o que
   // o nó tiver: elle negociou S16LE n'este teste, e chegou F32 aqui. É por essa
@@ -227,8 +227,8 @@ void Analisador::Punho::prende(unsigned long long serial) {
   crua.position[0] = SPA_AUDIO_CHANNEL_FL;
   crua.position[1] = SPA_AUDIO_CHANNEL_FR;
   const ::spa_pod* params[1] = {
-      ::spa_format_audio_raw_build(&construtor, SPA_PARAM_EnumFormat, &crua)};
-  ::pw_stream_connect(fluxo, PW_DIRECTION_INPUT, PW_ID_ANY,
+      spa_format_audio_raw_build(&construtor, SPA_PARAM_EnumFormat, &crua)};
+  pw_stream_connect(fluxo, PW_DIRECTION_INPUT, PW_ID_ANY,
                       static_cast<::pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT |
                                                      PW_STREAM_FLAG_MAP_BUFFERS |
                                                      PW_STREAM_FLAG_RT_PROCESS),
@@ -241,10 +241,10 @@ void Analisador::Punho::em_formato(void* dados, std::uint32_t id,
   if (eu == nullptr || param == nullptr || id != SPA_PARAM_Format) return;
   std::uint32_t meio = 0;
   std::uint32_t submeio = 0;
-  if (::spa_format_parse(param, &meio, &submeio) < 0) return;
+  if (spa_format_parse(param, &meio, &submeio) < 0) return;
   if (meio != SPA_MEDIA_TYPE_audio || submeio != SPA_MEDIA_SUBTYPE_raw) return;
   ::spa_audio_info_raw crua {};
-  if (::spa_format_audio_raw_parse(param, &crua) < 0) return;
+  if (spa_format_audio_raw_parse(param, &crua) < 0) return;
   // A taxa com os canaes vêm do formato CONFIRMADO, e não do que se pediu: pedir
   // não é receber, e a conta que presumisse 48000 poria as bandas no logar
   // errado em qualquer placa que negociasse outra cousa.
@@ -263,7 +263,7 @@ void Analisador::Punho::engole(const float* amostras, std::size_t quantas) {
 void Analisador::Punho::em_processo(void* dados) {
   auto* eu = static_cast<Punho*>(dados);
   if (eu == nullptr || eu->fluxo == nullptr) return;
-  ::pw_buffer* pedaco = ::pw_stream_dequeue_buffer(eu->fluxo);
+  ::pw_buffer* pedaco = pw_stream_dequeue_buffer(eu->fluxo);
   if (pedaco == nullptr) return;  // sem buffer prompto não é erro: é espera
   const ::spa_buffer* buffer = pedaco->buffer;
   if (buffer != nullptr && buffer->n_datas > 0 && buffer->datas[0].data != nullptr &&
@@ -277,20 +277,20 @@ void Analisador::Punho::em_processo(void* dados) {
     const auto* amostras = reinterpret_cast<const float*>(base + desvio);
     eu->engole(amostras, bytes / sizeof(float));
   }
-  ::pw_stream_queue_buffer(eu->fluxo, pedaco);
+  pw_stream_queue_buffer(eu->fluxo, pedaco);
 }
 
 Analisador::Analisador() : punho_(new Punho) {
   punho_->nosso_pid = static_cast<std::uint32_t>(::getpid());
-  ::pw_init(nullptr, nullptr);
+  pw_init(nullptr, nullptr);
 
-  punho_->laco = ::pw_thread_loop_new("mysong-analisador", nullptr);
+  punho_->laco = pw_thread_loop_new("mysong-analisador", nullptr);
   if (punho_->laco == nullptr) {
     punho_->razao = "não erguí a linha de execução do PipeWire";
     return;
   }
   punho_->contexto =
-      ::pw_context_new(::pw_thread_loop_get_loop(punho_->laco), nullptr, 0);
+      pw_context_new(pw_thread_loop_get_loop(punho_->laco), nullptr, 0);
   if (punho_->contexto == nullptr) {
     punho_->razao = "não erguí o contexto do PipeWire";
     return;
@@ -298,36 +298,36 @@ Analisador::Analisador() : punho_(new Punho) {
   // Aqui, e sómente aqui, o PipeWire pode faltar de todo: serviço morto, socket
   // ausente, sessão sem audio. Nascer INERTE é o contracto, e não excepção:
   // bandas em zero, razão legivel, e o resto do programa a correr igual.
-  punho_->nucleo = ::pw_context_connect(punho_->contexto, nullptr, 0);
+  punho_->nucleo = pw_context_connect(punho_->contexto, nullptr, 0);
   if (punho_->nucleo == nullptr) {
     punho_->razao = "o PipeWire não respondeu: as bandas ficam em zero";
     return;
   }
-  punho_->registro = ::pw_core_get_registry(punho_->nucleo, PW_VERSION_REGISTRY, 0);
+  punho_->registro = pw_core_get_registry(punho_->nucleo, PW_VERSION_REGISTRY, 0);
   if (punho_->registro == nullptr) {
     punho_->razao = "não abri o registro do PipeWire";
     return;
   }
   // O ouvido se pendura ANTES de a linha começar a correr: pendurá-lo depois
   // seria correr a chance de perder o annuncio do nó que já existia.
-  ::pw_registry_add_listener(punho_->registro, &punho_->ouvido_do_registro,
+  pw_registry_add_listener(punho_->registro, &punho_->ouvido_do_registro,
                              &Punho::eventos_do_registro(), punho_.get());
-  ::pw_thread_loop_start(punho_->laco);
+  pw_thread_loop_start(punho_->laco);
 }
 
 Analisador::~Analisador() {
   // A ORDEM é a inversa da que se ergueu, e a linha de execução para PRIMEIRO:
   // destruir o fluxo com a linha a correr seria destruí-lo debaixo do callback
   // que n'esse instante o está a usar.
-  if (punho_->laco != nullptr) ::pw_thread_loop_stop(punho_->laco);
+  if (punho_->laco != nullptr) pw_thread_loop_stop(punho_->laco);
   punho_->solta();
   if (punho_->registro != nullptr) {
-    ::pw_proxy_destroy(reinterpret_cast<::pw_proxy*>(punho_->registro));
+    pw_proxy_destroy(reinterpret_cast<::pw_proxy*>(punho_->registro));
   }
-  if (punho_->nucleo != nullptr) ::pw_core_disconnect(punho_->nucleo);
-  if (punho_->contexto != nullptr) ::pw_context_destroy(punho_->contexto);
-  if (punho_->laco != nullptr) ::pw_thread_loop_destroy(punho_->laco);
-  ::pw_deinit();
+  if (punho_->nucleo != nullptr) pw_core_disconnect(punho_->nucleo);
+  if (punho_->contexto != nullptr) pw_context_destroy(punho_->contexto);
+  if (punho_->laco != nullptr) pw_thread_loop_destroy(punho_->laco);
+  pw_deinit();
 }
 
 bool Analisador::vivo() const noexcept { return punho_->nucleo != nullptr; }
