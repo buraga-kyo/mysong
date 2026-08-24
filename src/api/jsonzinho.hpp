@@ -135,6 +135,35 @@ struct Mensagem {
     return assento == pares.end() ? nullptr : &assento->second;
   }
 };
+namespace intimo {
+
+// O LEITOR: um cursor sobre a linha, e nada mais. Não copia a fonte.
+class Leitor {
+ public:
+  explicit Leitor(std::string_view fonte) noexcept : fonte_(fonte) {}
+
+  bool acabou() const noexcept { return i_ >= fonte_.size(); }
+  char olha() const noexcept { return acabou() ? '\0' : fonte_[i_]; }
+  char toma() noexcept { return acabou() ? '\0' : fonte_[i_++]; }
+
+  void come_brancos() noexcept {
+    while (!acabou() && (olha() == ' ' || olha() == '\t' || olha() == '\r' ||
+                         olha() == '\n'))
+      ++i_;
+  }
+
+  bool cadeia(std::string* fora, std::string* razao);
+  bool numero(double* fora, std::string* razao);
+
+ private:
+  bool quatro_hexas(unsigned* fora, std::string* razao);
+  bool ponto_de_codigo(std::string* fora, std::string* razao);
+
+  std::string_view fonte_;
+  std::size_t i_ = 0;
+};
+
+}  // namespace intimo
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
