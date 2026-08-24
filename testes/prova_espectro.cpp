@@ -255,3 +255,24 @@ class FonteFingida final : public nu::FonteDeBandas {
 
 }  // namespace
 
+TEST_CASE("o tocador sem fonte entrega zeros, e com fonte entrega o que ella diz") {
+  MotorSurdo motor;
+  nu::Tocador tocador(motor);
+
+  // Sem fonte: vinte e quatro zeros, e não vector vazio nem excepção. É o
+  // contracto que a issue pede enquanto não houver nó.
+  const auto sem = tocador.bandas();
+  CHECK(sem.size() == nu::QUANTAS_BANDAS);
+  for (const float valor : sem) CHECK(valor == 0.0f);
+
+  FonteFingida fonte;
+  tocador.observa(fonte);
+  const auto com = tocador.bandas();
+  REQUIRE(com.size() == nu::QUANTAS_BANDAS);
+  CHECK(com[0] == doctest::Approx(0.5f));
+
+  // E a batida do tocador chega á fonte: é o relogio de guarda a ser bobinado.
+  CHECK(fonte.batidas == 0);
+  tocador.pulsa();
+  CHECK(fonte.batidas == 1);
+}
