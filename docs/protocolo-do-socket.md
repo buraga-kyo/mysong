@@ -41,3 +41,23 @@ morto), a instância nova reclama o caminho e segue.
   em que as perguntas chegaram.
 - O cliente pode fechar a sua banda de escripta (meio fechamento) e seguir a ler; é o
   que o `nc` e qualquer canalisação fazem, e o servidor responde antes de fechar.
+## 3. A forma da resposta
+
+Toda resposta é um objecto JSON com a chave **`ok`** em primeiro logar.
+
+**Acerto:**
+
+```json
+{"ok":true, ...os campos do verbo...}
+```
+
+**Erro:**
+
+```json
+{"ok":false,"erro":"<codigo>","razao":"<texto para olho humano>"}
+```
+
+O **`erro`** é para a machina: compare-o, ramifique por elle. A **`razao`** é para o
+olho de quem depura, e pode mudar de redacção entre versões **sem** que a versão do
+protocolo suba. Não ramifique pela `razao`.
+
