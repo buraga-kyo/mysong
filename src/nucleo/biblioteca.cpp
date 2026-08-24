@@ -113,6 +113,36 @@ std::string saneia_utf8(std::string_view crua) {
   return limpa;
 }
 
+Biblioteca::Biblioteca(std::filesystem::path banco)
+    : banco_(std::move(banco)), punho_(abre_para_ler(banco_)) {}
+
+Biblioteca::~Biblioteca() { sqlite3_close(punho_); }
+
+bool Biblioteca::aberta() const noexcept { return punho_ != nullptr; }
+
+// Sem corre(), e de proposito: esta funcção é noexcept, e o corre() aloca
+// vector e std::function, que podem lançar. Aqui não se aloca nada.
+int Biblioteca::versao() const noexcept {
+  if (punho_ == nullptr) return 0;
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho_, "SELECT versao FROM esquema LIMIT 1;", -1,
+                         &passo, nullptr) != SQLITE_OK)
+    return 0;
+  const int achado =
+      sqlite3_step(passo) == SQLITE_ROW ? sqlite3_column_int(passo, 0) : 0;
+  sqlite3_finalize(passo);
+  return achado;
+}
+
+std::size_t Biblioteca::total() const {
+  std::size_t quantas = 0;
+  corre(punho_, "SELECT COUNT(*) FROM faixas;", {},
+        [&quantas](sqlite3_stmt* passo) {
+          quantas = static_cast<std::size_t>(sqlite3_column_int64(passo, 0));
+        });
+  return quantas;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
