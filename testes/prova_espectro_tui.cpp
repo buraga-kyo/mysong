@@ -311,3 +311,41 @@ TEST_CASE("banda alguma se perde, em largura alguma") {
     }
   }
 }
+
+// ── C7 · painel estreito funde por MÁXIMO ───────────────────────────────────
+TEST_CASE("em largura de uma collunha a fita mostra o pico do quadro") {
+  std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.10f);
+  bandas[17] = 0.80f;  // o pico, e mora longe das bordas
+
+  // O alvo recalcula-se com conta PROPRIA, e não se pergunta á obra: o máximo do
+  // vector afere-se por laço escripto aqui, e d'elle se derivam os degraus.
+  float pico = 0.0f;
+  for (const float valor : bandas)
+    if (valor > pico) pico = valor;
+  REQUIRE(pico == 0.80f);
+
+  const es::Quadro quadro = es::compor(bandas, 1, 5);
+  REQUIRE(quadro.largura == 1);
+  // Teto 40, 0,80 vezes 40 = 32 degraus, QUATRO blocos cheios e resto zero,
+  // d'onde quatro célullas: linhas 4, 3, 2 e 1 pintadas, e a linha 0 vazia.
+  CHECK(quadro.em(4, 0).glifo == kCheio);
+  CHECK(quadro.em(1, 0).glifo == kCheio);
+  CHECK(quadro.em(0, 0).pinta == false);
+}
+
+// Fundir por máximo e não amostrar: a banda vizinha ao pico é BAIXA, e ainda
+// assim a columna que as cobre ambas sahe pelo pico. Amostrando, sahiria pela
+// que o sorteio apanhasse, e metade das vezes o pico desappareceria.
+TEST_CASE("a columna que cobre pico e vale sahe pelo pico") {
+  std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
+  bandas[0] = 1.0f;   // pico na primeira banda
+  bandas[1] = 0.0f;   // vale imediatamente ao lado
+  // Largura 12 sobre 24 bandas: cada columna cobre DUAS bandas, d'onde a
+  // columna 0 cobre as bandas 0 e 1, que são justamente o pico e o vale.
+  const es::Quadro quadro = es::compor(bandas, 12, 4);
+  CHECK(quadro.em(0, 0).pinta);
+  CHECK(quadro.em(0, 0).glifo == kCheio);
+  // E a columna seguinte, que cobre as bandas 2 e 3, ambas em zero, fica no piso.
+  CHECK(quadro.em(3, 1).glifo == kUm);
+  CHECK(quadro.em(0, 1).pinta == false);
+}
