@@ -142,3 +142,46 @@ tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
 }
 
 }  // namespace
+
+Quadro compor(const std::vector<float>& bandas, std::size_t largura,
+              std::size_t altura, bool mudo) {
+  Quadro quadro;
+  quadro.largura = largura;
+  quadro.altura = altura;
+  if (largura == 0 || altura == 0) return quadro;  // painel sem célulla
+  quadro.celulas.assign(largura * altura, Celula{});
+
+  for (std::size_t c = 0; c < largura; ++c) {
+    const float valor = valor_da_columna(bandas, c, largura);
+    const int degraus = oitavos(valor, altura);
+    const std::size_t cheias =
+        static_cast<std::size_t>(degraus / DEGRAUS_POR_CELULA);
+    const int resto = degraus % DEGRAUS_POR_CELULA;
+
+    // O PISO DO SILENCIO: barra em zero desenha UMA célulla de um oitavo, em vez
+    // de nada. Para as barras «cahirem a zero e FICAREM em text_faint», como o
+    // aceite pede, ellas precisam de continuar na tela: barra de zero célullas
+    // não tem côr, e a promessa sahiria invacua. Um oitavo é o menor traço que o
+    // terminal tem, e faz linha de base, que é o que um EQ mostra em silencio.
+    const std::size_t desenhadas =
+        degraus == 0 ? 1u : cheias + (resto > 0 ? 1u : 0u);
+
+    for (std::size_t i = 0; i < desenhadas && i < altura; ++i) {
+      const int degrau = degraus == 0
+                             ? 1
+                             : (i < cheias ? DEGRAUS_POR_CELULA : resto);
+      Celula celula;
+      celula.glifo = glifo_do_degrau(degrau);
+      celula.tinta = tinta_da_celula(valor, mudo, i, altura);
+      celula.pinta = true;
+      // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
+      // BASE para cima, que é como os blocos crescem; a linha do quadro conta do
+      // TOPO para baixo, que é como o FTXUI pinta. D'onde a base é `altura - 1`.
+      // Trocar isto por `i` desenha a fita de cabeça para baixo, e o defeito
+      // passa em TODA prova de contagem, visto que o numero de célullas
+      // desenhadas não muda. Por isso a prova o afirma por INDICE de linha.
+      quadro.celulas[(altura - 1 - i) * largura + c] = std::move(celula);
+    }
+  }
+  return quadro;
+}
