@@ -1,3 +1,32 @@
+TEST_CASE("o escape nao deixa passar byte que parta o enquadramento") {
+  CHECK(escapa("as\"pas") == "as\\\"pas");
+  CHECK(escapa("contra\\barra") == "contra\\\\barra");
+  CHECK(escapa("linha\nnova") == "linha\\nnova");
+  CHECK(escapa("volta\rcarro") == "volta\\rcarro");
+  CHECK(escapa("tabu\tlado") == "tabu\\tlado");
+  CHECK(escapa(std::string("controle\x01""cru")) == "controle\\u0001cru");
+  // O UTF-8 passa INTACTO: o JSON o admitte cru, e transcreve-lo seria inflar a
+  // mensagem sem ganho algum de correcção.
+  CHECK(escapa("Coração") == "Coração");
+  CHECK(escapa("音楽") == "音楽");
+}
+
+// O caso que de facto guarda a invariante d'esta Casa. Nome de musica com
+// mudanca de linha crua é o que parte o enquadramento de uma-mensagem-por-linha,
+// e é o que o mundo tem e o dublê ingenuo nao teria.
+TEST_CASE("faixa hostil emittida continua a ser UMA linha") {
+  const std::string hostil = "01 - As \"Melhores\"\\ Canções\nde 音楽\x02.flac";
+  const std::string emittido = texto(hostil);
+  CHECK(emittido.find('\n') == std::string::npos);
+  CHECK(emittido.front() == '"');
+  CHECK(emittido.back() == '"');
+  // E o que sahiu volta a entrar: o escape e o parser são um do outro.
+  const Mensagem volta = analysa("{\"faixa\":" + emittido + "}");
+  REQUIRE(volta.valida);
+  REQUIRE(volta.acha("faixa") != nullptr);
+  CHECK(volta.acha("faixa")->typo == Typo::Texto);
+  CHECK(volta.acha("faixa")->texto == hostil);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DA PROVA DA API, BANDA PURA — testes/prova_api.cpp
 // ══════════════════════════════════════════════════════════════════════════
