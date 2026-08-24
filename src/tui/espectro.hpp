@@ -93,3 +93,35 @@ struct Celula {
 inline bool mesma_tinta(tokens::Triade a, tokens::Triade b) {
   return a.r == b.r && a.g == b.g && a.b == b.b;
 }
+
+// O QUADRO: a fita já resolvida em célullas. A LINHA 0 É O TOPO, e a base mora
+// em `altura - 1`: é a orientação do FTXUI, e não a dos blocos. Guarda-se em
+// vector chato, e não em vector de vectores, para que a fórma seja UMA asserção
+// (largura * altura) em vez de altura asserções.
+struct Quadro {
+  std::size_t largura = 0;
+  std::size_t altura = 0;
+  std::vector<Celula> celulas;
+
+  // em — a célulla da linha e da collunha. Fóra de limite devolve célulla vazia,
+  // e não estoura: assim a prova pode varrer largura + 1 sem armar guarda.
+  const Celula& em(std::size_t linha, std::size_t collunha) const;
+};
+
+// oitavos — a magnitude em DEGRAUS, e é a conta que se prova exacta. Devolve
+// inteiro em [0, DEGRAUS_POR_CELULA * altura]. Lixo entra e não sahe: negativa
+// vale zero, acima do teto vale o teto, e NÃO FINITA vale zero. Esta ultima
+// escreve-se ANTES do cingir, e de propósito: comparação com NaN é sempre
+// falsa, d'onde um cingir escripto ingenuamente deixaria o NaN passar ao floor.
+int oitavos(float magnitude, std::size_t altura);
+
+// glifo_do_degrau — o bloco de k oitavos, em U+2580 + k. Zero dá a célulla
+// vazia; acima de oito cinge-se a oito, que é o bloco cheio.
+std::string glifo_do_degrau(int degrau);
+
+// tinta_da_linha — o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
+// base para cima, de sorte que zero dá v700 EXACTO e `altura - 1` dá v400
+// EXACTO. Painel de uma célulla só dá v700, a base, que é d'onde a §7.4.9
+// ancora a rampa. Não recebe magnitude alguma, e é n'isto que o invariante
+// (iii) se torna estructural em vez de boa intenção.
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
