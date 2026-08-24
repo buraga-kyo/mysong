@@ -49,6 +49,32 @@ std::string erro(std::string_view codigo, const std::string& razao) {
   return obra.fecha();
 }
 
+// «recusado» é o NUCLEO a dizer não a ordem legitima: pausar o que está parado,
+// proxima na borda da fila. NÃO é a mensagem estar errada, que para isso ha
+// «argumento_invalido»; nem o verbo não existir, que para isso ha os outros dous.
+std::string recusado(std::string_view ordem) {
+  return erro("recusado", "o nucleo recusou a ordem \"" + std::string(ordem) +
+                              "\" no estado corrente");
+}
+
+std::string conforme(bool foi, std::string_view ordem) {
+  return foi ? feito() : recusado(ordem);
+}
+
+// O RETRACTO. Sete campos, e os sete SEMPRE: cliente que tenha de perguntar duas
+// vezes para armar uma tela é cliente que verá a segunda resposta não casar com a
+// primeira, porque entre as duas o mundo andou.
+std::string retracto(Tocador& tocador) {
+  Objecto obra = abre_acerto();
+  obra.par("estado", texto(nucleo::nome_do_estado(tocador.estado())));
+  obra.par("faixa", texto(tocador.fila().corrente()));
+  obra.par("posicao", duplo(tocador.posicao()));
+  obra.par("duracao", duplo(tocador.duracao()));
+  obra.par("volume", inteiro(tocador.volume()));
+  obra.par("indice", inteiro(static_cast<long long>(tocador.fila().indice())));
+  obra.par("tamanho", inteiro(static_cast<long long>(tocador.fila().tamanho())));
+  return obra.fecha();
+}
 }  // namespace
 }  // namespace mysong::api
 // ══════════════════════════════════════════════════════════════════════════
