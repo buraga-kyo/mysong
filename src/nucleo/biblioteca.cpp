@@ -143,6 +143,35 @@ std::size_t Biblioteca::total() const {
   return quantas;
 }
 
+namespace {
+
+// Uma linha de `faixas` em Faixa. A ordem das columnas é a do esquema, que é a
+// da estructura: quem mudar uma ha de mudar as tres, e a prova das consultas
+// morre em cima se alguem mudar sómente duas.
+Faixa faixa_da_linha(sqlite3_stmt* passo) {
+  Faixa faixa;
+  faixa.caminho = texto(passo, 0);
+  faixa.raiz = texto(passo, 1);
+  faixa.artista = texto(passo, 2);
+  faixa.album = texto(passo, 3);
+  faixa.titulo = texto(passo, 4);
+  faixa.numero = sqlite3_column_int(passo, 5);
+  faixa.anno = sqlite3_column_int(passo, 6);
+  faixa.duracao = sqlite3_column_int(passo, 7);
+  faixa.modificado = sqlite3_column_int64(passo, 8);
+  faixa.tamanho = sqlite3_column_int64(passo, 9);
+  faixa.deduzido = static_cast<unsigned>(sqlite3_column_int(passo, 10));
+  return faixa;
+}
+
+// As columnas, na ordem, para que as quatro consultas de faixa não as repitam
+// cada uma á sua maneira. Repetidas, uma d'ellas sahiria da ordem um dia.
+constexpr char kColumnas[] =
+    "caminho, raiz, artista, album, titulo, numero, anno, duracao,"
+    " modificado, tamanho, deduzido";
+
+}  // namespace
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
