@@ -197,3 +197,43 @@ TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
     CHECK(alta.em(1, c).pinta == true);
   }
 }
+
+// ── C4 · o quente, por COLUMNA e não por fita ───────────────────────────────
+// A vizinha fria entra na MESMA composição, de propósito: é o que distingue «o
+// quente é d'esta columna» de «o quente é da fita toda». Sem ella, uma obra que
+// pintasse tudo de glow_hot ao ver um pico passaria o caso.
+TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
+  std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
+  bandas[3] = 0.95f;  // acima do limiar: quente
+  bandas[4] = 0.40f;  // abaixo: fria, e no gradiente
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5);
+
+  // A columna 3: teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e resto 6,
+  // d'onde cinco célullas, todas em glow_hot, da base ao topo.
+  for (std::size_t l = 0; l < 5; ++l) {
+    REQUIRE(quadro.em(l, 3).pinta);
+    CHECK(es::mesma_tinta(quadro.em(l, 3).tinta, tk::rgb(tk::glow_hot)));
+  }
+
+  // A columna 4: 0,40 vezes 40 = 16 degraus, dous cheios e resto zero, d'onde
+  // duas célullas, e no GRADIENTE. A base em v700, e não em glow_hot.
+  REQUIRE(quadro.em(4, 4).pinta);
+  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::v700)));
+  CHECK_FALSE(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::glow_hot)));
+  CHECK(quadro.em(2, 4).pinta == false);
+}
+
+// O limiar pertence ao quente: afere-se nos DOUS lados d'elle, que é onde o
+// maior-ou-igual se distingue do maior.
+TEST_CASE("o limiar de noventa por cento pertence ao quente") {
+  const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
+  const es::Quadro no_limiar = es::compor(bandas_uniformes(0.90f), largura, 4);
+  const es::Quadro sob_limiar = es::compor(bandas_uniformes(0.899f), largura, 4);
+
+  REQUIRE(no_limiar.em(3, 0).pinta);
+  REQUIRE(sob_limiar.em(3, 0).pinta);
+  // Em cima do limiar: quente.
+  CHECK(es::mesma_tinta(no_limiar.em(3, 0).tinta, tk::rgb(tk::glow_hot)));
+  // Um milesimo abaixo: frio, e de volta á base da rampa.
+  CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta, tk::rgb(tk::v700)));
+}
