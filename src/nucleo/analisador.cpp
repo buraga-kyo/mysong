@@ -315,6 +315,35 @@ Analisador::Analisador() : punho_(new Punho) {
   ::pw_thread_loop_start(punho_->laco);
 }
 
+Analisador::~Analisador() {
+  // A ORDEM é a inversa da que se ergueu, e a linha de execução para PRIMEIRO:
+  // destruir o fluxo com a linha a correr seria destruí-lo debaixo do callback
+  // que n'esse instante o está a usar.
+  if (punho_->laco != nullptr) ::pw_thread_loop_stop(punho_->laco);
+  punho_->solta();
+  if (punho_->registro != nullptr) {
+    ::pw_proxy_destroy(reinterpret_cast<::pw_proxy*>(punho_->registro));
+  }
+  if (punho_->nucleo != nullptr) ::pw_core_disconnect(punho_->nucleo);
+  if (punho_->contexto != nullptr) ::pw_context_destroy(punho_->contexto);
+  if (punho_->laco != nullptr) ::pw_thread_loop_destroy(punho_->laco);
+  ::pw_deinit();
+}
+
+bool Analisador::vivo() const noexcept { return punho_->nucleo != nullptr; }
+
+const std::string& Analisador::razao() const noexcept { return punho_->razao; }
+
+unsigned long long Analisador::no() const noexcept { return punho_->serial_preso; }
+
+std::vector<float> Analisador::bandas() const {
+  // Devolve COPIA, e nunca ponteiro para dentro do que a outra linha escreve.
+  // Ponteiro seria o defeito que apparece longe da causa: a barra pintaria meio
+  // retracto velho com meio novo, e uma vez por hora.
+  std::lock_guard<std::mutex> tranca(punho_->boca);
+  return punho_->retracto;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
