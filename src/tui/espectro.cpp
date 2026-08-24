@@ -94,3 +94,22 @@ float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
 }
 
 }  // namespace
+
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
+  // Painel de uma célulla só: a rampa degenera, e vale a BASE. A §7.4.9 ancora
+  // a rampa na base («v700 na base»), e painel de uma célulla é todo base; o
+  // meio da rampa seria côr que a spec não nomeia em logar algum. E o desvio
+  // por zero fica excluido antes de se chegar á divisão.
+  if (altura <= 1) return tokens::rgb(tokens::v700);
+
+  const std::size_t alto = desde_a_base >= altura ? altura - 1 : desde_a_base;
+  const double t = static_cast<double>(alto) / static_cast<double>(altura - 1);
+
+  // A interpolação vae por tokens::mistura, e NÃO por arithmetica de côr nova.
+  // Ella compõe a frente sobre o fundo com o peso dado, que é exactamente a
+  // interpolação linear que se quer, e a bateria da issue #2 já a prova. D'onde
+  // t = 0 dá v700 EXACTO e t = 1 dá v400 EXACTO, sem arredondamento a explicar.
+  // Escrever aqui uma segunda conta de côr seria abrir um segundo caminho para o
+  // mesmo resultado, e dous caminhos divergem sem avisar.
+  return tokens::mistura(tokens::v400, tokens::v700, t);
+}
