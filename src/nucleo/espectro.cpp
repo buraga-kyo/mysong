@@ -149,6 +149,37 @@ void Espectro::um_quadro() {
   suaviza(alvo, 1000.0 * static_cast<double>(SALTO_DA_FFT) / taxa_);
 }
 
+void Espectro::suaviza(const std::vector<float>& alvo, double millesimos) {
+  const float sobe = coeficiente(TEMPO_DE_ATAQUE_MS, millesimos);
+  const float desce = coeficiente(TEMPO_DE_QUEDA_MS, millesimos);
+  for (std::size_t b = 0; b < QUANTAS_BANDAS; ++b) {
+    const float agora = bandas_[b];
+    const float destino = alvo[b];
+    // Dous tempos, e o que decide qual usar é o SENTIDO do movimento: subir é
+    // ataque, descer é queda. Um tempo só faria a barra piscar (se rapido) ou
+    // arrastar-se atraz da musica (se lento), e a issue nomeia o piscar.
+    const float coef = destino > agora ? sobe : desce;
+    float novo = agora + (destino - agora) * coef;
+    if (novo < LIMIAR_DE_ZERO) novo = 0.0f;
+    if (novo > 1.0f) novo = 1.0f;
+    bandas_[b] = novo;
+  }
+}
+
+void Espectro::esmorece(double millesimos) {
+  if (millesimos <= 0.0) return;
+  // O que sobejava é de ANTES do silencio: guardar aquellas amostras faria a
+  // barra ressuscitar com som velho quando o nó voltasse.
+  sobejo_.clear();
+  const std::vector<float> zero(QUANTAS_BANDAS, 0.0f);
+  suaviza(zero, millesimos);
+}
+
+std::vector<float> Espectro::bandas() const { return bandas_; }
+float Espectro::taxa() const noexcept { return taxa_; }
+int Espectro::canaes() const noexcept { return canaes_; }
+const std::vector<std::size_t>& Espectro::bordas() const noexcept { return bordas_; }
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
