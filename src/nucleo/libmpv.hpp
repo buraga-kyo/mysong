@@ -21,6 +21,7 @@
 
 #include <mpv/client.h>
 #include <string>
+#include <string_view>
 
 namespace mysong::nucleo {
 
@@ -39,6 +40,12 @@ struct TaboaDaLibmpv {
   MYSONG_LIBMPV_FUNCCOES(MYSONG_LIBMPV_CAMPO)
 #undef MYSONG_LIBMPV_CAMPO
 };
+
+// UMA tentativa de atar a taboa ao soname dado, sem guardar nada: é a forma que
+// a prova exercita, pois a de libmpv() faz-se uma vez por processo e não se
+// repete com soname diverso.
+bool carregar_taboa(std::string_view soname, TaboaDaLibmpv* taboa,
+                    std::string* razao);
 
 // A taboa, aberta no primeiro pedido e guardada para o processo todo. Nulo é
 // ausencia, e então *razao recebe o que faltou, pelo nome.
