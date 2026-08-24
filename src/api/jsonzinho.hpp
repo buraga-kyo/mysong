@@ -283,6 +283,30 @@ inline bool Leitor::numero(double* fora, std::string* razao) {
   *fora = valor;
   return true;
 }
+// LE_VALOR: despacha pelo primeiro caracter, que no JSON basta. Palavra que não
+// seja «true», «false» ou «null» recusa-se por nome, e não se lê adiante como se
+// fosse cousa.
+inline bool le_valor(Leitor* leitor, Valor* fora, std::string* razao) {
+  const char guia = leitor->olha();
+  if (guia == '"') {
+    fora->typo = Typo::Texto;
+    return leitor->cadeia(&fora->texto, razao);
+  }
+  if (guia == 't' || guia == 'f' || guia == 'n') {
+    std::string palavra;
+    while (leitor->olha() >= 'a' && leitor->olha() <= 'z') palavra += leitor->toma();
+    if (palavra == "true" || palavra == "false") {
+      fora->typo = Typo::Booleano;
+      fora->booleano = (palavra == "true");
+      return true;
+    }
+    if (palavra == "null") { fora->typo = Typo::Nulo; return true; }
+    *razao = "palavra que nao e valor d'este subconjunto: " + palavra;
+    return false;
+  }
+  fora->typo = Typo::Numero;
+  return leitor->numero(&fora->numero, razao);
+}
 }  // namespace intimo
 }  // namespace mysong::api
 
