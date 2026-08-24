@@ -391,3 +391,52 @@ TEST_CASE("painel sem largura ou sem altura dá quadro vazio") {
   CHECK(sem_bandas.celulas.size() == 18);
   CHECK(sem_bandas.em(2, 0).glifo == kUm);
 }
+
+namespace {
+
+// sem_escape — a linha despida do escape e do retorno de carro, que é o que
+// ella MOSTRA. Compara-se a linha INTEIRA contra a esperada, e a egualdade diz
+// posição e contagem n'uma asserção só, sem se contar codepoint algum.
+std::string sem_escape(const std::string& linha) {
+  std::string limpa;
+  for (std::size_t i = 0; i < linha.size(); ++i) {
+    const unsigned char oct = static_cast<unsigned char>(linha[i]);
+    if (oct == 0x1b) {  // o ++i do laço salta a letra que fecha a sequencia
+      while (i < linha.size() &&
+             !std::isalpha(static_cast<unsigned char>(linha[i])))
+        ++i;
+      continue;
+    }
+    if (oct == '\r') continue;
+    limpa += linha[i];
+  }
+  return limpa;
+}
+
+}  // namespace
+
+// ── C10 · o elemento pintado em écran de PAPEL ──────────────────────────────
+TEST_CASE("o elemento mostra a linha que o quadro manda") {
+  // Teto 32: 0,899 x 32 = 28,768, floor 28, tres cheios e resto 4, QUATRO
+  // célullas, que enchem o painel de alto a baixo.
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.899f), 10, 4);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(10),
+                                              ftxui::Dimension::Fixed(4));
+  ftxui::Render(ecran, es::elemento_do_espectro(quadro));
+
+  std::vector<std::string> linhas;
+  std::string corrente;
+  for (const char oct : ecran.ToString()) {
+    if (oct != '\n') { corrente += oct; continue; }
+    linhas.push_back(sem_escape(corrente));
+    corrente.clear();
+  }
+  if (!corrente.empty()) linhas.push_back(sem_escape(corrente));
+  REQUIRE(linhas.size() == 4);
+  for (std::size_t l = 0; l < 4; ++l) {
+    // Monta-se do QUADRO, glifo a glifo: nem estoura, nem deixa buraco.
+    std::string esperada;
+    for (std::size_t c = 0; c < 10; ++c) esperada += quadro.em(l, c).glifo;
+    CHECK(linhas[l] == esperada);
+  }
+}
