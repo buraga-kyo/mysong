@@ -276,3 +276,27 @@ TEST_CASE("o tocador sem fonte entrega zeros, e com fonte entrega o que ella diz
   tocador.pulsa();
   CHECK(fonte.batidas == 1);
 }
+
+TEST_CASE("o espaçamento logarithmico separa o baixo, que o linear juntaria") {
+  nu::Espectro espectro(48000.0f, 2);
+  const std::size_t cem = espectro.banda_de(100.0f);
+  const std::size_t la = espectro.banda_de(440.0f);
+  const std::size_t mil = espectro.banda_de(1000.0f);
+  const std::size_t seis_mil = espectro.banda_de(6000.0f);
+  INFO("100=" << cem << " 440=" << la << " 1000=" << mil << " 6000=" << seis_mil);
+
+  // Cada uma em sua banda, e na ordem. Com espaçamento LINEAR de 40 a 16000 as
+  // bandas valeriam 665 Hz cada, e 100, 440 e mesmo 660 Hz cahiriam TODAS na
+  // banda zero: o baixo, que é onde a musica se sente, virava uma columna só.
+  CHECK(cem < la);
+  CHECK(la < mil);
+  CHECK(mil < seis_mil);
+
+  // E metade das bandas fica abaixo de 1000 Hz, que é o que o ouvido pede: em
+  // linear, sómente uma ficaria.
+  std::size_t abaixo_de_mil = 0;
+  for (std::size_t b = 0; b < nu::QUANTAS_BANDAS; ++b) {
+    if (b <= mil) ++abaixo_de_mil;
+  }
+  CHECK(abaixo_de_mil >= 8);
+}
