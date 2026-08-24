@@ -124,6 +124,33 @@ std::string falta(std::string_view nome, std::string_view typo) {
                   std::string(typo));
 }
 }  // namespace
+std::string responde(Tocador& tocador, std::string_view linha) {
+  // Linha em branco não é pergunta e não é erro: nada se responde a ella. É o
+  // UNICO caminho d'esta obra que devolve cadeia vazia, e é por isso que o
+  // cliente que abra e feche sem falar não recebe erro algum.
+  if (linha.find_first_not_of(" \t\r\n") == std::string_view::npos) return {};
+
+  const Mensagem msg = analysa(linha);
+  if (!msg.valida) return erro("json_malformado", msg.razao);
+
+  const Valor* nome = argumento(msg, "verbo", Typo::Texto);
+  if (nome == nullptr)
+    return erro("verbo_ausente",
+                "a mensagem nao traz a chave \"verbo\" com valor de texto");
+  const std::string& verbo = nome->texto;
+
+  // O CONTRACTO, para que o outro lado o possa exigir antes de confiar.
+  if (verbo == "versao") {
+    Objecto obra = abre_acerto();
+    obra.par("obra", texto("mysong"));
+    obra.par("protocolo", inteiro(kVersaoDoProtocolo));
+    return obra.fecha();
+  }
+  if (verbo == "estado") return retracto(tocador);
+
+  return erro("verbo_desconhecido",
+              "esta Casa nao conhece o verbo \"" + verbo + "\"");
+}
 }  // namespace mysong::api
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
