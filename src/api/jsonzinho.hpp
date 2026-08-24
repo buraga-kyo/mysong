@@ -163,6 +163,41 @@ class Leitor {
   std::size_t i_ = 0;
 };
 
+// EM_UTF8: o ponto de codigo sahe nos mesmos bytes em que o resto da mensagem
+// já vae, e não numa segunda codificação: mensagem de duas codificações é
+// mensagem que o cliente há de adivinhar.
+inline void em_utf8(unsigned ponto, std::string* fora) {
+  if (ponto < 0x80u) {
+    *fora += static_cast<char>(ponto);
+  } else if (ponto < 0x800u) {
+    *fora += static_cast<char>(0xC0u | (ponto >> 6));
+    *fora += static_cast<char>(0x80u | (ponto & 0x3Fu));
+  } else if (ponto < 0x10000u) {
+    *fora += static_cast<char>(0xE0u | (ponto >> 12));
+    *fora += static_cast<char>(0x80u | ((ponto >> 6) & 0x3Fu));
+    *fora += static_cast<char>(0x80u | (ponto & 0x3Fu));
+  } else {
+    *fora += static_cast<char>(0xF0u | (ponto >> 18));
+    *fora += static_cast<char>(0x80u | ((ponto >> 12) & 0x3Fu));
+    *fora += static_cast<char>(0x80u | ((ponto >> 6) & 0x3Fu));
+    *fora += static_cast<char>(0x80u | (ponto & 0x3Fu));
+  }
+}
+
+inline bool Leitor::quatro_hexas(unsigned* fora, std::string* razao) {
+  unsigned somma = 0;
+  for (int casa = 0; casa < 4; ++casa) {
+    const char cifra = toma();
+    unsigned valor = 0;
+    if (cifra >= '0' && cifra <= '9') valor = static_cast<unsigned>(cifra - '0');
+    else if (cifra >= 'a' && cifra <= 'f') valor = static_cast<unsigned>(cifra - 'a') + 10u;
+    else if (cifra >= 'A' && cifra <= 'F') valor = static_cast<unsigned>(cifra - 'A') + 10u;
+    else { *razao = "o escape \\u pede quatro cifras hexadecimaes"; return false; }
+    somma = (somma << 4) | valor;
+  }
+  *fora = somma;
+  return true;
+}
 }  // namespace intimo
 }  // namespace mysong::api
 
