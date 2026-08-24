@@ -91,6 +91,7 @@ int main(int argc, char** argv) {
   // linha impressa nunca é a mesma duas vezes por descuido de cadencia.
   const auto inicio = Relogio::now();
   double passado = 0.0;
+  double acabou_em = -1.0;  // negativo é «a faixa não acabou ainda»
   while (passado < segundos) {
     // O carimbo se toma AGORA, e não ao fim da volta passada: entre uma cousa e
     // outra ha uma pausa, e no caminho da reconexão ha uma de mil e duzentos
@@ -111,13 +112,18 @@ int main(int argc, char** argv) {
     // que o aceite manda provar. Vendo o estado deixar de tocar, torna-se a
     // tocar depois de uma pausa, e o serial impresso na columna «no» ha de ser
     // OUTRO: nó novo, preso sozinho, sem que esta corrida se reiniciasse.
-    if (tocador.fila().tamanho() > 0 && tocador.estado() != nu::Estado::Tocando &&
-        passado > 1.0 && passado + 3.0 < segundos) {
-      std::printf("a faixa acabou: as bandas hão de descer a zero, e torno a tocar\n");
-      dorme(1200);
-      tocador.pulsa();
-      std::printf("torno a tocar agora\n");
+    const bool toca = tocador.estado() == nu::Estado::Tocando;
+    if (!toca && tocador.fila().tamanho() > 0 && passado > 1.0 && acabou_em < 0.0) {
+      acabou_em = passado;
+      std::printf("a faixa acabou em t=%.2f: as bandas hão de descer a zero\n", acabou_em);
+    }
+    // Espera-se IMPRIMINDO, e não dormindo. Dormir aqui engoliria justamente os
+    // quadros da queda, que são os que o aceite manda ver; a espera passa a ser
+    // contada no proprio relogio da corrida.
+    if (acabou_em >= 0.0 && passado - acabou_em > 1.5 && passado + 2.0 < segundos) {
+      std::printf("torno a tocar em t=%.2f\n", passado);
       tocador.tocar_corrente();
+      acabou_em = -1.0;
     }
   }
   std::printf("corrida completa\n");
