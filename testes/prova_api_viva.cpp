@@ -199,6 +199,34 @@ TEST_CASE("duas mensagens numa leitura so produzem DUAS linhas, na ordem") {
   CHECK(depois[0].find("\"protocolo\":1") != std::string::npos);
 }
 
+// O caso que só existe por causa do MSG_NOSIGNAL. Sem elle, o send em descriptor cujo
+// par se fechou ergue SIGPIPE, e é o PROCESSO DA PROVA que morre: o caso não passa
+// por acidente, e o defeito não se esconde num CHECK que nunca correu.
+TEST_CASE("cliente que fecha de todo nao derruba o servidor, e o seguinte e servido") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  const std::string caminho = casa.dentro("mysong.sock");
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+  std::string razao;
+  auto servidor = Servidor::abrir(tocador, caminho, &razao);
+  REQUIRE_MESSAGE(servidor.has_value(), razao);
+
+  {
+    Cliente apressado(caminho);
+    REQUIRE(apressado.ligado());
+    apressado.manda("{\"verbo\":\"estado\"}\n");
+    apressado.fecha();  // fecha ANTES de o servidor ter batido
+  }
+  for (int volta = 0; volta < 5; ++volta) servidor->pulsa();
+
+  Cliente paciente(caminho);
+  REQUIRE(paciente.ligado());
+  paciente.manda("{\"verbo\":\"versao\"}\n");
+  const std::vector<std::string> linhas = paciente.colhe(*servidor, 1);
+  REQUIRE(linhas.size() == 1);
+  CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
