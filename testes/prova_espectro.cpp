@@ -99,6 +99,28 @@ struct Esperada {
 constexpr Esperada ESPERADAS_A_48K[] = {
     {100.0f, 2}, {440.0f, 9}, {1000.0f, 12}, {6000.0f, 20}};
 
+// A MESMA conta, feita AQUI, para as taxas que não são a d'esta machina, onde
+// não ha numero escripto á mão. Repete de proposito a formula logarithmica: quem
+// pergunta ao examinando não tem oraculo, tem echo. Não repete o aparo de
+// Nyquist, que nas taxas d'esta bateria nunca morde (16 kHz cabe folgado em
+// 44100); se algum dia morder, o oraculo discorda da obra e o caso accusa.
+std::size_t banda_esperada(float hertz, float taxa) {
+  const float largura = taxa / static_cast<float>(nu::JANELA_DA_FFT);
+  const auto raia = static_cast<std::size_t>(hertz / largura + 0.5f);
+  std::vector<std::size_t> bordas(nu::QUANTAS_BANDAS + 1, 0);
+  for (std::size_t b = 0; b <= nu::QUANTAS_BANDAS; ++b) {
+    const float parte = static_cast<float>(b) / static_cast<float>(nu::QUANTAS_BANDAS);
+    const float hz = nu::HERTZ_MINIMO *
+                     std::pow(nu::HERTZ_MAXIMO / nu::HERTZ_MINIMO, parte);
+    bordas[b] = static_cast<std::size_t>(hz / largura + 0.5f);
+    if (b > 0 && bordas[b] <= bordas[b - 1]) bordas[b] = bordas[b - 1] + 1;
+  }
+  for (std::size_t b = 0; b < nu::QUANTAS_BANDAS; ++b) {
+    if (raia >= bordas[b] && raia < bordas[b + 1]) return b;
+  }
+  return nu::QUANTAS_BANDAS;
+}
+
 constexpr float VINTE_DECIBEIS = 1.0f / 3.0f;
 
 }  // namespace
