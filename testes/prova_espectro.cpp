@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "nucleo/espectro.hpp"
+#include "nucleo/tocador.hpp"
 
 namespace {
 
@@ -224,3 +225,33 @@ TEST_CASE("taxa differente põe a mesma frequencia na mesma banda") {
     CHECK(bandas[alvo] - longe.first >= VINTE_DECIBEIS);
   }
 }
+
+namespace {
+
+// O motor SURDO: aceita toda ordem e nada toca. Existe aqui, e não na prova do
+// tocador, porque esta lavra não toca em arquivo de lavra alheia.
+class MotorSurdo final : public nu::Motor {
+ public:
+  bool tocar(const std::string&) override { return true; }
+  bool pausar() override { return true; }
+  bool retomar() override { return true; }
+  bool buscar(double) override { return true; }
+  bool volume(int) override { return true; }
+  double posicao() const override { return 0.0; }
+  double duracao() const override { return 0.0; }
+  nu::Estado estado() const override { return nu::Estado::Parado; }
+  void bombear() override {}
+};
+
+// A fonte FINGIDA: entrega o que se lhe puser, e conta as batidas que recebe.
+class FonteFingida final : public nu::FonteDeBandas {
+ public:
+  std::vector<float> bandas() const override { return valores; }
+  void pulsa() override { ++batidas; }
+
+  std::vector<float> valores = std::vector<float>(nu::QUANTAS_BANDAS, 0.5f);
+  mutable int batidas = 0;
+};
+
+}  // namespace
+
