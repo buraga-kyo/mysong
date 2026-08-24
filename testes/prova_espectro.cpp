@@ -175,3 +175,52 @@ TEST_CASE("a queda é mais lenta que o ataque, e desce sem saltar") {
   espectro.esmorece(1000.0);
   CHECK(espectro.bandas()[alvo] == 0.0f);
 }
+
+TEST_CASE("bloco de tamanho absurdo não estoura nem erra") {
+  nu::Espectro espectro(48000.0f, 2);
+  const std::vector<float> um(1, 0.5f);
+  const auto tres_janelas = seno(440.0f, 0.5f, 48000.0f, 3 * nu::JANELA_DA_FFT);
+
+  // Ponteiro nullo, zero amostras, e uma amostra só num fluxo de dous canaes:
+  // as tres cousas o PipeWire faz, e nenhuma d'ellas é erro.
+  espectro.alimenta(nullptr, 128);
+  espectro.alimenta(um.data(), 0);
+  espectro.alimenta(um.data(), 1);
+  for (const float valor : espectro.bandas()) CHECK(valor == 0.0f);
+
+  // Bloco de tres janelas produz varios quadros de uma vez, que é o caso do
+  // quantum grande. O alvo ha de acender do mesmo modo.
+  espectro.alimenta(tres_janelas.data(), tres_janelas.size());
+  const std::size_t alvo = espectro.banda_de(440.0f);
+  CHECK(espectro.bandas()[alvo] > 0.0f);
+}
+
+TEST_CASE("fluxo de um canal se mistura sem adiantar a musica") {
+  nu::Espectro espectro(48000.0f, 1);
+  REQUIRE(espectro.canaes() == 1);
+  const auto bloco = seno(440.0f, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT, 1);
+  espectro.alimenta(bloco.data(), bloco.size());
+  const std::size_t alvo = espectro.banda_de(440.0f);
+  const auto bandas = espectro.bandas();
+  const auto longe = maior_de_longe(bandas, alvo);
+  INFO("mono: alvo=" << alvo << " valor=" << bandas[alvo] << " longe=" << longe.first);
+  CHECK(bandas[alvo] > 0.5f);
+  CHECK(bandas[alvo] - longe.first >= VINTE_DECIBEIS);
+}
+
+TEST_CASE("taxa differente põe a mesma frequencia na mesma banda") {
+  // A prova de que a taxa não está chumbada: em 44100 a raia vale 21,5 Hz e em
+  // 96000 vale 46,9, e ainda assim 440 Hz ha de cahir na banda de 440 Hz.
+  for (const float taxa : {44100.0f, 96000.0f}) {
+    nu::Espectro espectro(taxa, 2);
+    const auto bloco = seno(440.0f, 0.5f, taxa, 14 * nu::SALTO_DA_FFT);
+    espectro.alimenta(bloco.data(), bloco.size());
+    const std::size_t alvo = espectro.banda_de(440.0f);
+    REQUIRE(alvo < nu::QUANTAS_BANDAS);
+    const auto bandas = espectro.bandas();
+    const auto longe = maior_de_longe(bandas, alvo);
+    INFO("taxa=" << taxa << " alvo=" << alvo << " valor=" << bandas[alvo]);
+    CHECK(bandas[alvo] > 0.5f);
+    CHECK(bandas[alvo] - longe.first >= VINTE_DECIBEIS);
+  }
+}
