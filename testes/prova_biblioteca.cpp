@@ -64,6 +64,25 @@ class Cova {
  private:
   std::filesystem::path caminho_;
 };
+
+// Uma faixa armada á mão. Os campos que a prova não afere levam valores que
+// variam com o numero, para que uma troca de columnas na gravação apparecesse
+// como valor trocado, e não como dous zeros que se parecem.
+nu::Faixa faz(const std::string& artista, const std::string& album,
+              const std::string& titulo, int numero) {
+  nu::Faixa faixa;
+  faixa.caminho = "/acervo/" + artista + "/" + album + "/" + titulo + ".mp3";
+  faixa.raiz = "/acervo";
+  faixa.artista = artista;
+  faixa.album = album;
+  faixa.titulo = titulo;
+  faixa.numero = numero;
+  faixa.anno = 1800 + numero;
+  faixa.duracao = 100 + numero;
+  faixa.modificado = 1000 + numero;
+  faixa.tamanho = 2000 + numero;
+  return faixa;
+}
 }  // namespace
 
 TEST_CASE("saneia_utf8 conserva o valido e troca o invalido") {
