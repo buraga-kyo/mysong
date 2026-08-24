@@ -44,6 +44,12 @@ target_sources(mysong_testes PRIVATE prova_espectro.cpp)
 # ─── Provas da taboa da libmpv (issue #28) ──────────────────────────────────
 # Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
 target_sources(mysong_testes PRIVATE prova_libmpv.cpp)
+# O caminho do binario da tela chega por definição, e a dependencia garante que
+# elle exista quando o caso correr: prova que lê binario ausente não se salta,
+# accusa. É o binario, e não este arquivo, o oraculo de fóra.
+add_dependencies(mysong_testes mysong)
+target_compile_definitions(mysong_testes PRIVATE
+  MYSONG_BINARIO="$<TARGET_FILE:mysong>")
 
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════

@@ -10,6 +10,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 
@@ -51,6 +52,43 @@ TEST_CASE("a forçagem da sonda nomeia a chave da libmpv") {
   CHECK(mysong::nucleo::nomeado_na_forcagem("libmpv"));
   ::unsetenv("MYSONG_SONDA_FORCA");
   CHECK_FALSE(mysong::nucleo::nomeado_na_forcagem("libmpv"));
+}
+
+namespace {
+
+// Colhe a sahida inteira do commando. LC_ALL=C porque as ferramentas do binutils
+// traduzem os seus rotulos, e prova que dependa do idioma da machina não é prova.
+// Sahida vazia é FALHA nomeada no caso, e nunca caso saltado.
+std::string colher(const std::string& commando) {
+  std::string colhido;
+  FILE* cano = ::popen(("LC_ALL=C " + commando + " 2>/dev/null").c_str(), "r");
+  if (cano == nullptr) return colhido;
+  char pedaco[512];
+  while (std::fgets(pedaco, sizeof pedaco, cano) != nullptr) colhido += pedaco;
+  ::pclose(cano);
+  return colhido;
+}
+
+}  // namespace
+
+// A PROVA DA LIGAÇÃO. Lê o BINÁRIO produzido, e nunca o CMakeLists nem a si
+// mesma: a bateria não linka como o binario linka, e é essa differença que a
+// issue #28 existe para apanhar. Duas metades, e ambas necessarias.
+TEST_CASE("o binario da tela traz o motor e NÃO liga a libmpv") {
+  const std::string binario(MYSONG_BINARIO);
+
+  // Metade um: o motor ESTÁ no binario. Sem ella, a metade dous passaria por
+  // ausencia de motor, que é o falso verde que esta prova existe para matar.
+  const std::string symbolos = colher("nm -C '" + binario + "'");
+  REQUIRE_MESSAGE(!symbolos.empty(), "binario sem taboa de symbolos");
+  CHECK(symbolos.find("MotorMpv") != std::string::npos);
+
+  // Metade dous: a libmpv NÃO é dependencia de ligação. Reintroduzida, este
+  // binario morreria no carregador antes do main na machina sem ella, e a tela
+  // das faltas da issue #22 nunca appareceria.
+  const std::string dynamica = colher("readelf -d '" + binario + "'");
+  REQUIRE_MESSAGE(dynamica.find("NEEDED") != std::string::npos, "sem taboa dynamica");
+  CHECK(dynamica.find("mpv") == std::string::npos);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
