@@ -165,6 +165,37 @@ void Analisador::Punho::elege() {
   if (melhor != SPA_ID_INVALID) prende(serial_preso);
 }
 
+void Analisador::Punho::solta() {
+  if (fluxo == nullptr) return;
+  ::pw_stream_destroy(fluxo);
+  fluxo = nullptr;
+  // O ouvido morre com o fluxo que o pendurava: destruir o fluxo já o desliga,
+  // e removê-lo de novo seria mexer em lista que já não existe.
+  ouvido_do_fluxo = ::spa_hook {};
+}
+
+const ::pw_stream_events& Analisador::Punho::eventos_do_fluxo() {
+  static ::pw_stream_events taboada = [] {
+    ::pw_stream_events feitos {};
+    feitos.version = PW_VERSION_STREAM_EVENTS;
+    feitos.param_changed = &Punho::em_formato;
+    feitos.process = &Punho::em_processo;
+    return feitos;
+  }();
+  return taboada;
+}
+
+const ::pw_registry_events& Analisador::Punho::eventos_do_registro() {
+  static ::pw_registry_events taboada = [] {
+    ::pw_registry_events feitos {};
+    feitos.version = PW_VERSION_REGISTRY_EVENTS;
+    feitos.global = &Punho::em_global;
+    feitos.global_remove = &Punho::em_global_removido;
+    return feitos;
+  }();
+  return taboada;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
