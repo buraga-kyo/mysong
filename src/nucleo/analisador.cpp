@@ -280,6 +280,41 @@ void Analisador::Punho::em_processo(void* dados) {
   ::pw_stream_queue_buffer(eu->fluxo, pedaco);
 }
 
+Analisador::Analisador() : punho_(new Punho) {
+  punho_->nosso_pid = static_cast<std::uint32_t>(::getpid());
+  ::pw_init(nullptr, nullptr);
+
+  punho_->laco = ::pw_thread_loop_new("mysong-analisador", nullptr);
+  if (punho_->laco == nullptr) {
+    punho_->razao = "não erguí a linha de execução do PipeWire";
+    return;
+  }
+  punho_->contexto =
+      ::pw_context_new(::pw_thread_loop_get_loop(punho_->laco), nullptr, 0);
+  if (punho_->contexto == nullptr) {
+    punho_->razao = "não erguí o contexto do PipeWire";
+    return;
+  }
+  // Aqui, e sómente aqui, o PipeWire pode faltar de todo: serviço morto, socket
+  // ausente, sessão sem audio. Nascer INERTE é o contracto, e não excepção:
+  // bandas em zero, razão legivel, e o resto do programa a correr igual.
+  punho_->nucleo = ::pw_context_connect(punho_->contexto, nullptr, 0);
+  if (punho_->nucleo == nullptr) {
+    punho_->razao = "o PipeWire não respondeu: as bandas ficam em zero";
+    return;
+  }
+  punho_->registro = ::pw_core_get_registry(punho_->nucleo, PW_VERSION_REGISTRY, 0);
+  if (punho_->registro == nullptr) {
+    punho_->razao = "não abri o registro do PipeWire";
+    return;
+  }
+  // O ouvido se pendura ANTES de a linha começar a correr: pendurá-lo depois
+  // seria correr a chance de perder o annuncio do nó que já existia.
+  ::pw_registry_add_listener(punho_->registro, &punho_->ouvido_do_registro,
+                             &Punho::eventos_do_registro(), punho_.get());
+  ::pw_thread_loop_start(punho_->laco);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
