@@ -40,6 +40,25 @@ struct fftwf_plan_s;
 
 namespace mysong::nucleo {
 
+// ── A PARAMETRIZAÇÃO DA TRANSFORMADA, com o porquê, que é o que a distingue de
+// numero solto. A taxa d'esta machina é 48000 (pw-metadata: clock.rate=48000).
+//
+// JANELA de 2048 amostras = 42,7 ms, e raia de 48000/2048 = 23,44 Hz. A raia ha
+// de ser mais FINA que o intervallo que o ouvido separa: o semitom em torno de
+// 440 Hz vale cerca de 26 Hz, e 23,44 cabe dentro d'elle. Com 1024 a raia daria
+// 46,9 Hz e o baixo virava um borrão; com 4096 a latencia subiria a 85 ms, que o
+// olho já lê como atraso entre o som e a barra.
+inline constexpr std::size_t JANELA_DA_FFT = 2048;
+
+// SALTO de 1024 = metade da janela, e não por gosto: 1024 é EXACTAMENTE o
+// quantum d'esta machina (pw-metadata: clock.quantum=1024), donde cada buffer
+// que o PipeWire entrega produz um quadro, e o que sobeja não se accumula de
+// quadro em quadro. Dá 46,9 quadros por segundo, folgado acima da redesenha de
+// um terminal.
+inline constexpr std::size_t SALTO_DA_FFT = 1024;
+static_assert(SALTO_DA_FFT > 0 && SALTO_DA_FFT <= JANELA_DA_FFT,
+              "o salto ha de caber na janela");
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
