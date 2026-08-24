@@ -37,6 +37,37 @@ double millesimos_entre(Relogio::time_point antes, Relogio::time_point depois) {
 
 }  // namespace
 
+// O PUNHO: todo o PipeWire d'esta Casa cabe aqui dentro, e nada d'elle sahe pelo
+// cabeçalho. Os callbacks são methodos estaticos por necessidade: elles hão de
+// nomear este typo, que é privado do Analisador, e função livre não poderia.
+struct Analisador::Punho {
+  ::pw_thread_loop* laco = nullptr;
+  ::pw_context* contexto = nullptr;
+  ::pw_core* nucleo = nullptr;
+  ::pw_registry* registro = nullptr;
+  ::pw_stream* fluxo = nullptr;
+  ::spa_hook ouvido_do_registro {};
+  ::spa_hook ouvido_do_fluxo {};
+
+  mutable std::mutex boca;
+  Espectro espectro;
+  std::vector<float> retracto = std::vector<float>(QUANTAS_BANDAS, 0.0f);
+  Relogio::time_point ultimo_buffer = Relogio::now();
+  Relogio::time_point ultimo_pulso = Relogio::now();
+
+  // O CENSO do grafo, que é o que permitte eleger sem depender da ordem de
+  // chegada. Os clientes do NOSSO processo, e todos os nós de fluxo de sahida
+  // com o cliente que os possue e o serial que os nomeia.
+  std::set<std::uint32_t> nossos_clientes;
+  std::map<std::uint32_t, std::uint32_t> nos;
+  std::map<std::uint32_t, unsigned long long> seriaes;
+
+  std::uint32_t no_preso = SPA_ID_INVALID;
+  unsigned long long serial_preso = 0;
+  std::uint32_t nosso_pid = 0;
+  std::string razao;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
