@@ -31,7 +31,7 @@ target_sources(mysong_testes PRIVATE prova_fila.cpp prova_tocador.cpp)
 # Por target_sources, e não na lista do add_executable, pela mesma regra das
 # lavras acima: ACRESCENTAR linha, e não alterar linha que a tarefa irmã esteja a
 # editar. Linha nova não collide onde linha alterada collidiria.
-target_sources(mysong_testes PRIVATE prova_api.cpp)
+target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
