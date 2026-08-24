@@ -140,6 +140,48 @@ std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
   return Servidor(tocador, escuta, caminho);
 }
 
+Servidor::Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho) noexcept
+    : tocador_(&tocador), escuta_(escuta), caminho_(std::move(caminho)) {}
+
+// O MOVE esvazia a fonte, e é por isso que elle é seguro: o destructor da fonte
+// corre de todo modo, e sem esvaziar ella desligaria o arquivo que o destino
+// acabou de herdar.
+Servidor::Servidor(Servidor&& outro) noexcept
+    : tocador_(outro.tocador_),
+      escuta_(outro.escuta_),
+      caminho_(std::move(outro.caminho_)),
+      clientes_(std::move(outro.clientes_)) {
+  outro.escuta_ = -1;
+  outro.caminho_.clear();
+  outro.clientes_.clear();
+}
+
+// A LIMPEZA, por qualquer caminho de sahida e excepção inclusa. Quem desliga o
+// arquivo é este destructor, e não um trecho que cada retorno tenha de lembrar:
+// trecho que se lembra é trecho que um dia se esquece, e socket orphao em disco
+// envenena a instancia seguinte. Sendo destructor, a pilha que se desenrola por
+// excepção o corre do mesmo modo.
+Servidor::~Servidor() {
+  for (Cliente& cliente : clientes_)
+    if (cliente.fd >= 0) ::close(cliente.fd);
+  clientes_.clear();
+  if (escuta_ >= 0) ::close(escuta_);
+  escuta_ = -1;
+  if (!caminho_.empty()) ::unlink(caminho_.c_str());
+  caminho_.clear();
+}
+
+const std::string& Servidor::caminho() const noexcept { return caminho_; }
+
+void Servidor::encerra(Cliente& cliente) noexcept {
+  if (cliente.fd >= 0) ::close(cliente.fd);
+  // Marca-se, e NÃO se apaga do vector aqui: apagar invalidaria a referencia de
+  // quem nos chamou, que ainda está a correr sobre ella. Quem recolhe é o pulsa().
+  cliente.fd = -1;
+  cliente.entrada.clear();
+  cliente.sahida.clear();
+}
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
