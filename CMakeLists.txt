@@ -87,12 +87,18 @@ target_sources(mysong_core PRIVATE src/nucleo/fila.cpp src/nucleo/tocador.cpp)
 
 # A libmpv vem do systema, achada por pkg-config e NUNCA por caminho chumbado.
 # Entra como SYSTEM para que os seus cabecalhos se calem sob -Wall -Wextra, do
-# mesmo modo que a FTXUI e o doctest. PRIVATE porque só motor.cpp a inclue: o
-# cabecalho do motor declara o punho adiante, e não o inclue.
+# mesmo modo que a FTXUI e o doctest.
+#
+# E entra SÓ POR CABEÇALHO. A ligação sahiu na issue #28: binario que LIGA a
+# libmpv morre no carregador dynamico antes do main quando ella falta, e a sonda
+# dos requisitos nunca corre para dizer o que falta. Quem a chama é a taboa de
+# src/nucleo/libmpv.cpp, por dlopen. A linha da ligação foi EDITADA, e não
+# neutralizada por linha nova em outro logar: duas linhas em briga fariam este
+# arquivo mentir sobre a ligação, que é o defeito que a #28 veio corrigir.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 target_sources(mysong_core PRIVATE src/nucleo/motor.cpp)
-target_link_libraries(mysong_core PRIVATE PkgConfig::MPV)
+target_include_directories(mysong_core SYSTEM PUBLIC ${MPV_INCLUDE_DIRS})
 
 # A prova de som: linha de commando, e SEM FTXUI. Que não linke a janella é
 # parte do aceite, e por isso se lê aqui e se confirma com ldd.

@@ -5,8 +5,16 @@
 // do nucleo fala com o Motor abstracto, e por isso todo o resto se prova sem
 // placa de som.
 //
+// E inclue o cabeçalho SEM ligar a bibliotheca: as funcções chamam-se pela taboa
+// de libmpv.hpp, aberta por dlopen. Ligada, o carregador dynamico mataria o
+// processo antes do main na machina sem libmpv, e a sonda dos requisitos nunca
+// correria para nomear a falta. Vêde a issue #28.
+//
 // DOMÍNIO ......... um punho da libmpv, e ordens já aparadas ou por aparar.
 // CONTRA-DOMÍNIO .. som na saída do PipeWire, e as grandezas do relogio.
+// INVARIANTE 0 .... nenhum symbolo da libmpv se referencia aqui: nm -uC sobre
+//                   este objecto não acha mpv_ algum, e é d'ahi que binario
+//                   nenhum d'esta obra a traz por DT_NEEDED.
 // INVARIANTE ...... o punho pertence a UM objecto só. A cópia esta supprimida,
 //                   o move deixa o cedente com punho nullo, e o destructor
 //                   chama mpv_terminate_destroy uma vez e uma só. Não ha
