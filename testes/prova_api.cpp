@@ -170,6 +170,56 @@ TEST_CASE("o parser acceita o subconjunto inteiro, e sómente elle") {
   CHECK(rica.acha("u")->texto == "ç\xF0\x9F\x8E\xB5");  // par de substitutos
   CHECK(rica.acha("naoexiste") == nullptr);
 }
+TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "1.000");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "obra") == "mysong");
+
+  // Fila vazia é retracto legitimo, e não erro.
+  const std::string vazio = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(vazio, "ok") == "true");
+  CHECK(campo(vazio, "estado") == "Parado");
+  CHECK(campo(vazio, "faixa").empty());
+  CHECK(campo(vazio, "tamanho") == "0.000");
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":\"uma.wav\"}"),
+              "tamanho") == "1.000");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":\"duas.wav\"}"),
+              "tamanho") == "2.000");
+  REQUIRE(fala(tocador, "{\"verbo\":\"tocar\"}") == "{\"ok\":true}");
+  duble.avanca(3.5);
+
+  const std::string cheio = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(cheio, "estado") == "Tocando");
+  CHECK(campo(cheio, "faixa") == "uma.wav");
+  CHECK(campo(cheio, "posicao") == "3.500");
+  CHECK(campo(cheio, "duracao") == "10.000");
+  CHECK(campo(cheio, "volume") == "100.000");
+  CHECK(campo(cheio, "indice") == "0.000");
+  CHECK(campo(cheio, "tamanho") == "2.000");
+}
+
+// O passeio pela fila NÃO ha de tocar faixa alguma: anda-se na Fila, e não no
+// Tocador. Andar pelo Tocador faria soar duas faixas para listar dous nomes, e é
+// defeito que a prova de resultado não pegaria e a de CHAMADA pega.
+TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "du\"as.wav", "tres音.wav"})
+    fala(tocador, std::string("{\"verbo\":\"juntar\",\"caminho\":\"") + faixa + "\"}");
+  fala(tocador, "{\"verbo\":\"ir_para\",\"indice\":1}");
+  const std::size_t tocados_antes = duble.tocados.size();
+
+  const std::string listada = fala(tocador, "{\"verbo\":\"fila\"}");
+  CHECK(campo(listada, "tamanho") == "3.000");
+  CHECK(campo(listada, "indice") == "1.000");
+  CHECK(listada.find("\"du\\\"as.wav\"") != std::string::npos);
+  CHECK(listada.find("tres音.wav") != std::string::npos);
+  CHECK(duble.tocados.size() == tocados_antes);  // o passeio nao mandou tocar
+  CHECK(tocador.fila().indice() == 1);           // e o assento voltou
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
