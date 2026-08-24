@@ -131,6 +131,42 @@ class Biblioteca {
   sqlite3* punho_ = nullptr;
 };
 
+// O ESCRIBA: o lado que ESCREVE, e que nunca escreve no logar. Lavra n'um
+// temporario ao lado do banco, e conclui() renomeia atomicamente por cima do
+// antigo. Destruir o Escriba sem concluir DESFAZ o temporario: o caminho do
+// abandono não depende de quem chama se lembrar d'elle.
+class Escriba {
+ public:
+  // `limite_de_paginas` é a INJECÇÃO com que a prova simula disco cheio: zero é
+  // sem limite, e n > 0 permitte n paginas addicionaes depois do esquema, ao
+  // cabo das quaes o SQLite devolve SQLITE_FULL — o mesmo codigo, pelo mesmo
+  // caminho, que devolve com o systema de arquivos cheio de verdade.
+  Escriba(std::filesystem::path banco, long limite_de_paginas = 0);
+  ~Escriba();
+
+  Escriba(const Escriba&) = delete;
+  Escriba& operator=(const Escriba&) = delete;
+
+  bool aberto() const noexcept;
+  const std::filesystem::path& temporario() const noexcept;
+
+  // Falso quando o SQLite recusou. Quem chama ha de parar, porque insistir
+  // sobre um temporario cheio sómente accumula a mesma recusa.
+  bool grava(const Faixa& faixa);
+
+  // Renomeia por cima do antigo. Depois d'isto o Escriba está fechado.
+  bool conclui();
+
+  // Desiste, e não deixa resto. Chamar duas vezes é innocuo.
+  void abandona() noexcept;
+
+ private:
+  std::filesystem::path banco_;
+  std::filesystem::path temporario_;
+  sqlite3* punho_ = nullptr;
+  bool fechado_ = false;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
