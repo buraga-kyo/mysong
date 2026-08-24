@@ -101,6 +101,28 @@ TEST_CASE("saneia_utf8 conserva o valido e troca o invalido") {
   CHECK(nu::saneia_utf8("\xED\xA0\x80") == kTroca + kTroca + kTroca);
 }
 
+TEST_CASE("o escriba grava e a bibliotheca conta o que se gravou") {
+  const Cova cova;
+  {
+    nu::Escriba escriba(cova.banco());
+    REQUIRE(escriba.aberto());
+    // O temporario existe, e o banco AINDA NÃO: é o coração da promessa.
+    CHECK(std::filesystem::exists(escriba.temporario()));
+    CHECK_FALSE(std::filesystem::exists(cova.banco()));
+    CHECK(escriba.grava(faz("Ada Lovelace", "Máquina Analítica", "Tear", 3)));
+    CHECK(escriba.grava(faz("Ada Lovelace", "Máquina Analítica", "Nota G", 7)));
+    CHECK(escriba.grava(faz("Ada Lovelace", "Notas de Menabrea", "Traducção", 1)));
+    CHECK(escriba.grava(faz("Bach", "Cravo Bem Temperado", "Fuga", 2)));
+    REQUIRE(escriba.conclui());
+    CHECK_FALSE(std::filesystem::exists(escriba.temporario()));
+  }
+  CHECK(std::filesystem::exists(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.aberta());
+  CHECK(livraria.versao() == 1);
+  CHECK(livraria.total() == 4);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
