@@ -167,7 +167,7 @@ namespace {
 bool aguarda_carga(::mpv_handle* punho, double prazo) {
   bool comecou = false;
   for (;;) {
-    ::mpv_event* evento = mpv_wait_event(punho, prazo);
+    ::mpv_event* evento = mpv().mpv_wait_event(punho, prazo);
     switch (evento->event_id) {
       case MPV_EVENT_START_FILE:
         comecou = true;
@@ -192,7 +192,7 @@ bool aguarda_carga(::mpv_handle* punho, double prazo) {
 // faixas é NOSSA, e não d'elle.
 bool MotorMpv::tocar(const std::string& caminho) {
   const char* ordem[] = {"loadfile", caminho.c_str(), "replace", nullptr};
-  if (punho_ == nullptr || mpv_command(punho_, ordem) < 0) return false;
+  if (punho_ == nullptr || mpv().mpv_command(punho_, ordem) < 0) return false;
 
   if (!aguarda_carga(punho_, 5.0)) {
     estado_ = Estado::Parado;
@@ -207,15 +207,18 @@ bool MotorMpv::tocar(const std::string& caminho) {
   return true;
 }
 
+// A versão da interface, ou ZERO quando a libmpv não está presente: é o UNICO
+// logar d'este arquivo que se chama sem motor algum, e por isso confere a taboa.
 unsigned long MotorMpv::versao_da_interface() noexcept {
-  return mpv_client_api_version();
+  const TaboaDaLibmpv* const taboa = libmpv();
+  return taboa != nullptr ? taboa->mpv_client_api_version() : 0UL;
 }
 
 // Pausar e retomar são a MESMA propriedade do mpv, com bandeira contraria.
 bool MotorMpv::pausar() {
   int sim = 1;
   if (punho_ == nullptr ||
-      mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &sim) < 0) {
+      mpv().mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &sim) < 0) {
     return false;
   }
   estado_ = Estado::Pausado;
@@ -225,7 +228,7 @@ bool MotorMpv::pausar() {
 bool MotorMpv::retomar() {
   int nao = 0;
   if (punho_ == nullptr ||
-      mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &nao) < 0) {
+      mpv().mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &nao) < 0) {
     return false;
   }
   estado_ = Estado::Tocando;
@@ -238,7 +241,7 @@ bool MotorMpv::buscar(double segundos) {
   if (punho_ == nullptr) return false;
   const std::string alvo = std::to_string(aparar_busca(segundos, duracao_));
   const char* ordem[] = {"seek", alvo.c_str(), "absolute", nullptr};
-  return mpv_command(punho_, ordem) >= 0;
+  return mpv().mpv_command(punho_, ordem) >= 0;
 }
 
 // O volume do MOTOR, jamais o do systema: o do systema pertence ao vol.sh, e
@@ -246,7 +249,8 @@ bool MotorMpv::buscar(double segundos) {
 bool MotorMpv::volume(int porcento) {
   if (punho_ == nullptr) return false;
   double valor = static_cast<double>(aparar_volume(porcento));
-  return mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >= 0;
+  return mpv().mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >=
+         0;
 }
 
 double MotorMpv::posicao() const { return posicao_; }
@@ -255,10 +259,10 @@ Estado MotorMpv::estado() const { return estado_; }
 
 std::string MotorMpv::propriedade(const char* nome) const {
   if (punho_ == nullptr) return {};
-  char* texto = mpv_get_property_string(punho_, nome);
+  char* texto = mpv().mpv_get_property_string(punho_, nome);
   if (texto == nullptr) return {};
   std::string colhido(texto);
-  mpv_free(texto);
+  mpv().mpv_free(texto);
   return colhido;
 }
 
@@ -268,7 +272,7 @@ std::string MotorMpv::propriedade(const char* nome) const {
 void MotorMpv::bombear() {
   if (punho_ == nullptr) return;
   for (;;) {
-    ::mpv_event* evento = mpv_wait_event(punho_, 0.0);
+    ::mpv_event* evento = mpv().mpv_wait_event(punho_, 0.0);
     if (evento->event_id == MPV_EVENT_NONE) return;
 
     if (evento->event_id == MPV_EVENT_PROPERTY_CHANGE) {
