@@ -71,6 +71,28 @@ struct Faixa {
   unsigned deduzido = kDeduziuNada;
 };
 
+// A VERSÃO do esquema. Sobe quando o esquema muda de forma, e serve a UMA
+// decisão: banco de versão MAIOR que esta não se sobrescreve, porque sómente um
+// mysong mais novo o pode ter lavrado, e rebaixá-lo por trás do operador
+// perderia o que a versão nova enche. Versão MENOR é caso normal: nada se
+// reaproveita d'ella, reconstroe-se tudo, e o banco novo sahe nesta versão.
+inline constexpr int kVersaoDoEsquema = 1;
+
+// O DESFECHO de uma escripta. Toda falha tem nome, porque «falhou» não diz a
+// quem chama se ha de tentar outra vez, avisar o operador, ou calar-se.
+enum class Desfecho {
+  Concluido,        // renomeado no logar; o índice novo está em pé
+  Abandonado,       // desistiu-se, e o temporario desfez-se
+  EsquemaMaisNovo,  // o banco em disco é de um mysong mais novo; NADA se tocou
+  ErroDeEscripta,   // o SQLite recusou; o banco anterior ficou como estava
+  NaoComecou,       // ainda não se lavrou nada
+};
+
+// Saneia uma cadeia para UTF-8 valido, trocando cada byte invalido pelo
+// caracter de substituição U+FFFD. Etiqueta suja não custa a faixa: perder
+// musica por causa de um byte seria pior que mostrar um losango no nome.
+std::string saneia_utf8(std::string_view crua);
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
