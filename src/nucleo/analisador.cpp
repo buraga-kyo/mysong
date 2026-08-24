@@ -344,6 +344,22 @@ std::vector<float> Analisador::bandas() const {
   return punho_->retracto;
 }
 
+void Analisador::pulsa() {
+  const auto agora = Relogio::now();
+  std::lock_guard<std::mutex> tranca(punho_->boca);
+  // O passo se mede SEMPRE, e não sómente no silencio: medi-lo só quando ha
+  // silencio daria, na primeira batida silenciosa, o tempo inteiro desde a
+  // ultima, e a barra despencaria de uma vez em vez de esmorecer.
+  const double passo = millesimos_entre(punho_->ultimo_pulso, agora);
+  punho_->ultimo_pulso = agora;
+  if (millesimos_entre(punho_->ultimo_buffer, agora) < PRAZO_DE_SILENCIO_MS) return;
+  // Nó morto, ou faixa acabada, ou mpv em espera. As tres cousas se parecem d'
+  // aqui, e as tres pedem a mesma resposta: esmorecer até zero, pelo tempo de
+  // queda, e não saltar a zero, que na tela se lê como falha do programa.
+  punho_->espectro.esmorece(passo);
+  punho_->retracto = punho_->espectro.bandas();
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
