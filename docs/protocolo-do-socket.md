@@ -115,3 +115,53 @@ não casar com a primeira, porque entre as duas o mundo andou.
 | `indice` | inteiro | O assento da faixa corrente na fila, contado de zero. |
 | `tamanho` | inteiro | Quantas faixas ha na fila. |
 
+### `fila`
+
+As faixas na ordem, e o assento corrente. Listar **não toca faixa alguma**.
+
+```
+→ {"verbo":"fila"}
+← {"ok":true,"faixas":["/tmp/pa-s1-prova/01 - Canção 音楽.wav","/tmp/pa-s1-prova/tom2.wav","/tmp/pa-s1-prova/tom3.wav"],"indice":0,"tamanho":3}
+```
+
+| Campo | Typo | |
+|---|---|---|
+| `faixas` | vector de textos | Os caminhos, na ordem em que se juntaram. Vector vazio se a fila está vazia. |
+| `indice` | inteiro | O assento corrente, contado de zero. |
+| `tamanho` | inteiro | Quantas faixas ha. |
+
+> **Nota ao implementador**: esta é a UNICA resposta que traz um valor não escalar.
+> Se estiver a escrever um parser á mão em vez de usar bibliotheca, é aqui que elle
+> ha de saber ler um vector de cadeias.
+
+## 5. Os verbos que mandam
+
+### `juntar`
+
+Junta uma faixa ao FIM da fila. Não a toca.
+
+```
+→ {"verbo":"juntar","caminho":"/musica/01 - Canção.flac"}
+← {"ok":true,"tamanho":1}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `caminho` | texto | Obrigatorio, e não pode ser vazio. Não se verifica se o arquivo existe: quem descobre é o `tocar`. |
+
+Resposta: `tamanho` (inteiro), o novo tamanho da fila.
+
+### `ir_para`
+
+Muda o assento **e manda tocar**, á maneira de `proxima` e `anterior`. Mover sem tocar
+deixaria o tocador a soar a faixa velha com o indice apontado á nova.
+
+```
+→ {"verbo":"ir_para","indice":2}
+← {"ok":true}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `indice` | inteiro | Contado de zero. Fóra da fila devolve `recusado`; negativo devolve `argumento_invalido`. |
+
