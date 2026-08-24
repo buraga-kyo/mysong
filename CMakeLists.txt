@@ -156,3 +156,5 @@ pkg_check_modules(TAGLIB REQUIRED IMPORTED_TARGET taglib)
 pkg_check_modules(SQLITE3 REQUIRED IMPORTED_TARGET sqlite3)
 set_property(TARGET PkgConfig::TAGLIB APPEND PROPERTY
   INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${TAGLIB_INCLUDE_DIRS})
+target_sources(mysong_core PRIVATE src/nucleo/biblioteca.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::SQLITE3 PkgConfig::TAGLIB)
