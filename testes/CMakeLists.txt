@@ -15,8 +15,8 @@ target_compile_options(mysong_testes PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong_testes PRIVATE mysong_core doctest::doctest)
 
 # A bateria da sonda (#22). Entra por target_sources, e não na lista do
-# add_executable acima, para não collidir com as tarefas irmãs que mexem neste
-# mesmo arquivo agora: linha nova não collide onde linha alterada collidiria.
+# add_executable acima, porque linha nova não collide onde linha alterada
+# collidiria: é a regra d'esta Casa, e não noticia de uma onda de trabalho.
 target_sources(mysong_testes PRIVATE prova_sonda.cpp prova_tela_requisitos.cpp)
 
 include("${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake")
