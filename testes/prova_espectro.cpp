@@ -132,9 +132,11 @@ TEST_CASE("o seno de 440 Hz acende a banda que o contém, e não as de longe") {
 
   const auto bandas = espectro.bandas();
   REQUIRE(bandas.size() == nu::QUANTAS_BANDAS);
-  const std::size_t alvo = espectro.banda_de(440.0f);
-  REQUIRE(alvo < nu::QUANTAS_BANDAS);
-
+  // O alvo vem do ORACULO de fóra, e não de perguntar ao espectro qual banda
+  // elle acha que contém 440 Hz. Perguntando ao examinando, o caso provaria
+  // sómente que a energia se concentra em ALGUMA banda, e passaria com o
+  // agrupamento trocado por linear, cousa que se mediu.
+  const std::size_t alvo = 9;  // ver ESPERADAS_A_48K, com a conta ao lado
   const auto longe = maior_de_longe(bandas, alvo);
   INFO("alvo=" << alvo << " valor=" << bandas[alvo] << " maior de longe=" << longe.first
                << " na banda " << longe.second);
@@ -153,8 +155,8 @@ TEST_CASE("o baixo com o agudo respondem cada um na sua banda") {
     espectro.alimenta(bloco.data(), bloco.size());
 
     const auto bandas = espectro.bandas();
-    const std::size_t alvo = espectro.banda_de(hertz);
-    REQUIRE(alvo < nu::QUANTAS_BANDAS);
+    // Do oraculo de fóra, outra vez: 100 Hz na banda 2 e 6000 Hz na banda 20.
+    const std::size_t alvo = hertz < 1000.0f ? 2 : 20;
     const auto longe = maior_de_longe(bandas, alvo);
     INFO("hertz=" << hertz << " alvo=" << alvo << " valor=" << bandas[alvo]
                   << " maior de longe=" << longe.first << " na banda " << longe.second);
