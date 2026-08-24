@@ -125,3 +125,28 @@ std::string glifo_do_degrau(int degrau);
 // ancora a rampa. Não recebe magnitude alguma, e é n'isto que o invariante
 // (iii) se torna estructural em vez de boa intenção.
 tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
+
+// compor — o QUADRO. Não guarda estado: as mesmas bandas na mesma largura dão o
+// mesmo quadro, hoje e depois de dez redimensionamentos. Não presume que as
+// bandas sejam QUANTAS_BANDAS: conta o tamanho REAL do vector, que presumir o
+// vinte e quatro seria ler fóra de limite no dia em que o contracto mudasse.
+Quadro compor(const std::vector<float>& bandas, std::size_t largura,
+              std::size_t altura, bool mudo = false);
+
+// sequencia_da_celula — os BYTES da célulla: a tinta imediatamente antes do
+// glifo, sem repouso pelo meio, ou a ordem de repouso quando não se pinta. Mora
+// aqui, e não no exemplo, para que emissão e quadro tenham UMA verdade só.
+std::string sequencia_da_celula(const Celula& celula);
+
+// elemento_do_espectro — o quadro em FTXUI, para a issue #7 o encaixar na
+// janella. Derivação fina, e regra de desenho alguma se acrescenta aqui: o que
+// divergir do quadro é defeito, e não decisão.
+ftxui::Element elemento_do_espectro(const Quadro& quadro);
+
+}  // namespace mysong::tui
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
+//   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
+//                                                          — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
