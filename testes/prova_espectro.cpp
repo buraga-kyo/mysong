@@ -348,3 +348,22 @@ TEST_CASE("o espaçamento logarithmico separa o baixo, que o linear juntaria") {
   }
   CHECK(abaixo_de_mil >= 8);
 }
+
+TEST_CASE("os dous oraculos concordam, e o espectro concorda com os dous") {
+  // Tres contas independentes da mesma cousa: os indices escriptos á mão, a
+  // formula refeita n'esta prova, e o agrupamento da obra. Se as tres
+  // concordarem, nenhuma d'ellas está a copiar as outras; se duas concordarem
+  // contra a terceira, sabe-se logo qual foi mexida.
+  nu::Espectro espectro(48000.0f, 2);
+  for (const auto& esperada : ESPERADAS_A_48K) {
+    INFO("hertz=" << esperada.hertz << " á mão=" << esperada.banda
+                  << " pela formula=" << banda_esperada(esperada.hertz, 48000.0f)
+                  << " pela obra=" << espectro.banda_de(esperada.hertz));
+    CHECK(banda_esperada(esperada.hertz, 48000.0f) == esperada.banda);
+    CHECK(espectro.banda_de(esperada.hertz) == esperada.banda);
+  }
+  // E fóra da faixa que se pinta, a obra ha de dizer que não ha banda, em vez de
+  // responder a banda do baixo por um agudo que não existe.
+  CHECK(espectro.banda_de(20000.0f) == nu::QUANTAS_BANDAS);
+  CHECK(espectro.banda_de(1.0f) == nu::QUANTAS_BANDAS);
+}
