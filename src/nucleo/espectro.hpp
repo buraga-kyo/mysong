@@ -133,6 +133,35 @@ class Espectro {
   float taxa() const noexcept;
   int canaes() const noexcept;
 
+  // As bordas em RAIAS, abertas á prova: é assim que ella sabe QUAL banda
+  // contém 440 Hz sem repetir a conta que ella mesma quer aferir. Ha
+  // QUANTAS_BANDAS + 1 bordas, não decrescentes, e a banda b vae de bordas()[b]
+  // inclusive a bordas()[b + 1] exclusive.
+  const std::vector<std::size_t>& bordas() const noexcept;
+  std::size_t banda_de(float hertz) const;
+
+ private:
+  void um_quadro();
+  void assenta_bordas();
+  void suaviza(const std::vector<float>& alvo, double millesimos);
+
+  float taxa_ = TAXA_PRESUMIDA;
+  int canaes_ = 2;
+
+  // A entrada e a sahida da fftw, alocadas por ella para que o alinhamento seja
+  // o que ella pede. A sahida é REAL de propósito: são 2 * (JANELA/2 + 1)
+  // flotantes, a parte real e a imaginaria alternadas, que é exactamente a
+  // memoria do fftwf_complex sem que este cabeçalho o precise conhecer.
+  float* entrada_ = nullptr;
+  float* sahida_ = nullptr;
+  ::fftwf_plan_s* plano_ = nullptr;
+
+  std::vector<float> hann_;    // a janela, computada uma vez
+  std::vector<float> sobejo_;  // amostras mono que ainda não formaram quadro
+  std::vector<float> bandas_;  // o estado suavizado, que é o que se lê
+  std::vector<std::size_t> bordas_;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
