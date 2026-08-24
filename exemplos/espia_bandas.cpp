@@ -84,3 +84,28 @@ int main(int argc, char** argv) {
     std::fprintf(stderr, "a primeira faixa NÃO tocou\n");
     return 3;
   }
+
+  // A CADENCIA: quarenta millesimos, que é folgadamente mais rapido que o prazo
+  // do silencio (cento e vinte) e mais devagar que o quadro do espectro (vinte e
+  // um). Assim o relogio de guarda bate a tempo de apanhar o nó que morreu, e a
+  // linha impressa nunca é a mesma duas vezes por descuido de cadencia.
+  const auto inicio = Relogio::now();
+  double passado = 0.0;
+  while (passado < segundos) {
+    tocador.pulsa();
+    const auto bandas = tocador.bandas();
+    std::printf("t=%6.2f no=%-6llu estado=%-7s", passado, analisador.no(),
+                std::string(nu::nome_do_estado(tocador.estado())).c_str());
+    imprime_bandas(bandas);
+    std::printf("\n");
+    std::fflush(stdout);  // linha a linha: a prova lê isto por tubo, ao vivo
+    dorme(40);
+    passado = std::chrono::duration<double>(Relogio::now() - inicio).count();
+  }
+  std::printf("corrida completa\n");
+  return 0;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
