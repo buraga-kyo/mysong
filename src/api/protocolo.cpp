@@ -38,9 +38,19 @@ Objecto abre_acerto() {
 
 std::string feito() { return abre_acerto().fecha(); }
 
+// A moldura do ERRO. Codigo para a machina, razão para o olho humano, e as duas
+// SEMPRE: codigo sem razão manda depurar por adivinhação, e razão sem codigo
+// manda o cliente comparar cadeias de texto que a proxima versão mudará.
+std::string erro(std::string_view codigo, const std::string& razao) {
+  Objecto obra;
+  obra.par("ok", booleano(false));
+  obra.par("erro", texto(codigo));
+  obra.par("razao", texto(razao));
+  return obra.fecha();
+}
+
 }  // namespace
 }  // namespace mysong::api
-
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
