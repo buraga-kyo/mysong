@@ -59,6 +59,29 @@ inline constexpr std::size_t SALTO_DA_FFT = 1024;
 static_assert(SALTO_DA_FFT > 0 && SALTO_DA_FFT <= JANELA_DA_FFT,
               "o salto ha de caber na janela");
 
+// ── A FAIXA que se pinta. Abaixo de 40 Hz quasi nenhum fone reproduz, e acima
+// de 16 kHz quasi nenhum ouvido de adulto escuta. Entre as duas o espaçamento é
+// LOGARITHMICO, porque é assim que o ouvido escuta: de 40 a 80 Hz vae uma
+// octava, de 8000 a 16000 vae outra, e as duas hão de occupar a mesma largura na
+// tela. Espaçamento linear daria vinte bandas de agudo e nenhuma de baixo.
+inline constexpr float HERTZ_MINIMO = 40.0f;
+inline constexpr float HERTZ_MAXIMO = 16000.0f;
+
+// O PISO. Magnitude crua é linear, e em linear tudo o que não é o pico fica
+// rente ao chão: a barra parece morta com musica a tocar. Comprime-se em
+// decibeis, com o piso a valer zero e a escala cheia a valer um. Sessenta
+// decibeis é a faixa que um alto-falante de mesa entrega e o olho distingue.
+inline constexpr float PISO_EM_DECIBEIS = -60.0f;
+
+// Abaixo d'este limiar a banda vale ZERO EXACTO, e não um resto de arredondar.
+// É o que faz o silencio ser silencio de verdade na tela, e não 0,003 a tremer;
+// e é o que faz o aceite poder pedir «bandas em zero» e receber zero.
+inline constexpr float LIMIAR_DE_ZERO = 0.01f;
+
+// A taxa que se presume ANTES de o formato ser confirmado. Presumir é legitimo,
+// chumbar não é: assenta_formato() recalcula tudo quando o mundo responde.
+inline constexpr float TAXA_PRESUMIDA = 48000.0f;
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
