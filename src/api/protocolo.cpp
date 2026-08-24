@@ -148,6 +148,37 @@ std::string responde(Tocador& tocador, std::string_view linha) {
   }
   if (verbo == "estado") return retracto(tocador);
 
+  if (verbo == "fila") {
+    const std::vector<std::string> faixas = faixas_da_fila(tocador);
+    Objecto obra = abre_acerto();
+    obra.par("faixas", vector_de_textos(faixas));
+    obra.par("indice", inteiro(static_cast<long long>(tocador.fila().indice())));
+    obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
+    return obra.fecha();
+  }
+  if (verbo == "juntar") {
+    const Valor* caminho = argumento(msg, "caminho", Typo::Texto);
+    if (caminho == nullptr) return falta("caminho", "texto");
+    if (caminho->texto.empty())
+      return erro("argumento_invalido", "o caminho da faixa vem vazio");
+    tocador.fila().junta(caminho->texto);
+    Objecto obra = abre_acerto();
+    obra.par("tamanho", inteiro(static_cast<long long>(tocador.fila().tamanho())));
+    return obra.fecha();
+  }
+  // «ir_para» move E manda tocar, á maneira de «proxima» e «anterior»: mover sem
+  // tocar deixaria o tocador a soar a faixa velha com o indice na nova, que é
+  // estado composto que nenhum cliente saberia ler.
+  if (verbo == "ir_para") {
+    const Valor* alvo = argumento(msg, "indice", Typo::Numero);
+    if (alvo == nullptr) return falta("indice", "numero");
+    if (!(alvo->numero >= 0.0 && alvo->numero < 1e9))
+      return erro("argumento_invalido", "o indice esta fora de faixa razoavel");
+    if (!tocador.fila().ir_para(static_cast<std::size_t>(alvo->numero)))
+      return recusado("ir_para");
+    return conforme(tocador.tocar_corrente(), "ir_para");
+  }
+
   return erro("verbo_desconhecido",
               "esta Casa nao conhece o verbo \"" + verbo + "\"");
 }
