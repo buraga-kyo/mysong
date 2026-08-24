@@ -16,6 +16,7 @@
 #include <spa/param/audio/format-utils.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -62,8 +63,14 @@ struct Analisador::Punho {
   std::map<std::uint32_t, std::uint32_t> nos;
   std::map<std::uint32_t, unsigned long long> seriaes;
 
+  // O no_preso nasce e morre na linha do PipeWire, e d'ella não sahe: sómente a
+  // eleição o lê e o escreve. O serial_preso SAHE, porque no() o lê da linha de
+  // quem chama, e por isso elle é ATOMICO e não guardado pela boca. A escolha
+  // tem razão: pôr a eleição a tomar a boca poria a linha do grafo a esperar
+  // pela transformada de um quadro inteiro, que é fechadura longa para guardar
+  // uma palavra só.
   std::uint32_t no_preso = SPA_ID_INVALID;
-  unsigned long long serial_preso = 0;
+  std::atomic<unsigned long long> serial_preso {0};
   std::uint32_t nosso_pid = 0;
   std::string razao;
 
@@ -170,8 +177,8 @@ void Analisador::Punho::elege() {
   if (melhor == no_preso) return;
   solta();
   no_preso = melhor;
-  serial_preso = melhor != SPA_ID_INVALID ? maior : 0;
-  if (melhor != SPA_ID_INVALID) prende(serial_preso);
+  serial_preso.store(melhor != SPA_ID_INVALID ? maior : 0);
+  if (melhor != SPA_ID_INVALID) prende(serial_preso.load());
 }
 
 void Analisador::Punho::solta() {
@@ -343,7 +350,9 @@ bool Analisador::vivo() const noexcept { return punho_->nucleo != nullptr; }
 
 const std::string& Analisador::razao() const noexcept { return punho_->razao; }
 
-unsigned long long Analisador::no() const noexcept { return punho_->serial_preso; }
+unsigned long long Analisador::no() const noexcept {
+  return punho_->serial_preso.load();
+}
 
 std::vector<float> Analisador::bandas() const {
   // Devolve COPIA, e nunca ponteiro para dentro do que a outra linha escreve.
