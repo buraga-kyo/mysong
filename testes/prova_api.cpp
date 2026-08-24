@@ -224,6 +224,43 @@ TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
   CHECK(duble.tocados.size() == tocados_antes);  // o passeio nao mandou tocar
   CHECK(tocador.fila().indice() == 1);           // e o assento voltou
 }
+TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav", "tres.wav"})
+    fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":" + mysong::api::texto(faixa) + "}");
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"tocar\"}"), "ok") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"proxima\"}"), "ok") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"proxima\"}"), "ok") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"anterior\"}"), "ok") == "true");
+  // A CHAMADA, e não só o booleano devolvido: protocolo que respondesse «ok» sem
+  // mandar cousa alguma ao nucleo passaria por prova de resultado, e cae n'esta.
+  const std::vector<std::string> esperado = {"uma.wav", "duas.wav", "tres.wav",
+                                             "duas.wav"};
+  CHECK(duble.tocados == esperado);
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"pausar\"}"), "ok") == "true");
+  CHECK(tocador.estado() == Estado::Pausado);
+  CHECK(campo(fala(tocador, "{\"verbo\":\"retomar\"}"), "ok") == "true");
+  CHECK(tocador.estado() == Estado::Tocando);
+  // «parar» PAUSA, hoje, e o documento o declara com essas palavras.
+  CHECK(campo(fala(tocador, "{\"verbo\":\"parar\"}"), "ok") == "true");
+  CHECK(tocador.estado() == Estado::Pausado);
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"volume\",\"porcento\":70}"), "volume") ==
+        "70.000");
+  CHECK(duble.volume_recebido == 70);
+  // O aparo ANNUNCIA-SE: quem mandou 150 lê 100, e não fica a crer que assentou
+  // 150 para estranhar depois pelo ouvido que o som não subiu.
+  CHECK(campo(fala(tocador, "{\"verbo\":\"volume\",\"porcento\":150}"), "volume") ==
+        "100.000");
+  CHECK(duble.volume_recebido == 100);
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"retomar\"}"), "ok") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"buscar\",\"segundos\":4.5}"), "ok") == "true");
+  CHECK(duble.alvo_buscado == doctest::Approx(4.5));
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
