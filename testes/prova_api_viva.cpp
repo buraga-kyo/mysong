@@ -25,6 +25,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -273,6 +274,33 @@ TEST_CASE("socket orphao reclama-se; socket VIVO respeita-se e nao se desliga") 
     CHECK(cliente.colhe(*primeiro, 1).size() == 1);
   }
 }
+TEST_CASE("a limpeza corre por QUALQUER sahida, e a excepcao inclusa") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  const std::string caminho = casa.dentro("mysong.sock");
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+
+  // A pilha desenrola-se por excepção erguida DEPOIS de o socket abrir. Quem
+  // desliga o arquivo é o destructor, e nenhum trecho de limpeza que se tenha de
+  // lembrar: e é justamente por aqui que o trecho esquecido apparecia.
+  try {
+    auto servidor = Servidor::abrir(tocador, caminho, nullptr);
+    REQUIRE(servidor.has_value());
+    throw std::runtime_error("interrupcao de proposito");
+  } catch (const std::runtime_error&) {
+  }
+  struct ::stat marca {};
+  CHECK(::stat(caminho.c_str(), &marca) != 0);  // o arquivo já não existe
+
+  // E o caso SEGUINTE abre no MESMO caminho sem tropeçar no que o anterior deixou.
+  // Sem esta segunda metade, um destructor que não limpasse passaria sempre que o
+  // doctest corresse este caso por ultimo.
+  std::string razao;
+  auto outra_vez = Servidor::abrir(tocador, caminho, &razao);
+  CHECK_MESSAGE(outra_vez.has_value(), razao);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
