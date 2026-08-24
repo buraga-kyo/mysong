@@ -113,3 +113,32 @@ tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
   // mesmo resultado, e dous caminhos divergem sem avisar.
   return tokens::mistura(tokens::v400, tokens::v700, t);
 }
+
+namespace {
+
+// tinta_da_celula — A PRECEDENCIA da côr, e a ordem É a regra. Lê-se de cima
+// para baixo, e a primeira que responde ganha:
+//   1. MUDO vence tudo, quente inclusive. Mudo é ordem do operador, e ordem do
+//      operador não se deixa sobrepujar por leitura de sinal.
+//   2. ZERO veste text_faint, que é o piso do silencio. Vem antes do quente por
+//      pura arrumação (zero nunca é quente), e junto do mudo porque é a MESMA
+//      côr que a §7.4.9 manda: mudo e silencio lêem-se egualmente apagados.
+//   3. QUENTE veste glow_hot, e veste a COLUMNA INTEIRA. É a lógica do
+//      bar_meter.lua, que faz `color = hot and glow_hot or FILL_COOL` e
+//      substitue o enchimento todo, não sómente o cimo. Duas razões mais: só a
+//      célulla do topo em glow_hot seria quasi invisivel n'uma fita que salta a
+//      quarenta e seis quadros por segundo, que uma célulla a piscar não se lê;
+//      e o indicador de pico existe para SER VISTO.
+//   4. Não sendo nada d'isso, o GRADIENTE do painel.
+// Note-se que sómente o ramo 4 consulta a linha, e sómente os ramos 1 a 3
+// consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
+// pode depender da magnitude nem por descuido.
+tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
+                               std::size_t altura) {
+  if (mudo) return tokens::rgb(tokens::text_faint);
+  if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
+  if (valor >= LIMIAR_QUENTE) return tokens::rgb(tokens::glow_hot);
+  return tinta_da_linha(desde_a_base, altura);
+}
+
+}  // namespace
