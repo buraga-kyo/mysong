@@ -75,6 +75,55 @@ class DirectorioTemporario {
  private:
   std::string caminho_;
 };
+// UM CLIENTE DE VERDADE, e não dublê: socket AF_UNIX, connect, send e recv. É por
+// elle que se prova o que só o transporte pode errar.
+class Cliente {
+ public:
+  explicit Cliente(const std::string& caminho) {
+    fd_ = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    if (fd_ < 0) return;
+    ::sockaddr_un endereco{};
+    endereco.sun_family = AF_UNIX;
+    std::memcpy(endereco.sun_path, caminho.c_str(), caminho.size());
+    ligado_ = ::connect(fd_, reinterpret_cast<const ::sockaddr*>(&endereco),
+                        sizeof(endereco)) == 0;
+  }
+  ~Cliente() { fecha(); }
+  Cliente(const Cliente&) = delete;
+  Cliente& operator=(const Cliente&) = delete;
+
+  bool ligado() const { return ligado_; }
+  void manda(const std::string& bytes) {
+    ::send(fd_, bytes.data(), bytes.size(), MSG_NOSIGNAL);
+  }
+  void fecha() {
+    if (fd_ >= 0) ::close(fd_);
+    fd_ = -1;
+  }
+
+  // Bate o servidor e colhe, até haver as linhas que se esperam ou até se esgotar a
+  // paciencia. Bater ENTRE as tentativas é o que faz d'esta prova prova: o servidor
+  // não tem linha de execução propria, e é a bateria que lhe dá as batidas.
+  std::vector<std::string> colhe(Servidor& servidor, std::size_t quantas) {
+    std::vector<std::string> linhas;
+    for (int volta = 0; volta < 200 && linhas.size() < quantas; ++volta) {
+      servidor.pulsa();
+      char balde[4096];
+      const ::ssize_t lidos = ::recv(fd_, balde, sizeof(balde), 0);
+      if (lidos > 0) acumulado_.append(balde, static_cast<std::size_t>(lidos));
+      for (std::size_t corte; (corte = acumulado_.find('\n')) != std::string::npos;) {
+        linhas.push_back(acumulado_.substr(0, corte));
+        acumulado_.erase(0, corte + 1);
+      }
+    }
+    return linhas;
+  }
+
+ private:
+  int fd_ = -1;
+  bool ligado_ = false;
+  std::string acumulado_;
+};
 }  // namespace
 
 // ══════════════════════════════════════════════════════════════════════════
