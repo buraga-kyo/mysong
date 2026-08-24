@@ -66,6 +66,25 @@ struct Analisador::Punho {
   unsigned long long serial_preso = 0;
   std::uint32_t nosso_pid = 0;
   std::string razao;
+
+  // A eleição, e o que d'ella decorre.
+  void elege();
+  void prende(unsigned long long serial);
+  void solta();
+  void engole(const float* amostras, std::size_t quantas);
+
+  // Os quatro callbacks que o PipeWire chama, e as duas taboadas que o ligam a
+  // elles. As taboadas nascem em estatico de função, por assignação campo a
+  // campo: inicializador designado é cousa de C, e sob -Wall -Wextra em C++ elle
+  // cobraria aviso de campo que falta, que é o nosso zero por terra.
+  static void em_global(void* dados, std::uint32_t id, std::uint32_t permissoes,
+                        const char* tipo, std::uint32_t versao,
+                        const ::spa_dict* props);
+  static void em_global_removido(void* dados, std::uint32_t id);
+  static void em_processo(void* dados);
+  static void em_formato(void* dados, std::uint32_t id, const ::spa_pod* param);
+  static const ::pw_registry_events& eventos_do_registro();
+  static const ::pw_stream_events& eventos_do_fluxo();
 };
 
 }  // namespace mysong::nucleo
