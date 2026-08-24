@@ -260,6 +260,26 @@ void Analisador::Punho::engole(const float* amostras, std::size_t quantas) {
   ultimo_buffer = Relogio::now();
 }
 
+void Analisador::Punho::em_processo(void* dados) {
+  auto* eu = static_cast<Punho*>(dados);
+  if (eu == nullptr || eu->fluxo == nullptr) return;
+  ::pw_buffer* pedaco = ::pw_stream_dequeue_buffer(eu->fluxo);
+  if (pedaco == nullptr) return;  // sem buffer prompto não é erro: é espera
+  const ::spa_buffer* buffer = pedaco->buffer;
+  if (buffer != nullptr && buffer->n_datas > 0 && buffer->datas[0].data != nullptr &&
+      buffer->datas[0].chunk != nullptr) {
+    // O DESVIO importa: o PipeWire pode entregar as amostras adiante do inicio
+    // da memoria mappeada, e ler do inicio daria silencio ou ruido de outra
+    // volta do annel. Nada se presume: nem o tamanho, nem o começo.
+    const auto* base = static_cast<const std::uint8_t*>(buffer->datas[0].data);
+    const std::uint32_t desvio = buffer->datas[0].chunk->offset;
+    const std::uint32_t bytes = buffer->datas[0].chunk->size;
+    const auto* amostras = reinterpret_cast<const float*>(base + desvio);
+    eu->engole(amostras, bytes / sizeof(float));
+  }
+  ::pw_stream_queue_buffer(eu->fluxo, pedaco);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
