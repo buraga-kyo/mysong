@@ -87,6 +87,41 @@ struct Analisador::Punho {
   static const ::pw_stream_events& eventos_do_fluxo();
 };
 
+void Analisador::Punho::em_global(void* dados, std::uint32_t id, std::uint32_t,
+                                 const char* tipo, std::uint32_t,
+                                 const ::spa_dict* props) {
+  auto* eu = static_cast<Punho*>(dados);
+  if (eu == nullptr || tipo == nullptr || props == nullptr) return;
+
+  if (std::strcmp(tipo, PW_TYPE_INTERFACE_Client) == 0) {
+    // O NOSSO cliente: aquelle cujo processo é o nosso. A libmpv toca DENTRO do
+    // nosso processo, donde o cliente que ella abre no PipeWire traz o nosso
+    // proprio pid. É por aqui que a identidade entra, e não pelo nome «mpv»,
+    // que na machina de quem ouve musica ha muitos.
+    const char* pid = ::spa_dict_lookup(props, PW_KEY_APP_PROCESS_ID);
+    if (pid != nullptr &&
+        std::strtoul(pid, nullptr, 10) == static_cast<unsigned long>(eu->nosso_pid)) {
+      eu->nossos_clientes.insert(id);
+    }
+  } else if (std::strcmp(tipo, PW_TYPE_INTERFACE_Node) == 0) {
+    const char* classe = ::spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+    const char* cliente = ::spa_dict_lookup(props, PW_KEY_CLIENT_ID);
+    const char* serial = ::spa_dict_lookup(props, PW_KEY_OBJECT_SERIAL);
+    if (classe == nullptr || cliente == nullptr) return;
+    if (std::strcmp(classe, "Stream/Output/Audio") != 0) return;
+    eu->nos[id] = static_cast<std::uint32_t>(std::strtoul(cliente, nullptr, 10));
+    eu->seriaes[id] = serial != nullptr ? std::strtoull(serial, nullptr, 10) : 0;
+  } else {
+    return;
+  }
+
+  // Relege a CADA annuncio, e não sómente quando chega um nó: o registro pode
+  // annunciar o nó ANTES do cliente que o possue, e quem elegesse uma vez só
+  // perderia o nosso nó por ordem de chegada. É a ordem do mundo, que dublê
+  // nenhum tem.
+  eu->elege();
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
