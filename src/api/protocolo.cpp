@@ -213,6 +213,14 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     return obra.fecha();
   }
 
+  // Os RESERVADOS. Existem no contracto e ainda não no nucleo. Deixá-los fóra
+  // lhes daria «verbo_desconhecido», que é a MESMA resposta de um erro de
+  // digitação, e ahi o cliente não saberia se errou o nome ou se a feição não
+  // chegou. Com a issue na resposta, elle sabe as duas cousas de uma vez.
+  if (verbo == "biblioteca") return reservado(verbo, 8);
+  if (verbo == "espectro")   return reservado(verbo, 5);
+  if (verbo == "baixar")     return reservado(verbo, 11);
+
   return erro("verbo_desconhecido",
               "esta Casa nao conhece o verbo \"" + verbo + "\"");
 }
