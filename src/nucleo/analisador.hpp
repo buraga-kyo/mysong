@@ -68,6 +68,40 @@ class FonteDeBandas {
   FonteDeBandas() = default;
 };
 
+// O ANALISADOR de carne, sobre a libpipewire. Nasce INERTE quando o PipeWire
+// não responde, e inerte é estado legitimo e não erro: bandas em zero, razão
+// legivel, e o resto do programa a correr igual. É por isso que não ha fabrica
+// com optional aqui, ao contrario do MotorMpv: motor que não abre não serve
+// para nada, analisador que não abre serve para dar zeros.
+//
+// Todo o PipeWire mora atraz do punho, e nenhuma linha d'elle sahe por este
+// cabeçalho: quem inclue o analisador não herda pipewire.h, e a bateria compila
+// sem os directorios de inclusão do PipeWire.
+class Analisador final : public FonteDeBandas {
+ public:
+  Analisador();
+  ~Analisador() override;
+
+  // Falso quando o PipeWire não respondeu. Ver razao().
+  bool vivo() const noexcept;
+  const std::string& razao() const noexcept;
+
+  std::vector<float> bandas() const override;
+
+  // O relogio de guarda: passado o prazo sem buffer novo, as bandas esmorecem.
+  // O nó do mpv morre SEM AVISO, e sem esta batida a ultima janela ficaria
+  // congelada na tela para sempre.
+  void pulsa() override;
+
+  // O object.serial do nó a que estamos presos, e zero quando nenhum. Serve á
+  // prova: é como ella confirma que nos prendemos ao nó do NOSSO processo.
+  unsigned long long no() const noexcept;
+
+ private:
+  struct Punho;
+  std::unique_ptr<Punho> punho_;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
