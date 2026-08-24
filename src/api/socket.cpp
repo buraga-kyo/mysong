@@ -210,9 +210,15 @@ void Servidor::escoa(Cliente& cliente) {
 void Servidor::colhe(Cliente& cliente) {
   if (cliente.fd < 0) return;
   char balde[4096];
+  // O MEIO FECHAMENTO é o que o «nc» faz, e o que qualquer cliente de canalisação
+  // faz: ao ver o fim do seu stdin elle fecha a ESCRIPTA e SEGUE a ler. Encerrar
+  // aqui sem responder deixaria o aceite d'esta issue a falhar por defeito nosso, e
+  // a culpa cahiria na ferramenta. Donde se marca o fim, se drena o que chegou, se
+  // responde, e só depois se fecha.
+  bool fim_da_entrada = false;
   for (;;) {
     const ::ssize_t lidos = ::recv(cliente.fd, balde, sizeof(balde), 0);
-    if (lidos == 0) { encerra(cliente); return; }  // o outro lado fechou
+    if (lidos == 0) { fim_da_entrada = true; break; }
     if (lidos < 0) {
       if (errno == EINTR) continue;
       if (errno == EAGAIN || errno == EWOULDBLOCK) break;
@@ -243,6 +249,10 @@ void Servidor::colhe(Cliente& cliente) {
     cliente.sahida += '\n';
   }
   escoa(cliente);
+  // Fecha-se sómente depois de a resposta ter sahido por inteiro. Ficando resto por
+  // escrever, a batida seguinte o escoa; e se o outro lado tiver fechado de todo, é
+  // o EPIPE do send que encerra, calado pelo MSG_NOSIGNAL.
+  if (fim_da_entrada && cliente.sahida.empty()) encerra(cliente);
 }
 
 void Servidor::aceita() {
