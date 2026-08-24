@@ -182,6 +182,26 @@ void Servidor::encerra(Cliente& cliente) noexcept {
   cliente.sahida.clear();
 }
 
+// A ESCRIPTA. MSG_NOSIGNAL, e nunca SIGPIPE: cliente que fecha no meio de uma
+// resposta é ROTINA, e rotina não derruba processo. Sem esta marca, um «nc» que
+// sahisse antes de ler mataria o tocador inteiro.
+void Servidor::escoa(Cliente& cliente) {
+  while (cliente.fd >= 0 && !cliente.sahida.empty()) {
+    const ::ssize_t postos = ::send(cliente.fd, cliente.sahida.data(),
+                                    cliente.sahida.size(), MSG_NOSIGNAL);
+    if (postos < 0) {
+      if (errno == EINTR) continue;
+      // Cheio por ora: o resto vae na batida seguinte, e não se perde.
+      if (errno == EAGAIN || errno == EWOULDBLOCK) return;
+      encerra(cliente);
+      return;
+    }
+    // A escripta PARCIAL é o caso NORMAL de socket de fluxo, e não a excepção:
+    // guarda-se o resto, e não se presume que uma resposta caiba numa chamada.
+    cliente.sahida.erase(0, static_cast<std::size_t>(postos));
+  }
+}
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
