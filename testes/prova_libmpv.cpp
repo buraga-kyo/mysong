@@ -10,9 +10,11 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cstdlib>
 #include <string>
 
 #include "nucleo/libmpv.hpp"
+#include "nucleo/sonda.hpp"
 
 using mysong::nucleo::carregar_taboa;
 using mysong::nucleo::TaboaDaLibmpv;
@@ -42,6 +44,13 @@ TEST_CASE("bibliotheca sem os symbolos recusa NOMEANDO o symbolo") {
   std::string razao;
   CHECK_FALSE(carregar_taboa("libm.so.6", &taboa, &razao));
   CHECK(razao.find("mpv_create") != std::string::npos);
+}
+
+TEST_CASE("a forçagem da sonda nomeia a chave da libmpv") {
+  ::setenv("MYSONG_SONDA_FORCA", "libmpv", 1);
+  CHECK(mysong::nucleo::nomeado_na_forcagem("libmpv"));
+  ::unsetenv("MYSONG_SONDA_FORCA");
+  CHECK_FALSE(mysong::nucleo::nomeado_na_forcagem("libmpv"));
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

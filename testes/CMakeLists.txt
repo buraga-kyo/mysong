@@ -41,5 +41,9 @@ target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 # o contracto por analisador.hpp, que esconde o PipeWire atraz de um punho.
 target_sources(mysong_testes PRIVATE prova_espectro.cpp)
 
+# ─── Provas da taboa da libmpv (issue #28) ──────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
+target_sources(mysong_testes PRIVATE prova_libmpv.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
