@@ -27,6 +27,12 @@ doctest_discover_tests(mysong_testes)
 # tocar linha alguma que outra lavra esteja a editar.
 target_sources(mysong_testes PRIVATE prova_fila.cpp prova_tocador.cpp)
 
+# ─── Provas da superfície de commando (issue #4) ─────────────────────────────
+# Por target_sources, e não na lista do add_executable, pela mesma regra das
+# lavras acima: ACRESCENTAR linha, e não alterar linha que a tarefa irmã esteja a
+# editar. Linha nova não collide onde linha alterada collidiria.
+target_sources(mysong_testes PRIVATE prova_api.cpp)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
