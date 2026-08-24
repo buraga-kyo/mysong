@@ -229,7 +229,7 @@ TEST_CASE("cliente que fecha de todo nao derruba o servidor, e o seguinte e serv
   CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
 }
 // A differença entre ROBUSTEZ e ROUBO, em duas metades que se provam separadas.
-TEST_CASE("socket orphao reclama-se; socket VIVO respeita-se e nao se desliga") {
+TEST_CASE("o orphao reclama-se, e o socket VIVO respeita-se e nao se desliga") {
   const DirectorioTemporario casa;
   REQUIRE(casa.valido());
   const std::string caminho = casa.dentro("mysong.sock");
