@@ -198,6 +198,32 @@ inline bool Leitor::quatro_hexas(unsigned* fora, std::string* razao) {
   *fora = somma;
   return true;
 }
+// O PAR DE SUBSTITUTOS. Cliente que use bibliotheca de JSON manda o UTF-8 cru e
+// nunca cae aqui; mas quem escapar tudo em \u há de ser lido igual, e substituto
+// solto é recusa dita, e não byte torto emittido adiante.
+inline bool Leitor::ponto_de_codigo(std::string* fora, std::string* razao) {
+  unsigned alto = 0;
+  if (!quatro_hexas(&alto, razao)) return false;
+  unsigned ponto = alto;
+  if (alto >= 0xD800u && alto <= 0xDBFFu) {
+    if (toma() != '\\' || toma() != 'u') {
+      *razao = "substituto alto sem o par que o completa";
+      return false;
+    }
+    unsigned baixo = 0;
+    if (!quatro_hexas(&baixo, razao)) return false;
+    if (baixo < 0xDC00u || baixo > 0xDFFFu) {
+      *razao = "substituto baixo fora da faixa";
+      return false;
+    }
+    ponto = 0x10000u + ((alto - 0xD800u) << 10) + (baixo - 0xDC00u);
+  } else if (alto >= 0xDC00u && alto <= 0xDFFFu) {
+    *razao = "substituto baixo solto, sem o alto que o precede";
+    return false;
+  }
+  em_utf8(ponto, fora);
+  return true;
+}
 }  // namespace intimo
 }  // namespace mysong::api
 
