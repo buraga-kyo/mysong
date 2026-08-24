@@ -339,7 +339,12 @@ Analisador::Analisador() : punho_(new Punho) {
   // seria correr a chance de perder o annuncio do nó que já existia.
   pw_registry_add_listener(punho_->registro, &punho_->ouvido_do_registro,
                              &Punho::eventos_do_registro(), punho_.get());
-  pw_thread_loop_start(punho_->laco);
+  // A linha que não parte é o unico d'estes erros que não se annuncia por si: o
+  // registro calado dá bandas em zero, e zero é o que se veria também sem nó.
+  // Sem esta razão escripta, os dous casos seriam indistinguiveis de fóra.
+  if (pw_thread_loop_start(punho_->laco) < 0) {
+    punho_->razao = "não fiz partir a linha de execução do PipeWire";
+  }
 }
 
 Analisador::~Analisador() {
