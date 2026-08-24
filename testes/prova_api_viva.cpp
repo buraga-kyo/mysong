@@ -174,6 +174,31 @@ TEST_CASE("o socket abre em 0600, responde, e a linha chega PARTIDA byte a byte"
   CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
   CHECK(linhas[0].find("\"duracao\":42.000") != std::string::npos);
 }
+TEST_CASE("duas mensagens numa leitura so produzem DUAS linhas, na ordem") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+  std::string razao;
+  auto servidor = Servidor::abrir(tocador, casa.dentro("mysong.sock"), &razao);
+  REQUIRE_MESSAGE(servidor.has_value(), razao);
+
+  Cliente cliente(casa.dentro("mysong.sock"));
+  REQUIRE(cliente.ligado());
+  // Num send SÓ. Servidor que respondesse uma linha por leitura calaria a segunda
+  // mensagem, e o cliente ficaria a esperar resposta que nunca vem.
+  cliente.manda("{\"verbo\":\"versao\"}\n{\"verbo\":\"estado\"}\n");
+  const std::vector<std::string> linhas = cliente.colhe(*servidor, 2);
+  REQUIRE(linhas.size() == 2);
+  CHECK(linhas[0].find("\"protocolo\":1") != std::string::npos);
+  CHECK(linhas[1].find("\"volume\":100") != std::string::npos);
+  // E a linha em branco no meio não produz resposta alguma, nem linha vazia.
+  cliente.manda("\n   \n{\"verbo\":\"versao\"}\n");
+  const std::vector<std::string> depois = cliente.colhe(*servidor, 1);
+  REQUIRE(depois.size() == 1);
+  CHECK(depois[0].find("\"protocolo\":1") != std::string::npos);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
