@@ -29,11 +29,14 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <limits>
 #include <string>
 #include <vector>
+
+#include <ftxui/screen/screen.hpp>
 
 #include "nucleo/analisador.hpp"
 #include "tui/espectro.hpp"
