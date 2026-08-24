@@ -349,3 +349,42 @@ TEST_CASE("a columna que cobre pico e vale sahe pelo pico") {
   CHECK(quadro.em(3, 1).glifo == kUm);
   CHECK(quadro.em(0, 1).pinta == false);
 }
+
+// ── C8 · redimensionar recompõe sem quebrar ─────────────────────────────────
+// Aqui a comparação de uma sahida de compor() com outra É o que se affirma, e
+// por isso é legitima: o caso não pergunta á obra qual é o desenho, pergunta se
+// o desenho VOLTA. É a unica excepção á regra (a) do tractado, e vae dita.
+TEST_CASE("compor em duas larguras e voltar dá o mesmo quadro") {
+  std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
+  for (std::size_t b = 0; b < bandas.size(); ++b)
+    bandas[b] = static_cast<float>(b) / static_cast<float>(bandas.size());
+
+  const es::Quadro primeiro = es::compor(bandas, 40, 6);
+  const es::Quadro pelo_meio = es::compor(bandas, 13, 6);  // estreita
+  const es::Quadro de_volta = es::compor(bandas, 40, 6);   // e volta
+
+  REQUIRE(primeiro.celulas.size() == de_volta.celulas.size());
+  CHECK(pelo_meio.largura == 13);  // o do meio de facto mudou de fórma
+
+  // Campo a campo: glifo, tinta e o pintar. Estado escondido apparecería aqui.
+  bool identico = true;
+  for (std::size_t i = 0; i < primeiro.celulas.size(); ++i) {
+    if (primeiro.celulas[i].glifo != de_volta.celulas[i].glifo) identico = false;
+    if (primeiro.celulas[i].pinta != de_volta.celulas[i].pinta) identico = false;
+    if (!es::mesma_tinta(primeiro.celulas[i].tinta, de_volta.celulas[i].tinta))
+      identico = false;
+  }
+  CHECK(identico);
+}
+
+TEST_CASE("painel sem largura ou sem altura dá quadro vazio") {
+  const std::vector<float> bandas = bandas_uniformes(0.5f);
+  CHECK(es::compor(bandas, 0, 5).celulas.empty());
+  CHECK(es::compor(bandas, 10, 0).celulas.empty());
+  CHECK(es::compor(bandas, 0, 0).celulas.empty());
+  // E vector de bandas VAZIO não presume vinte e quatro: compõe o piso, visto
+  // que columna alguma tem valor, e sobretudo não lê fóra de limite.
+  const es::Quadro sem_bandas = es::compor({}, 6, 3);
+  CHECK(sem_bandas.celulas.size() == 18);
+  CHECK(sem_bandas.em(2, 0).glifo == kUm);
+}
