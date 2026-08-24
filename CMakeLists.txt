@@ -109,6 +109,12 @@ target_link_libraries(toca_tom PRIVATE mysong_core)
 # #29, e é ella que trará a libdbus-1.
 target_sources(mysong_core PRIVATE src/api/protocolo.cpp src/api/socket.cpp)
 
+# O binario com que o aceite se prova. Linha de commando, e SEM FTXUI: que ele NÃO
+# linke a janella é parte do aceite, e por isso se lê aqui e se confirma com ldd.
+add_executable(superficie_viva exemplos/superficie_viva.cpp)
+target_compile_options(superficie_viva PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(superficie_viva PRIVATE mysong_core)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
