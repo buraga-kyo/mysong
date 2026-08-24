@@ -75,6 +75,39 @@ std::string retracto(Tocador& tocador) {
   obra.par("tamanho", inteiro(static_cast<long long>(tocador.fila().tamanho())));
   return obra.fecha();
 }
+// AS FAIXAS DA FILA. A Fila não tem porta que devolva a faixa de um indice
+// qualquer: tem «corrente()» e tem «ir_para()». Alargá-la seria editar
+// src/nucleo/fila.hpp, e a tarefa irmã reescreve o nucleo agora. Donde se anda
+// pela fila e se RESTAURA o assento no fim. E anda-se na FILA, e não no TOCADOR:
+// Fila::ir_para move o indice e nada desce ao motor, de sorte que este passeio
+// não toca em som algum nem se ouve de fóra.
+std::vector<std::string> faixas_da_fila(Tocador& tocador) {
+  nucleo::Fila& fila = tocador.fila();
+  std::vector<std::string> obra;
+  if (fila.vazia()) return obra;
+  const std::size_t assento = fila.indice();
+  obra.reserve(fila.tamanho());
+  for (std::size_t passo = 0; passo < fila.tamanho(); ++passo) {
+    fila.ir_para(passo);
+    obra.emplace_back(fila.corrente());
+  }
+  fila.ir_para(assento);
+  return obra;
+}
+
+// «nao_implementado» é nome que a Casa TEM e cujo subsystema ainda não chegou. A
+// issue vae na resposta, para que o implementador do outro lado saiba ONDE
+// procurar quando aquillo passar a funccionar, em vez de ficar a supor se errou o
+// nome ou se a feição não veio.
+std::string reservado(std::string_view verbo, int issue) {
+  Objecto obra;
+  obra.par("ok", booleano(false));
+  obra.par("erro", texto("nao_implementado"));
+  obra.par("razao", texto("o verbo \"" + std::string(verbo) +
+                          "\" esta reservado e o seu subsystema ainda nao existe"));
+  obra.par("issue", inteiro(issue));
+  return obra.fecha();
+}
 }  // namespace
 }  // namespace mysong::api
 // ══════════════════════════════════════════════════════════════════════════
