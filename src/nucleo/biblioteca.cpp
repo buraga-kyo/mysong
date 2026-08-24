@@ -215,6 +215,19 @@ std::vector<Faixa> Biblioteca::busca_faixa(std::string_view termo) const {
   return faixas;
 }
 
+bool Biblioteca::acha_por_caminho(std::string_view caminho,
+                                  Faixa& sahida) const {
+  const std::string sql = std::string("SELECT ") + kColumnas +
+                          " FROM faixas WHERE caminho = ?1;";
+  bool achou = false;
+  corre(punho_, sql.c_str(), {caminho},
+        [&achou, &sahida](sqlite3_stmt* passo) {
+          sahida = faixa_da_linha(passo);
+          achou = true;
+        });
+  return achou;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
