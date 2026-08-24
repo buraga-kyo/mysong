@@ -76,7 +76,14 @@ inline constexpr float PISO_EM_DECIBEIS = -60.0f;
 // Abaixo d'este limiar a banda vale ZERO EXACTO, e não um resto de arredondar.
 // É o que faz o silencio ser silencio de verdade na tela, e não 0,003 a tremer;
 // e é o que faz o aceite poder pedir «bandas em zero» e receber zero.
-inline constexpr float LIMIAR_DE_ZERO = 0.01f;
+//
+// Tres centesimos, e os dous motivos são medidos. O primeiro é do olho: uma
+// barra de terminal desenha-se com oito glyphos de bloco, donde o menor passo
+// que ella mostra vale um oitavo, e tres centesimos são um quarto d'esse menor
+// passo. O segundo é do prazo: com queda de 250 ms, uma banda cheia leva 876 ms
+// para descer a tres centesimos, e cabe no segundo que o aceite dá ao nó que
+// morre; com um centesimo levaria 1151 ms, e o aceite estouraria por 151.
+inline constexpr float LIMIAR_DE_ZERO = 0.03f;
 
 // A taxa que se presume ANTES de o formato ser confirmado. Presumir é legitimo,
 // chumbar não é: assenta_formato() recalcula tudo quando o mundo responde.
