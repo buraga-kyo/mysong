@@ -41,6 +41,40 @@ namespace {
 using mysong::api::Servidor;
 using mysong::nucleo::Estado;
 
+// O DIRECTORIO PROPRIO de cada caso. Nasce por mkdtemp, e morre no destructor com
+// tudo o que houver dentro. É a metade da limpeza que a bateria deve, e é o que
+// impede um caso de envenenar o seguinte.
+class DirectorioTemporario {
+ public:
+  DirectorioTemporario() {
+    char molde[] = "/tmp/mysong-prova-XXXXXX";
+    const char* feito = ::mkdtemp(molde);
+    if (feito != nullptr) caminho_ = feito;
+  }
+  ~DirectorioTemporario() {
+    if (caminho_.empty()) return;
+    // Arvore rasa por desenho: não ha recursão a escrever, e não ha directorio
+    // dentro d'este senão o que esta bateria puser, que é socket e mais nada.
+    ::DIR* porta = ::opendir(caminho_.c_str());
+    if (porta != nullptr) {
+      while (const ::dirent* entrada = ::readdir(porta)) {
+        const std::string nome = entrada->d_name;
+        if (nome == "." || nome == "..") continue;
+        ::unlink((caminho_ + "/" + nome).c_str());
+      }
+      ::closedir(porta);
+    }
+    ::rmdir(caminho_.c_str());
+  }
+  DirectorioTemporario(const DirectorioTemporario&) = delete;
+  DirectorioTemporario& operator=(const DirectorioTemporario&) = delete;
+
+  bool valido() const { return !caminho_.empty(); }
+  std::string dentro(const std::string& nome) const { return caminho_ + "/" + nome; }
+
+ private:
+  std::string caminho_;
+};
 }  // namespace
 
 // ══════════════════════════════════════════════════════════════════════════
