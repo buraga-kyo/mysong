@@ -440,3 +440,36 @@ TEST_CASE("o elemento mostra a linha que o quadro manda") {
     CHECK(linhas[l] == esperada);
   }
 }
+
+// ── C9 · os bytes emittidos ─────────────────────────────────────────────────
+// A sequencia esperada vae escripta Á MÃO, octeto a octeto, e não composta por
+// tokens::sgr: escripta por sgr, o caso affirmaria que a obra chama sgr, que é o
+// que já se vê no codigo. Escripta á mão, affirma a SEQUENCIA. Os numeros sahem
+// de v700 = #6d28d9, que em decimal é 109, 40 e 217.
+TEST_CASE("a tinta sahe immediatamente antes do glifo, sem repouso pelo meio") {
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.899f), 4, 5);
+  // A base veste v700, e traz bloco cheio: dous cheios ao menos, pela conta do
+  // caso da rampa (35 degraus, quatro cheios e resto tres).
+  const es::Celula& base = quadro.em(4, 0);
+  REQUIRE(base.pinta);
+  REQUIRE(base.glifo == kCheio);
+  CHECK(es::sequencia_da_celula(base) == "\x1b[38;2;109;40;217m█");
+
+  // A célulla que NÃO pinta sahe em ordem de repouso, e traz o espaço.
+  const es::Celula vazia;
+  REQUIRE(vazia.pinta == false);
+  CHECK(es::sequencia_da_celula(vazia) == "\x1b[0m ");
+
+  // E a NEGATIVA que fecha a emenda: na célulla pintada não ha repouso algum
+  // entre a tinta e o glifo. Havendo-o, o fundo do painel apparecería entre uma
+  // barra e a seguinte, e a fita sahiria costurada em vez de continua.
+  CHECK(es::sequencia_da_celula(base).find("\x1b[0m") == std::string::npos);
+}
+
+// O piso do silencio, em bytes: text_faint = #463566, que é 70, 53 e 102.
+TEST_CASE("o piso do silencio sahe em text_faint com o bloco de um oitavo") {
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.0f), 3, 4);
+  const es::Celula& piso = quadro.em(3, 0);
+  REQUIRE(piso.pinta);
+  CHECK(es::sequencia_da_celula(piso) == "\x1b[38;2;70;53;102m▁");
+}
