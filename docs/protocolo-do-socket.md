@@ -213,3 +213,47 @@ Sem argumento algum. Respondem `{"ok":true}` quando o nucleo obedeceu, e
 |---|---|---|
 | `porcento` | inteiro | De 0 a 100. Fóra d'ahi **apara-se**, e a resposta diz o valor aparado: quem manda 150 lê 100. É o volume do MOTOR, e nunca o do systema. |
 
+## 6. Os verbos RESERVADOS
+
+Estes tres nomes **existem** no protocolo e o seu subsystema **ainda não chegou**.
+Respondem sempre `nao_implementado`, com a issue que os trará:
+
+```
+→ {"verbo":"espectro"}
+← {"ok":false,"erro":"nao_implementado","razao":"o verbo \"espectro\" esta reservado e o seu subsystema ainda nao existe","issue":5}
+```
+
+| Verbo | Para que ha de servir | Issue |
+|---|---|---|
+| `espectro` | Ler as bandas do espectro. | 5 |
+| `biblioteca` | Navegar a bibliotheca de músicas. | 8 |
+| `baixar` | Disparar um download. | 11 |
+
+Estão reservados de proposito, e não deixados fóra. Deixados fóra, dariam
+`verbo_desconhecido`, que é a MESMA resposta de um erro de digitação, e ahi quem
+escreve o cliente não saberia se errou o nome ou se a feição não chegou. Pode codar
+contra estes nomes hoje: quando a feição chegar, o nome não muda.
+
+## 7. As bordas
+
+| O que o cliente faz | O que o servidor faz |
+|---|---|
+| Manda linha em branco, ou sómente brancos. | Nada. Resposta alguma, e nem linha vazia. Não é erro. |
+| Manda linha maior que 64 KiB sem `\n`. | Responde `linha_longa` e **fecha** a connexão. |
+| Manda duas ou mais mensagens de uma vez. | Responde a todas, uma linha cada, na ordem. |
+| Manda uma mensagem partida em varias escriptas. | Espera pelo `\n` e depois responde. |
+| Fecha a banda de escripta e segue a ler (meio fechamento). | Responde ao que já chegou, e depois fecha. É o que o `nc` faz. |
+| Fecha de todo no meio de uma resposta. | Recolhe o descriptor e segue vivo. O cliente seguinte é servido normalmente. |
+| Abre e nada manda. | Nada. Não bloqueia os outros, nem o som. |
+| Abre sendo o 17º ao mesmo tempo. | Responde `lotado` e fecha. |
+
+## 8. Como falar com elle da linha de commando
+
+```sh
+# Com o nc (OpenBSD netcat). O -q 1 importa: sem elle o nc pode sahir antes de ler.
+printf '{"verbo":"estado"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+
+# Com o socat, se o tiver installado.
+echo '{"verbo":"estado"}' | socat - UNIX:"$XDG_RUNTIME_DIR/mysong.sock"
+```
+
