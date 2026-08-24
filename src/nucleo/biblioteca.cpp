@@ -39,6 +39,44 @@ constexpr char kEsquema[] =
 
 }  // namespace
 
+// Anda byte a byte, e sómente aceita a sequencia que TODA a regra do UTF-8
+// aceita: comprimento pelo primeiro byte, continuação em 10xxxxxx, e nem
+// sobrelongo, nem metade de par substituto, nem ponto fóra do plano. Byte que
+// não sirva vae-se e entra o U+FFFD, e anda-se UM byte — nunca o comprimento
+// que o byte quebrado prometteu, que é como se perde texto bom a seguir ao mau.
+std::string saneia_utf8(std::string_view crua) {
+  std::string limpa;
+  limpa.reserve(crua.size());
+  for (std::size_t i = 0; i < crua.size();) {
+    const unsigned char primeiro = static_cast<unsigned char>(crua[i]);
+    std::size_t comprimento = 0;
+    unsigned long ponto = 0;
+    if (primeiro < 0x80u) { comprimento = 1; ponto = primeiro; }
+    else if ((primeiro & 0xE0u) == 0xC0u) { comprimento = 2; ponto = primeiro & 0x1Fu; }
+    else if ((primeiro & 0xF0u) == 0xE0u) { comprimento = 3; ponto = primeiro & 0x0Fu; }
+    else if ((primeiro & 0xF8u) == 0xF0u) { comprimento = 4; ponto = primeiro & 0x07u; }
+    bool bom = comprimento != 0 && i + comprimento <= crua.size();
+    for (std::size_t k = 1; bom && k < comprimento; ++k) {
+      const unsigned char seguinte = static_cast<unsigned char>(crua[i + k]);
+      if ((seguinte & 0xC0u) != 0x80u) bom = false;
+      else ponto = (ponto << 6) | (seguinte & 0x3Fu);
+    }
+    if (bom && comprimento == 2 && ponto < 0x80ul) bom = false;
+    if (bom && comprimento == 3 && ponto < 0x800ul) bom = false;
+    if (bom && comprimento == 4 && ponto < 0x10000ul) bom = false;
+    if (bom && (ponto > 0x10FFFFul || (ponto >= 0xD800ul && ponto <= 0xDFFFul)))
+      bom = false;
+    if (bom) {
+      limpa.append(crua.substr(i, comprimento));
+      i += comprimento;
+    } else {
+      limpa.append("\xEF\xBF\xBD");
+      ++i;
+    }
+  }
+  return limpa;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
