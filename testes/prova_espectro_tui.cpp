@@ -274,3 +274,40 @@ TEST_CASE("o silencio deixa um piso de um oitavo em text_faint") {
     for (std::size_t l = 0; l < 5; ++l) CHECK(quadro.em(l, c).pinta == false);
   }
 }
+
+// ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
+TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
+  const std::vector<float> bandas = bandas_uniformes(0.5f);
+  for (std::size_t largura = 1; largura <= 200; ++largura) {
+    const es::Quadro quadro = es::compor(bandas, largura, 3);
+    // Nem estoura, nem deixa buraco: a conta do tamanho faz-se aqui, á mão.
+    CHECK(quadro.largura == largura);
+    CHECK(quadro.altura == 3);
+    CHECK(quadro.celulas.size() == largura * 3);
+  }
+}
+
+// A COBERTURA prova-se por SONDA, e não repetindo a conta da repartição. Para
+// cada banda arma-se um pico solitario e afere-se que ELLE APPARECE na fita: é
+// asserção de comportamento, e não a mesma fórmula escripta duas vezes. Fosse a
+// prova a recalcular os intervallos, ella affirmaria a arithmetica que a obra já
+// affirma, e uma repartição que perdesse banda passaria nas duas.
+TEST_CASE("banda alguma se perde, em largura alguma") {
+  const std::size_t larguras[] = {1, 2, 3, 5, 7, 11, 13, 23, 24, 25, 47, 80, 200};
+  for (const std::size_t largura : larguras) {
+    for (std::size_t b = 0; b < mysong::nucleo::QUANTAS_BANDAS; ++b) {
+      std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
+      bandas[b] = 1.0f;  // pico solitario: enche a columna que o contiver
+      const es::Quadro quadro = es::compor(bandas, largura, 4);
+
+      // Alguma columna ha de subir ao TOPO (linha 0) com o bloco cheio. Se a
+      // repartição saltasse esta banda, columna alguma subiria, e a fita
+      // mostraria o pico de outra banda ou pico nenhum.
+      bool alguma_cheia = false;
+      for (std::size_t c = 0; c < largura; ++c)
+        if (quadro.em(0, c).pinta && quadro.em(0, c).glifo == kCheio)
+          alguma_cheia = true;
+      CHECK(alguma_cheia);
+    }
+  }
+}
