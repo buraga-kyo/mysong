@@ -100,6 +100,21 @@ add_executable(toca_tom exemplos/toca_tom.cpp)
 target_compile_options(toca_tom PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(toca_tom PRIVATE mysong_core)
 
+# ─── A SUPERFÍCIE DE COMMANDO (issue #4) ────────────────────────────────────
+# Entra por target_sources, e NÃO na lista do add_library nem em linha que já
+# existisse: é regra d'esta Casa que lavra nova ACRESCENTE linha em vez de alterar
+# linha alheia, e aqui a regra tem nome, que a tarefa irmã mysong-5 edita este
+# mesmo arquivo agora. Dependencia nova alguma se cobra: o socket Unix é POSIX, e
+# o jsonzinho é só-cabeçalho d'esta Casa. A metade MPRIS d'esta issue sahiu para a
+# #29, e é ella que trará a libdbus-1.
+target_sources(mysong_core PRIVATE src/api/protocolo.cpp src/api/socket.cpp)
+
+# O binario com que o aceite se prova. Linha de commando, e SEM FTXUI: que ele NÃO
+# linke a janella é parte do aceite, e por isso se lê aqui e se confirma com ldd.
+add_executable(superficie_viva exemplos/superficie_viva.cpp)
+target_compile_options(superficie_viva PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(superficie_viva PRIVATE mysong_core)
+
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
