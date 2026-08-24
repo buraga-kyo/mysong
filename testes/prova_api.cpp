@@ -261,6 +261,30 @@ TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   CHECK(campo(fala(tocador, "{\"verbo\":\"buscar\",\"segundos\":4.5}"), "ok") == "true");
   CHECK(duble.alvo_buscado == doctest::Approx(4.5));
 }
+TEST_CASE("a ordem que o nucleo recusa volta como recusado, e nunca como ok") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  // Com a fila vazia e o tocador parado, quatro ordens legitimas recusam-se.
+  CHECK(campo(fala(tocador, "{\"verbo\":\"tocar\"}"), "erro") == "recusado");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"pausar\"}"), "erro") == "recusado");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"retomar\"}"), "erro") == "recusado");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"buscar\",\"segundos\":1}"), "erro") ==
+        "recusado");
+  // E recusa NÃO é silêncio: a razão vae sempre, e nunca vazia.
+  CHECK_FALSE(campo(fala(tocador, "{\"verbo\":\"pausar\"}"), "razao").empty());
+
+  fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":\"soh.wav\"}");
+  REQUIRE(campo(fala(tocador, "{\"verbo\":\"tocar\"}"), "ok") == "true");
+
+  // Na borda da fila NADA se manda ao motor, e a faixa em curso segue a tocar.
+  const std::size_t antes = duble.tocados.size();
+  CHECK(campo(fala(tocador, "{\"verbo\":\"proxima\"}"), "erro") == "recusado");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"anterior\"}"), "erro") == "recusado");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"ir_para\",\"indice\":9}"), "erro") ==
+        "recusado");
+  CHECK(duble.tocados.size() == antes);
+  CHECK(tocador.estado() == Estado::Tocando);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
