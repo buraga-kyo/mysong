@@ -41,5 +41,13 @@ target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 # o contracto por analisador.hpp, que esconde o PipeWire atraz de um punho.
 target_sources(mysong_testes PRIVATE prova_espectro.cpp)
 
+# ─── Prova do DESENHO do espectro (issue #6) ─────────────────────────────────
+# Por target_sources, e não na lista do add_executable: linha nova não collide.
+# Chama-se prova_espectro_tui.cpp porque prova_espectro.cpp já é a prova do
+# núcleo, e dous arquivos de egual nome não cabem no mesmo directorio.
+# SEM PONTO E VÍRGULA em nome de caso algum lá dentro: o ponto e vírgula parte a
+# lista do CMake, e zero casos corridos dá status de successo. Já succedeu.
+target_sources(mysong_testes PRIVATE prova_espectro_tui.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
