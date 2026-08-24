@@ -164,7 +164,6 @@ class Escriba {
   std::filesystem::path banco_;
   std::filesystem::path temporario_;
   sqlite3* punho_ = nullptr;
-  bool fechado_ = false;
 };
 
 }  // namespace mysong::nucleo

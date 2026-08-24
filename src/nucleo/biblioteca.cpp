@@ -304,6 +304,27 @@ bool Escriba::grava(const Faixa& faixa) {
   return veredicto == SQLITE_DONE;
 }
 
+bool Escriba::conclui() {
+  if (punho_ == nullptr) return false;
+  // Fecha ANTES de renomear. O SQLite guarda o nome com que abriu, e renomear
+  // por baixo de um punho aberto é pedir que elle escreva n'um arquivo que já
+  // não é o que elle crê ser.
+  const bool fechou = sqlite3_close(punho_) == SQLITE_OK;
+  punho_ = nullptr;
+  std::error_code erro;
+  if (!fechou) {
+    std::filesystem::remove(temporario_, erro);
+    return false;
+  }
+  ::chmod(temporario_.c_str(), S_IRUSR | S_IWUSR);
+  std::filesystem::rename(temporario_, banco_, erro);
+  if (erro) {
+    std::filesystem::remove(temporario_, erro);
+    return false;
+  }
+  return true;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
