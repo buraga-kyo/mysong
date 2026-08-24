@@ -276,6 +276,34 @@ Escriba::Escriba(std::filesystem::path banco, long limite_de_paginas)
   assenta_versao_e_limite(punho_, limite_de_paginas);
 }
 
+bool Escriba::grava(const Faixa& faixa) {
+  if (punho_ == nullptr) return false;
+  const std::string sql = std::string("INSERT OR REPLACE INTO faixas (") +
+                          kColumnas + ") VALUES" +
+                          " (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11);";
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho_, sql.c_str(), -1, &passo, nullptr) != SQLITE_OK)
+    return false;
+  // Saneadas ANTES de amarrar, e guardadas em cadeias que vivem até ao step:
+  // amarrar um temporario que morra na mesma linha seria amarrar ponteiro morto.
+  const std::string cadeias[5] = {
+      saneia_utf8(faixa.caminho), saneia_utf8(faixa.raiz),
+      saneia_utf8(faixa.artista), saneia_utf8(faixa.album),
+      saneia_utf8(faixa.titulo)};
+  for (int i = 0; i < 5; ++i)
+    sqlite3_bind_text(passo, i + 1, cadeias[i].c_str(),
+                      static_cast<int>(cadeias[i].size()), SQLITE_TRANSIENT);
+  sqlite3_bind_int(passo, 6, faixa.numero);
+  sqlite3_bind_int(passo, 7, faixa.anno);
+  sqlite3_bind_int(passo, 8, faixa.duracao);
+  sqlite3_bind_int64(passo, 9, faixa.modificado);
+  sqlite3_bind_int64(passo, 10, faixa.tamanho);
+  sqlite3_bind_int(passo, 11, static_cast<int>(faixa.deduzido));
+  const int veredicto = sqlite3_step(passo);
+  sqlite3_finalize(passo);
+  return veredicto == SQLITE_DONE;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
