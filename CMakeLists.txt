@@ -107,7 +107,7 @@ target_link_libraries(toca_tom PRIVATE mysong_core)
 # mesmo arquivo agora. Dependencia nova alguma se cobra: o socket Unix é POSIX, e
 # o jsonzinho é só-cabeçalho d'esta Casa. A metade MPRIS d'esta issue sahiu para a
 # #29, e é ella que trará a libdbus-1.
-target_sources(mysong_core PRIVATE src/api/protocolo.cpp)
+target_sources(mysong_core PRIVATE src/api/protocolo.cpp src/api/socket.cpp)
 
 # ══════════════════════════════════════════════════════════════════════════
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
