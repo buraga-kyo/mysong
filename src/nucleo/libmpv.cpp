@@ -12,7 +12,28 @@
 
 #include <dlfcn.h>
 
+#include "nucleo/sonda.hpp"
+
 namespace mysong::nucleo {
+namespace {
+
+// O soname e a chave vêm da taboa da SONDA, e não de cadeia repetida aqui:
+// divergindo as duas, a sonda daria por presente o que o motor daria por
+// ausente, e a tela das faltas contradiria a recusa do motor.
+const Requisito* requisito_da_libmpv() {
+  for (const Requisito& requisito : requisitos())
+    if (requisito.chave == "libmpv") return &requisito;
+  return nullptr;
+}
+
+// A interface afere-se pelo MAIOR, e nunca pelo menor: a libmpv promette
+// compatibilidade para deante no menor, e recusar por elle seria mais severo do
+// que a bibliotheca pede. Maior diverso é outra interface, e não a nossa.
+bool maior_diverso(unsigned long achada) {
+  return (achada >> 16) != (MPV_CLIENT_API_VERSION >> 16);
+}
+
+}  // namespace
 
 // Abre-se no primeiro pedido, por estatico local que o C++ serializa: o tocador
 // e o socket podem pedir de fios diversos. E NÃO se solta: dlclose com punho do
@@ -21,10 +42,21 @@ const TaboaDaLibmpv* libmpv(std::string* razao) {
   static std::string queixa;
   static TaboaDaLibmpv taboa;
   static const bool atada = [] {
-    void* biblio = dlopen("libmpv.so.2", RTLD_LAZY | RTLD_LOCAL);
+    const Requisito* const requisito = requisito_da_libmpv();
+    if (requisito == nullptr) {
+      queixa = "a taboa da sonda não declara requisito de chave libmpv";
+      return false;
+    }
+    const std::string soname(requisito->alvo);
+    if (nomeado_na_forcagem(requisito->chave)) {
+      queixa = "MYSONG_SONDA_FORCA nomeia " + std::string(requisito->chave) +
+               ": finge-se ausente a " + soname;
+      return false;
+    }
+    void* biblio = dlopen(soname.c_str(), RTLD_LAZY | RTLD_LOCAL);
     if (biblio == nullptr) {
       const char* const erro = dlerror();
-      queixa = std::string("não achei a libmpv.so.2: ") +
+      queixa = "não achei a " + soname + ": " +
                (erro != nullptr ? erro : "sem razão dita");
       return false;
     }
@@ -36,6 +68,13 @@ const TaboaDaLibmpv* libmpv(std::string* razao) {
   }
     MYSONG_LIBMPV_FUNCCOES(MYSONG_LIBMPV_ATA)
 #undef MYSONG_LIBMPV_ATA
+    const unsigned long achada = taboa.mpv_client_api_version();
+    if (maior_diverso(achada)) {
+      queixa = "a libmpv é de interface " + std::to_string(achada >> 16) +
+               ", e esta obra compilou-se para a " +
+               std::to_string(MPV_CLIENT_API_VERSION >> 16);
+      return false;
+    }
     return true;
   }();
   if (!atada && razao) *razao = queixa;
