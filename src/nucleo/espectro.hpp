@@ -82,6 +82,27 @@ inline constexpr float LIMIAR_DE_ZERO = 0.01f;
 // chumbar não é: assenta_formato() recalcula tudo quando o mundo responde.
 inline constexpr float TAXA_PRESUMIDA = 48000.0f;
 
+// ── A SUAVIZAÇÃO, em TEMPO e não em coefficiente. Coefficiente é numero solto:
+// muda-se o salto e a suavização desafina sem que ninguem note. Tempo é cousa
+// physica, e o coefficiente sahe d'elle com a duração REAL do salto.
+//
+// ATAQUE de 40 ms: a batida ha de chegar á tela quasi junto com o som, e 40 ms é
+// o limite em que o olho ainda casa o movimento com o que ouve.
+// QUEDA de 250 ms: o olho lê queda mais devagar do que ataque, e barra que desce
+// tão rapido quanto sobe PISCA. Um quarto de segundo desce com graça e ainda
+// acompanha a musica.
+inline constexpr double TEMPO_DE_ATAQUE_MS = 40.0;
+inline constexpr double TEMPO_DE_QUEDA_MS = 250.0;
+static_assert(TEMPO_DE_QUEDA_MS > TEMPO_DE_ATAQUE_MS,
+              "a queda ha de ser mais lenta que o ataque, ou a barra pisca");
+
+// Passado este prazo sem buffer novo, declara-se o silencio. O nó do mpv morre
+// SEM AVISO: o callback de processo simplesmente deixa de correr, e sem este
+// prazo a ultima janela ficaria congelada na tela para sempre. Cento e vinte
+// millesimos são cinco quantos de folga, que basta para não confundir um
+// tropeço do systema com faixa que acabou.
+inline constexpr double PRAZO_DE_SILENCIO_MS = 120.0;
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
