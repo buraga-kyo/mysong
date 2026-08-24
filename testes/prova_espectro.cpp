@@ -133,3 +133,45 @@ TEST_CASE("as bordas das bandas não decrescem, e nenhuma banda fica vazia") {
     }
   }
 }
+
+TEST_CASE("silencio absoluto dá zero EXACTO, e não erro") {
+  nu::Espectro espectro(48000.0f, 2);
+  const std::vector<float> mudo(8192, 0.0f);
+  espectro.alimenta(mudo.data(), mudo.size());
+  for (const float valor : espectro.bandas()) {
+    CHECK(valor == 0.0f);
+  }
+  // E de novo, para que se veja que o silencio não se accumula em cousa alguma.
+  espectro.alimenta(mudo.data(), mudo.size());
+  for (const float valor : espectro.bandas()) {
+    CHECK(valor == 0.0f);
+  }
+}
+
+TEST_CASE("a queda é mais lenta que o ataque, e desce sem saltar") {
+  static_assert(nu::TEMPO_DE_QUEDA_MS > nu::TEMPO_DE_ATAQUE_MS,
+                "a queda ha de ser mais lenta que o ataque");
+  nu::Espectro espectro(48000.0f, 2);
+  const auto forte = seno(440.0f, 1.0f, 48000.0f, 14 * nu::SALTO_DA_FFT);
+  espectro.alimenta(forte.data(), forte.size());
+  const std::size_t alvo = espectro.banda_de(440.0f);
+  const float alto = espectro.bandas()[alvo];
+  REQUIRE(alto > 0.5f);
+
+  // Corta-se o som, e a banda ha de DESCER, quadro por quadro, e não saltar a
+  // zero: saltar é o que na tela se lê como falha do programa.
+  float anterior = alto;
+  for (int quadro = 0; quadro < 5; ++quadro) {
+    espectro.esmorece(1000.0 * nu::SALTO_DA_FFT / 48000.0);
+    const float agora = espectro.bandas()[alvo];
+    INFO("quadro=" << quadro << " anterior=" << anterior << " agora=" << agora);
+    CHECK(agora < anterior);
+    CHECK(agora > 0.0f);
+    anterior = agora;
+  }
+
+  // E ao fim de um segundo de silencio ella chega a zero, que é o que o aceite
+  // pede quando o nó morre.
+  espectro.esmorece(1000.0);
+  CHECK(espectro.bandas()[alvo] == 0.0f);
+}
