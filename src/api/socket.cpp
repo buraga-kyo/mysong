@@ -110,7 +110,34 @@ std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
                     " e nao se pudo desligar: " + std::strerror(errno));
   }
 
-  return recusa("por lavrar: a ligacao do socket vem no commit seguinte");
+  const int escuta = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+  if (escuta < 0)
+    return recusa(std::string("nao se pudo abrir o socket: ") + std::strerror(errno));
+
+  ::sockaddr_un endereco{};
+  assenta_endereco(&endereco, caminho);
+  // O umask é estado GLOBAL do processo: assenta-se, cria-se, e restaura-se no
+  // mesmo escopo, para que arquivo algum que o programa crie depois herde isto. O
+  // 0177 deixa o socket em 0600, que com o $XDG_RUNTIME_DIR a 0700 é a protecção
+  // inteira d'esta superfície: não ha senha, e a porta é a do systema de arquivos.
+  const ::mode_t antiga = ::umask(0177);
+  const int ligou = ::bind(
+      escuta, reinterpret_cast<const ::sockaddr*>(&endereco), sizeof(endereco));
+  const int erro_do_bind = errno;
+  ::umask(antiga);
+  if (ligou != 0) {
+    ::close(escuta);
+    return recusa("nao se pudo ligar " + caminho + ": " +
+                  std::strerror(erro_do_bind));
+  }
+  if (::listen(escuta, 8) != 0) {
+    const int erro_da_escuta = errno;
+    ::close(escuta);
+    ::unlink(caminho.c_str());
+    return recusa("nao se pudo escutar em " + caminho + ": " +
+                  std::strerror(erro_da_escuta));
+  }
+  return Servidor(tocador, escuta, caminho);
 }
 
 }  // namespace mysong::api
