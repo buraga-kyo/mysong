@@ -38,6 +38,35 @@ float em_decibeis(float magnitude) {
 
 }  // namespace
 
+Espectro::Espectro(float taxa, int canaes) {
+  // A janela de HANN, computada uma vez. Sem janela alguma (que é a janela
+  // rectangular) um seno puro espalha a sua raia por toda a tela, e o aceite de
+  // que «o seno de 440 acende a banda de 440 e não as outras» morreria por isso
+  // e por nada mais.
+  hann_.resize(JANELA_DA_FFT);
+  for (std::size_t i = 0; i < JANELA_DA_FFT; ++i) {
+    const float parte = static_cast<float>(i) / static_cast<float>(JANELA_DA_FFT - 1);
+    hann_[i] = 0.5f - 0.5f * std::cos(2.0f * PI * parte);
+  }
+
+  entrada_ = fftwf_alloc_real(JANELA_DA_FFT);
+  sahida_ = fftwf_alloc_real(2 * (JANELA_DA_FFT / 2 + 1));
+  // O plano nasce UMA VEZ, na construcção, e nunca dentro do callback de
+  // processo: planejar custa, e custar dentro da linha de tempo real do
+  // PipeWire seria pagar em falha de audio o que aqui se paga uma só vez.
+  plano_ = fftwf_plan_dft_r2c_1d(static_cast<int>(JANELA_DA_FFT), entrada_,
+                                 reinterpret_cast<fftwf_complex*>(sahida_),
+                                 FFTW_MEASURE);
+  bandas_.assign(QUANTAS_BANDAS, 0.0f);
+  assenta_formato(taxa, canaes);
+}
+
+Espectro::~Espectro() {
+  if (plano_ != nullptr) fftwf_destroy_plan(plano_);
+  if (entrada_ != nullptr) fftwf_free(entrada_);
+  if (sahida_ != nullptr) fftwf_free(sahida_);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
