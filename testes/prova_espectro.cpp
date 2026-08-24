@@ -334,11 +334,17 @@ TEST_CASE("o tocador sem fonte entrega zeros, e com fonte entrega o que ella diz
 
 TEST_CASE("o espaçamento logarithmico separa o baixo, que o linear juntaria") {
   nu::Espectro espectro(48000.0f, 2);
-  const std::size_t cem = espectro.banda_de(100.0f);
-  const std::size_t la = espectro.banda_de(440.0f);
-  const std::size_t mil = espectro.banda_de(1000.0f);
-  const std::size_t seis_mil = espectro.banda_de(6000.0f);
-  INFO("100=" << cem << " 440=" << la << " 1000=" << mil << " 6000=" << seis_mil);
+  // Este caso já não interroga a obra: elle assere que a obra bate com os
+  // indices de FÓRA, um por um, e sómente depois lê a ordem d'elles. Interrogar
+  // a obra e conferir a ordem das suas proprias respostas seria a obra a
+  // testemunhar a favor de si.
+  for (const auto& esperada : ESPERADAS_A_48K) {
+    CHECK(espectro.banda_de(esperada.hertz) == esperada.banda);
+  }
+  const std::size_t cem = ESPERADAS_A_48K[0].banda;
+  const std::size_t la = ESPERADAS_A_48K[1].banda;
+  const std::size_t mil = ESPERADAS_A_48K[2].banda;
+  const std::size_t seis_mil = ESPERADAS_A_48K[3].banda;
 
   // Cada uma em sua banda, e na ordem. Com espaçamento LINEAR de 40 a 16000 as
   // bandas valeriam 665 Hz cada, e 100, 440 e mesmo 660 Hz cahiriam TODAS na
