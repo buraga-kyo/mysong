@@ -301,6 +301,27 @@ TEST_CASE("a limpeza corre por QUALQUER sahida, e a excepcao inclusa") {
   CHECK_MESSAGE(outra_vez.has_value(), razao);
 }
 
+TEST_CASE("o caminho recusa-se por nome quando falta o XDG ou quando nao cabe") {
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+
+  // Caminho vazio é o que caminho_padrao_do_socket devolve sem $XDG_RUNTIME_DIR.
+  std::string razao;
+  CHECK_FALSE(Servidor::abrir(tocador, "", &razao).has_value());
+  CHECK(razao.find("XDG_RUNTIME_DIR") != std::string::npos);
+  // E recuo algum a /tmp: recuar deixaria qualquer usuario da machina governar o
+  // tocador alheio, ou criar o arquivo primeiro e passar a receber as ordens.
+  CHECK(razao.find("/tmp") != std::string::npos);  // dito na razão, e não usado
+
+  // O limite de sun_path recusa-se com o comprimento E o limite ditos, e nunca se
+  // trunca em silêncio. Nesta machina o caminho real tem trinta bytes, donde este
+  // caso nunca se daria por acidente: força-se de proposito.
+  const std::string comprido = "/tmp/" + std::string(200, 'x') + ".sock";
+  razao.clear();
+  CHECK_FALSE(Servidor::abrir(tocador, comprido, &razao).has_value());
+  CHECK(razao.find("108") != std::string::npos);
+  CHECK(razao.find(std::to_string(comprido.size())) != std::string::npos);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
