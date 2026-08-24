@@ -308,6 +308,56 @@ inline bool le_valor(Leitor* leitor, Valor* fora, std::string* razao) {
   return leitor->numero(&fora->numero, razao);
 }
 }  // namespace intimo
+
+// ANALYSA. A linha inteira há de ser UM objecto plano, e nada mais: nem vector,
+// nem escalar solto, nem dous objectos em fila, nem sobra depois do fecho. Chave
+// repetida recusa-se, que de outra sorte a ultima venceria em silêncio e o
+// cliente nunca saberia qual das duas o servidor obedeceu.
+inline Mensagem analysa(std::string_view linha) {
+  Mensagem obra;
+  intimo::Leitor leitor(linha);
+  leitor.come_brancos();
+  if (leitor.toma() != '{') {
+    obra.razao = "a mensagem ha de ser um objecto JSON, e comecar por {";
+    return obra;
+  }
+  leitor.come_brancos();
+  bool primeiro = true;
+  while (leitor.olha() != '}') {
+    if (!primeiro) {
+      if (leitor.toma() != ',') {
+        obra.razao = "esperava-se , ou } entre os pares";
+        return obra;
+      }
+      leitor.come_brancos();
+    }
+    primeiro = false;
+    std::string chave;
+    if (!leitor.cadeia(&chave, &obra.razao)) return obra;
+    if (obra.pares.count(chave) != 0) {
+      obra.razao = "chave repetida: " + chave;
+      return obra;
+    }
+    leitor.come_brancos();
+    if (leitor.toma() != ':') {
+      obra.razao = "esperava-se : depois da chave " + chave;
+      return obra;
+    }
+    leitor.come_brancos();
+    Valor valor;
+    if (!intimo::le_valor(&leitor, &valor, &obra.razao)) return obra;
+    obra.pares.emplace(std::move(chave), std::move(valor));
+    leitor.come_brancos();
+  }
+  leitor.toma();  // o } de fecho
+  leitor.come_brancos();
+  if (!leitor.acabou()) {
+    obra.razao = "ha sobra depois do } de fecho";
+    return obra;
+  }
+  obra.valida = true;
+  return obra;
+}
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
