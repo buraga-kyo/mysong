@@ -27,6 +27,44 @@ TEST_CASE("faixa hostil emittida continua a ser UMA linha") {
   CHECK(volta.acha("faixa")->typo == Typo::Texto);
   CHECK(volta.acha("faixa")->texto == hostil);
 }
+// Rejeitar NAO é falhar: «json_malformado» é resposta prevista do contracto, e
+// parser permissivo é que seria o risco, porque acceitaria por adivinhação o que
+// o contracto não promette.
+TEST_CASE("o parser recusa o que sae do subconjunto, e diz por que") {
+  const char* torpes[] = {
+      "{\"verbo\":",              // truncado no valor
+      "naoejson",                 // nem objecto
+      "[]",                       // vector, e não objecto
+      "{\"verbo\":\"estado\"",    // sem o fecho
+      "{\"verbo\":\"esta",        // cadeia sem aspa de fecho
+      "{verbo:\"estado\"}",       // chave sem aspas
+      "{\"verbo\":\"estado\",}",  // virgula pendurada
+      "{\"verbo\":\"\\q\"}",      // escape que o subconjunto nao conhece
+      "{\"a\":1,\"a\":2}",        // chave repetida
+      "{\"n\":1.2.3}",            // numero mal formado
+      "{\"verbo\":\"estado\"} sobra",
+  };
+  for (const char* torpe : torpes) {
+    const Mensagem lida = analysa(torpe);
+    CHECK_FALSE(lida.valida);
+    CHECK_FALSE(lida.razao.empty());  // razão calada seria o silêncio proibido
+  }
+}
+
+TEST_CASE("o parser acceita o subconjunto inteiro, e sómente elle") {
+  CHECK(analysa("{}").valida);
+  CHECK(analysa("  { \"verbo\" : \"estado\" }  ").valida);
+  const Mensagem rica = analysa(
+      "{\"t\":\"vae\",\"n\":-2.5,\"b\":true,\"z\":null,\"u\":\"\\u00e7\\ud83c\\udfb5\"}");
+  REQUIRE(rica.valida);
+  CHECK(rica.acha("t")->typo == Typo::Texto);
+  CHECK(rica.acha("n")->typo == Typo::Numero);
+  CHECK(rica.acha("n")->numero == doctest::Approx(-2.5));
+  CHECK(rica.acha("b")->booleano);
+  CHECK(rica.acha("z")->typo == Typo::Nulo);
+  CHECK(rica.acha("u")->texto == "ç\xF0\x9F\x8E\xB5");  // par de substitutos
+  CHECK(rica.acha("naoexiste") == nullptr);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DA PROVA DA API, BANDA PURA — testes/prova_api.cpp
 // ══════════════════════════════════════════════════════════════════════════
