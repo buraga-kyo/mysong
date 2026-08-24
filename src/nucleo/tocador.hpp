@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "nucleo/analisador.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/motor.hpp"
 
@@ -65,6 +66,14 @@ class Tocador {
   // de fóra, na cadencia de quem chama.
   void pulsa();
 
+  // ── O ESPECTRO (issue #5), por ACRÉSCIMO. A fonte é emprestada e ANNULAVEL:
+  // o nucleo existe sem analisador, e sem elle as bandas sahem em zero. O
+  // tocador não sabe o que ha dentro d'ella: não conhece transformada, não
+  // conhece PipeWire, e é por esta fronteira que a fachada serve o mesmo dado a
+  // quem pergunte, sem que quem pergunte conheça o analisador.
+  void observa(FonteDeBandas& fonte) noexcept;
+  std::vector<float> bandas() const;
+
  private:
   void annuncia(Aviso aviso, std::string razao = {});
   void assenta_estado(Estado novo);
@@ -75,6 +84,7 @@ class Tocador {
   Estado estado_ = Estado::Parado;
   int volume_ = 100;
   double ultima_posicao_ = 0.0;
+  FonteDeBandas* fonte_ = nullptr;  // emprestada, e nullo é caso legitimo
 };
 
 }  // namespace mysong::nucleo

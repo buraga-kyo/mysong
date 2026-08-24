@@ -128,6 +128,18 @@ void Tocador::pulsa() {
 
   if (mudou_estado) annuncia(Aviso::EstadoMudou);
   if (andou) annuncia(Aviso::PosicaoAndou);
+
+  // A fonte das bandas bate no mesmo relogio do tocador, e não num seu: assim
+  // quem já chama pulsa() ganha o relogio de guarda do espectro de graça, e não
+  // ha uma segunda cadencia para alguem esquecer de bater.
+  if (fonte_ != nullptr) fonte_->pulsa();
+}
+
+void Tocador::observa(FonteDeBandas& fonte) noexcept { fonte_ = &fonte; }
+
+std::vector<float> Tocador::bandas() const {
+  if (fonte_ == nullptr) return std::vector<float>(QUANTAS_BANDAS, 0.0f);
+  return fonte_->bandas();
 }
 
 }  // namespace mysong::nucleo
