@@ -93,6 +93,7 @@ std::string campo(const std::string& resposta, const std::string& chave) {
     case Typo::Texto:    return achado->texto;
     case Typo::Booleano: return achado->booleano ? "true" : "false";
     case Typo::Numero:   return mysong::api::duplo(achado->numero);
+    case Typo::Vector:   return std::to_string(achado->itens.size()) + " itens";
     case Typo::Nulo:     break;
   }
   return "null";
@@ -207,8 +208,11 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
 TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
   MotorDuble duble;
   Tocador tocador(duble);
+  // O pedido monta-se com o emissor da Casa, e NÃO por concatenação de aspas: a
+  // primeira lavra d'este caso concatenava, e a faixa com aspa produzia pedido
+  // malformado, donde a prova accusava o codigo por defeito que era d'ella.
   for (const char* faixa : {"uma.wav", "du\"as.wav", "tres音.wav"})
-    fala(tocador, std::string("{\"verbo\":\"juntar\",\"caminho\":\"") + faixa + "\"}");
+    fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":" + mysong::api::texto(faixa) + "}");
   fala(tocador, "{\"verbo\":\"ir_para\",\"indice\":1}");
   const std::size_t tocados_antes = duble.tocados.size();
 
