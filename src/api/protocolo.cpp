@@ -179,6 +179,40 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     return conforme(tocador.tocar_corrente(), "ir_para");
   }
 
+  if (verbo == "tocar")    return conforme(tocador.tocar_corrente(), "tocar");
+  if (verbo == "pausar")   return conforme(tocador.pausar(), "pausar");
+  if (verbo == "retomar")  return conforme(tocador.retomar(), "retomar");
+  if (verbo == "proxima")  return conforme(tocador.proxima(), "proxima");
+  if (verbo == "anterior") return conforme(tocador.anterior(), "anterior");
+  // «parar» PAUSA, hoje. O nucleo não tem parada distincta da pausa, e alargar a
+  // sua interface seria editar src/nucleo/tocador.hpp, que a tarefa irmã está a
+  // reescrever. Das tres sahidas — não ter o verbo, mentir que para, ou tê-lo com
+  // o effeito que ha e dizê-lo — esta é a unica que não deixa o cliente a crer em
+  // cousa falsa. O documento o declara com estas palavras; e o NOME do verbo já é
+  // o certo, donde quando Tocador::parar() existir muda-se esta linha e o cliente
+  // do outro lado não muda uma letra.
+  if (verbo == "parar")    return conforme(tocador.pausar(), "parar");
+
+  if (verbo == "buscar") {
+    const Valor* alvo = argumento(msg, "segundos", Typo::Numero);
+    if (alvo == nullptr) return falta("segundos", "numero");
+    // O aparo pelas bordas da faixa mora no tractado do motor, em fonte unica, e
+    // o Tocador o applica: não se repete aqui o que já está lavrado lá.
+    return conforme(tocador.buscar(alvo->numero), "buscar");
+  }
+  if (verbo == "volume") {
+    const Valor* alvo = argumento(msg, "porcento", Typo::Numero);
+    if (alvo == nullptr) return falta("porcento", "numero");
+    const double bruto = alvo->numero;
+    const int pedido = bruto < 0.0 ? 0 : (bruto > 100.0 ? 100 : static_cast<int>(bruto));
+    if (!tocador.volume(pedido)) return recusado("volume");
+    // Responde-se o volume APARADO, e não o que se pediu: quem mandou 150 há de
+    // ler 100, em vez de ficar a crer que assentou 150 e a estranhar o som.
+    Objecto obra = abre_acerto();
+    obra.par("volume", inteiro(tocador.volume()));
+    return obra.fecha();
+  }
+
   return erro("verbo_desconhecido",
               "esta Casa nao conhece o verbo \"" + verbo + "\"");
 }
