@@ -171,10 +171,25 @@ Sem argumento algum. Respondem `{"ok":true}` quando o nucleo obedeceu, e
 `{"ok":false,"erro":"recusado",...}` quando elle disse não.
 
 ```
+→ {"verbo":"tocar"}
+← {"ok":true}
 → {"verbo":"pausar"}
+← {"ok":true}
+→ {"verbo":"retomar"}
 ← {"ok":true}
 → {"verbo":"proxima"}
 ← {"ok":true}
+→ {"verbo":"anterior"}
+← {"ok":true}
+→ {"verbo":"parar"}
+← {"ok":true}
+```
+
+E a recusa, que tem a mesma forma para os seis:
+
+```
+→ {"verbo":"proxima"}
+← {"ok":false,"erro":"recusado","razao":"o nucleo recusou a ordem \"proxima\" no estado corrente"}
 ```
 
 | Verbo | Que faz | Quando devolve `recusado` |
