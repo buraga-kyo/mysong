@@ -217,6 +217,12 @@ bool ha_executavel(std::string_view nome) {
 // É o UNICO logar d'esta obra que lê variavel de ambiente, e fica de proposito
 // fóra de sondar(), que se conserva pura. Chave desconhecida ignora-se em
 // silencio: erro de dedo na forçagem não ha de derrubar o programa.
+//
+// Sahe do namespace anonymo por ser DECLARADA em sonda.hpp: a taboa da libmpv
+// consulta-a antes de carregar, para que a recusa do motor e a tela das faltas
+// nunca discordem sobre o que está presente. Uma porta de fingimento, e não duas.
+}  // namespace
+
 bool nomeado_na_forcagem(std::string_view chave) {
   const char* const forcagem = std::getenv("MYSONG_SONDA_FORCA");
   if (forcagem == nullptr) return false;
@@ -231,6 +237,8 @@ bool nomeado_na_forcagem(std::string_view chave) {
   }
   return false;
 }
+
+namespace {
 
 // forcado — traduz especie e alvo na chave da taboa, e pergunta pela forçagem.
 // A consulta recebe o ALVO, e a forçagem nomeia a CHAVE, que é a que o operador
