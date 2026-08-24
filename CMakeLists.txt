@@ -148,5 +148,12 @@ target_link_libraries(espia_bandas PRIVATE mysong_core)
 # directorio de inclusão algum, que o mpv/client.h mora em /usr/include.
 target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
 
+# ─── A ÂNCORA DO MOTOR (issue #28) ──────────────────────────────────────────
+# Põe o motor DENTRO do binario da tela hoje, que é a configuração que a issue #7
+# ha de criar. Sem ella, a prova da ligação passaria por ausencia de motor, e não
+# por acerto. Vae por target_sources, ACRESCENTANDO linha, e sem tocar
+# src/tui/janella.cpp, que é da #7. Some quando a #7 chamar o motor de verdade.
+target_sources(mysong PRIVATE src/tui/ancora_do_motor.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
