@@ -165,3 +165,51 @@ deixaria o tocador a soar a faixa velha com o indice apontado á nova.
 |---|---|---|
 | `indice` | inteiro | Contado de zero. Fóra da fila devolve `recusado`; negativo devolve `argumento_invalido`. |
 
+### `tocar`, `pausar`, `retomar`, `proxima`, `anterior`, `parar`
+
+Sem argumento algum. Respondem `{"ok":true}` quando o nucleo obedeceu, e
+`{"ok":false,"erro":"recusado",...}` quando elle disse não.
+
+```
+→ {"verbo":"pausar"}
+← {"ok":true}
+→ {"verbo":"proxima"}
+← {"ok":true}
+```
+
+| Verbo | Que faz | Quando devolve `recusado` |
+|---|---|---|
+| `tocar` | Toca a faixa do assento corrente. | Fila vazia, ou o motor recusou o arquivo. |
+| `pausar` | Pausa. | Quando não está a tocar. |
+| `retomar` | Retoma. | Quando não está pausado. |
+| `proxima` | Anda para a frente **e toca**. | No ultimo assento. Ahi **nada** desce ao motor e a faixa em curso segue. |
+| `anterior` | Anda para tras **e toca**. | No primeiro assento, do mesmo modo. |
+| `parar` | **Hoje PAUSA.** Ver a nota abaixo. | Quando não está a tocar. |
+
+> **`parar` pausa, hoje, e digo-o em vez de o esconder.** O nucleo do `mysong` não tem
+> parada distincta da pausa, e alargar-lhe a interface não cabia nesta tarefa. O NOME
+> do verbo já é o certo: quando a parada existir, muda-se o servidor e **o cliente não
+> muda uma letra**. Se precisar hoje de parada de verdade, use `pausar` e `ir_para 0`.
+
+### `buscar`
+
+```
+→ {"verbo":"buscar","segundos":5}
+← {"ok":true}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `segundos` | duplo | Posição ABSOLUTA desde o inicio da faixa. Apara-se ás bordas da faixa: além do fim vae para junto do fim, e antes do inicio vae para zero. `recusado` com o tocador parado. |
+
+### `volume`
+
+```
+→ {"verbo":"volume","porcento":150}
+← {"ok":true,"volume":100}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `porcento` | inteiro | De 0 a 100. Fóra d'ahi **apara-se**, e a resposta diz o valor aparado: quem manda 150 lê 100. É o volume do MOTOR, e nunca o do systema. |
+
