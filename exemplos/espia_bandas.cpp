@@ -48,3 +48,39 @@ void imprime_bandas(const std::vector<float>& bandas) {
 }
 
 }  // namespace
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::fprintf(stderr, "uso: espia_bandas <segundos> [faixa...]\n");
+    return 2;
+  }
+  const double segundos = std::atof(argv[1]);
+
+  std::string razao;
+  auto talvez = nu::MotorMpv::abrir(&razao);
+  if (!talvez) {
+    std::fprintf(stderr, "não abri a libmpv: %s\n", razao.c_str());
+    return 1;
+  }
+  nu::MotorMpv& motor = *talvez;
+  nu::Tocador tocador(motor);
+
+  nu::Analisador analisador;
+  tocador.observa(analisador);
+  std::printf("analisador vivo=%d razao=%s\n", analisador.vivo() ? 1 : 0,
+              analisador.razao().c_str());
+
+  // O MAPPA das bandas, impresso antes de tudo: é por elle que a prova sabe qual
+  // columna olhar quando o intruso de 6000 Hz disparar. Pergunta-se á obra, e
+  // não se refaz a conta, pela mesma razão que a bateria não a refaz.
+  const nu::Espectro mappa(48000.0f, 2);
+  std::printf("mappa das bandas: 100Hz=%zu 440Hz=%zu 1000Hz=%zu 6000Hz=%zu\n",
+              mappa.banda_de(100.0f), mappa.banda_de(440.0f),
+              mappa.banda_de(1000.0f), mappa.banda_de(6000.0f));
+
+  for (int i = 2; i < argc; ++i) tocador.fila().junta(argv[i]);
+  std::printf("fila com %zu faixa(s)\n", tocador.fila().tamanho());
+  if (tocador.fila().tamanho() > 0 && !tocador.tocar_corrente()) {
+    std::fprintf(stderr, "a primeira faixa NÃO tocou\n");
+    return 3;
+  }
