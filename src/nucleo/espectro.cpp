@@ -124,6 +124,31 @@ void Espectro::alimenta(const float* amostras, std::size_t quantas) {
   }
 }
 
+void Espectro::um_quadro() {
+  for (std::size_t i = 0; i < JANELA_DA_FFT; ++i) entrada_[i] = sobejo_[i] * hann_[i];
+  fftwf_execute(plano_);
+
+  // A ESCALA: um seno de amplitude um, sob janela de Hann, dá pico de JANELA/4
+  // na raia que o contém. A somma da Hann vale JANELA/2, e o espectro de um só
+  // lado parte isso ao meio. Dividir por ella põe a escala cheia em 1,0, donde
+  // um seno de amplitude 0,5 lê seis decibeis abaixo do cheio, como ha de ser.
+  const float escala = static_cast<float>(JANELA_DA_FFT) / 4.0f;
+  std::vector<float> alvo(QUANTAS_BANDAS, 0.0f);
+  for (std::size_t b = 0; b < QUANTAS_BANDAS; ++b) {
+    float pico = 0.0f;
+    for (std::size_t r = bordas_[b]; r < bordas_[b + 1]; ++r) {
+      const float real = sahida_[2 * r];
+      const float imaginaria = sahida_[2 * r + 1];
+      pico = std::max(pico, std::sqrt(real * real + imaginaria * imaginaria));
+    }
+    // O PICO da banda, e não a media. As bandas altas têm dezenas de raias e as
+    // baixas uma só: a media apagaria o agudo por LARGURA, e não por falta de
+    // som, e a tela mostraria uma musica que não é a que toca.
+    alvo[b] = em_decibeis(pico / escala);
+  }
+  suaviza(alvo, 1000.0 * static_cast<double>(SALTO_DA_FFT) / taxa_);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
