@@ -99,6 +99,31 @@ void Espectro::assenta_bordas() {
   }
 }
 
+void Espectro::alimenta(const float* amostras, std::size_t quantas) {
+  // Bloco vazio, ou ponteiro nullo, não é erro: é rotina. O PipeWire entrega
+  // buffer de tamanho zero quando nada tem a dizer, e quem tratasse isso como
+  // falha registraria falha o dia inteiro.
+  if (amostras == nullptr || quantas == 0) return;
+
+  const std::size_t passo = static_cast<std::size_t>(canaes_);
+  for (std::size_t i = 0; i + passo <= quantas; i += passo) {
+    // A mistura para mono pela MEDIA dos canaes que o formato disse ter, e não
+    // dos dous que se presumiria: fluxo mono existe, e presumir dous leria a
+    // amostra do quadro seguinte como se fosse o canal direito.
+    float somma = 0.0f;
+    for (std::size_t c = 0; c < passo; ++c) somma += amostras[i + c];
+    sobejo_.push_back(somma / static_cast<float>(passo));
+  }
+
+  // Bloco maior que a janela produz VARIOS quadros, e bloco menor que o salto
+  // produz nenhum. Os dous casos são do mundo: o quantum muda em voo.
+  while (sobejo_.size() >= JANELA_DA_FFT) {
+    um_quadro();
+    sobejo_.erase(sobejo_.begin(),
+                  sobejo_.begin() + static_cast<std::ptrdiff_t>(SALTO_DA_FFT));
+  }
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
