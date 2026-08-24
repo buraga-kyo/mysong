@@ -110,6 +110,31 @@ class Objecto {
  private:
   std::string corpo_;
 };
+
+// ─── A LEITURA. Quatro typos, e não mais: é o que o contracto promette ──────
+
+enum class Typo { Texto, Numero, Booleano, Nulo };
+
+struct Valor {
+  Typo typo = Typo::Nulo;
+  std::string texto;      // já DESESCAPADO, e em UTF-8
+  double numero = 0.0;
+  bool booleano = false;
+};
+
+// A mensagem lida. Ou é valida, ou traz a RAZÃO por que não é: não há terceiro
+// estado, e não há mensagem invalida sem razão dita, porque razão calada é o
+// silêncio que a issue proibiu.
+struct Mensagem {
+  bool valida = false;
+  std::string razao;
+  std::map<std::string, Valor> pares;
+
+  const Valor* acha(const std::string& chave) const {
+    const auto assento = pares.find(chave);
+    return assento == pares.end() ? nullptr : &assento->second;
+  }
+};
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
