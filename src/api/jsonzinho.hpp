@@ -35,8 +35,36 @@
 
 namespace mysong::api {
 
-// ESCAPA a cadeia crua no corpo de uma cadeia JSON (SEM as aspas de fóra).
-inline std::string escapa(std::string_view cru);
+// ESCAPA a cadeia crua no corpo de uma cadeia JSON (SEM as aspas de fóra). O
+// UTF-8 passa INTACTO, byte a byte: o JSON o admitte cru, e transcrevê-lo em
+// \u seria inflar a mensagem para nada. O que NÃO passa é byte de controle,
+// que vae em \u00XX; e no meio d'elles está a mudança de linha, que é a que
+// partiria o enquadramento de uma-mensagem-por-linha.
+inline std::string escapa(std::string_view cru) {
+  std::string obra;
+  obra.reserve(cru.size() + 8);
+  for (const char bruto : cru) {
+    const unsigned char byte = static_cast<unsigned char>(bruto);
+    switch (byte) {
+      case '"':  obra += "\\\""; continue;
+      case '\\': obra += "\\\\"; continue;
+      case '\b': obra += "\\b";  continue;
+      case '\f': obra += "\\f";  continue;
+      case '\n': obra += "\\n";  continue;
+      case '\r': obra += "\\r";  continue;
+      case '\t': obra += "\\t";  continue;
+      default: break;
+    }
+    if (byte < 0x20u) {
+      char cifra[7];
+      std::snprintf(cifra, sizeof(cifra), "\\u%04x", static_cast<unsigned>(byte));
+      obra += cifra;
+      continue;
+    }
+    obra += bruto;
+  }
+  return obra;
+}
 
 }  // namespace mysong::api
 
