@@ -244,11 +244,22 @@ void Analisador::Punho::prende(unsigned long long serial) {
   crua.position[1] = SPA_AUDIO_CHANNEL_FR;
   const ::spa_pod* params[1] = {
       spa_format_audio_raw_build(&construtor, SPA_PARAM_EnumFormat, &crua)};
-  pw_stream_connect(fluxo, PW_DIRECTION_INPUT, PW_ID_ANY,
-                      static_cast<::pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT |
-                                                     PW_STREAM_FLAG_MAP_BUFFERS |
-                                                     PW_STREAM_FLAG_RT_PROCESS),
-                      params, 1);
+  const int deu = pw_stream_connect(
+      fluxo, PW_DIRECTION_INPUT, PW_ID_ANY,
+      static_cast<::pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT |
+                                     PW_STREAM_FLAG_MAP_BUFFERS |
+                                     PW_STREAM_FLAG_RT_PROCESS),
+      params, 1);
+  // Erro engolido é erro que apparece longe da causa. O effeito pratico d'este
+  // aqui é benigno (bandas em zero), mas sem razão escripta quem visse os zeros
+  // não teria como saber se o nó não existia ou se o enlace foi recusado.
+  if (deu < 0) {
+    char dito[96];
+    std::snprintf(dito, sizeof(dito),
+                  "o enlace ao nó %llu foi recusado (%d): bandas em zero", serial, deu);
+    razao = dito;
+    solta();
+  }
 }
 
 void Analisador::Punho::em_formato(void* dados, std::uint32_t id,
