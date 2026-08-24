@@ -48,3 +48,47 @@ std::vector<float> seno(float hertz, float amplitude, float taxa,
 }
 
 }  // namespace
+
+namespace {
+
+// A maior banda que está LONGE do alvo, e o seu indice. Longe é mais de duas
+// bandas de distancia, e a folga tem razão physica: no baixo as bandas valem uma
+// raia cada (as bordas ahi são 2,3,4,5,6,7,8), e a janela de Hann espalha a raia
+// pelas visinhas immediatas. Duas bandas de folga é o limite da resolução d'esta
+// janela, e declará-lo aqui é dizer a verdade em vez de affrouxar o limiar.
+std::pair<float, std::size_t> maior_de_longe(const std::vector<float>& bandas,
+                                             std::size_t alvo) {
+  float maior = 0.0f;
+  std::size_t qual = 0;
+  for (std::size_t b = 0; b < bandas.size(); ++b) {
+    const std::size_t distancia = b > alvo ? b - alvo : alvo - b;
+    if (distancia <= 2) continue;
+    if (bandas[b] > maior) {
+      maior = bandas[b];
+      qual = b;
+    }
+  }
+  return {maior, qual};
+}
+
+// Vinte decibeis na escala de sessenta comprimidos valem um terço do vão todo.
+constexpr float VINTE_DECIBEIS = 1.0f / 3.0f;
+
+}  // namespace
+
+TEST_CASE("o seno de 440 Hz acende a banda que o contém, e não as de longe") {
+  nu::Espectro espectro(48000.0f, 2);
+  const auto bloco = seno(440.0f, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT);
+  espectro.alimenta(bloco.data(), bloco.size());
+
+  const auto bandas = espectro.bandas();
+  REQUIRE(bandas.size() == nu::QUANTAS_BANDAS);
+  const std::size_t alvo = espectro.banda_de(440.0f);
+  REQUIRE(alvo < nu::QUANTAS_BANDAS);
+
+  const auto longe = maior_de_longe(bandas, alvo);
+  INFO("alvo=" << alvo << " valor=" << bandas[alvo] << " maior de longe=" << longe.first
+               << " na banda " << longe.second);
+  CHECK(bandas[alvo] > 0.5f);
+  CHECK(bandas[alvo] - longe.first >= VINTE_DECIBEIS);
+}
