@@ -237,3 +237,40 @@ TEST_CASE("o limiar de noventa por cento pertence ao quente") {
   // Um milesimo abaixo: frio, e de volta á base da rampa.
   CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta, tk::rgb(tk::v700)));
 }
+
+// ── C5 · o mudo, e o piso do silencio ───────────────────────────────────────
+// O mudo põe-se com banda ACIMA do limiar quente, de propósito: é o que afere a
+// precedencia. Ordem do operador não se deixa sobrepujar por leitura de sinal, e
+// um caso com banda fria não distinguiria as duas regras.
+TEST_CASE("o mudo veste text_faint e vence o quente") {
+  const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.95f), largura, 5, true);
+
+  std::size_t pintadas = 0;
+  for (std::size_t l = 0; l < quadro.altura; ++l)
+    for (std::size_t c = 0; c < quadro.largura; ++c)
+      if (quadro.em(l, c).pinta) {
+        ++pintadas;
+        CHECK(es::mesma_tinta(quadro.em(l, c).tinta, tk::rgb(tk::text_faint)));
+        CHECK_FALSE(es::mesma_tinta(quadro.em(l, c).tinta, tk::rgb(tk::glow_hot)));
+      }
+  // As ALTURAS conservam-se: o mudo esmaece, e não derruba a fita. Cinco linhas
+  // por columna, pela conta do caso do quente (0,95 pinta as cinco).
+  CHECK(pintadas == 5 * largura);
+}
+
+// O piso: as barras cahem a zero e FICAM VISIVEIS, que é o que faz o aceite
+// dizer algo. Barra de zero célullas não teria côr, e a promessa sahiria invacua.
+TEST_CASE("o silencio deixa um piso de um oitavo em text_faint") {
+  const std::size_t largura = 12;
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.0f), largura, 6);
+
+  for (std::size_t c = 0; c < largura; ++c) {
+    // UMA célulla, na BASE (linha 5), de um oitavo, em text_faint.
+    REQUIRE(quadro.em(5, c).pinta);
+    CHECK(quadro.em(5, c).glifo == kUm);
+    CHECK(es::mesma_tinta(quadro.em(5, c).tinta, tk::rgb(tk::text_faint)));
+    // E nada acima d'ella, em linha alguma.
+    for (std::size_t l = 0; l < 5; ++l) CHECK(quadro.em(l, c).pinta == false);
+  }
+}
