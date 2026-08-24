@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 
 #include <cstdio>
+#include <functional>
 #include <utility>
 
 namespace mysong::nucleo {
@@ -36,6 +37,41 @@ constexpr char kEsquema[] =
     "CREATE INDEX faixas_artista_album ON faixas(artista, album, numero,"
     "  titulo);"
     "CREATE INDEX faixas_titulo ON faixas(titulo);";
+
+// Abre em SÓMENTE-LEITURA, e nullo quando não ha banco que se abra. Banco
+// ausente é resposta vazia, e o nullo é como ella se carrega até ás consultas.
+sqlite3* abre_para_ler(const std::filesystem::path& banco) {
+  sqlite3* punho = nullptr;
+  if (sqlite3_open_v2(banco.c_str(), &punho, SQLITE_OPEN_READONLY, nullptr) !=
+      SQLITE_OK) {
+    sqlite3_close(punho);
+    return nullptr;
+  }
+  return punho;
+}
+
+// Corre uma consulta e entrega cada linha ao cinzel. As cadeias vão por
+// sqlite3_bind_text, na ordem em que chegam, e JAMAIS por concatenação: é isto
+// que faz um album chamado «Ária "Ré"» ser um nome e não um pedaço de SQL.
+void corre(sqlite3* punho, const char* sql,
+           const std::vector<std::string_view>& amarras,
+           const std::function<void(sqlite3_stmt*)>& cinzel) {
+  if (punho == nullptr) return;
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho, sql, -1, &passo, nullptr) != SQLITE_OK) return;
+  for (std::size_t i = 0; i < amarras.size(); ++i)
+    sqlite3_bind_text(passo, static_cast<int>(i + 1), amarras[i].data(),
+                      static_cast<int>(amarras[i].size()), SQLITE_TRANSIENT);
+  while (sqlite3_step(passo) == SQLITE_ROW) cinzel(passo);
+  sqlite3_finalize(passo);
+}
+
+// Columna de texto em cadeia. Nullo do SQLite vira cadeia vazia, e não queda.
+std::string texto(sqlite3_stmt* passo, int columna) {
+  const unsigned char* bruto = sqlite3_column_text(passo, columna);
+  if (bruto == nullptr) return std::string();
+  return std::string(reinterpret_cast<const char*>(bruto));
+}
 
 }  // namespace
 
