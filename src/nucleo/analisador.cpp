@@ -196,6 +196,45 @@ const ::pw_registry_events& Analisador::Punho::eventos_do_registro() {
   return taboada;
 }
 
+void Analisador::Punho::prende(unsigned long long serial) {
+  if (nucleo == nullptr) return;
+  char alvo[32];
+  std::snprintf(alvo, sizeof(alvo), "%llu", serial);
+
+  // O ALVO desce pelo object.serial, e NUNCA pelo object.id. Medido n'esta
+  // machina: com o id, o gestor de sessão IGNORA o pedido e liga-nos ao
+  // MICROPHONE, que também se move com a musica (por vasamento acustico do fone
+  // para o microphone) e portanto passa na prova ingenua e falha na do aceite.
+  // Foi o defeito que mais perto passou de entrar n'esta obra.
+  ::pw_properties* props = ::pw_properties_new(
+      PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture",
+      PW_KEY_MEDIA_ROLE, "Music", PW_KEY_NODE_NAME, "mysong-analisador",
+      PW_KEY_TARGET_OBJECT, alvo, PW_KEY_STREAM_CAPTURE_SINK, "false", nullptr);
+  fluxo = ::pw_stream_new(nucleo, "mysong-analisador", props);
+  if (fluxo == nullptr) return;
+  ::pw_stream_add_listener(fluxo, &ouvido_do_fluxo, &eventos_do_fluxo(), this);
+
+  // Pede-se F32 em 48000 e dous canaes, e o adaptador do PipeWire converte o que
+  // o nó tiver: elle negociou S16LE n'este teste, e chegou F32 aqui. É por essa
+  // conversão de graça que taxa differente e fluxo mono não pedem codigo nosso,
+  // e é o param_changed que diz o que de facto veio.
+  std::uint8_t espaco[1024];
+  ::spa_pod_builder construtor = SPA_POD_BUILDER_INIT(espaco, sizeof(espaco));
+  ::spa_audio_info_raw crua {};
+  crua.format = SPA_AUDIO_FORMAT_F32;
+  crua.rate = 48000;
+  crua.channels = 2;
+  crua.position[0] = SPA_AUDIO_CHANNEL_FL;
+  crua.position[1] = SPA_AUDIO_CHANNEL_FR;
+  const ::spa_pod* params[1] = {
+      ::spa_format_audio_raw_build(&construtor, SPA_PARAM_EnumFormat, &crua)};
+  ::pw_stream_connect(fluxo, PW_DIRECTION_INPUT, PW_ID_ANY,
+                      static_cast<::pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT |
+                                                     PW_STREAM_FLAG_MAP_BUFFERS |
+                                                     PW_STREAM_FLAG_RT_PROCESS),
+                      params, 1);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
