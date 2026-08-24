@@ -285,6 +285,48 @@ TEST_CASE("a ordem que o nucleo recusa volta como recusado, e nunca como ok") {
   CHECK(duble.tocados.size() == antes);
   CHECK(tocador.estado() == Estado::Tocando);
 }
+// A prova de que verbo algum sae MUDO, e de que as quatro recusas se distinguem.
+// Distinguir importa porque o remedio de cada uma é differente: «recusado» manda
+// olhar o estado do tocador, «argumento_invalido» manda olhar a mensagem,
+// «nao_implementado» manda olhar a issue, e «verbo_desconhecido» manda olhar o
+// nome que se escreveu.
+TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+
+  const struct { const char* verbo; const char* issue; } reservados[] = {
+      {"biblioteca", "8.000"}, {"espectro", "5.000"}, {"baixar", "11.000"}};
+  for (const auto& caso : reservados) {
+    const std::string resposta =
+        fala(tocador, std::string("{\"verbo\":\"") + caso.verbo + "\"}");
+    CHECK(campo(resposta, "erro") == "nao_implementado");
+    CHECK(campo(resposta, "issue") == caso.issue);
+  }
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"voar\"}"), "erro") == "verbo_desconhecido");
+  CHECK(campo(fala(tocador, "{\"nada\":1}"), "erro") == "verbo_ausente");
+  CHECK(campo(fala(tocador, "{\"verbo\":1}"), "erro") == "verbo_ausente");
+  CHECK(campo(fala(tocador, "{\"verbo\":"), "erro") == "json_malformado");
+
+  const char* tortos[] = {
+      "{\"verbo\":\"volume\"}",
+      "{\"verbo\":\"volume\",\"porcento\":\"alto\"}",
+      "{\"verbo\":\"juntar\"}",
+      "{\"verbo\":\"juntar\",\"caminho\":\"\"}",
+      "{\"verbo\":\"ir_para\",\"indice\":-1}",
+      "{\"verbo\":\"ir_para\",\"indice\":1e30}",
+      "{\"verbo\":\"buscar\"}",
+  };
+  for (const char* torto : tortos)
+    CHECK(campo(fala(tocador, torto), "erro") == "argumento_invalido");
+
+  // A linha em branco é o UNICO caminho d'esta obra que devolve cadeia vazia.
+  CHECK(fala(tocador, "").empty());
+  CHECK(fala(tocador, "   \t  ").empty());
+  // E toda resposta que NÃO seja vazia é UMA linha, sempre.
+  CHECK(fala(tocador, "{\"verbo\":\"estado\"}").find('\n') == std::string::npos);
+  CHECK(fala(tocador, "{\"verbo\":\"voar\"}").find('\n') == std::string::npos);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
