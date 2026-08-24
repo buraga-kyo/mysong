@@ -196,3 +196,46 @@ std::string sequencia_da_celula(const Celula& celula) {
   // apagaria o fundo do painel entre uma barra e a seguinte.
   return tokens::sgr(38, celula.tinta) + celula.glifo;
 }
+
+ftxui::Element elemento_do_espectro(const Quadro& quadro) {
+  std::vector<ftxui::Element> linhas;
+  linhas.reserve(quadro.altura);
+
+  for (std::size_t l = 0; l < quadro.altura; ++l) {
+    std::vector<ftxui::Element> corridas;
+    std::size_t c = 0;
+    while (c < quadro.largura) {
+      // Agrupa a CORRIDA de célullas de egual tinta n'um só elemento, em vez de
+      // um elemento por célulla. Não é micro-optimização gratuita: o gradiente
+      // ancorado no painel dá a MESMA tinta a toda a linha, d'onde a corrida
+      // ordinaria é a linha inteira, e um painel de oitenta por doze cahe de
+      // novecentos e sessenta elementos para doze.
+      const Celula& cabeca = quadro.em(l, c);
+      std::string texto;
+      std::size_t fim = c;
+      while (fim < quadro.largura) {
+        const Celula& corrente = quadro.em(l, fim);
+        if (corrente.pinta != cabeca.pinta) break;
+        if (corrente.pinta && !mesma_tinta(corrente.tinta, cabeca.tinta)) break;
+        texto += corrente.glifo;
+        ++fim;
+      }
+      ftxui::Element pedaco = ftxui::text(texto);
+      if (cabeca.pinta)
+        pedaco = pedaco | ftxui::color(ftxui::Color::RGB(
+                              cabeca.tinta.r, cabeca.tinta.g, cabeca.tinta.b));
+      corridas.push_back(std::move(pedaco));
+      c = fim;
+    }
+    linhas.push_back(ftxui::hbox(std::move(corridas)));
+  }
+  return ftxui::vbox(std::move(linhas));
+}
+
+}  // namespace mysong::tui
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
+//   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
+//                                                          — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
