@@ -98,7 +98,16 @@ void Analisador::Punho::em_global(void* dados, std::uint32_t id, std::uint32_t,
     // nosso processo, donde o cliente que ella abre no PipeWire traz o nosso
     // proprio pid. É por aqui que a identidade entra, e não pelo nome «mpv»,
     // que na machina de quem ouve musica ha muitos.
-    const char* pid = spa_dict_lookup(props, PW_KEY_APP_PROCESS_ID);
+    //
+    // O pid vem do pipewire.sec.pid, e não do application.process.id. Duas
+    // razões, e a primeira é dura: o annuncio do registro NÃO carrega o
+    // application.process.id (medido: carrega sómente serial, modulo,
+    // protocolo, os quatro pipewire.sec e o nome), donde procurá-lo ali é achar
+    // nada e nunca prender nó algum. A segunda é de confiança: o sec.pid é
+    // posto pelo SERVIDOR, das credenciaes do socket, e cliente algum o pode
+    // mentir; o application.process.id é o cliente que o declara de si.
+    const char* pid = spa_dict_lookup(props, PW_KEY_SEC_PID);
+    if (pid == nullptr) pid = spa_dict_lookup(props, PW_KEY_APP_PROCESS_ID);
     if (pid != nullptr &&
         std::strtoul(pid, nullptr, 10) == static_cast<unsigned long>(eu->nosso_pid)) {
       eu->nossos_clientes.insert(id);
