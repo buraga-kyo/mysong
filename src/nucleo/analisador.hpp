@@ -34,6 +34,40 @@
 
 namespace mysong::nucleo {
 
+// QUANTAS bandas a fonte entrega. Vinte e quatro, e a razão é dupla: cabem em
+// oitenta columnas de terminal com folga (uma columna de barra e uma de vão), e
+// dão 2,8 bandas por octava nas 8,6 octavas que vão de 40 Hz a 16 kHz, que é
+// aproximadamente como o ouvido as espaça. Menos apaga o desenho da musica;
+// mais não cabe na tela que esta Casa tem.
+//
+// Vive AQUI, junto do contracto, e não junto da FFT: é numero da INTERFACE, e
+// quem consome bandas não precisa saber que ha transformada por baixo.
+inline constexpr std::size_t QUANTAS_BANDAS = 24;
+
+// A FONTE DAS BANDAS, abstracta. É por este ponto de substituição que o tocador
+// serve o espectro sem conhecer FFT nem PipeWire, e que a bateria prova a
+// delegação com um dublê em machina surda.
+//
+// A direcção do saber é o que esta interface compra: o analisador precisa saber
+// que existe um mpv; o tocador NÃO precisa saber que existe transformada.
+class FonteDeBandas {
+ public:
+  virtual ~FonteDeBandas() = default;
+  FonteDeBandas(const FonteDeBandas&) = delete;
+  FonteDeBandas& operator=(const FonteDeBandas&) = delete;
+
+  // Sempre QUANTAS_BANDAS valores, sempre em [0,1]. Jamais falha: quem não tem
+  // nó lê zeros, e não erro.
+  virtual std::vector<float> bandas() const = 0;
+
+  // Uma batida do relogio de quem chama. Vazia por omissão, para que o dublê da
+  // bateria nada precise implementar: é na carne que o relogio de guarda vive.
+  virtual void pulsa() {}
+
+ protected:
+  FonteDeBandas() = default;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
