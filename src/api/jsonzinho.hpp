@@ -224,6 +224,37 @@ inline bool Leitor::ponto_de_codigo(std::string* fora, std::string* razao) {
   em_utf8(ponto, fora);
   return true;
 }
+// A CADEIA. Byte de controle CRU dentro d'ella é recusa: é justamente o que o
+// nosso escape nunca emitte, donde acceitá-lo na entrada seria acceitar o que
+// nós mesmos não produzimos.
+inline bool Leitor::cadeia(std::string* fora, std::string* razao) {
+  if (toma() != '"') { *razao = "esperava-se cadeia entre aspas"; return false; }
+  fora->clear();
+  for (;;) {
+    if (acabou()) { *razao = "cadeia sem a aspa de fecho"; return false; }
+    const unsigned char byte = static_cast<unsigned char>(toma());
+    if (byte == '"') return true;
+    if (byte < 0x20u) {
+      *razao = "byte de controle cru dentro de cadeia";
+      return false;
+    }
+    if (byte != '\\') { *fora += static_cast<char>(byte); continue; }
+    switch (toma()) {
+      case '"':  *fora += '"';  break;
+      case '\\': *fora += '\\'; break;
+      case '/':  *fora += '/';  break;
+      case 'b':  *fora += '\b'; break;
+      case 'f':  *fora += '\f'; break;
+      case 'n':  *fora += '\n'; break;
+      case 'r':  *fora += '\r'; break;
+      case 't':  *fora += '\t'; break;
+      case 'u':  if (!ponto_de_codigo(fora, razao)) return false; break;
+      default:
+        *razao = "escape que este subconjunto nao conhece";
+        return false;
+    }
+  }
+}
 }  // namespace intimo
 }  // namespace mysong::api
 
