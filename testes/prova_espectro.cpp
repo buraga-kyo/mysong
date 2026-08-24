@@ -73,6 +73,32 @@ std::pair<float, std::size_t> maior_de_longe(const std::vector<float>& bandas,
 }
 
 // Vinte decibeis na escala de sessenta comprimidos valem um terço do vão todo.
+// ── O ORACULO, de FÓRA da obra. Estes indices não se perguntam ao espectro: são
+// escriptos á mão, da conta feita com lapis, e conferidos contra o mappa que o
+// proprio espia imprime numa machina de verdade.
+//
+// A conta, para 48000 Hz com janela de 2048: a raia vale 48000/2048 = 23,4375 Hz,
+// e as bordas em raias sahem 40 vezes 400 elevado a b/24, dividido pela raia e
+// arredondado, com o aparo que força uma raia por banda no baixo:
+//   2 3 4 5 6 7 8 10 13 16 21 27 34 44 56 72 93 119 153 196 251 323 414 532 683
+// Donde, cada uma na banda cuja borda de baixo a contém:
+//   100 Hz  → raia   4 → banda  2, que vae da raia   4 á   5
+//   440 Hz  → raia  19 → banda  9, que vae da raia  16 á  21
+//   1000 Hz → raia  43 → banda 12, que vae da raia  34 á  44
+//   6000 Hz → raia 256 → banda 20, que vae da raia 251 á 323
+//
+// Se alguem mudar QUANTAS_BANDAS de 24 para 32, estes numeros quebram. É o
+// comportamento CERTO: mudar a contagem de bandas ha de obrigar a revisitar a
+// prova de localização, e fragilidade que denuncia mudança de contracto não é
+// fragilidade, é o alarme a funccionar.
+struct Esperada {
+  float hertz;
+  std::size_t banda;
+};
+
+constexpr Esperada ESPERADAS_A_48K[] = {
+    {100.0f, 2}, {440.0f, 9}, {1000.0f, 12}, {6000.0f, 20}};
+
 constexpr float VINTE_DECIBEIS = 1.0f / 3.0f;
 
 }  // namespace
