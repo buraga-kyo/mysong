@@ -67,6 +67,38 @@ Espectro::~Espectro() {
   if (sahida_ != nullptr) fftwf_free(sahida_);
 }
 
+void Espectro::assenta_formato(float taxa, int canaes) {
+  const float nova = taxa > 0.0f ? taxa : TAXA_PRESUMIDA;
+  const int quantos = canaes > 0 ? canaes : 1;
+  if (nova == taxa_ && quantos == canaes_ && !bordas_.empty()) return;
+  taxa_ = nova;
+  canaes_ = quantos;
+  // Amostra de taxa velha não se mistura com a nova: o que sobejava sahe fóra.
+  sobejo_.clear();
+  assenta_bordas();
+}
+
+void Espectro::assenta_bordas() {
+  // As bordas em RAIAS, de espaçamento logarithmico em HERTZ. A largura da raia
+  // sahe da taxa CONFIRMADA: em 44100 a raia vale 21,5 Hz e em 96000 vale 46,9,
+  // donde chumbar 48000 aqui poria as bandas no logar errado em qualquer placa
+  // que não fosse esta.
+  const float largura_da_raia = taxa_ / static_cast<float>(JANELA_DA_FFT);
+  const std::size_t ultima_raia = JANELA_DA_FFT / 2;
+  const float razao = HERTZ_MAXIMO / HERTZ_MINIMO;
+  bordas_.assign(QUANTAS_BANDAS + 1, 0);
+  for (std::size_t b = 0; b <= QUANTAS_BANDAS; ++b) {
+    const float parte = static_cast<float>(b) / static_cast<float>(QUANTAS_BANDAS);
+    const float hertz = HERTZ_MINIMO * std::pow(razao, parte);
+    std::size_t raia = static_cast<std::size_t>(hertz / largura_da_raia + 0.5f);
+    // Nenhuma banda fica VAZIA no baixo: em 40 Hz duas bordas seguidas cahiriam
+    // na mesma raia, e banda sem raia alguma seria columna morta na tela.
+    if (b > 0 && raia <= bordas_[b - 1]) raia = bordas_[b - 1] + 1;
+    if (raia > ultima_raia) raia = ultima_raia;
+    bordas_[b] = raia;
+  }
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
