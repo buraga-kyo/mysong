@@ -165,13 +165,28 @@ bool ha_familia_de_fonte(std::string_view agulha) {
 }
 
 // ha_bibliotheca — tenta CARREGAR a bibliotheca pelo seu soname, e logo a
-// solta. Não se liga a libmpv em tempo de ligação, e é escolha de proposito: o
-// carregador dinamico mataria o processo antes do main na machina crua, que é
-// exactamente o mal que esta sonda combate. Perguntar por dlopen devolve a
-// ausencia como RESPOSTA, e não como morte antes da primeira linha.
+// solta. Perguntar por dlopen devolve a ausencia como RESPOSTA, e não como morte
+// antes da primeira linha.
+//
+// E isto descreve o binario que EXISTE, e não uma intenção: desde a issue #28,
+// binario algum d'esta obra liga a libmpv em tempo de ligação. Nem o mysong, nem
+// o toca_tom, nem os demais exemplos. O motor chama-a pela taboa de
+// nucleo/libmpv.hpp, aberta tambem por dlopen, e o CMakeLists pede d'ella
+// sómente os cabeçalhos.
+//
+// Antes d'aquella issue a garantia era ACCIDENTAL, e vale registrar o mal: o
+// mysong não ligava a libmpv sómente porque a tela ainda não chamava o motor, e
+// o ligador não puxa de bibliotheca estatica o objecto que ninguem usa. No dia
+// em que a tela o chamasse, o processo morreria no carregador dynamico antes do
+// main, e esta sonda nunca correria para nomear a falta. Quem guarda a promessa
+// hoje é a prova da ligação, em testes/prova_libmpv.cpp: ella lê o binario
+// produzido e falha se a libmpv voltar a ser dependencia de ligação.
 //
 // Acha-se a runtime, e não os cabeçalhos de compilação: para um binario já
 // compilado, que é o caso, a runtime é o que importa.
+//
+// Solta-se aqui, e a taboa do motor NÃO solta: esta nada guarda da bibliotheca,
+// e aquella guarda punho vivo, que dlclose derrubaria.
 bool ha_bibliotheca(std::string_view soname) {
   const std::string nome(soname);
   void* punho = dlopen(nome.c_str(), RTLD_LAZY | RTLD_LOCAL);
