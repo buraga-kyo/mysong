@@ -253,6 +253,29 @@ bool Biblioteca::acha_por_caminho(std::string_view caminho,
   return achou;
 }
 
+Escriba::Escriba(std::filesystem::path banco, long limite_de_paginas)
+    : banco_(std::move(banco)), temporario_(banco_.string() + ".tmp") {
+  std::error_code erro;
+  if (!banco_.parent_path().empty()) {
+    std::filesystem::create_directories(banco_.parent_path(), erro);
+    std::filesystem::permissions(banco_.parent_path(),
+                                 std::filesystem::perms::owner_all, erro);
+  }
+  // Temporario de corrida anterior que se tenha ido abaixo com o processo: cae
+  // aqui, e não se aproveita. Aproveitá-lo seria herdar metade de um índice.
+  std::filesystem::remove(temporario_, erro);
+  if (sqlite3_open_v2(temporario_.c_str(), &punho_,
+                      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+                      nullptr) != SQLITE_OK ||
+      sqlite3_exec(punho_, kEsquema, nullptr, nullptr, nullptr) != SQLITE_OK) {
+    sqlite3_close(punho_);
+    punho_ = nullptr;
+    std::filesystem::remove(temporario_, erro);
+    return;
+  }
+  assenta_versao_e_limite(punho_, limite_de_paginas);
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
