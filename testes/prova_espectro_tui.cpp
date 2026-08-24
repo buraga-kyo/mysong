@@ -41,3 +41,46 @@
 
 namespace es = mysong::tui;
 namespace tk = mysong::tui::tokens;
+
+// ── C1 · o mapeamento de magnitude para degrau ──────────────────────────────
+// A taboada vae escripta Á MÃO, e não gerada por laço que repetisse a conta sob
+// exame. Os k/8 escrevem-se como fracções, e não como decimaes arredondados:
+// oito é potencia de dous, d'onde k/8 é exacto em binario e o floor não tem
+// arredondamento a perdoar. Escripto 0,375 em vez de 3.0f/8.0f, o caso passaria
+// a affirmar a redacção do decimal em vez do degrau.
+TEST_CASE("o degrau vae de zero a cheio, e o lixo não passa") {
+  // Painel de tres célullas: o teto é 3 vezes 8, que são 24 degraus.
+  CHECK(es::oitavos(0.0f, 3) == 0);
+  CHECK(es::oitavos(1.0f, 3) == 24);
+  CHECK(es::oitavos(0.5f, 3) == 12);
+
+  // Acima do teto CINGE-SE, e não estoura nem transborda o quadro.
+  CHECK(es::oitavos(1.5f, 3) == 24);
+  CHECK(es::oitavos(1000.0f, 3) == 24);
+
+  // Abaixo do piso cinge-se a zero, que é o caso da banda negativa por erro.
+  CHECK(es::oitavos(-0.2f, 3) == 0);
+  CHECK(es::oitavos(-1000.0f, 3) == 0);
+
+  // O NÃO FINITO vale zero. É o caso que a ordem das guardas de cingido()
+  // sustenta: fosse a finitude testada DEPOIS do cingir, o NaN chegaria ao floor.
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  const float inf = std::numeric_limits<float>::infinity();
+  CHECK(es::oitavos(nan, 3) == 0);
+  CHECK(es::oitavos(inf, 3) == 0);
+  CHECK(es::oitavos(-inf, 3) == 0);
+
+  // Painel de UMA célulla: os oito degraus todos se alcançam, um por um.
+  CHECK(es::oitavos(0.0f / 8.0f, 1) == 0);
+  CHECK(es::oitavos(1.0f / 8.0f, 1) == 1);
+  CHECK(es::oitavos(2.0f / 8.0f, 1) == 2);
+  CHECK(es::oitavos(3.0f / 8.0f, 1) == 3);
+  CHECK(es::oitavos(4.0f / 8.0f, 1) == 4);
+  CHECK(es::oitavos(5.0f / 8.0f, 1) == 5);
+  CHECK(es::oitavos(6.0f / 8.0f, 1) == 6);
+  CHECK(es::oitavos(7.0f / 8.0f, 1) == 7);
+  CHECK(es::oitavos(8.0f / 8.0f, 1) == 8);
+
+  // Painel sem altura não tem degrau algum, e não divide por cousa nenhuma.
+  CHECK(es::oitavos(1.0f, 0) == 0);
+}
