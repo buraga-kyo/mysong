@@ -33,6 +33,19 @@ bool maior_diverso(unsigned long achada) {
   return (achada >> 16) != (MPV_CLIENT_API_VERSION >> 16);
 }
 
+// Ata os treze, e para no PRIMEIRO que falte, nomeando-o.
+bool atar(void* biblio, TaboaDaLibmpv* taboa, std::string* razao) {
+#define MYSONG_LIBMPV_ATA(nome)                                            \
+  taboa->nome = reinterpret_cast<decltype(&::nome)>(dlsym(biblio, #nome)); \
+  if (taboa->nome == nullptr) {                                            \
+    if (razao) *razao = "a libmpv não traz o symbolo " #nome;               \
+    return false;                                                          \
+  }
+  MYSONG_LIBMPV_FUNCCOES(MYSONG_LIBMPV_ATA)
+#undef MYSONG_LIBMPV_ATA
+  return true;
+}
+
 }  // namespace
 
 // Abre-se no primeiro pedido, por estatico local que o C++ serializa: o tocador
@@ -60,14 +73,7 @@ const TaboaDaLibmpv* libmpv(std::string* razao) {
                (erro != nullptr ? erro : "sem razão dita");
       return false;
     }
-#define MYSONG_LIBMPV_ATA(nome)                                             \
-  taboa.nome = reinterpret_cast<decltype(&::nome)>(dlsym(biblio, #nome));   \
-  if (taboa.nome == nullptr) {                                              \
-    queixa = "a libmpv não traz o symbolo " #nome;                          \
-    return false;                                                           \
-  }
-    MYSONG_LIBMPV_FUNCCOES(MYSONG_LIBMPV_ATA)
-#undef MYSONG_LIBMPV_ATA
+    if (!atar(biblio, &taboa, &queixa)) return false;
     const unsigned long achada = taboa.mpv_client_api_version();
     if (maior_diverso(achada)) {
       queixa = "a libmpv é de interface " + std::to_string(achada >> 16) +
