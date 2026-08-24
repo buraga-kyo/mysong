@@ -172,6 +172,24 @@ constexpr char kColumnas[] =
 
 }  // namespace
 
+std::vector<std::string> Biblioteca::artistas() const {
+  std::vector<std::string> nomes;
+  corre(punho_,
+        "SELECT DISTINCT artista FROM faixas ORDER BY artista;", {},
+        [&nomes](sqlite3_stmt* passo) { nomes.push_back(texto(passo, 0)); });
+  return nomes;
+}
+
+std::vector<std::string> Biblioteca::albuns(std::string_view artista) const {
+  std::vector<std::string> nomes;
+  corre(punho_,
+        "SELECT DISTINCT album FROM faixas WHERE artista = ?1"
+        " ORDER BY album;",
+        {artista},
+        [&nomes](sqlite3_stmt* passo) { nomes.push_back(texto(passo, 0)); });
+  return nomes;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
