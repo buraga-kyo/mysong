@@ -93,6 +93,44 @@ enum class Desfecho {
 // musica por causa de um byte seria pior que mostrar um losango no nome.
 std::string saneia_utf8(std::string_view crua);
 
+// A BIBLIOTHECA: o lado que LÊ. Abre o banco em sómente-leitura, e banco
+// ausente é resposta vazia e não erro — o acervo que ainda não se varreu é
+// caso legitimo, e não avaria. Nenhuma consulta lança pela borda.
+class Biblioteca {
+ public:
+  explicit Biblioteca(std::filesystem::path banco);
+  ~Biblioteca();
+
+  Biblioteca(const Biblioteca&) = delete;
+  Biblioteca& operator=(const Biblioteca&) = delete;
+
+  bool aberta() const noexcept;
+
+  // A versão do esquema que está em disco. Zero quando não ha banco, ou quando
+  // o que ha não tem taboa de versão que se possa ler.
+  int versao() const noexcept;
+
+  std::size_t total() const;
+
+  // As tres consultas do aceite. Ordem de cadeia nos nomes; ordem de numero, e
+  // depois de titulo, nas faixas de um album.
+  std::vector<std::string> artistas() const;
+  std::vector<std::string> albuns(std::string_view artista) const;
+  std::vector<Faixa> faixas_do_album(std::string_view artista,
+                                     std::string_view album) const;
+
+  // Por titulo, e por pedaço de titulo. Ordem de artista, album e numero.
+  std::vector<Faixa> busca_faixa(std::string_view termo) const;
+
+  // O que a varredura pergunta para saber se ha de reler a etiqueta. Falso
+  // quando o caminho não está no índice.
+  bool acha_por_caminho(std::string_view caminho, Faixa& sahida) const;
+
+ private:
+  std::filesystem::path banco_;
+  sqlite3* punho_ = nullptr;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
