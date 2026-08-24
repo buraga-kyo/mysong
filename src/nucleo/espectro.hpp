@@ -103,6 +103,36 @@ static_assert(TEMPO_DE_QUEDA_MS > TEMPO_DE_ATAQUE_MS,
 // tropeço do systema com faixa que acabou.
 inline constexpr double PRAZO_DE_SILENCIO_MS = 120.0;
 
+// O ESPECTRO. Uma linha de execução só: quem o alimenta e quem o lê é o mesmo,
+// ou então quem os coordena põe fechadura de fóra. A conta não conhece linha de
+// execução, e é justamente por isso que ella se prova.
+class Espectro {
+ public:
+  explicit Espectro(float taxa = TAXA_PRESUMIDA, int canaes = 2);
+  ~Espectro();
+
+  Espectro(const Espectro&) = delete;
+  Espectro& operator=(const Espectro&) = delete;
+
+  // Assenta o formato CONFIRMADO pelo mundo. Recalcula as bordas e esquece o
+  // que sobejava, porque amostra de taxa velha não se mistura com a nova.
+  void assenta_formato(float taxa, int canaes);
+
+  // Engole amostras ENTRELAÇADAS: quantas é o numero de FLOTANTES, não de
+  // quadros. Bloco de tamanho qualquer, inclusive zero e inclusive maior que a
+  // janela; o que não completa quadro fica de sobejo para o bloco seguinte.
+  void alimenta(const float* amostras, std::size_t quantas);
+
+  // Esmorece as bandas pelo tempo passado, sem amostra alguma. É o que o relogio
+  // de guarda chama quando o nó morre.
+  void esmorece(double millesimos);
+
+  // O retracto: sempre QUANTAS_BANDAS valores, sempre em [0,1].
+  std::vector<float> bandas() const;
+
+  float taxa() const noexcept;
+  int canaes() const noexcept;
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
