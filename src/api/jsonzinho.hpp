@@ -66,6 +66,50 @@ inline std::string escapa(std::string_view cru) {
   return obra;
 }
 
+
+// ─── A EMISSÃO. Cada escalar sahe já pontuado, e quem os junta não repontua ──
+
+inline std::string texto(std::string_view v) { return "\"" + escapa(v) + "\""; }
+inline std::string inteiro(long long v) { return std::to_string(v); }
+inline std::string booleano(bool v) { return v ? "true" : "false"; }
+
+// Tres casas, e não a precisão inteira do duplo: posição e duração são segundos
+// para olho e para relogio de cliente, e «12.340000000000001» não serve a nenhum
+// dos dous. Valor que não seja finito sahe ZERO, porque «nan» não é JSON.
+inline std::string duplo(double v) {
+  if (!(v > -1e18 && v < 1e18)) return "0.000";
+  char cifra[32];
+  std::snprintf(cifra, sizeof(cifra), "%.3f", v);
+  return cifra;
+}
+
+inline std::string vector_de_textos(const std::vector<std::string>& itens) {
+  std::string obra = "[";
+  for (std::size_t i = 0; i < itens.size(); ++i) {
+    if (i != 0) obra += ',';
+    obra += texto(itens[i]);
+  }
+  obra += ']';
+  return obra;
+}
+
+// O OBJECTO guarda a ORDEM em que os pares se juntaram, e não a alphabetica de
+// um mapa: a resposta há de começar por «ok», que é o que o cliente lê primeiro,
+// e ordem estavel é o que faz o documento poder trazer exemplo verbatim.
+class Objecto {
+ public:
+  Objecto& par(std::string_view chave, const std::string& ja_emittido) {
+    if (!corpo_.empty()) corpo_ += ',';
+    corpo_ += texto(chave);
+    corpo_ += ':';
+    corpo_ += ja_emittido;
+    return *this;
+  }
+  std::string fecha() const { return "{" + corpo_ + "}"; }
+
+ private:
+  std::string corpo_;
+};
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
