@@ -125,6 +125,12 @@ void Espectro::alimenta(const float* amostras, std::size_t quantas) {
 }
 
 void Espectro::um_quadro() {
+  // Sem plano não ha quadro, e não ha erro: as bandas ficam onde estavam e
+  // esmorecem. A fftw só devolve plano nullo por falta de memoria na
+  // construcção, o que é raro; mas executar plano nullo é comportamento
+  // indefinido, e comportamento indefinido não é caso que se possa provar nem
+  // relatar. Aparar aqui custa uma linha e fecha o caminho.
+  if (plano_ == nullptr || entrada_ == nullptr || sahida_ == nullptr) return;
   for (std::size_t i = 0; i < JANELA_DA_FFT; ++i) entrada_[i] = sobejo_[i] * hann_[i];
   fftwf_execute(plano_);
 
