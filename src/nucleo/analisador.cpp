@@ -235,6 +235,31 @@ void Analisador::Punho::prende(unsigned long long serial) {
                       params, 1);
 }
 
+void Analisador::Punho::em_formato(void* dados, std::uint32_t id,
+                                   const ::spa_pod* param) {
+  auto* eu = static_cast<Punho*>(dados);
+  if (eu == nullptr || param == nullptr || id != SPA_PARAM_Format) return;
+  std::uint32_t meio = 0;
+  std::uint32_t submeio = 0;
+  if (::spa_format_parse(param, &meio, &submeio) < 0) return;
+  if (meio != SPA_MEDIA_TYPE_audio || submeio != SPA_MEDIA_SUBTYPE_raw) return;
+  ::spa_audio_info_raw crua {};
+  if (::spa_format_audio_raw_parse(param, &crua) < 0) return;
+  // A taxa com os canaes vêm do formato CONFIRMADO, e não do que se pediu: pedir
+  // não é receber, e a conta que presumisse 48000 poria as bandas no logar
+  // errado em qualquer placa que negociasse outra cousa.
+  std::lock_guard<std::mutex> tranca(eu->boca);
+  eu->espectro.assenta_formato(static_cast<float>(crua.rate),
+                               static_cast<int>(crua.channels));
+}
+
+void Analisador::Punho::engole(const float* amostras, std::size_t quantas) {
+  std::lock_guard<std::mutex> tranca(boca);
+  espectro.alimenta(amostras, quantas);
+  retracto = espectro.bandas();
+  ultimo_buffer = Relogio::now();
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
