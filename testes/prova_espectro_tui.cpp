@@ -84,3 +84,41 @@ TEST_CASE("o degrau vae de zero a cheio, e o lixo não passa") {
   // Painel sem altura não tem degrau algum, e não divide por cousa nenhuma.
   CHECK(es::oitavos(1.0f, 0) == 0);
 }
+
+namespace {
+
+// bandas_uniformes — as QUANTAS_BANDAS todas no mesmo valor.
+std::vector<float> bandas_uniformes(float valor) {
+  return std::vector<float>(mysong::nucleo::QUANTAS_BANDAS, valor);
+}
+
+// Os glifos ESCRIPTOS Á MÃO, por ponto de codigo. Escrevem-se por \u e não pelo
+// glifo cru para que a prova não dependa da codificação com que o editor gravou
+// este arquivo, e para que o assento de cada degrau se leia como numero.
+constexpr const char* kCheio = "\u2588";  // oito oitavos, o bloco cheio
+constexpr const char* kCinco = "\u2585";  // cinco oitavos
+constexpr const char* kUm = "\u2581";     // um oitavo, o piso do silencio
+constexpr const char* kVazio = " ";
+
+}  // namespace
+
+// ── C2 · os blocos empilhados, e o parcial NO TOPO ──────────────────────────
+TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
+  // Painel de QUATRO célullas, d'onde o teto são 32 degraus. Escolhe-se 21/32,
+  // que dá 21 degraus: DOUS cheios (16) e resto CINCO. A conta faz-se aqui, á
+  // mão, e não se pergunta a oitavos() qual seria.
+  const std::vector<float> bandas = bandas_uniformes(21.0f / 32.0f);
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 4);
+
+  REQUIRE(quadro.altura == 4);
+  for (std::size_t c = 0; c < quadro.largura; ++c) {
+    // A BASE é a linha 3, e é lá que mora o primeiro cheio.
+    CHECK(quadro.em(3, c).glifo == kCheio);
+    CHECK(quadro.em(2, c).glifo == kCheio);
+    // O PARCIAL de cinco oitavos vem ACIMA dos cheios, na linha 1.
+    CHECK(quadro.em(1, c).glifo == kCinco);
+    // E acima d'elle nada se pinta.
+    CHECK(quadro.em(0, c).pinta == false);
+    CHECK(quadro.em(0, c).glifo == kVazio);
+  }
+}
