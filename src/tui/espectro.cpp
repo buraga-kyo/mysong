@@ -40,3 +40,22 @@ int oitavos(float magnitude, std::size_t altura) {
   const int conquistados = static_cast<int>(std::floor(degraus));
   return conquistados < 0 ? 0 : (conquistados > teto ? teto : conquistados);
 }
+
+std::string glifo_do_degrau(int degrau) {
+  if (degrau <= 0) return std::string(kCelulaVazia);
+  const int k = degrau > DEGRAUS_POR_CELULA ? DEGRAUS_POR_CELULA : degrau;
+  // U+2580 + k, em UTF-8 de tres octetos. Escreve-se por ARITHMETICA do ponto
+  // de codigo, e não por taboada de oito glifos crus, porque a taboada
+  // permittiria um glifo fóra de ordem passar calado; a arithmetica não. O
+  // terceiro octeto de U+2580 é 0x80, d'onde o de U+2580 + k é 0x80 + k, e k
+  // vae de 1 a 8, que é U+2581 (um oitavo) a U+2588 (o bloco cheio).
+  return std::string{'\xe2', '\x96', static_cast<char>('\x80' + k)};
+}
+
+const Celula& Quadro::em(std::size_t linha, std::size_t collunha) const {
+  // A célulla de fóra, uma só e immutavel: devolve-se referencia a ella em vez
+  // de estourar, conforme o cabeçalho promette.
+  static const Celula de_fora;
+  if (linha >= altura || collunha >= largura) return de_fora;
+  return celulas[linha * largura + collunha];
+}
