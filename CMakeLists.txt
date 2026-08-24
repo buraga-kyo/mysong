@@ -137,5 +137,17 @@ add_executable(espia_bandas exemplos/espia_bandas.cpp)
 target_compile_options(espia_bandas PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_bandas PRIVATE mysong_core)
 
+# ─── O DESENHO DO ESPECTRO (issue #6) ───────────────────────────────────────
+# Por target_sources, e NÃO na lista do add_library nem em linha alheia: regra
+# d'esta Casa, e aqui com nome, que as tarefas irmãs mysong-28 e mysong-8 lavram
+# este mesmo arquivo agora. Dependencia nova alguma se cobra: o desenho é conta
+# inteira mais os tokens, e o FTXUI o nucleo já liga em PUBLIC desde a sonda.
+#
+# NOTA DO HOMONYMO: esta fonte chama-se espectro.cpp como a de src/nucleo/, e as
+# duas entram no MESMO alvo. Não collidem porque o CMake dispõe os objectos pelo
+# caminho RELATIVO da fonte, e não pelo nome nú; uma colhe o espectro, a outra
+# o desenha, e o nome é o certo em ambas.
+target_sources(mysong_core PRIVATE src/tui/espectro.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
