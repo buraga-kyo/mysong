@@ -6,9 +6,15 @@
 //
 // Duas linhas de execução se cruzam n'este arquivo, e é bom sabê-lo antes de o
 // ler: o callback de processo corre na linha de TEMPO REAL do PipeWire, e
-// bandas() com pulsa() correm na linha de quem chama. A fechadura guarda o
-// espectro com o retracto, e nada mais: quem a tomasse para mais tempo pagaria
-// em falha de audio.
+// bandas() com pulsa() correm na linha de quem chama.
+//
+// A fechadura é CURTA do lado que lê e LONGA do lado que escreve, e a differença
+// é deliberada. Quem lê copia vinte e quatro flotantes e larga. Quem escreve a
+// tem durante o alimenta() inteiro, isto é, durante a transformada de cada
+// quadro, porque o Espectro NÃO é seguro entre linhas: elle é conta pura, de uma
+// linha só, e foi feito assim para se provar em machina surda. A guarda de fóra
+// é o preço d'essa escolha, e não descuido; o que se paga é uma leitura que pode
+// esperar por um quadro, e o que se compra é a conta provavel.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/analisador.hpp"
 
@@ -374,6 +380,10 @@ std::vector<float> Analisador::bandas() const {
   // Devolve COPIA, e nunca ponteiro para dentro do que a outra linha escreve.
   // Ponteiro seria o defeito que apparece longe da causa: a barra pintaria meio
   // retracto velho com meio novo, e uma vez por hora.
+  //
+  // A fechadura d'este lado é curta: copia e larga. Do lado que escreve ella é
+  // LONGA, e dura a transformada toda; ver o alto do arquivo. Donde esta leitura
+  // pode, no pior caso, esperar por um quadro de amostras.
   std::lock_guard<std::mutex> tranca(punho_->boca);
   return punho_->retracto;
 }
