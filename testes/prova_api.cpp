@@ -81,6 +81,26 @@ class MotorDuble final : public mysong::nucleo::Motor {
   Estado estado_ = Estado::Parado;
   bool fim_pendente_ = false;
 };
+// COLHE um campo da resposta, para que a prova não compare cadeias inteiras e se
+// quebre a cada palavra que uma razão venha a mudar. Prova presa á letra da razão
+// é prova que se rompe por lavra de estylo, e ahi deixa de ser sinal.
+std::string campo(const std::string& resposta, const std::string& chave) {
+  const Mensagem lida = analysa(resposta);
+  if (!lida.valida) return "<NAO E JSON>";
+  const mysong::api::Valor* achado = lida.acha(chave);
+  if (achado == nullptr) return "<AUSENTE>";
+  switch (achado->typo) {
+    case Typo::Texto:    return achado->texto;
+    case Typo::Booleano: return achado->booleano ? "true" : "false";
+    case Typo::Numero:   return mysong::api::duplo(achado->numero);
+    case Typo::Nulo:     break;
+  }
+  return "null";
+}
+
+std::string fala(Tocador& tocador, const std::string& linha) {
+  return mysong::api::responde(tocador, linha);
+}
 }  // namespace
 
 TEST_CASE("o escape nao deixa passar byte que parta o enquadramento") {
