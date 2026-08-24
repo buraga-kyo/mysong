@@ -185,3 +185,14 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
   }
   return quadro;
 }
+
+std::string sequencia_da_celula(const Celula& celula) {
+  // A célulla que não pinta sahe em ORDEM DE REPOUSO, e não em tríade de côr
+  // alguma: é a mesma regra que a fita arrowline segue com a côr transparente,
+  // que no terminal não se pinta e vale por repouso.
+  if (!celula.pinta) return std::string(tokens::repouso) + celula.glifo;
+  // A tinta IMMEDIATAMENTE antes do glifo, sem repouso pelo meio. É o que fecha
+  // a emenda entre célullas vizinhas de côres differentes: repouso intercalado
+  // apagaria o fundo do painel entre uma barra e a seguinte.
+  return tokens::sgr(38, celula.tinta) + celula.glifo;
+}
