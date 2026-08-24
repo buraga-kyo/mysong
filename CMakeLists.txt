@@ -137,5 +137,10 @@ add_executable(espia_bandas exemplos/espia_bandas.cpp)
 target_compile_options(espia_bandas PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_bandas PRIVATE mysong_core)
 
+# ─── A TABOA DA LIBMPV (issue #28) ──────────────────────────────────────────
+# Entra por target_sources, ACRESCENTANDO linha: é a regra d'esta Casa. Pede
+# directorio de inclusão algum, que o mpv/client.h mora em /usr/include.
+target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
