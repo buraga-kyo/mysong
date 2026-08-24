@@ -73,6 +73,31 @@ std::string texto(sqlite3_stmt* passo, int columna) {
   return std::string(reinterpret_cast<const char*>(bruto));
 }
 
+// Assenta a versão do esquema, e o limite de paginas quando a prova o pede.
+//
+// O limite é INJECÇÃO de falha, e não affinação: assenta-se DEPOIS do esquema,
+// e contando as paginas que o esquema já gastou, porque o max_page_count que se
+// peça abaixo do que já se usa o SQLite não o baixa, e a injecção não pegaria.
+// Assim `limite` conta paginas ADDICIONAES, e um é quasi cheio de saida.
+void assenta_versao_e_limite(sqlite3* punho, long limite) {
+  char sql[96] = {0};
+  std::snprintf(sql, sizeof(sql), "INSERT INTO esquema VALUES (%d);",
+                kVersaoDoEsquema);
+  sqlite3_exec(punho, sql, nullptr, nullptr, nullptr);
+  if (limite <= 0) return;
+  long ja_gastas = 0;
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho, "PRAGMA page_count;", -1, &passo, nullptr) ==
+      SQLITE_OK) {
+    if (sqlite3_step(passo) == SQLITE_ROW)
+      ja_gastas = sqlite3_column_int(passo, 0);
+    sqlite3_finalize(passo);
+  }
+  std::snprintf(sql, sizeof(sql), "PRAGMA max_page_count=%ld;",
+                ja_gastas + limite);
+  sqlite3_exec(punho, sql, nullptr, nullptr, nullptr);
+}
+
 }  // namespace
 
 // Anda byte a byte, e sómente aceita a sequencia que TODA a regra do UTF-8
