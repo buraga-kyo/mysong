@@ -83,6 +83,18 @@ nu::Faixa faz(const std::string& artista, const std::string& album,
   faixa.tamanho = 2000 + numero;
   return faixa;
 }
+
+// Enche um banco com o mesmo acervo de quatro faixas, para que os casos das
+// consultas afiram a ORDEM contra uma taboa que se lê aqui em cima.
+bool enche(const std::filesystem::path& banco) {
+  nu::Escriba escriba(banco);
+  if (!escriba.aberto()) return false;
+  return escriba.grava(faz("Ada Lovelace", "Máquina Analítica", "Tear", 3)) &&
+         escriba.grava(faz("Ada Lovelace", "Máquina Analítica", "Nota G", 7)) &&
+         escriba.grava(faz("Ada Lovelace", "Notas de Menabrea", "Traducção", 1)) &&
+         escriba.grava(faz("Bach", "Cravo Bem Temperado", "Fuga", 2)) &&
+         escriba.conclui();
+}
 }  // namespace
 
 TEST_CASE("saneia_utf8 conserva o valido e troca o invalido") {
@@ -121,6 +133,20 @@ TEST_CASE("o escriba grava e a bibliotheca conta o que se gravou") {
   REQUIRE(livraria.aberta());
   CHECK(livraria.versao() == 1);
   CHECK(livraria.total() == 4);
+}
+
+TEST_CASE("artistas e albuns sahem sem repetição e em ordem") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  // Duas faixas de Ada no mesmo album, e o nome d'ella sahe UMA vez.
+  CHECK(livraria.artistas() ==
+        std::vector<std::string>{"Ada Lovelace", "Bach"});
+  CHECK(livraria.albuns("Ada Lovelace") ==
+        std::vector<std::string>{"Máquina Analítica", "Notas de Menabrea"});
+  CHECK(livraria.albuns("Bach") ==
+        std::vector<std::string>{"Cravo Bem Temperado"});
+  CHECK(livraria.albuns("Quem Não Existe").empty());
 }
 
 // ══════════════════════════════════════════════════════════════════════════
