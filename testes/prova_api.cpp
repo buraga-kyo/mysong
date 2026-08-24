@@ -24,8 +24,10 @@
 #include <doctest/doctest.h>
 
 #include <string>
+#include <vector>
 
 #include "api/jsonzinho.hpp"
+#include "api/protocolo.hpp"
 
 namespace {
 using mysong::api::analysa;
@@ -33,6 +35,52 @@ using mysong::api::escapa;
 using mysong::api::Mensagem;
 using mysong::api::texto;
 using mysong::api::Typo;
+using mysong::nucleo::Estado;
+using mysong::nucleo::Tocador;
+
+// O DUBLÊ, escripto de novo aqui e NÃO emprestado: testes/prova_tocador.cpp é da
+// tarefa irmã mysong-5, e extrahi-lo para cabeçalho comum exigiria editá-lo. Vinte
+// e cinco linhas duplicadas custam menos que um conflicto em arquivo que outra
+// lavra está a reescrever agora.
+class MotorDuble final : public mysong::nucleo::Motor {
+ public:
+  std::vector<std::string> tocados;
+  int volume_recebido = -1;
+  double alvo_buscado = -1.0;
+  double duracao_dita = 10.0;
+
+  bool tocar(const std::string& caminho) override {
+    tocados.push_back(caminho);
+    posicao_ = 0.0;
+    estado_ = Estado::Tocando;
+    return true;
+  }
+  bool pausar() override { estado_ = Estado::Pausado; return true; }
+  bool retomar() override { estado_ = Estado::Tocando; return true; }
+  bool buscar(double segundos) override { alvo_buscado = segundos; return true; }
+  bool volume(int porcento) override { volume_recebido = porcento; return true; }
+  double posicao() const override { return posicao_; }
+  double duracao() const override { return duracao_dita; }
+  Estado estado() const override { return estado_; }
+
+  // O bombear NÃO é vazio. Vazio, elle nunca produziria o unico acontecimento em
+  // que posição e estado mudam na MESMA batida, e a bateria ficaria cega ao
+  // retracto composto que o tractado do tocador descreve ao longo de sete linhas.
+  void bombear() override {
+    if (!fim_pendente_) return;
+    fim_pendente_ = false;
+    posicao_ = 0.0;
+    estado_ = Estado::Parado;
+  }
+
+  void acaba_na_proxima_batida() { fim_pendente_ = true; }
+  void avanca(double delta) { posicao_ += delta; }
+
+ private:
+  double posicao_ = 0.0;
+  Estado estado_ = Estado::Parado;
+  bool fim_pendente_ = false;
+};
 }  // namespace
 
 TEST_CASE("o escape nao deixa passar byte que parta o enquadramento") {
