@@ -180,6 +180,21 @@ float Espectro::taxa() const noexcept { return taxa_; }
 int Espectro::canaes() const noexcept { return canaes_; }
 const std::vector<std::size_t>& Espectro::bordas() const noexcept { return bordas_; }
 
+std::size_t Espectro::banda_de(float hertz) const {
+  // Acha a banda pela RAIA em que a frequencia cahe, e não pelo intervallo em
+  // hertz: é a mesma unidade em que o agrupamento trabalha, donde a prova e a
+  // obra não podem discordar por arredondamento de meia raia.
+  const float largura_da_raia = taxa_ / static_cast<float>(JANELA_DA_FFT);
+  const std::size_t raia = static_cast<std::size_t>(hertz / largura_da_raia + 0.5f);
+  for (std::size_t b = 0; b < QUANTAS_BANDAS; ++b) {
+    if (raia >= bordas_[b] && raia < bordas_[b + 1]) return b;
+  }
+  // Fóra da faixa que se pinta. Devolve QUANTAS_BANDAS, que não é indice
+  // valido: quem pergunta por 20 kHz ha de topar com isso, e não com zero, que
+  // seria a banda do baixo a responder por um agudo que não existe.
+  return QUANTAS_BANDAS;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
