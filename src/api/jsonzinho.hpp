@@ -114,13 +114,18 @@ class Objecto {
 
 // ─── A LEITURA. Quatro typos, e não mais: é o que o contracto promette ──────
 
-enum class Typo { Texto, Numero, Booleano, Nulo };
+// «Vector» é o vector de TEXTOS, e sómente d'elles: é o unico valor não escalar
+// que este contracto emitte (as faixas da fila), e admitti-lo na leitura é o que
+// faz a nossa propria sahida voltar a entrar. Assymetria entre o que se emitte e
+// o que se lê é armadilha para quem escrever cliente com esta mesma peça.
+enum class Typo { Texto, Numero, Booleano, Nulo, Vector };
 
 struct Valor {
   Typo typo = Typo::Nulo;
   std::string texto;      // já DESESCAPADO, e em UTF-8
   double numero = 0.0;
   bool booleano = false;
+  std::vector<std::string> itens;  // sómente quando typo == Typo::Vector
 };
 
 // A mensagem lida. Ou é valida, ou traz a RAZÃO por que não é: não há terceiro
@@ -303,6 +308,23 @@ inline bool le_valor(Leitor* leitor, Valor* fora, std::string* razao) {
     if (palavra == "null") { fora->typo = Typo::Nulo; return true; }
     *razao = "palavra que nao e valor d'este subconjunto: " + palavra;
     return false;
+  }
+  if (guia == '[') {
+    fora->typo = Typo::Vector;
+    leitor->toma();  // o [ de abertura
+    leitor->come_brancos();
+    while (leitor->olha() != ']') {
+      if (!fora->itens.empty()) {
+        if (leitor->toma() != ',') { *razao = "esperava-se , ou ] no vector"; return false; }
+        leitor->come_brancos();
+      }
+      std::string item;
+      if (!leitor->cadeia(&item, razao)) return false;
+      fora->itens.push_back(std::move(item));
+      leitor->come_brancos();
+    }
+    leitor->toma();  // o ] de fecho
+    return true;
   }
   fora->typo = Typo::Numero;
   return leitor->numero(&fora->numero, razao);
