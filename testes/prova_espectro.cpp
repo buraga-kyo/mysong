@@ -205,7 +205,7 @@ TEST_CASE("a queda é mais lenta que o ataque, e desce sem saltar") {
   nu::Espectro espectro(48000.0f, 2);
   const auto forte = seno(440.0f, 1.0f, 48000.0f, 14 * nu::SALTO_DA_FFT);
   espectro.alimenta(forte.data(), forte.size());
-  const std::size_t alvo = espectro.banda_de(440.0f);
+  const std::size_t alvo = 9;  // do oraculo: 440 Hz a 48000 cahe na banda 9
   const float alto = espectro.bandas()[alvo];
   REQUIRE(alto > 0.5f);
 
@@ -242,7 +242,7 @@ TEST_CASE("bloco de tamanho absurdo não estoura nem erra") {
   // Bloco de tres janelas produz varios quadros de uma vez, que é o caso do
   // quantum grande. O alvo ha de acender do mesmo modo.
   espectro.alimenta(tres_janelas.data(), tres_janelas.size());
-  const std::size_t alvo = espectro.banda_de(440.0f);
+  const std::size_t alvo = 9;  // do oraculo, e não do examinando
   CHECK(espectro.bandas()[alvo] > 0.0f);
 }
 
@@ -251,7 +251,8 @@ TEST_CASE("fluxo de um canal se mistura sem adiantar a musica") {
   REQUIRE(espectro.canaes() == 1);
   const auto bloco = seno(440.0f, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT, 1);
   espectro.alimenta(bloco.data(), bloco.size());
-  const std::size_t alvo = espectro.banda_de(440.0f);
+  // A mistura não move a frequencia: 440 Hz em mono cahe na mesma banda 9.
+  const std::size_t alvo = 9;
   const auto bandas = espectro.bandas();
   const auto longe = maior_de_longe(bandas, alvo);
   INFO("mono: alvo=" << alvo << " valor=" << bandas[alvo] << " longe=" << longe.first);
@@ -266,8 +267,12 @@ TEST_CASE("taxa differente põe a mesma frequencia na mesma banda") {
     nu::Espectro espectro(taxa, 2);
     const auto bloco = seno(440.0f, 0.5f, taxa, 14 * nu::SALTO_DA_FFT);
     espectro.alimenta(bloco.data(), bloco.size());
-    const std::size_t alvo = espectro.banda_de(440.0f);
+    // Aqui o oraculo é a formula refeita n'esta prova, porque para 44100 e
+    // 96000 não ha numero escripto á mão; e assere-se que a obra concorda com
+    // ella ANTES de a usar, para que o caso não passe por concordarem no erro.
+    const std::size_t alvo = banda_esperada(440.0f, taxa);
     REQUIRE(alvo < nu::QUANTAS_BANDAS);
+    CHECK(espectro.banda_de(440.0f) == alvo);
     const auto bandas = espectro.bandas();
     const auto longe = maior_de_longe(bandas, alvo);
     INFO("taxa=" << taxa << " alvo=" << alvo << " valor=" << bandas[alvo]);
