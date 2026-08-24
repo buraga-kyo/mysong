@@ -124,8 +124,56 @@ class Cliente {
   bool ligado_ = false;
   std::string acumulado_;
 };
+// Um motor mudo: aqui não se prova mechanica de nucleo alguma, e por isso o dublê
+// é o menor que sirva. O que se prova é o TRANSPORTE.
+class MotorMudo final : public mysong::nucleo::Motor {
+ public:
+  bool tocar(const std::string&) override { estado_ = Estado::Tocando; return true; }
+  bool pausar() override { estado_ = Estado::Pausado; return true; }
+  bool retomar() override { estado_ = Estado::Tocando; return true; }
+  bool buscar(double) override { return true; }
+  bool volume(int) override { return true; }
+  double posicao() const override { return 0.0; }
+  double duracao() const override { return 42.0; }
+  Estado estado() const override { return estado_; }
+  void bombear() override {}
+
+ private:
+  Estado estado_ = Estado::Parado;
+};
 }  // namespace
 
+TEST_CASE("o socket abre em 0600, responde, e a linha chega PARTIDA byte a byte") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  const std::string caminho = casa.dentro("mysong.sock");
+
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+  std::string razao;
+  auto servidor = Servidor::abrir(tocador, caminho, &razao);
+  REQUIRE_MESSAGE(servidor.has_value(), razao);
+
+  struct ::stat marca {};
+  REQUIRE(::stat(caminho.c_str(), &marca) == 0);
+  CHECK(S_ISSOCK(marca.st_mode));
+  CHECK((marca.st_mode & 0777) == 0600);  // a proteccao inteira d'esta superficie
+
+  Cliente cliente(caminho);
+  REQUIRE(cliente.ligado());
+  // BYTE A BYTE: o socket é de FLUXO e não de mensagem, e é este o caso normal que
+  // um dublê ingenuo nunca produziria. Servidor que presumisse mensagem-por-leitura
+  // morre aqui, e morre só aqui.
+  const std::string pedido = "{\"verbo\":\"estado\"}\n";
+  for (const char letra : pedido) {
+    cliente.manda(std::string(1, letra));
+    servidor->pulsa();
+  }
+  const std::vector<std::string> linhas = cliente.colhe(*servidor, 1);
+  REQUIRE(linhas.size() == 1);
+  CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
+  CHECK(linhas[0].find("\"duracao\":42.000") != std::string::npos);
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
