@@ -122,3 +122,42 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
     CHECK(quadro.em(0, c).glifo == kVazio);
   }
 }
+
+// ── C3 · o gradiente ancorado no PAINEL ─────────────────────────────────────
+// A magnitude escolhida é 0,899: abaixo do limiar quente (0,90), de sorte que o
+// gradiente vale, e alta bastante para pintar as CINCO linhas do painel. A conta
+// á mão: teto 5 vezes 8 = 40 degraus, 0,899 vezes 40 = 35,96, floor 35, que dá
+// quatro blocos cheios (32) e resto tres. Cinco célullas desenhadas, e é o que
+// permitte aferir a rampa INTEIRA, da base ao topo, n'uma composição só.
+TEST_CASE("a rampa vae de v700 na base a v400 no topo") {
+  const std::vector<float> bandas = bandas_uniformes(0.899f);
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5);
+
+  REQUIRE(quadro.altura == 5);
+  for (std::size_t c = 0; c < quadro.largura; ++c) {
+    REQUIRE(quadro.em(4, c).pinta);
+    REQUIRE(quadro.em(0, c).pinta);
+
+    // A BASE (linha 4) veste v700 EXACTO, conferido contra o TOKEN e não contra
+    // outra chamada da obra: é asserção de fóra, e não pergunta ao oraculo.
+    CHECK(es::mesma_tinta(quadro.em(4, c).tinta, tk::rgb(tk::v700)));
+    // O TOPO (linha 0) veste v400 EXACTO, pelo mesmo modo.
+    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v400)));
+
+    // O MEIO (linha 2) fica a meia rampa. O peso recalcula-se AQUI: a linha 2 é
+    // a terceira desde a base d'um painel de cinco, d'onde o alto vale 2 e o
+    // peso 2/4, que é 0,5. Compõe-se por tokens::mistura, que é a mesma
+    // interpolação que a issue #2 já prova, e não pela funcção sob exame.
+    CHECK(es::mesma_tinta(quadro.em(2, c).tinta,
+                          tk::mistura(tk::v400, tk::v700, 0.5)));
+  }
+}
+
+TEST_CASE("painel de uma célulla veste a base da rampa") {
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.5f), 8, 1);
+  REQUIRE(quadro.altura == 1);
+  for (std::size_t c = 0; c < quadro.largura; ++c) {
+    REQUIRE(quadro.em(0, c).pinta);
+    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v700)));
+  }
+}
