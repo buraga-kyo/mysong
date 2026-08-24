@@ -39,8 +39,6 @@ namespace mysong::api {
 // commando ahi deixaria qualquer usuario da machina governar o tocador alheio.
 std::string caminho_padrao_do_socket();
 
-}  // namespace mysong::api
-
 class Servidor {
  public:
   // Teto de clientes ao mesmo tempo. Além d'elle responde-se «lotado» e fecha-se,
@@ -88,6 +86,8 @@ class Servidor {
   std::string caminho_;
   std::vector<Cliente> clientes_;
 };
+
+}  // namespace mysong::api
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
