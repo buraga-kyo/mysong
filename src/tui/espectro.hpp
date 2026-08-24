@@ -48,3 +48,48 @@
 //                   declarado, e não caso a contornar aqui.
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
+
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <ftxui/dom/elements.hpp>
+
+#include "tui/tokens.hpp"
+
+namespace mysong::tui {
+
+// O LIMIAR DO QUENTE. Noventa por cento, e é a régua do bar_meter.lua do
+// RADICAL-OS, que trata quente do pct_hot em diante. Maior ou IGUAL: o limiar
+// pertence ao quente, e a prova afere os dous lados d'elle.
+inline constexpr float LIMIAR_QUENTE = 0.90f;
+
+// Quantos degraus cabem n'uma célulla. Oito, que são os blocos U+2581 a U+2588,
+// e não é numero de gosto: é quanto o terminal sabe subdividir uma célulla na
+// vertical. D'onde a resolução de uma columna de N célullas é 8N degraus, e é
+// contra este 8 que a issue #5 calibrou o seu LIMIAR_DE_ZERO de tres
+// centesimos, «um quarto do menor passo que a barra mostra».
+inline constexpr int DEGRAUS_POR_CELULA = 8;
+
+// A célulla vazia. Espaço, e não bloco de zero oitavos: bloco de zero oitavos
+// não existe na taboada Unicode, e U+2580 é o meio-bloco SUPERIOR, que
+// desenharia justamente o contrario do que se quer.
+inline constexpr std::string_view kCelulaVazia = " ";
+
+// Uma CÉLULLA do quadro: o glifo que mostra, e a tinta com que se escreve. A
+// tinta é TRÍADE, e não token, porque o gradiente interpola ENTRE dous tokens e
+// os degraus do meio não têm nome na paleta. Quem não pinta traz `pinta` falso,
+// e d'esse se emitte a ordem de repouso em vez de tríade, tal como a fita
+// arrowline faz com a côr transparente.
+struct Celula {
+  std::string glifo = std::string(kCelulaVazia);
+  tokens::Triade tinta;
+  bool pinta = false;
+};
+
+// mesma_tinta — a Triade não tem egualdade propria, e não se lha acrescenta em
+// tokens.hpp, que é lavra alheia e já mergeada. Compara-se aqui.
+inline bool mesma_tinta(tokens::Triade a, tokens::Triade b) {
+  return a.r == b.r && a.g == b.g && a.b == b.b;
+}
