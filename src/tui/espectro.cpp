@@ -59,3 +59,38 @@ const Celula& Quadro::em(std::size_t linha, std::size_t collunha) const {
   if (linha >= altura || collunha >= largura) return de_fora;
   return celulas[linha * largura + collunha];
 }
+
+namespace {
+
+// valor_da_columna — A REPARTIÇÃO, e é UMA funcção para os DOUS regimes.
+//
+// A collunha `c` de `largura` cobre o intervallo SEMI-ABERTO de bandas
+// [c * n / largura, (c + 1) * n / largura), e toma o MÁXIMO d'ellas.
+//
+// Sendo a largura MENOR que n, o intervallo tem duas bandas ou mais, e o máximo
+// FUNDE. Funde e não amostra, de propósito: amostrar faria um pico desapparecer
+// só porque o operador estreitou a janella, e barra que apaga ao redimensionar
+// lê-se como defeito. Sendo a largura MAIOR que n, o intervallo teria comprimento
+// menor que um e sahiria VAZIO por truncamento; alarga-se ao minimo de uma banda,
+// e então o máximo degenera em copia, que é o esticar.
+//
+// D'aqui sahe de graça o invariante que o aceite cobra: os intervallos partem
+// [0, n) sem sobra e sem vão, d'onde banda alguma se perde em largura alguma.
+float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
+                       std::size_t largura) {
+  const std::size_t n = bandas.size();
+  if (n == 0 || largura == 0) return 0.0f;
+
+  std::size_t principio = (c * n) / largura;
+  if (principio >= n) principio = n - 1;
+  std::size_t fim = ((c + 1) * n) / largura;
+  if (fim <= principio) fim = principio + 1;  // o intervallo nunca é vazio
+  if (fim > n) fim = n;
+
+  float pico = 0.0f;
+  for (std::size_t b = principio; b < fim; ++b)
+    pico = std::max(pico, cingido(bandas[b]));
+  return pico;
+}
+
+}  // namespace
