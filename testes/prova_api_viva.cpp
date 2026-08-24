@@ -227,6 +227,52 @@ TEST_CASE("cliente que fecha de todo nao derruba o servidor, e o seguinte e serv
   REQUIRE(linhas.size() == 1);
   CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
 }
+// A differença entre ROBUSTEZ e ROUBO, em duas metades que se provam separadas.
+TEST_CASE("socket orphao reclama-se; socket VIVO respeita-se e nao se desliga") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  const std::string caminho = casa.dentro("mysong.sock");
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+
+  SUBCASE("orphao: ha arquivo e ninguem escuta, donde se reclama") {
+    // Um socket ligado e ABANDONADO: o arquivo fica, e ninguem escuta. É
+    // exactamente o resto que um processo morto de morte matada deixa.
+    const int abandonado = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    REQUIRE(abandonado >= 0);
+    ::sockaddr_un endereco{};
+    endereco.sun_family = AF_UNIX;
+    std::memcpy(endereco.sun_path, caminho.c_str(), caminho.size());
+    REQUIRE(::bind(abandonado, reinterpret_cast<const ::sockaddr*>(&endereco),
+                   sizeof(endereco)) == 0);
+    ::close(abandonado);  // fecha SEM escutar: o arquivo fica orphao
+
+    std::string razao;
+    auto servidor = Servidor::abrir(tocador, caminho, &razao);
+    CHECK_MESSAGE(servidor.has_value(), razao);
+  }
+
+  SUBCASE("vivo: ha quem escute, donde se recusa e o arquivo alheio fica") {
+    std::string razao_do_primeiro;
+    auto primeiro = Servidor::abrir(tocador, caminho, &razao_do_primeiro);
+    REQUIRE_MESSAGE(primeiro.has_value(), razao_do_primeiro);
+
+    std::string razao;
+    auto segundo = Servidor::abrir(tocador, caminho, &razao);
+    CHECK_FALSE(segundo.has_value());
+    CHECK(razao.find("outra instancia") != std::string::npos);
+    // E o arquivo do primeiro FICA: roubar o caminho faria as ordens do operador
+    // passarem á instancia que elle abriu por ultimo, e a que elle ouve ficaria
+    // surda sem aviso.
+    struct ::stat marca {};
+    CHECK(::stat(caminho.c_str(), &marca) == 0);
+    // E o primeiro segue a servir de facto, e não sómente a possuir o arquivo.
+    Cliente cliente(caminho);
+    REQUIRE(cliente.ligado());
+    cliente.manda("{\"verbo\":\"versao\"}\n");
+    CHECK(cliente.colhe(*primeiro, 1).size() == 1);
+  }
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
