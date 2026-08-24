@@ -16,7 +16,11 @@
 //                   obra devia responder não prova cousa alguma.
 #include <doctest/doctest.h>
 
+#include <unistd.h>
+
+#include <filesystem>
 #include <string>
+#include <vector>
 
 #include "nucleo/biblioteca.hpp"
 
@@ -26,6 +30,40 @@ namespace {
 // O caracter de substituição, por extenso e n'uma constante, porque colado a
 // uma letra hexadecimal dentro de um literal elle seria lido como outro byte.
 const std::string kTroca = "\xEF\xBF\xBD";
+
+// Uma COVA de prova: directorio proprio, que nasce com o caso e morre com elle.
+//
+// É a peça que cumpre a prohibição, e não uma commodidade. Nenhum caso d'esta
+// bateria toca ~/.local/share/mysong nem ~/Música: o caminho do banco entra por
+// parametro, e é sómente por isso que uma corrida de prova não pode corromper o
+// índice do operador. O nome leva o pid e um contador, para que duas corridas em
+// paralello, ou dous casos do mesmo binario, não se pisem.
+class Cova {
+ public:
+  Cova() {
+    static int contador = 0;
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-prova-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++contador));
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+    std::filesystem::create_directories(caminho_, erro);
+  }
+  // Apaga SÓMENTE o caminho que este objecto construiu, e nunca por padrão
+  // largo: apagar por padrão é como se apaga o que não era nosso.
+  ~Cova() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+
+  const std::filesystem::path& raiz() const { return caminho_; }
+  std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+
+ private:
+  std::filesystem::path caminho_;
+};
 }  // namespace
 
 TEST_CASE("saneia_utf8 conserva o valido e troca o invalido") {
