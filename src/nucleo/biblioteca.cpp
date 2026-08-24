@@ -325,6 +325,23 @@ bool Escriba::conclui() {
   return true;
 }
 
+void Escriba::abandona() noexcept {
+  if (punho_ != nullptr) {
+    sqlite3_close(punho_);
+    punho_ = nullptr;
+  }
+  std::error_code erro;
+  std::filesystem::remove(temporario_, erro);
+}
+
+Escriba::~Escriba() { abandona(); }
+
+bool Escriba::aberto() const noexcept { return punho_ != nullptr; }
+
+const std::filesystem::path& Escriba::temporario() const noexcept {
+  return temporario_;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
