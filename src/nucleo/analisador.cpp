@@ -120,6 +120,13 @@ void Analisador::Punho::em_global(void* dados, std::uint32_t id, std::uint32_t,
     // posto pelo SERVIDOR, das credenciaes do socket, e cliente algum o pode
     // mentir; o application.process.id é o cliente que o declara de si.
     const char* pid = spa_dict_lookup(props, PW_KEY_SEC_PID);
+    // ADVERTENCIA sobre este recuo: o application.process.id é o CLIENTE que o
+    // declara de si, e cliente algum é obrigado a dizer a verdade. Um processo
+    // alheio que se declarasse com o nosso pid entraria por aqui, e o espectro
+    // sahiria com o som d'elle. O recuo existe sómente para o dia em que outra
+    // versão do PipeWire deixar de annunciar o sec.pid, que é o que o SERVIDOR
+    // põe das credenciaes do socket e ninguem pode mentir. Se algum dia isto
+    // pesar, o caminho é tirar o recuo e dar zeros, e não affrouxá-lo.
     if (pid == nullptr) pid = spa_dict_lookup(props, PW_KEY_APP_PROCESS_ID);
     if (pid != nullptr &&
         std::strtoul(pid, nullptr, 10) == static_cast<unsigned long>(eu->nosso_pid)) {
