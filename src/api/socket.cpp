@@ -40,6 +40,50 @@ std::string caminho_padrao_do_socket() {
   return std::string(raiz) + "/mysong.sock";
 }
 
+namespace {
+
+// O limite de sun_path, lido da propria estructura e não chumbado: são 108 bytes
+// nesta plataforma, e o terminador é um d'elles.
+constexpr std::size_t kSunPath = sizeof(::sockaddr_un::sun_path);
+
+// CABE? Truncar em silêncio faria o socket nascer em caminho que não é o que se
+// pediu, e o cliente iria bater á porta errada sem que ninguem lhe dissesse.
+bool cabe_no_sun_path(const std::string& caminho, std::string* razao) {
+  if (caminho.size() + 1 <= kSunPath) return true;
+  if (razao != nullptr)
+    *razao = "o caminho do socket tem " + std::to_string(caminho.size()) +
+             " bytes, e o limite de sun_path e " + std::to_string(kSunPath) +
+             " contado o terminador, donde cabem " + std::to_string(kSunPath - 1) +
+             ": " + caminho;
+  return false;
+}
+
+// Assenta o endereço. Presume que já se verificou que cabe.
+void assenta_endereco(::sockaddr_un* endereco, const std::string& caminho) {
+  *endereco = ::sockaddr_un{};
+  endereco->sun_family = AF_UNIX;
+  std::memcpy(endereco->sun_path, caminho.c_str(), caminho.size());
+}
+
+// HA QUEM ESCUTE? O socket é a propria prova de vida: tenta-se connectar, e quem
+// responde está vivo. PID algum se consulta e arquivo de tranca algum se escreve,
+// que ambos mentem quando o processo morre de morte matada. Na duvida (nem se pudo
+// abrir a sonda) responde-se SIM, que é o lado seguro: não se desliga o alheio.
+bool ha_quem_escute(const std::string& caminho) {
+  const int sonda = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (sonda < 0) return true;
+  ::sockaddr_un endereco{};
+  assenta_endereco(&endereco, caminho);
+  const int veredicto = ::connect(
+      sonda, reinterpret_cast<const ::sockaddr*>(&endereco), sizeof(endereco));
+  const int guardado = errno;
+  ::close(sonda);
+  errno = guardado;
+  return veredicto == 0;
+}
+
+}  // namespace
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
