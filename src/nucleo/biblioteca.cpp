@@ -190,6 +190,31 @@ std::vector<std::string> Biblioteca::albuns(std::string_view artista) const {
   return nomes;
 }
 
+std::vector<Faixa> Biblioteca::faixas_do_album(std::string_view artista,
+                                               std::string_view album) const {
+  std::vector<Faixa> faixas;
+  const std::string sql = std::string("SELECT ") + kColumnas +
+                          " FROM faixas WHERE artista = ?1 AND album = ?2"
+                          " ORDER BY numero, titulo;";
+  corre(punho_, sql.c_str(), {artista, album},
+        [&faixas](sqlite3_stmt* passo) {
+          faixas.push_back(faixa_da_linha(passo));
+        });
+  return faixas;
+}
+
+std::vector<Faixa> Biblioteca::busca_faixa(std::string_view termo) const {
+  std::vector<Faixa> faixas;
+  const std::string sql = std::string("SELECT ") + kColumnas +
+                          " FROM faixas WHERE titulo LIKE '%' || ?1 || '%'"
+                          " ORDER BY artista, album, numero, titulo;";
+  corre(punho_, sql.c_str(), {termo},
+        [&faixas](sqlite3_stmt* passo) {
+          faixas.push_back(faixa_da_linha(passo));
+        });
+  return faixas;
+}
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
