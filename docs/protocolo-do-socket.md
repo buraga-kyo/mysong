@@ -61,3 +61,57 @@ O **`erro`** é para a machina: compare-o, ramifique por elle. A **`razao`** é 
 olho de quem depura, e pode mudar de redacção entre versões **sem** que a versão do
 protocolo suba. Não ramifique pela `razao`.
 
+### 3.1 A taboa dos codigos de erro
+
+| `erro` | Que quer dizer | Onde olhar |
+|---|---|---|
+| `json_malformado` | A linha não é um objecto JSON do subconjunto que se aceita. | A linha que se mandou. |
+| `verbo_ausente` | Falta a chave `verbo`, ou ella não é texto. | A mensagem. |
+| `verbo_desconhecido` | O `verbo` não existe neste protocolo. | O nome que se digitou. |
+| `nao_implementado` | O verbo EXISTE e está reservado; o seu subsystema ainda não chegou. Vem com a chave `issue`. | A issue que a resposta nomeia. |
+| `argumento_invalido` | Um argumento falta, é do typo errado, ou está fóra de faixa. | A mensagem. |
+| `recusado` | O nucleo disse não a uma ordem legitima (pausar o que está parado, `proxima` na borda da fila). | O ESTADO do tocador. |
+| `linha_longa` | A linha passou de 64 KiB sem terminar em `\n`. A connexão fecha-se. | O cliente. |
+| `lotado` | Ha 16 clientes ao mesmo tempo. A connexão fecha-se depois d'esta resposta. | Tente outra vez. |
+
+A differença entre `recusado` e `argumento_invalido` importa, e é d'esta taboa que
+ella se lê: `recusado` manda olhar o estado do tocador, `argumento_invalido` manda
+olhar a mensagem que se escreveu.
+
+## 4. Os verbos de leitura
+
+### `versao`
+
+Devolve o contracto, para que o cliente o possa exigir antes de confiar.
+
+```
+→ {"verbo":"versao"}
+← {"ok":true,"obra":"mysong","protocolo":1}
+```
+
+| Campo | Typo | |
+|---|---|---|
+| `obra` | texto | Sempre `"mysong"`. |
+| `protocolo` | inteiro | A versão d'este documento. |
+
+### `estado`
+
+O retracto inteiro, num instante só. **Os sete campos vêm sempre**, e é de proposito:
+cliente que tenha de perguntar duas vezes para armar uma tela veria a segunda resposta
+não casar com a primeira, porque entre as duas o mundo andou.
+
+```
+→ {"verbo":"estado"}
+← {"ok":true,"estado":"Tocando","faixa":"/tmp/pa-s1-prova/01 - Canção 音楽.wav","posicao":1.275,"duracao":20.000,"volume":100,"indice":0,"tamanho":3}
+```
+
+| Campo | Typo | |
+|---|---|---|
+| `estado` | texto | `"Tocando"`, `"Pausado"` ou `"Parado"`. Tres, e não mais. |
+| `faixa` | texto | O caminho da faixa corrente. **Vazio** quando a fila está vazia; não é erro. |
+| `posicao` | duplo | Segundos desde o inicio da faixa, com tres casas. Zero quando nada toca. |
+| `duracao` | duplo | Segundos de duração da faixa, com tres casas. |
+| `volume` | inteiro | De 0 a 100. É o volume do MOTOR, e nunca o do systema. |
+| `indice` | inteiro | O assento da faixa corrente na fila, contado de zero. |
+| `tamanho` | inteiro | Quantas faixas ha na fila. |
+
