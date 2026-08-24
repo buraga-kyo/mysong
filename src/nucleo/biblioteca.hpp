@@ -41,6 +41,36 @@ struct sqlite3;
 
 namespace mysong::nucleo {
 
+// A MÁSCARA do que se DEDUZIU do caminho, porque a issue manda registrar a
+// dedução e não sómente praticá-la. Zero quer dizer que a etiqueta disse tudo;
+// e a consulta que interessa ao operador — que faixas entraram sem etiqueta? —
+// é «WHERE deduzido != 0», mais curta que a disjunção de quatro columnas.
+enum Deduzido : unsigned {
+  kDeduziuNada = 0u,
+  kDeduziuArtista = 1u,
+  kDeduziuAlbum = 2u,
+  kDeduziuTitulo = 4u,
+  kDeduziuNumero = 8u,
+};
+
+// Uma FAIXA do índice. O `caminho` é a identidade, e é canónico; a `raiz` diz
+// de que raiz de acervo ella veio, que é o que permitte mais de uma. O
+// `modificado` e o `tamanho` são o que a varredura compara para saber se ha de
+// reler a etiqueta, e por isso vivem na linha e não fóra d'ella.
+struct Faixa {
+  std::string caminho;
+  std::string raiz;
+  std::string artista;
+  std::string album;
+  std::string titulo;
+  int numero = 0;    // zero é «sem numero», e não faixa zero
+  int anno = 0;      // zero é «sem anno»
+  int duracao = 0;   // em segundos; zero é «não medida»
+  std::int64_t modificado = 0;
+  std::int64_t tamanho = 0;
+  unsigned deduzido = kDeduziuNada;
+};
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
