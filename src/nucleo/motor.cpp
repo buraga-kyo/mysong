@@ -21,21 +21,26 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/motor.hpp"
 
-#include <mpv/client.h>
+#include "nucleo/libmpv.hpp"
 
 #include <string_view>
 
 namespace mysong::nucleo {
 namespace {
 
+// A taboa, já atada. Nunca é nulla aqui: abrir() é a UNICA porta para um
+// MotorMpv existir, e recusa antes de tudo quando a taboa não abre; donde toda
+// linha d'este arquivo que chame por aqui corre depois d'aquella recusa.
+const TaboaDaLibmpv& mpv() { return *libmpv(); }
+
 // Assenta uma opção ANTES de mpv_initialize, e diz porque falhou se falhar.
 bool assenta(::mpv_handle* punho, const char* nome, const char* valor,
              std::string* razao) {
-  const int codigo = mpv_set_option_string(punho, nome, valor);
+  const int codigo = mpv().mpv_set_option_string(punho, nome, valor);
   if (codigo >= 0) return true;
   if (razao) {
     *razao = std::string("não pude assentar ") + nome + '=' + valor + ": " +
-             mpv_error_string(codigo);
+             mpv().mpv_error_string(codigo);
   }
   return false;
 }
@@ -44,7 +49,8 @@ bool assenta(::mpv_handle* punho, const char* nome, const char* valor,
 // erro: quem nada toca não tem posição, e zero é o retracto d'esse nada.
 double le_dobro(::mpv_handle* punho, const char* nome) {
   double valor = 0.0;
-  if (mpv_get_property(punho, nome, MPV_FORMAT_DOUBLE, &valor) < 0) return 0.0;
+  if (mpv().mpv_get_property(punho, nome, MPV_FORMAT_DOUBLE, &valor) < 0)
+    return 0.0;
   return valor;
 }
 
@@ -57,7 +63,7 @@ class Cama {
  public:
   explicit Cama(::mpv_handle* punho) noexcept : punho_(punho) {}
   ~Cama() {
-    if (punho_ != nullptr) mpv_terminate_destroy(punho_);
+    if (punho_ != nullptr) mpv().mpv_terminate_destroy(punho_);
   }
   Cama(const Cama&) = delete;
   Cama& operator=(const Cama&) = delete;
@@ -80,9 +86,9 @@ class Cama {
 // falhar que esta Casa não aceita.
 int observa_relogio(::mpv_handle* punho) {
   const int pela_posicao =
-      mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
+      mpv().mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
   if (pela_posicao < 0) return pela_posicao;
-  return mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
+  return mpv().mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
 }
 
 }  // namespace
@@ -101,15 +107,20 @@ MotorMpv::MotorMpv(MotorMpv&& outro) noexcept
 }
 
 MotorMpv::~MotorMpv() {
-  if (punho_ != nullptr) mpv_terminate_destroy(punho_);
+  if (punho_ != nullptr) mpv().mpv_terminate_destroy(punho_);
 }
 
 // A FABRICA. Unico caminho para um MotorMpv existir; quem falha não tem
 // objecto, e não um objecto a que se deva perguntar se serve.
 std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
+  // A taboa ANTES de tudo: sem ella não ha funcção que se chame, e a razão que
+  // ella devolve é a que o operador ha de ler. É por aqui que a falta da
+  // libmpv chega como recusa nomeada, e não como morte no carregador.
+  if (libmpv(razao) == nullptr) return std::nullopt;
+
   // Da cama ao MotorMpv, o punho tem dono a todo instante: nenhum caminho de
   // sahida d'esta funcção o deixa aberto, e nenhum d'elles o desfaz duas vezes.
-  Cama cama(mpv_create());
+  Cama cama(mpv().mpv_create());
   if (cama.punho() == nullptr) {
     if (razao) *razao = "mpv_create não deu punho algum";
     return std::nullopt;
@@ -123,10 +134,11 @@ std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
     return std::nullopt;
   }
 
-  const int codigo = mpv_initialize(cama.punho());
+  const int codigo = mpv().mpv_initialize(cama.punho());
   if (codigo < 0) {
     if (razao) {
-      *razao = std::string("mpv_initialize: ") + mpv_error_string(codigo);
+      *razao = std::string("mpv_initialize: ") +
+               mpv().mpv_error_string(codigo);
     }
     return std::nullopt;
   }
@@ -134,7 +146,8 @@ std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
   const int visto = observa_relogio(cama.punho());
   if (visto < 0) {
     if (razao) {
-      *razao = std::string("mpv_observe_property: ") + mpv_error_string(visto);
+      *razao = std::string("mpv_observe_property: ") +
+               mpv().mpv_error_string(visto);
     }
     return std::nullopt;
   }
