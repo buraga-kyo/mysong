@@ -42,6 +42,49 @@ extern "C" void ao_sinal(int) { pedido_de_sahida = 1; }
 
 }  // namespace
 
+int main(int argc, char** argv) {
+  namespace api = mysong::api;
+  namespace nucleo = mysong::nucleo;
+
+  std::string razao;
+  auto motor = nucleo::MotorMpv::abrir(&razao);
+  if (!motor) {
+    std::cerr << "superficie_viva: a libmpv recusou: " << razao << "\n";
+    return 1;
+  }
+  nucleo::Tocador tocador(*motor);
+  for (int passo = 1; passo < argc; ++passo) tocador.fila().junta(argv[passo]);
+
+  // O socket DEGRADA e não aborta: faltando-lhe caminho ou estando o caminho tomado,
+  // escreve-se a razão e o tocador segue a tocar. Superfície de commando que
+  // derrubasse o tocador seria pior que superfície nenhuma.
+  std::string razao_do_socket;
+  auto servidor =
+      api::Servidor::abrir(tocador, api::caminho_padrao_do_socket(), &razao_do_socket);
+  if (servidor)
+    std::cerr << "superficie_viva: socket de commando em " << servidor->caminho()
+              << "\n";
+  else
+    std::cerr << "superficie_viva: SEM socket de commando: " << razao_do_socket << "\n";
+
+  if (!tocador.fila().vazia() && !tocador.tocar_corrente())
+    std::cerr << "superficie_viva: o motor recusou a primeira faixa\n";
+
+  std::signal(SIGINT, ao_sinal);
+  std::signal(SIGTERM, ao_sinal);
+
+  // O LAÇO. Bate os dous na MESMA linha de execução, a vinte por segundo. A cadencia
+  // é parâmetro d'este laço e não constante enterrada em parte alguma: se um dia
+  // faltar, baixa-se aqui, e não se ergue thread, que exigiria mutex no tocador.
+  const ::timespec cadencia{0, 50L * 1000L * 1000L};
+  while (pedido_de_sahida == 0) {
+    tocador.pulsa();
+    if (servidor) servidor->pulsa();
+    ::nanosleep(&cadencia, nullptr);
+  }
+  std::cerr << "superficie_viva: sahindo, e o socket vae com o destructor\n";
+  return 0;
+}
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
