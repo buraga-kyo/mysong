@@ -101,6 +101,20 @@ int main(int argc, char** argv) {
     std::fflush(stdout);  // linha a linha: a prova lê isto por tubo, ao vivo
     dorme(40);
     passado = std::chrono::duration<double>(Relogio::now() - inicio).count();
+
+    // A RECONEXÃO, provada n'esta mesma corrida. O nó do mpv morre com a faixa:
+    // ao fim d'ella o mpv cahe em espera e o nó sahe do grafo, e é essa a morte
+    // que o aceite manda provar. Vendo o estado deixar de tocar, torna-se a
+    // tocar depois de uma pausa, e o serial impresso na columna «no» ha de ser
+    // OUTRO: nó novo, preso sozinho, sem que esta corrida se reiniciasse.
+    if (tocador.fila().tamanho() > 0 && tocador.estado() != nu::Estado::Tocando &&
+        passado > 1.0 && passado + 2.0 < segundos) {
+      std::printf("a faixa acabou: as bandas hão de descer a zero, e torno a tocar\n");
+      dorme(1200);
+      tocador.pulsa();
+      std::printf("torno a tocar agora\n");
+      tocador.tocar_corrente();
+    }
   }
   std::printf("corrida completa\n");
   return 0;
