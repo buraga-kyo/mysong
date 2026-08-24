@@ -149,5 +149,13 @@ target_link_libraries(espia_bandas PRIVATE mysong_core)
 # o desenha, e o nome é o certo em ambas.
 target_sources(mysong_core PRIVATE src/tui/espectro.cpp)
 
+# A FITA do espectro: a peça que o olho do operador julga, e a sahida cujos bytes
+# se conferem com o grep. Linha de commando, e SEM FTXUI na conta que ella pinta:
+# a fita resolve-se em quadro, e o quadro emitte-se em SGR cru. Alvo proprio, e
+# não a janella: a janella é da issue #7, e esta onda não lhe toca.
+add_executable(fita_espectro exemplos/fita_espectro.cpp)
+target_compile_options(fita_espectro PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(fita_espectro PRIVATE mysong_core)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
