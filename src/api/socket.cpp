@@ -19,6 +19,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "api/socket.hpp"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -242,6 +243,55 @@ void Servidor::colhe(Cliente& cliente) {
     cliente.sahida += '\n';
   }
   escoa(cliente);
+}
+
+void Servidor::aceita() {
+  for (;;) {
+    const int novo = ::accept4(escuta_, nullptr, nullptr,
+                               SOCK_NONBLOCK | SOCK_CLOEXEC);
+    if (novo < 0) return;  // EAGAIN é o caso normal: não ha mais ninguem á porta
+    if (clientes_.size() >= kTetoDeClientes) {
+      // LOTADO não se cala. Responde-se e fecha-se, para que o cliente saiba por
+      // que, em vez de ver a porta fechar sem palavra e culpar a rede.
+      static const char kLotado[] =
+          "{\"ok\":false,\"erro\":\"lotado\",\"razao\":\"ha clientes demais ao mesmo "
+          "tempo; tente outra vez\"}\n";
+      ::send(novo, kLotado, sizeof(kLotado) - 1, MSG_NOSIGNAL);
+      ::close(novo);
+      continue;
+    }
+    Cliente cliente;
+    cliente.fd = novo;
+    clientes_.push_back(std::move(cliente));
+  }
+}
+
+void Servidor::pulsa() {
+  if (escuta_ < 0) return;
+  // Aceita ANTES do poll, e não depois: quem chegou nesta batida é servido nesta
+  // batida, e não na seguinte. E aceitar antes é o que deixa as referencias do
+  // laço abaixo validas, que o push_back pode remanejar o vector.
+  aceita();
+
+  std::vector<::pollfd> olhos;
+  olhos.reserve(clientes_.size());
+  for (const Cliente& cliente : clientes_) {
+    ::pollfd olho{};
+    olho.fd = cliente.fd;
+    olho.events = static_cast<short>(POLLIN | (cliente.sahida.empty() ? 0 : POLLOUT));
+    olhos.push_back(olho);
+  }
+  // Espera ZERO: batida alguma se bloqueia, e cliente mudo não trava os outros nem
+  // o tocador. É o que permitte bater isto na mesma linha que Tocador::pulsa().
+  if (!olhos.empty() && ::poll(olhos.data(), olhos.size(), 0) < 0) return;
+
+  for (std::size_t i = 0; i < olhos.size(); ++i) {
+    if ((olhos[i].revents & POLLOUT) != 0) escoa(clientes_[i]);
+    if ((olhos[i].revents & (POLLIN | POLLHUP | POLLERR)) != 0) colhe(clientes_[i]);
+  }
+  clientes_.erase(std::remove_if(clientes_.begin(), clientes_.end(),
+                                 [](const Cliente& cliente) { return cliente.fd < 0; }),
+                  clientes_.end());
 }
 
 }  // namespace mysong::api
