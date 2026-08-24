@@ -84,6 +84,35 @@ bool ha_quem_escute(const std::string& caminho) {
 
 }  // namespace
 
+std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
+                                        const std::string& caminho,
+                                        std::string* razao) {
+  const auto recusa = [razao](std::string dito) {
+    if (razao != nullptr) *razao = std::move(dito);
+    return std::optional<Servidor>{};
+  };
+
+  if (caminho.empty())
+    return recusa(
+        "caminho de socket vazio: XDG_RUNTIME_DIR nao esta definido, e esta Casa "
+        "NAO recua a /tmp, que e escripta de todos");
+  if (!cabe_no_sun_path(caminho, razao)) return std::optional<Servidor>{};
+
+  // Ha arquivo no caminho? Orphao de processo morto reclama-se; socket VIVO
+  // respeita-se, e o alheio nao se desliga. E a differenca entre robustez e roubo.
+  struct ::stat marca {};
+  if (::stat(caminho.c_str(), &marca) == 0) {
+    if (ha_quem_escute(caminho))
+      return recusa("outra instancia do mysong ja serve em " + caminho +
+                    "; esta NAO lhe rouba o socket");
+    if (::unlink(caminho.c_str()) != 0)
+      return recusa("ha socket orphao em " + caminho +
+                    " e nao se pudo desligar: " + std::strerror(errno));
+  }
+
+  return recusa("por lavrar: a ligacao do socket vem no commit seguinte");
+}
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
