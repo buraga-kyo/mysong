@@ -39,6 +39,9 @@ TEST_CASE("saneia_utf8 conserva o valido e troca o invalido") {
   CHECK(nu::saneia_utf8("\xC3") == kTroca);
   // Latin-1 mal etiquetado: o 0xE9 do «é» não é UTF-8, e o resto sobrevive.
   CHECK(nu::saneia_utf8("Ada\xE9Lovelace") == "Ada" + kTroca + "Lovelace");
+  // Sobrelongo, e metade de par substituto: forma boa, valor proibido.
+  CHECK(nu::saneia_utf8("\xC0\xAF") == kTroca + kTroca);
+  CHECK(nu::saneia_utf8("\xED\xA0\x80") == kTroca + kTroca + kTroca);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
