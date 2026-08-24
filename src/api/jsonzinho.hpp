@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <string>
 #include <string_view>
@@ -254,6 +255,33 @@ inline bool Leitor::cadeia(std::string* fora, std::string* razao) {
         return false;
     }
   }
+}
+// O NUMERO. Colhe-se a extensão dos caracteres que um numero pode ter, e
+// entrega-se ao strtod, que é quem sabe as regras; mas exige-se que elle tenha
+// consumido a extensão INTEIRA. Sem essa exigencia, «1.2.3» passaria como 1.2, e
+// o cliente ficaria a crer que mandou o que não mandou.
+inline bool Leitor::numero(double* fora, std::string* razao) {
+  const std::size_t comeco = i_;
+  bool houve_cifra = false;
+  while (!acabou()) {
+    const char letra = olha();
+    const bool serve = (letra >= '0' && letra <= '9') || letra == '.' ||
+                       letra == '-' || letra == '+' || letra == 'e' ||
+                       letra == 'E';
+    if (!serve) break;
+    if (letra >= '0' && letra <= '9') houve_cifra = true;
+    ++i_;
+  }
+  if (!houve_cifra) { *razao = "esperava-se um numero"; return false; }
+  const std::string molde(fonte_.substr(comeco, i_ - comeco));
+  char* fim = nullptr;
+  const double valor = std::strtod(molde.c_str(), &fim);
+  if (fim == nullptr || *fim != '\0') {
+    *razao = "numero mal formado: " + molde;
+    return false;
+  }
+  *fora = valor;
+  return true;
 }
 }  // namespace intimo
 }  // namespace mysong::api
