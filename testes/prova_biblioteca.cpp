@@ -149,6 +149,38 @@ TEST_CASE("artistas e albuns sahem sem repetição e em ordem") {
   CHECK(livraria.albuns("Quem Não Existe").empty());
 }
 
+TEST_CASE("as faixas de um album sahem em ordem de numero") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  const std::vector<nu::Faixa> album =
+      livraria.faixas_do_album("Ada Lovelace", "Máquina Analítica");
+  REQUIRE(album.size() == 2);
+  // Gravou-se «Tear» com o numero 3 e «Nota G» com o 7, e nesta ordem sahem.
+  CHECK(album[0].titulo == "Tear");
+  CHECK(album[0].numero == 3);
+  CHECK(album[0].anno == 1803);
+  CHECK(album[0].duracao == 103);
+  CHECK(album[0].modificado == 1003);
+  CHECK(album[0].tamanho == 2003);
+  CHECK(album[0].deduzido == 0u);
+  CHECK(album[1].titulo == "Nota G");
+  CHECK(album[1].numero == 7);
+  CHECK(livraria.faixas_do_album("Ada Lovelace", "Album Que Não Ha").empty());
+}
+
+TEST_CASE("a busca casa por pedaço de titulo") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  const std::vector<nu::Faixa> achadas = livraria.busca_faixa("ota");
+  REQUIRE(achadas.size() == 1);
+  CHECK(achadas[0].titulo == "Nota G");
+  CHECK(achadas[0].artista == "Ada Lovelace");
+  CHECK(livraria.busca_faixa("Tear").size() == 1);
+  CHECK(livraria.busca_faixa("zzz").empty());
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
