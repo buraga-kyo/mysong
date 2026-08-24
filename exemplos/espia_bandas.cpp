@@ -92,6 +92,11 @@ int main(int argc, char** argv) {
   const auto inicio = Relogio::now();
   double passado = 0.0;
   while (passado < segundos) {
+    // O carimbo se toma AGORA, e não ao fim da volta passada: entre uma cousa e
+    // outra ha uma pausa, e no caminho da reconexão ha uma de mil e duzentos
+    // millesimos. Carimbo velho poria a queda inteira dentro de um quadro só, e
+    // faria a barra parecer saltar a zero quando ella de facto esmoreceu.
+    passado = std::chrono::duration<double>(Relogio::now() - inicio).count();
     tocador.pulsa();
     const auto bandas = tocador.bandas();
     std::printf("t=%6.2f no=%-6llu estado=%-7s", passado, analisador.no(),
@@ -100,7 +105,6 @@ int main(int argc, char** argv) {
     std::printf("\n");
     std::fflush(stdout);  // linha a linha: a prova lê isto por tubo, ao vivo
     dorme(40);
-    passado = std::chrono::duration<double>(Relogio::now() - inicio).count();
 
     // A RECONEXÃO, provada n'esta mesma corrida. O nó do mpv morre com a faixa:
     // ao fim d'ella o mpv cahe em espera e o nó sahe do grafo, e é essa a morte
@@ -108,7 +112,7 @@ int main(int argc, char** argv) {
     // tocar depois de uma pausa, e o serial impresso na columna «no» ha de ser
     // OUTRO: nó novo, preso sozinho, sem que esta corrida se reiniciasse.
     if (tocador.fila().tamanho() > 0 && tocador.estado() != nu::Estado::Tocando &&
-        passado > 1.0 && passado + 2.0 < segundos) {
+        passado > 1.0 && passado + 3.0 < segundos) {
       std::printf("a faixa acabou: as bandas hão de descer a zero, e torno a tocar\n");
       dorme(1200);
       tocador.pulsa();
