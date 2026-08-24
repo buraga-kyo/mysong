@@ -34,5 +34,12 @@ target_sources(mysong_testes PRIVATE prova_fila.cpp prova_tocador.cpp)
 target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 
 # ══════════════════════════════════════════════════════════════════════════
+# ─── Prova do espectro (issue #5) ───────────────────────────────────────────
+# Por target_sources, e não na lista do add_executable: linha nova não collide.
+# Esta prova NÃO pede PipeWire nem fftw3 nos seus caminhos de inclusão: a
+# mathematica se prova por espectro.hpp, que declara o plano da fftw adiante, e
+# o contracto por analisador.hpp, que esconde o PipeWire atraz de um punho.
+target_sources(mysong_testes PRIVATE prova_espectro.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════

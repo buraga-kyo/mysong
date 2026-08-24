@@ -116,5 +116,26 @@ target_compile_options(superficie_viva PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(superficie_viva PRIVATE mysong_core)
 
 # ══════════════════════════════════════════════════════════════════════════
+# ─── O ESPECTRO (issue #5) ──────────────────────────────────────────────────
+# Duas dependencias de SYSTEMA novas, por pkg-config: libpipewire-0.3 (o cliente
+# do grafo) e fftw3f (a transformada em precisão simples, que é a das amostras;
+# pedir a dupla seria converter de graça). Entram como SYSTEM, pela propriedade
+# INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: os cabeçalhos do spa são muitos e
+# falantes, e é a palavra SYSTEM que os cala sob -Wall -Wextra e guarda o nosso
+# zero aviso. ACRESCENTA linha, e não altera linha alguma: a #4 lavra ao lado.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PIPEWIRE REQUIRED IMPORTED_TARGET libpipewire-0.3)
+pkg_check_modules(FFTW3F REQUIRED IMPORTED_TARGET fftw3f)
+set_property(TARGET PkgConfig::PIPEWIRE APPEND PROPERTY
+  INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${PIPEWIRE_INCLUDE_DIRS})
+target_sources(mysong_core PRIVATE src/nucleo/espectro.cpp src/nucleo/analisador.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::PIPEWIRE PkgConfig::FFTW3F)
+
+# O ESPIA das bandas: o instrumento do aceite. Imprime as bandas em texto, com
+# carimbo de tempo, para que a prova da NEGATIVA se leia linha por linha.
+add_executable(espia_bandas exemplos/espia_bandas.cpp)
+target_compile_options(espia_bandas PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(espia_bandas PRIVATE mysong_core)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
