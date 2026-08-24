@@ -108,6 +108,21 @@ std::string reservado(std::string_view verbo, int issue) {
   obra.par("issue", inteiro(issue));
   return obra.fecha();
 }
+// OS ARGUMENTOS. Argumento ausente ou de typo errado é «argumento_invalido», e
+// jamais «recusado». A differença importa a quem depura do outro lado, e importa
+// muito: «recusado» manda olhar o ESTADO do tocador, e «argumento_invalido» manda
+// olhar a MENSAGEM que se escreveu. Confundi-los manda o cliente procurar o
+// defeito no logar errado.
+const Valor* argumento(const Mensagem& msg, std::string_view nome, Typo typo) {
+  const Valor* achado = msg.acha(std::string(nome));
+  return (achado != nullptr && achado->typo == typo) ? achado : nullptr;
+}
+
+std::string falta(std::string_view nome, std::string_view typo) {
+  return erro("argumento_invalido",
+              "o argumento \"" + std::string(nome) + "\" falta ou nao e do typo " +
+                  std::string(typo));
+}
 }  // namespace
 }  // namespace mysong::api
 // ══════════════════════════════════════════════════════════════════════════
