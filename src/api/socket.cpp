@@ -202,6 +202,48 @@ void Servidor::escoa(Cliente& cliente) {
   }
 }
 
+// A COLHEITA. Duas cousas que o mundo faz e que um dublê ingenuo não faria, e que
+// são o caso NORMAL de um socket de FLUXO e não a excepção: a linha chega PARTIDA
+// em varias leituras, e VARIAS linhas chegam numa leitura só. Donde se acumula por
+// cliente até o \n, e se drena em LAÇO, e não uma linha e pronto.
+void Servidor::colhe(Cliente& cliente) {
+  if (cliente.fd < 0) return;
+  char balde[4096];
+  for (;;) {
+    const ::ssize_t lidos = ::recv(cliente.fd, balde, sizeof(balde), 0);
+    if (lidos == 0) { encerra(cliente); return; }  // o outro lado fechou
+    if (lidos < 0) {
+      if (errno == EINTR) continue;
+      if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+      encerra(cliente);
+      return;
+    }
+    cliente.entrada.append(balde, static_cast<std::size_t>(lidos));
+    // O teto conta a linha SEM o \n: acumulado que já tenha \n é mensagem pronta,
+    // e não cliente mudo a crescer memoria.
+    if (cliente.entrada.size() > kTetoDaLinha &&
+        cliente.entrada.find('\n') == std::string::npos) {
+      cliente.sahida +=
+          "{\"ok\":false,\"erro\":\"linha_longa\",\"razao\":\"a linha passou de 64 "
+          "KiB sem terminar em \\n\"}\n";
+      escoa(cliente);
+      encerra(cliente);
+      return;
+    }
+  }
+  for (std::size_t corte; (corte = cliente.entrada.find('\n')) != std::string::npos;) {
+    const std::string linha = cliente.entrada.substr(0, corte);
+    cliente.entrada.erase(0, corte + 1);
+    const std::string resposta = responde(*tocador_, linha);
+    // Resposta vazia é a linha em branco, e a ella nada se manda: nem uma linha
+    // vazia, que o cliente leria como mensagem.
+    if (resposta.empty()) continue;
+    cliente.sahida += resposta;
+    cliente.sahida += '\n';
+  }
+  escoa(cliente);
+}
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
