@@ -48,9 +48,34 @@ bool atar(void* biblio, TaboaDaLibmpv* taboa, std::string* razao) {
 
 }  // namespace
 
+// O dlopen, o laço dos treze e a aferição, sem memoria alguma. A bibliotheca NÃO
+// se solta: dlclose com punho do mpv vivo derruba o processo.
+bool carregar_taboa(std::string_view soname, TaboaDaLibmpv* taboa,
+                    std::string* razao) {
+  const std::string nome(soname);
+  void* biblio = dlopen(nome.c_str(), RTLD_LAZY | RTLD_LOCAL);
+  if (biblio == nullptr) {
+    const char* const erro = dlerror();
+    if (razao) {
+      *razao = "não achei a " + nome + ": " + (erro ? erro : "sem razão");
+    }
+    return false;
+  }
+  if (!atar(biblio, taboa, razao)) return false;
+  const unsigned long achada = taboa->mpv_client_api_version();
+  if (maior_diverso(achada)) {
+    if (razao) {
+      *razao = "a libmpv é de interface " + std::to_string(achada >> 16) +
+               ", e a obra compilou-se para a " +
+               std::to_string(MPV_CLIENT_API_VERSION >> 16);
+    }
+    return false;
+  }
+  return true;
+}
+
 // Abre-se no primeiro pedido, por estatico local que o C++ serializa: o tocador
-// e o socket podem pedir de fios diversos. E NÃO se solta: dlclose com punho do
-// mpv vivo derruba o processo, e por isso a bibliotheca fica pela vida d'elle.
+// e o socket podem pedir de fios diversos.
 const TaboaDaLibmpv* libmpv(std::string* razao) {
   static std::string queixa;
   static TaboaDaLibmpv taboa;
@@ -60,28 +85,12 @@ const TaboaDaLibmpv* libmpv(std::string* razao) {
       queixa = "a taboa da sonda não declara requisito de chave libmpv";
       return false;
     }
-    const std::string soname(requisito->alvo);
     if (nomeado_na_forcagem(requisito->chave)) {
       queixa = "MYSONG_SONDA_FORCA nomeia " + std::string(requisito->chave) +
-               ": finge-se ausente a " + soname;
+               ": finge-se ausente a " + std::string(requisito->alvo);
       return false;
     }
-    void* biblio = dlopen(soname.c_str(), RTLD_LAZY | RTLD_LOCAL);
-    if (biblio == nullptr) {
-      const char* const erro = dlerror();
-      queixa = "não achei a " + soname + ": " +
-               (erro != nullptr ? erro : "sem razão dita");
-      return false;
-    }
-    if (!atar(biblio, &taboa, &queixa)) return false;
-    const unsigned long achada = taboa.mpv_client_api_version();
-    if (maior_diverso(achada)) {
-      queixa = "a libmpv é de interface " + std::to_string(achada >> 16) +
-               ", e esta obra compilou-se para a " +
-               std::to_string(MPV_CLIENT_API_VERSION >> 16);
-      return false;
-    }
-    return true;
+    return carregar_taboa(requisito->alvo, &taboa, &queixa);
   }();
   if (!atada && razao) *razao = queixa;
   return atada ? &taboa : nullptr;
