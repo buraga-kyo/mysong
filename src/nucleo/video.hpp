@@ -82,5 +82,19 @@ std::string ordem_de_busca(double segundos);
 // e o que a tecla do operador quer dizer é «cinco segundos adeante».
 std::string ordem_de_busca_relativa(double deslocamento);
 
+// ── E AGORA O QUE TOCA O MUNDO ──────────────────────────────────────────────
+
+// O DESFECHO de abrir a fita. Toda falha tem nome, porque «não abriu» não diz ao
+// operador se ha de installar o mpv, eleger outra faixa, ou olhar o écran.
+enum class Fita {
+  Rodando,        // a janella está de pé, e o soquete responde
+  SemMpv,         // o binario do mpv não está no caminho
+  SemVideo,       // a faixa não tem video: nada se abriu
+  SemSoquete,     // o processo subiu, mas o soquete nunca respondeu
+  NaoAbriu,       // nem se pôde erguer o processo
+};
+
+std::string_view razao_da_fita(Fita fita);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
