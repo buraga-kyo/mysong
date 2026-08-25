@@ -15,6 +15,8 @@
 #include <cstdio>
 #include <fstream>
 
+#include "api/jsonzinho.hpp"
+
 namespace mysong::nucleo {
 
 std::string escapa_para_url(std::string_view crua) {
@@ -73,6 +75,24 @@ std::filesystem::path caminho_do_lrc(const std::filesystem::path& audio) {
   std::filesystem::path lrc = audio;
   lrc.replace_extension(".lrc");
   return lrc;
+}
+
+Letra le_resposta(std::string_view corpo) {
+  Letra letra;
+  const std::string objecto = primeiro_objecto(corpo);
+  if (objecto.empty()) return letra;
+  // O jsonzinho d'esta Casa é o mesmo que o socket da issue #4 usa: objecto PLANO
+  // de um nivel, com valores escalares. É exactamente a fórma que o LRCLIB dá.
+  const api::Mensagem lida = api::analysa(objecto);
+  if (!lida.valida) return letra;
+  const api::Valor* sincronizada = lida.acha("syncedLyrics");
+  const api::Valor* plana = lida.acha("plainLyrics");
+  if (sincronizada != nullptr &&
+      sincronizada->typo == api::Typo::Texto)
+    letra.sincronizada = sincronizada->texto;
+  if (plana != nullptr && plana->typo == api::Typo::Texto)
+    letra.plana = plana->texto;
+  return letra;
 }
 
 }  // namespace mysong::nucleo
