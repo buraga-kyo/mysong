@@ -391,5 +391,24 @@ TEST_CASE("raiz ausente e raiz sem permissão contam-se, e não abortam") {
   std::filesystem::permissions(trancada, std::filesystem::perms::owner_all);
 }
 
+// As duas recusas: extensão alheia, que nem se offerece á taglib; e o arquivo com
+// extensão de audio que não é audio, que a taglib recusa abrir.
+TEST_CASE("extensão alheia e falso audio não entram no índice") {
+  const Cova cova;
+  faz_wav(cova.acervo() / "A" / "B" / "01 - Boa.wav", 1);
+  std::ofstream(cova.acervo() / "A" / "B" / "capa.png") << "nao e imagem";
+  std::ofstream(cova.acervo() / "A" / "B" / "leia.txt") << "nem texto de audio";
+  std::ofstream(cova.acervo() / "A" / "B" / "02 - Falsa.mp3") << "isto e texto";
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  corre_ate_o_fim(varredura);
+  CHECK(varredura.desfecho() == nu::Desfecho::Concluido);
+  CHECK(varredura.progresso().recusadas == 3u);  // dous por extensão, um pela taglib
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK(livraria.total() == 1u);
+  CHECK(livraria.busca_faixa("Falsa").empty());
+  CHECK(livraria.busca_faixa("Boa").size() == 1u);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
