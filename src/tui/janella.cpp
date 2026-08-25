@@ -98,18 +98,6 @@ std::filesystem::path raiz_do_acervo() {
   return std::filesystem::path(casa) / "Música";
 }
 
-// varre_em_fio — a varredura em fio proprio, passo a passo, sem travar a tela. A
-// conducção por passos da issue #34 existe justamente para isto: o fio pode
-// parar entre dous passos, e a bandeira `sahir` é onde elle olha.
-void varre_em_fio(const std::filesystem::path& banco,
-                  const std::filesystem::path& acervo,
-                  const std::atomic<bool>* sahir,
-                  std::atomic<bool>* concluida) {
-  nucleo::Varredura varredura(banco, {acervo});
-  while (!sahir->load() && varredura.passo()) {
-  }
-  concluida->store(true);
-}
 
 // assignatura_do_visivel — uma cadeia barata que resume TUDO o que a tela mostra. O fio do
 // relogio sómente pede repintura quando ella muda.
@@ -266,7 +254,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   nucleo::Biblioteca livraria(banco);
   tui::Navegador navegador(livraria);
   std::atomic<bool> varrida{false};
-  bool recarregado = false;
+  // O PEDIDO de varredura e o AVISO de que o acervo mudou. Bandeiras, e não fio novo
+  // por cada pedido: fio erguido de dentro do tratador de teclas e de dentro do fio da
+  // baixa mexeria no mesmo vector de fios de dous lados, e isso é corrida.
+  std::atomic<bool> pede_varrer{true};
+  std::atomic<bool> acervo_novo{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
@@ -299,18 +291,33 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // A ultima assignatura do que se vê. Vazia de saida, para que o primeiro quadro sahia.
   std::string ultima_assignatura;
   std::vector<std::thread> ao_fundo;
-  ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir, &varrida);
+  // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
+  // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
+  // bandeira `sahir` é onde elle olha.
+  ao_fundo.emplace_back([&] {
+    while (!sahir.load()) {
+      if (pede_varrer.exchange(false)) {
+        varrida.store(false);
+        nucleo::Varredura varredura(banco, {raiz_do_acervo()});
+        while (!sahir.load() && varredura.passo()) {
+        }
+        varrida.store(true);
+        acervo_novo.store(true);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
+
 
   auto pintor = ftxui::Renderer([&] {
-    // A varredura concluiu: o navegador recarrega UMA vez, e a bandeira impede que
-    // elle releia o banco vinte vezes por segundo para sempre.
+    // A varredura concluiu: o navegador recarrega UMA vez. A bandeira do acervo novo
+    // CONSOME-SE na leitura, donde isto corre uma vez por varredura.
     //
     // Isto corria no fio do RELOGIO, e mudou-se para cá. O navegador é mutado pelo
     // tratador de teclas, que corre no fio da tela; recarregá-lo do relogio era
     // mutá-lo de um fio e lê-lo de outro. O pintor corre no mesmo fio do tratador,
     // donde a corrida sahe. Não é embelleçamento: é o defeito da corrida a fechar-se.
-    if (varrida.load() && !recarregado) {
-      recarregado = true;
+    if (acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
     }
@@ -402,22 +409,17 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           // tela; deixa recado no aviso, e a tela lê-o.
           const std::string url = termo_em_curso;
           aviso_da_baixa = "a baixar...";
-          ao_fundo.emplace_back([&aviso_da_baixa, &varrida, &recarregado, url,
-                                 banco, &sahir] {
+          ao_fundo.emplace_back([&aviso_da_baixa, &pede_varrer, url] {
             std::filesystem::path ficou;
             nucleo::Pedido pedido;
             pedido.url = url;  // e o resto vem da rede, que o operador não disse
             const nucleo::Colheita fim =
                 nucleo::baixa(raiz_do_acervo(), pedido, &ficou);
             aviso_da_baixa = nucleo::razao_da_colheita(fim);
-            if (fim == nucleo::Colheita::Colhido) {
-              varrida.store(false);  // ha faixa nova: varre-se outra vez
-              recarregado = false;
-              nucleo::Varredura outra(banco, {raiz_do_acervo()});
-              while (!sahir.load() && outra.passo()) {
-              }
-              varrida.store(true);
-            }
+            // Ha faixa nova: pede-se varredura ao fio que a faz, em vez de a fazer
+            // aqui. Dous fios a varrer o mesmo banco ao mesmo tempo é o que isto
+            // evita, e era o que succedia antes.
+            if (fim == nucleo::Colheita::Colhido) pede_varrer.store(true);
           });
         }
         return true;
@@ -454,12 +456,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         mostra_letra = !mostra_letra;
         return true;
       case tui::Verbo::Varre:
-        if (varrida.load()) {  // uma varredura por vez, e não vinte
-          varrida.store(false);
-          recarregado = false;
-          ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir,
-                                &varrida);
-        }
+        // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
+        // apaga-o, donde carregar dez vezes no `r` durante uma varredura não
+        // enfileira dez varreduras.
+        if (varrida.load()) pede_varrer.store(true);
         return true;
       case tui::Verbo::Entra:
         // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
