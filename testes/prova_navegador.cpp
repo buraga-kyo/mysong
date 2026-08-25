@@ -294,5 +294,41 @@ TEST_CASE("a rolagem rola o menos que baste, e não perde a posição") {
   CHECK(tui::primeira_a_mostrar(0, 0, 10, 7) == 0u);
 }
 
+// ── A SECÇÃO DA REDE (issue #12) ────────────────────────────────────────────
+// A unica cujas linhas não vêm da bibliotheca. Os casos abaixo guardam a fronteira
+// entre ella e o acervo, que é o que impede uma URL de cahir na fila do motor.
+
+// achado — uma linha da rede, como mostra_rede a recebe: o titulo por texto, a URL
+// por chave, o canal por autor.
+tui::Linha achado(const std::string& titulo, const std::string& canal,
+                  int duracao, const std::string& url) {
+  return {titulo, url, 0, duracao, canal};
+}
+
+TEST_CASE("a rede põe linhas de fóra na tela, e a URL não é caminho") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+
+  navegador.mostra_rede({achado("Toccata", "Canal A", 542, "https://y/1"),
+                         achado("Fuga", "Canal B", 300, "https://y/2")});
+  CHECK(navegador.secao() == tui::Secao::Rede);
+  REQUIRE(navegador.vista().size() == 2);
+  CHECK(navegador.vista()[0].texto == "Toccata");
+  CHECK(navegador.vista()[0].autor == "Canal A");
+  CHECK(navegador.vista()[0].duracao == 542);
+  CHECK(navegador.url_eleita() == "https://y/1");
+  // A FRONTEIRA: caminho_eleito é vazio na rede. Se elle devolvesse a URL, a
+  // janella enfileirava-a no motor e o mpv tentava tocar um endereço por arquivo.
+  CHECK(navegador.caminho_eleito().empty());
+  // E entrar n'um achado não desce degrau algum: quem chama pede a url_eleita.
+  CHECK_FALSE(navegador.entra());
+  CHECK(navegador.secao() == tui::Secao::Rede);
+
+  navegador.desce();
+  CHECK(navegador.url_eleita() == "https://y/2");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
