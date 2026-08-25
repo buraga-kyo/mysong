@@ -316,6 +316,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   const std::filesystem::path banco = caminho_do_indice();
   nucleo::Biblioteca livraria(banco);
   nucleo::Roleiro roleiro(caminho_das_listas(banco));
+  // O PROJECTOR do video. Vive nesta pilha, e o destructor d'elle FECHA a janella:
+  // é isso que faz `pgrep` sahir vazio depois de a TUI fechar.
+  nucleo::Projector projector(raiz_do_soquete());
   tui::Navegador navegador(livraria, &roleiro);
   std::atomic<bool> varrida{false};
   // O PEDIDO de varredura e o AVISO de que o acervo mudou. Bandeiras, e não fio novo
@@ -339,10 +342,6 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::mutex tranca_do_termo;
   std::string termo_da_rede;
   std::atomic<bool> pede_buscar{false};
-
-  // O PROJECTOR do video. Vive nesta pilha, e o destructor d'elle FECHA a janella:
-  // é isso que faz `pgrep` sahir vazio depois de a TUI fechar.
-  nucleo::Projector projector(raiz_do_soquete());
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
@@ -542,7 +541,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
                            " · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
-                           " · K/J move · R renomeia · D apaga · q sahe") |
+                           " · K/J move · R renomeia · D apaga · v video"
+                           " · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
