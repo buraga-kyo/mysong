@@ -68,6 +68,32 @@ struct EtiquetaRemota {
   int duracao = 0;
 };
 
+// resolve — junta o que o operador disse com o que a rede disse, e o operador
+// GANHA sempre. O artista, faltando os dous, fica «Desconhecido»; e faltando o
+// operador mas havendo canal, é o CANAL que se usa, com a ressalva de que se
+// registra que se deduziu.
+Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota);
+
+// destino — o caminho na hierarchia do acervo: `<raiz>/Artista/Álbum/NN - Titulo`.
+// Sem numero, sahe `Artista/Álbum/Titulo`; sem album, `Artista/Titulo`. A extensão
+// NÃO entra: quem a põe é o yt-dlp, que é quem sabe em que fórma sahiu o audio.
+std::filesystem::path destino(const std::filesystem::path& raiz,
+                              const Pedido& pedido);
+
+// argumentos_da_sonda — o que se corre para PERGUNTAR pela URL, sem baixar. Seis
+// campos por `--print`, um por linha, na ordem em que le_etiqueta_remota os lê.
+std::vector<std::string> argumentos_da_sonda(const std::string& url);
+
+// argumentos_do_download — o que se corre para BAIXAR. `--no-overwrites` está lá
+// de proposito, e é a segunda guarda: a primeira é a checagem do destino, e ter
+// as duas quer dizer que uma corrida entre duas aquisições não perde arquivo.
+std::vector<std::string> argumentos_do_download(
+    const std::string& url, const std::filesystem::path& molde);
+
+// le_etiqueta_remota — as seis linhas que a sonda imprimiu. Linha «NA» ou vazia é
+// campo que a rede não soube dizer.
+EtiquetaRemota le_etiqueta_remota(const std::string& sahida);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
