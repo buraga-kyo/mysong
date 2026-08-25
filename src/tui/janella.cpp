@@ -21,6 +21,7 @@
 //                   e adivinhar; e a decisão de abrir depende de UM predicado
 //                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -44,6 +45,7 @@
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/tocador.hpp"
+#include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
 #include "tui/commando.hpp"
 #include "tui/espectro.hpp"
@@ -84,6 +86,18 @@ std::filesystem::path raiz_do_acervo() {
   const char* casa = std::getenv("HOME");
   if (casa == nullptr) return {};
   return std::filesystem::path(casa) / "Música";
+}
+
+// varre_em_fio — a varredura em fio proprio, passo a passo, sem travar a tela. A
+// conducção por passos da issue #34 existe justamente para isto: o fio pode
+// parar entre dous passos, e a bandeira `sahir` é onde elle olha.
+void varre_em_fio(const std::filesystem::path& banco,
+                  const std::filesystem::path& acervo, const bool& sahir,
+                  std::atomic<bool>* concluida) {
+  nucleo::Varredura varredura(banco, {acervo});
+  while (!sahir && varredura.passo()) {
+  }
+  concluida->store(true);
 }
 
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
