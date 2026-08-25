@@ -330,5 +330,27 @@ TEST_CASE("a rede põe linhas de fóra na tela, e a URL não é caminho") {
   CHECK(navegador.url_eleita() == "https://y/2");
 }
 
+TEST_CASE("fóra da rede não ha URL eleita, e o filtro corta os achados") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+
+  // Em Artistas, url_eleita é vazia ainda que haja linha eleita.
+  REQUIRE_FALSE(navegador.vista().empty());
+  CHECK(navegador.url_eleita().empty());
+
+  navegador.mostra_rede({achado("Toccata em Re", "A", 1, "https://y/1"),
+                         achado("Fuga em Sol", "B", 2, "https://y/2"),
+                         achado("Toccata em Do", "C", 3, "https://y/3")});
+  navegador.filtra("toccata");  // sem caixa, como nas outras secções
+  REQUIRE(navegador.vista().size() == 2);
+  CHECK(navegador.vista()[0].texto == "Toccata em Re");
+  CHECK(navegador.vista()[1].texto == "Toccata em Do");
+  // O filtro corta a VISTA e não a fonte: limpando-o, os tres voltam.
+  navegador.filtra("");
+  CHECK(navegador.vista().size() == 3);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
