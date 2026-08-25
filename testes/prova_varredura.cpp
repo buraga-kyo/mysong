@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <vector>
 #include <string>
 
@@ -309,6 +310,27 @@ TEST_CASE("segunda corrida não relê etiqueta, provado por chmod zero") {
     CHECK(depois[i].duracao == antes[i].duracao);
     CHECK(depois[i].deduzido == antes[i].deduzido);
   }
+}
+
+// A CONDUCÇÃO por passos: passos maiores que arquivos, trabalho do chamador entre
+// dous passos com a corrida inacabada, e o destino AUSENTE até ao ultimo passo.
+TEST_CASE("a varredura conduz-se por passos, e o destino não existe antes do fim") {
+  const Cova cova;
+  for (int i = 1; i <= 5; ++i)
+    faz_wav(cova.acervo() / "A" / "B" / ("0" + std::to_string(i) + " - T.wav"), 1);
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  std::size_t passos = 0, trabalho_do_chamador = 0;
+  while (varredura.passo()) {
+    ++passos;
+    // O destino NÃO existe em passo algum antes do ultimo.
+    REQUIRE_FALSE(std::filesystem::exists(cova.banco()));
+    ++trabalho_do_chamador;  // o chamador corre o seu proprio trabalho aqui
+  }
+  CHECK(passos >= 5u);                       // passo algum engoliu o acervo
+  CHECK(trabalho_do_chamador == passos);     // e o chamador correu entre todos
+  CHECK(varredura.desfecho() == nu::Desfecho::Concluido);
+  CHECK(std::filesystem::exists(cova.banco()));  // sómente agora
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
