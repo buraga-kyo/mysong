@@ -264,8 +264,8 @@ target_sources(mysong_core PRIVATE src/nucleo/estaleiro.cpp)
 target_link_libraries(mysong_core PUBLIC Threads::Threads)
 
 # ─── O CORREIO DOS ACHADOS (issue #12) ──────────────────────────────────────
-# O recado que o fio da rede deixa ao fio da tela. Dependencia nova alguma.
-target_sources(mysong_core PRIVATE src/tui/correio.cpp)
+# Sómente-cabeçalho desde a issue #13, que o fez gabarito no que carrega: unidade de
+# traducção alguma se compila, e por isso linha alguma se acrescenta aqui.
 
 # ─── AS LISTAS DO OPERADOR (issue #10) ──────────────────────────────────────
 # Banco PROPRIO, e não o da bibliotheca: aquelle é reconstruido a cada varredura
@@ -278,3 +278,14 @@ target_sources(mysong_core PRIVATE src/nucleo/rol.cpp)
 # Dependencia de bibliotheca nova alguma: o soquete é POSIX, e o mpv corre por
 # fork e exec, como o yt-dlp da issue #11 e o chafa da #16.
 target_sources(mysong_core PRIVATE src/nucleo/video.cpp)
+
+# ─── O CATALOGO DO SPOTIFY (issue #13) ──────────────────────────────────────
+# Lê a pagina publica de embutir por libcurl, que entrou com a letra na issue #14.
+# Dependencia nova alguma se cobra, e o audio continua a vir do yt-dlp da #11.
+target_sources(mysong_core PRIVATE src/nucleo/catalogo.cpp)
+
+# O ESPIA do catalogo: o instrumento com que a leitura se afere contra a pagina de
+# verdade, antes de o corpo entrar na bateria escripto á mão.
+add_executable(espia_catalogo exemplos/espia_catalogo.cpp)
+target_compile_options(espia_catalogo PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(espia_catalogo PRIVATE mysong_core)

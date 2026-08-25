@@ -107,6 +107,32 @@ Catalogo le_catalogo(std::string_view corpo) {
   return catalogo;
 }
 
+bool busca_catalogo(std::string_view crua, Catalogo* catalogo) {
+  const std::string id = id_da_playlist(crua);
+  if (id.empty()) return false;
+  CURL* punho = curl_easy_init();
+  if (punho == nullptr) return false;
+  const std::string url = url_do_embed(id);
+  std::string corpo;
+  curl_easy_setopt(punho, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(punho, CURLOPT_WRITEFUNCTION, recolhe);
+  curl_easy_setopt(punho, CURLOPT_WRITEDATA, &corpo);
+  curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(punho, CURLOPT_TIMEOUT, 15L);
+  // O Spotify recusa quem não se nomeie por navegador. Diz-se o que se é DEPOIS do
+  // que elle exige: mentir sobre o navegador é o preço de a pagina ser servida, e
+  // o nome d'esta obra vae no fim para que o registro d'elles saiba quem pediu.
+  curl_easy_setopt(punho, CURLOPT_USERAGENT,
+                   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 "
+                   "mysong/0.1");
+  const CURLcode desfecho = curl_easy_perform(punho);
+  curl_easy_cleanup(punho);
+  if (desfecho != CURLE_OK) return false;
+  if (catalogo != nullptr) *catalogo = le_catalogo(corpo);
+  return true;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
