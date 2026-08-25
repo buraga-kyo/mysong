@@ -45,5 +45,13 @@ struct Catalogo {
   std::vector<FaixaDoCatalogo> faixas;
 };
 
+// id_da_playlist — o identificador que a URL ou o URI tras. Aceita as tres fórmas
+// que o Spotify dá: `https://open.spotify.com/playlist/<id>?si=...`,
+// `spotify:playlist:<id>` e a de embutir. Vazio quando não ha identificador.
+std::string id_da_playlist(std::string_view crua);
+
+// url_do_embed — a pagina de embutir d'esse identificador.
+std::string url_do_embed(std::string_view id);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
