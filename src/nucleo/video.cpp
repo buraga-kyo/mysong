@@ -47,5 +47,16 @@ constexpr const char* kExtensoesComVideo[] = {
 constexpr int kTentativasDoSoquete = 60;
 constexpr int kMilesimosPorTentativa = 25;
 
+std::string minuscula(std::string_view crua) {
+  std::string baixa;
+  baixa.reserve(crua.size());
+  for (const unsigned char letra : crua)
+    baixa += static_cast<char>(letra >= 'A' && letra <= 'Z' ? letra + 32
+                                                            : letra);
+  return baixa;
+}
+
+// abre_soquete — o punho ligado ao soquete do mpv, e menos um não havendo. Tenta
+// mais de uma vez, com pausa: o soquete nasce depois do processo.
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
