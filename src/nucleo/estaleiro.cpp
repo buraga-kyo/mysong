@@ -50,6 +50,8 @@ std::string texto_do_andamento(const Andamento& andamento) {
     junta(&dito, std::to_string(andamento.na_espera) + " na espera");
   if (andamento.colhidas > 0) junta(&dito, plural(andamento.colhidas, "colhida"));
   if (andamento.falhadas > 0) junta(&dito, plural(andamento.falhadas, "falhada"));
+  if (andamento.duvidosas > 0)
+    junta(&dito, plural(andamento.duvidosas, "duvidosa"));
   // A razão do ultimo desfecho é APPENSO, e não recado por si: sem contador algum
   // a acompanhá-la, «(baixado)» sósinho na linha da trilha não diz de quê.
   if (!andamento.ultima.empty() && !dito.empty())
@@ -105,6 +107,7 @@ Andamento Estaleiro::andamento() const {
   agora.na_espera = espera_.size();
   agora.colhidas = colhidas_;
   agora.falhadas = falhadas_;
+  agora.duvidosas = duvidosas_;
   agora.ultima = ultima_;
   return agora;
 }
@@ -151,6 +154,10 @@ void Estaleiro::obreiro() {
       if (fim == Colheita::Colhido) {
         ++colhidas_;
         colheu_ = true;
+      } else if (fim == Colheita::Duvidosa) {
+        // DUVIDOSA não é falha, e conta-se á parte: faixa que não casou pede olho
+        // humano, e dizer «falhou» faria o operador tentar outra vez o mesmo.
+        ++duvidosas_;
       } else {
         ++falhadas_;
       }

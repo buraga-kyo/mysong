@@ -167,5 +167,24 @@ TEST_CASE("o recado diz sómente o que não é zero, e concorda o plural") {
   CHECK(nu::texto_do_andamento(duas) == "2 colhidas, 1 falhada");
 }
 
+TEST_CASE("a duvidosa conta á parte da falhada") {
+  nu::Estaleiro estaleiro(1, [](const nu::Pedido&, std::filesystem::path*) {
+    return nu::Colheita::Duvidosa;
+  });
+  estaleiro.encommenda(nu::Pedido{});
+  estaleiro.espera_a_fila();
+  const nu::Andamento fim = estaleiro.andamento();
+  // NÃO é falha, e não levanta a bandeira da colheita: faixa que não casou pede
+  // olho humano, e dizer «falhou» faria o operador tentar outra vez o mesmo.
+  CHECK(fim.duvidosas == 1);
+  CHECK(fim.falhadas == 0);
+  CHECK(fim.colhidas == 0);
+  CHECK_FALSE(estaleiro.colheu());
+  // E o recado diz-a pelo nome, que é o que a tarefa pede quando manda que a faixa
+  // duvidosa não se confunda com a faixa boa.
+  CHECK(nu::texto_do_andamento(fim).find("duvidosa") != std::string::npos);
+  CHECK(nu::texto_do_andamento(fim).find("falhada") == std::string::npos);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
