@@ -84,5 +84,36 @@ TEST_CASE("o estaleiro não corre mais obras ao mesmo tempo que o limite") {
   // O PICO é a prova do limite: em toda a vida do estaleiro, dous foi o maximo.
   CHECK(estaleiro.pico() == 2);
 }
+
+TEST_CASE("fechar ABANDONA a espera, e conta sómente o que correu") {
+  Cancella cancella;
+  nu::Estaleiro estaleiro(1, [&cancella](const nu::Pedido&,
+                                         std::filesystem::path*) {
+    cancella.chego();
+    cancella.espera();
+    return nu::Colheita::Colhido;
+  });
+  for (int i = 0; i < 4; ++i) estaleiro.encommenda(nu::Pedido{});
+  cancella.chegaram(1);  // um obreiro, e elle está DENTRO da obra, parado
+  CHECK(estaleiro.andamento().na_espera == 3);
+
+  // A ORDEM d'estes tres passos é o que faz o caso determinado, e não sorteado. O
+  // fechamento corre em fio proprio porque elle junta os obreiros e havia de
+  // esperar por uma obra que sómente este fio pode soltar. Espera-se pelo punho
+  // fechado(), e sómente então se abre a cancella: donde a limpeza da espera é
+  // PROVADAMENTE anterior á obra tornar a olhar a fila.
+  std::thread fechador([&estaleiro] { estaleiro.fecha(); });
+  while (!estaleiro.fechado()) std::this_thread::yield();
+  cancella.abre();
+  fechador.join();
+
+  const nu::Andamento fim = estaleiro.andamento();
+  CHECK(fim.na_espera == 0);
+  CHECK(fim.colhidas == 1);  // UMA, exactamente: as tres da espera abandonaram-se
+  CHECK(fim.em_curso == 0);
+  // E encommendar depois de fechado não põe cousa alguma na fila.
+  estaleiro.encommenda(nu::Pedido{});
+  CHECK(estaleiro.andamento().na_espera == 0);
+}
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
