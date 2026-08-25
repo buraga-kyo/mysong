@@ -125,5 +125,39 @@ TEST_CASE("o destino sahe na hierarchia Artista/Album/NN - Titulo") {
   CHECK(nu::destino("/acervo", cheio).extension().empty());
 }
 
+// As duas listas de argumentos, e o CONTRACTO entre a sonda e o leitor: a ordem
+// dos seis `--print` é a ordem em que le_etiqueta_remota lê as linhas, e os dous
+// aferem-se JUNTOS para que uma mudança n'um sem o outro morra aqui.
+TEST_CASE("os argumentos da sonda casam com a ordem que o leitor espera") {
+  const std::vector<std::string> ditos =
+      nu::argumentos_da_sonda("https://exemplo/x");
+  CHECK(ditos.front() == "yt-dlp");
+  CHECK(ditos.back() == "https://exemplo/x");
+  // O `--` antes da URL é load-bearing: sem elle, URL que principie por hyphen
+  // seria lida como opção.
+  CHECK(ditos[ditos.size() - 2] == "--");
+  // Seis `--print`, na ordem: titulo, canal, artista, album, numero, duração.
+  std::vector<std::string> moldes;
+  for (std::size_t i = 0; i + 1 < ditos.size(); ++i)
+    if (ditos[i] == "--print") moldes.push_back(ditos[i + 1]);
+  REQUIRE(moldes.size() == 6u);
+  CHECK(moldes[0] == "%(title)s");
+  CHECK(moldes[1] == "%(uploader)s");
+  CHECK(moldes[2] == "%(artist)s");
+  CHECK(moldes[3] == "%(album)s");
+  CHECK(moldes[4] == "%(track_number)s");
+  CHECK(moldes[5] == "%(duration)s");
+
+  // E o leitor lê nessa mesma ordem. Seis linhas escriptas á mão.
+  const nu::EtiquetaRemota lida = nu::le_etiqueta_remota(
+      "Titulo\nCanal\nArtista\nAlbum\n7\n185\n");
+  CHECK(lida.titulo == "Titulo");
+  CHECK(lida.canal == "Canal");
+  CHECK(lida.artista == "Artista");
+  CHECK(lida.album == "Album");
+  CHECK(lida.numero == 7);
+  CHECK(lida.duracao == 185);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
