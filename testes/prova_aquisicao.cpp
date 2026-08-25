@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -157,6 +158,31 @@ TEST_CASE("os argumentos da sonda casam com a ordem que o leitor espera") {
   CHECK(lida.album == "Album");
   CHECK(lida.numero == 7);
   CHECK(lida.duracao == 185);
+}
+
+TEST_CASE("o NA do yt-dlp é campo ausente, e não titulo") {
+  const nu::EtiquetaRemota nas =
+      nu::le_etiqueta_remota("Titulo\nCanal\nNA\nNA\nNA\nNA\n");
+  CHECK(nas.titulo == "Titulo");
+  CHECK(nas.artista.empty());  // e não «NA»
+  CHECK(nas.album.empty());
+  CHECK(nas.numero == 0);
+  CHECK(nas.duracao == 0);
+  // Sahida vazia dá etiqueta inteira vazia, e não estoura o indice.
+  const nu::EtiquetaRemota nada = nu::le_etiqueta_remota("");
+  CHECK(nada.titulo.empty());
+  CHECK(nada.numero == 0);
+  // Sahida curta: as que faltam ficam vazias, e não trazem lixo da anterior.
+  const nu::EtiquetaRemota curta = nu::le_etiqueta_remota("Titulo\nCanal\n");
+  CHECK(curta.titulo == "Titulo");
+  CHECK(curta.canal == "Canal");
+  CHECK(curta.artista.empty());
+  CHECK(curta.numero == 0);
+  // Numero que não é numero dá zero, e não lança: a rede manda lixo.
+  const nu::EtiquetaRemota lixo =
+      nu::le_etiqueta_remota("T\nC\nA\nB\nsete\n12x\n");
+  CHECK(lixo.numero == 0);
+  CHECK(lixo.duracao == 0);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
