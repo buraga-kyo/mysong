@@ -22,6 +22,7 @@
 //                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <thread>
@@ -128,8 +129,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     const int largura = ftxui::Terminal::Size().dimx;
     const std::size_t larg = largura > 2 ? static_cast<std::size_t>(largura - 2) : 1;
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
+    // O NOME do arquivo, e não o caminho. O retracto guarda o caminho inteiro
+    // de proposito, que é o que o socket e o MPRIS haverão de querer; a TELA
+    // mostra o nome, que é o que cabe na largura e o que o olho procura.
     const std::string cabeca =
-        retracto.tamanho == 0 ? "fila vazia" : retracto.titulo;
+        retracto.tamanho == 0
+            ? std::string("fila vazia")
+            : std::filesystem::path(retracto.titulo).filename().string();
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
                ftxui::text(cabeca) | ftxui::dim,
