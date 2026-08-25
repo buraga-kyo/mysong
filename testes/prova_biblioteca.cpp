@@ -181,6 +181,33 @@ TEST_CASE("a busca casa por pedaço de titulo") {
   CHECK(livraria.busca_faixa("zzz").empty());
 }
 
+// O curinga do LIKE vindo do operador. Amarrar o valor não o neutraliza, donde
+// esta prova enche um acervo em que UMA faixa traz por cento e sublinhado no
+// titulo, e exige que buscar por elles ache essa e sómente essa. Sem o escape,
+// «%» casa com tudo e a busca devolve o acervo inteiro.
+TEST_CASE("o curinga do operador vale por si, e não por padrão") {
+  const Cova cova;
+  {
+    nu::Escriba escriba(cova.banco());
+    REQUIRE(escriba.aberto());
+    REQUIRE(escriba.grava(faz("Ada Lovelace", "Máquina Analítica", "Tear", 3)));
+    REQUIRE(escriba.grava(faz("Bach", "Cravo Bem Temperado", "Fuga", 2)));
+    REQUIRE(escriba.grava(faz("Cauchy", "Cours", "100% Rigor_Puro", 1)));
+    REQUIRE(escriba.conclui());
+  }
+  const nu::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.total() == 3);
+  const std::vector<nu::Faixa> por_cento = livraria.busca_faixa("%");
+  REQUIRE(por_cento.size() == 1);
+  CHECK(por_cento[0].titulo == "100% Rigor_Puro");
+  const std::vector<nu::Faixa> sublinhado = livraria.busca_faixa("_");
+  REQUIRE(sublinhado.size() == 1);
+  CHECK(sublinhado[0].titulo == "100% Rigor_Puro");
+  CHECK(livraria.busca_faixa("% Rigor_").size() == 1);
+  CHECK(livraria.busca_faixa("%Rigor").empty());
+  CHECK(livraria.busca_faixa("\\").empty());
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
