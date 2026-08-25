@@ -239,6 +239,28 @@ bool Navegador::apaga_rol() {
   return true;
 }
 
+bool Navegador::junta_ao_rol(const std::string& caminho) {
+  // Fóra de uma lista, `rol_corrente_` é zero, e a camada de baixo recusa o zero
+  // pela chave estrangeira: rowid do SQLite parte de um, donde lista de id zero não
+  // existe nunca. Guarda propria houve, e sahiu por codigo morto: a mutação que a
+  // tirava sobrevivia á bateria, porque a chave já fazia o serviço.
+  if (roleiro_ == nullptr) return false;
+  if (!roleiro_->junta(rol_corrente_, caminho)) return false;
+  refaz_vista();  // estando-se dentro d'ella, a faixa nova apparece
+  return true;
+}
+
+bool Navegador::retira_do_rol() {
+  if (roleiro_ == nullptr || secao_ != Secao::NoRol || vista_.empty())
+    return false;
+  // A ORDEM vem da columna do numero, que refaz_vista encheu com a ordem mais um.
+  // Não vem do indice do eleito: com filtro posto, o indice da vista e a ordem no
+  // banco desencontram-se, e retirar-se-hia a faixa errada.
+  if (!roleiro_->retira(rol_corrente_, vista_[eleito_].numero - 1)) return false;
+  refaz_vista();
+  return true;
+}
+
 void Navegador::mostra_rede(std::vector<Linha> achados) {
   rede_ = std::move(achados);
   secao_ = Secao::Rede;
