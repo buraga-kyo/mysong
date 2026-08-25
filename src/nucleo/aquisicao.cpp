@@ -110,8 +110,13 @@ std::filesystem::path destino(const std::filesystem::path& raiz,
   if (!pedido.album.empty()) caminho /= saneia_nome(pedido.album);
   std::string folha;
   if (pedido.numero > 0) {
-    char molde[8] = {0};
-    std::snprintf(molde, sizeof molde, "%02d - ", pedido.numero);
+    // O numero apara-se em quatro digitos, e o buffer é folgado. Sem a aparadura,
+    // um numero absurdo vindo da rede (o `track_number` é campo alheio) daria
+    // nome de faixa com dez digitos á frente; e com buffer justo, o compilador
+    // accusa truncamento em Release, que foi como este defeito appareceu.
+    const int cingido = pedido.numero > 9999 ? 9999 : pedido.numero;
+    char molde[24] = {0};
+    std::snprintf(molde, sizeof molde, "%02d - ", cingido);
     folha = molde;
   }
   return caminho / (folha + saneia_nome(pedido.titulo));
