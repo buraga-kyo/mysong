@@ -120,6 +120,46 @@ struct Varredura::Punho {
   std::unique_ptr<Biblioteca> antigo;
 };
 
+// lista_raiz — colhe os arquivos de UMA raiz. Directorio symbólico NÃO se desce:
+// é o que impede o laço de ligações de fazer a varredura girar sem fim, e conta
+// em `ligacoes_saltadas` para que o operador saiba que ficou cousa por ver.
+using Achado = std::pair<std::filesystem::path, std::filesystem::path>;
+
+void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
+                std::set<std::string>* vistos, std::vector<Achado>* achados) {
+  std::error_code erro;
+  if (!std::filesystem::is_directory(raiz, erro) || erro) {
+    ++progresso->raizes_falhadas;
+    return;
+  }
+  auto opcoes = std::filesystem::directory_options::skip_permission_denied;
+  std::filesystem::recursive_directory_iterator anda(raiz, opcoes, erro);
+  if (erro) {
+    ++progresso->raizes_falhadas;
+    return;
+  }
+  const std::filesystem::recursive_directory_iterator fim;
+  for (; anda != fim; anda.increment(erro)) {
+    if (erro) { erro.clear(); continue; }  // entrada illegivel não para a raiz
+    const std::filesystem::directory_entry& entrada = *anda;
+    if (entrada.is_symlink(erro) && entrada.is_directory(erro)) {
+      ++progresso->ligacoes_saltadas;
+      anda.disable_recursion_pending();
+      continue;
+    }
+    if (!entrada.is_regular_file(erro) || erro) { erro.clear(); continue; }
+    if (!extensao_de_audio(entrada.path().extension().string())) {
+      ++progresso->recusadas;
+      continue;
+    }
+    const std::string canonico =
+        std::filesystem::weakly_canonical(entrada.path(), erro).string();
+    if (erro) { erro.clear(); continue; }
+    if (!vistos->insert(canonico).second) continue;  // já veio por outra
+    achados->emplace_back(entrada.path(), raiz);
+  }
+}
+
 bool extensao_de_audio(std::string_view extensao) {
   const std::string baixa = minuscula(extensao);
   return std::find(std::begin(kExtensoes), std::end(kExtensoes), baixa) !=
