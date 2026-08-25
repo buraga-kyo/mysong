@@ -19,6 +19,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -202,6 +205,51 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
   if (::waitpid(filho, &estado, 0) < 0) return -1;
   return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
+
+bool sonda_url(const std::string& url, EtiquetaRemota* remota) {
+  std::string colhido;
+  if (corre(argumentos_da_sonda(url), &colhido) != 0) return false;
+  if (remota != nullptr) *remota = le_etiqueta_remota(colhido);
+  return true;
+}
+
+namespace {
+
+// escreve_etiqueta — a etiqueta que esta Casa manda, e não a que a rede daria.
+// UTF8 EXPLICITO: `TagLib::String` construida de std::string assume LATIN-1, e
+// gravar «Máquina» assim fá-lo voltar «MÃ¡quina». Foi medido na issue #34.
+bool escreve_etiqueta(const std::filesystem::path& arquivo,
+                      const Pedido& pedido) {
+  TagLib::FileRef punho(arquivo.c_str());
+  if (punho.isNull() || punho.tag() == nullptr) return false;
+  const auto utf8 = TagLib::String::UTF8;
+  TagLib::Tag* etiqueta = punho.tag();
+  etiqueta->setArtist(TagLib::String(pedido.artista, utf8));
+  etiqueta->setTitle(TagLib::String(pedido.titulo, utf8));
+  if (!pedido.album.empty())
+    etiqueta->setAlbum(TagLib::String(pedido.album, utf8));
+  if (pedido.numero > 0)
+    etiqueta->setTrack(static_cast<unsigned>(pedido.numero));
+  return punho.save();
+}
+
+// acha_o_que_ficou — o yt-dlp põe a extensão, e nós não a sabemos de antemão.
+// Procura-se o irmão que principie pelo molde. Vazio quer dizer que nada ficou.
+std::filesystem::path acha_o_que_ficou(const std::filesystem::path& molde) {
+  std::error_code erro;
+  const std::string folha = molde.filename().string();
+  for (const auto& entrada :
+       std::filesystem::directory_iterator(molde.parent_path(), erro)) {
+    if (erro) break;
+    if (!entrada.is_regular_file()) continue;
+    const std::string nome = entrada.path().filename().string();
+    if (nome.size() > folha.size() && nome.compare(0, folha.size(), folha) == 0)
+      return entrada.path();
+  }
+  return {};
+}
+
+}  // namespace
 
 }  // namespace mysong::nucleo
 
