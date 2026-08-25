@@ -222,6 +222,66 @@ bool cumpre_metodo(const std::string& nome, DBusMessage* mensagem,
 
 }  // namespace
 
+struct CasaDoMpris::Punho {
+  nucleo::Tocador& tocador;
+  DBusConnection* ligacao = nullptr;
+  std::string razao;
+  // O ULTIMO retracto annunciado, para que o pregão sahia sómente quando muda. Sem
+  // isto, `PropertiesChanged` sahiria vinte vezes por segundo e todo cliente do
+  // barramento pagaria por ella.
+  nucleo::Estado ultimo_estado = nucleo::Estado::Parado;
+  int ultimo_volume = -1;
+  std::string ultima_faixa = "\x01";  // valor impossivel, para forçar o primeiro
+
+  explicit Punho(nucleo::Tocador& t) : tocador(t) {}
+};
+
+CasaDoMpris::CasaDoMpris(nucleo::Tocador& tocador)
+    : punho_(std::make_unique<Punho>(tocador)) {
+  DBusError erro;
+  dbus_error_init(&erro);
+  punho_->ligacao = dbus_bus_get(DBUS_BUS_SESSION, &erro);
+  if (dbus_error_is_set(&erro)) {
+    punho_->razao = erro.message != nullptr ? erro.message : "barramento mudo";
+    dbus_error_free(&erro);
+    punho_->ligacao = nullptr;
+    return;
+  }
+  if (punho_->ligacao == nullptr) {
+    punho_->razao = "não ha barramento de sessão";
+    return;
+  }
+  // NÃO se sahe do processo quando a ligação cahe. O defeito é da libdbus por
+  // defeito: ella chama exit() se o barramento morrer, e um tocador que morre porque
+  // o D-Bus reiniciou é inaceitavel.
+  dbus_connection_set_exit_on_disconnect(punho_->ligacao, FALSE);
+
+  const int posse = dbus_bus_request_name(punho_->ligacao, kNome,
+                                          DBUS_NAME_FLAG_DO_NOT_QUEUE, &erro);
+  if (dbus_error_is_set(&erro)) {
+    punho_->razao = erro.message != nullptr ? erro.message : "nome recusado";
+    dbus_error_free(&erro);
+    punho_->ligacao = nullptr;
+    return;
+  }
+  if (posse != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    // Outro mysong já tem o nome. NÃO se enfileira: o segundo não ha de herdar o
+    // commando quando o primeiro sahir, que o operador não saberia qual commanda.
+    punho_->razao = "outro mysong já publica " + std::string(kNome);
+    punho_->ligacao = nullptr;
+  }
+}
+
+CasaDoMpris::~CasaDoMpris() {
+  if (punho_->ligacao != nullptr) {
+    dbus_bus_release_name(punho_->ligacao, kNome, nullptr);
+    dbus_connection_unref(punho_->ligacao);
+  }
+}
+
+bool CasaDoMpris::viva() const noexcept { return punho_->ligacao != nullptr; }
+const std::string& CasaDoMpris::razao() const noexcept { return punho_->razao; }
+
 }  // namespace mysong::api
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
