@@ -33,6 +33,7 @@
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/screen/terminal.hpp>
 #include <ftxui/dom/elements.hpp>
 
 #include "nucleo/analisador.hpp"
@@ -118,6 +119,28 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
 
   for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
   if (!tocador.fila().vazia()) tocador.tocar_corrente();
+
+  auto tela = ftxui::ScreenInteractive::Fullscreen();
+  bool sahir = false;
+
+  auto pintor = ftxui::Renderer([&] {
+    const tui::Retracto retracto = retracto_do(tocador);
+    const int largura = ftxui::Terminal::Size().dimx;
+    const std::size_t larg = largura > 2 ? static_cast<std::size_t>(largura - 2) : 1;
+    const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
+    const std::string cabeca =
+        retracto.tamanho == 0 ? "fila vazia" : retracto.titulo;
+    return ftxui::vbox({
+               ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
+               ftxui::text(cabeca) | ftxui::dim,
+               tui::elemento_do_espectro(quadro),
+               tui::elemento_do_transporte(retracto, larg),
+               ftxui::text("espaço pausa · n/p faixa · setas buscam · +/- volume · q sahe") |
+                   ftxui::dim,
+           }) |
+           ftxui::border;
+  });
+
 
 // recusar_e_sahir — pinta a tela dos requisitos, espera tecla e sahe com codigo
 // differente de zero. É a UNICA cousa que apparece havendo impedimento: o
