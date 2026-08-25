@@ -42,5 +42,20 @@ bool letra_de_id(char octeto) {
 
 }  // namespace
 
+std::string id_da_playlist(std::string_view crua) {
+  // Tres fórmas, e uma regra: acha-se a palavra `playlist` seguida de separador, e
+  // o que vem depois d'ella até ao proximo separador é o identificador. Serve á URL
+  // de `open.spotify.com`, á de embutir, e ao URI `spotify:playlist:`.
+  const std::string_view agulha = "playlist";
+  std::size_t onde = crua.find(agulha);
+  if (onde == std::string_view::npos) return {};
+  std::size_t i = onde + agulha.size();
+  if (i >= crua.size() || (crua[i] != '/' && crua[i] != ':')) return {};
+  ++i;
+  const std::size_t principio = i;
+  while (i < crua.size() && letra_de_id(crua[i])) ++i;
+  return std::string(crua.substr(principio, i - principio));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
