@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <iterator>
 #include <cstdlib>
 #include <cstdio>
 #include <fstream>
@@ -207,6 +209,30 @@ std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto) {
                      return a.tempo < b.tempo;
                    });
   return linhas;
+}
+
+int linha_corrente(const std::vector<LinhaDaLetra>& linhas, double posicao) {
+  if (linhas.empty()) return -1;
+  if (!std::isfinite(posicao) || posicao < linhas.front().tempo) return -1;
+  // Busca binaria: a ultima linha cujo tempo não passa da posição. Linear serviria
+  // n'uma letra de cincoenta versos, mas isto corre vinte vezes por segundo, e
+  // n'uma letra longa somma.
+  std::size_t baixo = 0, alto = linhas.size();
+  while (baixo + 1 < alto) {
+    const std::size_t meio = baixo + (alto - baixo) / 2;
+    if (linhas[meio].tempo <= posicao) baixo = meio;
+    else alto = meio;
+  }
+  return static_cast<int>(baixo);
+}
+
+std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio) {
+  const std::filesystem::path onde = caminho_do_lrc(audio);
+  std::ifstream fonte(onde, std::ios::binary);
+  if (!fonte) return {};  // não ha letra: caso ordinario, e não erro
+  const std::string texto((std::istreambuf_iterator<char>(fonte)),
+                          std::istreambuf_iterator<char>());
+  return analysa_lrc(texto);
 }
 
 }  // namespace mysong::nucleo
