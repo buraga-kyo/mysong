@@ -380,6 +380,127 @@ inline Mensagem analysa(std::string_view linha) {
   obra.valida = true;
   return obra;
 }
+// ── O RECORTE de JSON ANINHADO (issue #13) ──────────────────────────────────
+// O leitor d'esta Casa lê objecto PLANO de um nivel, que é a fórma do socket e a do
+// LRCLIB. O catalogo do Spotify não é plana: ella tras objecto dentro de objecto. As
+// tres funcções abaixo não a analysam inteira; recortam o que se quer, respeitando
+// aspas, contra-barra e FUNDO, que é o bastante e não pede leitor novo.
+
+// objectos_do_arranjo — os objectos de fundo UM de um arranjo, cada um em texto.
+// Vazio quando não ha arranjo, ou quando elle vem truncado: objecto meio não sahe.
+//
+// Vive AQUI, e não em quem o usa. A letra da issue #14 tinha o seu recorte, e o
+// catalogo da #13 precisaria de outro egual: duas cópias da mesma conta dão duas
+// verdades, e a que se corrigisse deixava a outra a errar.
+inline std::vector<std::string> objectos_do_arranjo(std::string_view arranjo) {
+  std::vector<std::string> achados;
+  int fundo = 0;
+  std::size_t principio = 0;
+  bool dentro_de_aspas = false, escapado = false;
+  for (std::size_t i = 0; i < arranjo.size(); ++i) {
+    const char octeto = arranjo[i];
+    // A ordem d'estas tres guardas é load-bearing. O escapado consome-se antes de
+    // tudo; as aspas mudam o modo; e sómente FÓRA das aspas as chaves contam. Sem
+    // isto, um titulo que traga `}` fecharia o objecto a meio.
+    if (escapado) { escapado = false; continue; }
+    if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+    if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
+    if (dentro_de_aspas) continue;
+    if (octeto == '{') {
+      if (fundo == 0) principio = i;
+      ++fundo;
+    } else if (octeto == '}' && fundo > 0 && --fundo == 0) {
+      achados.push_back(std::string(arranjo.substr(principio, i - principio + 1)));
+    }
+  }
+  return achados;
+}
+
+// recorta_arranjo — o arranjo que a chave `"<nome>":[` abre, com os cochetes. Vazio
+// não havendo a chave, ou vindo o arranjo truncado. Acha a chave em QUALQUER fundo,
+// que é o que permitte pescar `trackList` de dentro de dez niveis de embrulho.
+inline std::string recorta_arranjo(std::string_view corpo, std::string_view nome) {
+  const std::string agulha = "\"" + std::string(nome) + "\"";
+  std::size_t onde = 0;
+  while ((onde = corpo.find(agulha, onde)) != std::string_view::npos) {
+    std::size_t i = onde + agulha.size();
+    while (i < corpo.size() && (corpo[i] == ' ' || corpo[i] == ':')) ++i;
+    if (i >= corpo.size() || corpo[i] != '[') {
+      onde += agulha.size();
+      continue;  // esta chave não abre arranjo: procura-se a proxima egual
+    }
+    int fundo = 0;
+    bool dentro_de_aspas = false, escapado = false;
+    for (std::size_t j = i; j < corpo.size(); ++j) {
+      const char octeto = corpo[j];
+      if (escapado) { escapado = false; continue; }
+      if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+      if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
+      if (dentro_de_aspas) continue;
+      if (octeto == '[') ++fundo;
+      else if (octeto == ']' && --fundo == 0)
+        return std::string(corpo.substr(i, j - i + 1));
+    }
+    return {};  // truncado
+  }
+  return {};
+}
+
+// texto_de_chave — o valor de texto de uma chave de FUNDO UM do objecto, já
+// desescapado. Vazio quando ella falta, ou quando o valor não é texto. O fundo
+// importa: `title` dentro de `audioPreview` não é o `title` da faixa.
+inline std::string texto_de_chave(std::string_view objecto, std::string_view nome) {
+  const std::string agulha = "\"" + std::string(nome) + "\"";
+  int fundo = 0;
+  bool dentro_de_aspas = false, escapado = false;
+  for (std::size_t i = 0; i < objecto.size(); ++i) {
+    const char octeto = objecto[i];
+    if (escapado) { escapado = false; continue; }
+    if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+    if (octeto == '"' && !dentro_de_aspas && fundo == 1 &&
+        objecto.compare(i, agulha.size(), agulha) == 0) {
+      std::size_t j = i + agulha.size();
+      while (j < objecto.size() && (objecto[j] == ' ' || objecto[j] == ':')) ++j;
+      if (j >= objecto.size() || objecto[j] != '"') return {};
+      intimo::Leitor leitor(objecto.substr(j));
+      std::string valor, razao;
+      if (!leitor.cadeia(&valor, &razao)) return {};
+      return valor;
+    }
+    if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
+    if (dentro_de_aspas) continue;
+    if (octeto == '{' || octeto == '[') ++fundo;
+    else if (octeto == '}' || octeto == ']') --fundo;
+  }
+  return {};
+}
+
+// numero_de_chave — o mesmo, para numero. `fóra` fica intacto não havendo chave.
+inline bool numero_de_chave(std::string_view objecto, std::string_view nome,
+                           double* fora) {
+  const std::string agulha = "\"" + std::string(nome) + "\"";
+  int fundo = 0;
+  bool dentro_de_aspas = false, escapado = false;
+  for (std::size_t i = 0; i < objecto.size(); ++i) {
+    const char octeto = objecto[i];
+    if (escapado) { escapado = false; continue; }
+    if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+    if (octeto == '"' && !dentro_de_aspas && fundo == 1 &&
+        objecto.compare(i, agulha.size(), agulha) == 0) {
+      std::size_t j = i + agulha.size();
+      while (j < objecto.size() && (objecto[j] == ' ' || objecto[j] == ':')) ++j;
+      intimo::Leitor leitor(objecto.substr(j));
+      std::string razao;
+      return leitor.numero(fora, &razao);
+    }
+    if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
+    if (dentro_de_aspas) continue;
+    if (octeto == '{' || octeto == '[') ++fundo;
+    else if (octeto == '}' || octeto == ']') --fundo;
+  }
+  return false;
+}
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════
