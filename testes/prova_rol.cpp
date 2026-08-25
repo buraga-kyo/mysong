@@ -71,5 +71,20 @@ TEST_CASE("o banco nasce na primeira abertura, com a versão assentada") {
   CHECK(outro.versao() == nu::kVersaoDoRol);
 }
 
+TEST_CASE("criar recusa nome vazio, e recusa nome repetido") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int uma = roleiro.cria("Da manhã");
+  CHECK(uma > 0);
+  CHECK(roleiro.cria("   ") == 0);
+  // Duas listas do mesmo nome na tela não se distinguem, e por isso não se aceita.
+  CHECK(roleiro.cria("Da manhã") == 0);
+  // E o nome saneia-se ANTES de se comparar: «  Da manhã  » é a mesma.
+  CHECK(roleiro.cria("  Da manhã  ") == 0);
+  REQUIRE(roleiro.rois().size() == 1);
+  CHECK(roleiro.rois()[0].nome == "Da manhã");
+  CHECK(roleiro.rois()[0].quantos == 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
