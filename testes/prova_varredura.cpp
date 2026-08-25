@@ -174,5 +174,18 @@ TEST_CASE("a hierarchia lê-se do primeiro degrau e do ultimo") {
   CHECK(fundo.album == "CD1");
 }
 
+namespace {
+
+// corre_ate_o_fim — chama passo() até elle dizer que acabou, e devolve QUANTOS
+// passos foram. A conta serve ao aceite: passos maiores ou eguaes ao numero de
+// arquivos prova que passo algum engoliu o acervo inteiro.
+std::size_t corre_ate_o_fim(nu::Varredura& varredura) {
+  std::size_t passos = 0;
+  while (varredura.passo()) ++passos;
+  return passos + 1;  // o passo que devolveu falso tambem foi um passo
+}
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
