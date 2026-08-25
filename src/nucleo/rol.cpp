@@ -231,5 +231,25 @@ bool Roleiro::retira(int id, int ordem) {
   return havia;
 }
 
+bool Roleiro::troca(int id, int uma, int outra) {
+  if (punho_ == nullptr || uma == outra) return false;
+  // Tres UPDATE, e não dous: a chave é (rol, ordem), e dous crús collidiriam a
+  // meio, que o primeiro poria duas linhas na mesma ordem. A sentinella negativa
+  // é logar que linha verdadeira nunca occupa.
+  sqlite3_exec(punho_, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
+  corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
+        {kSentinella, id, uma}, {});
+  const bool ha_uma = sqlite3_changes(punho_) > 0;
+  corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
+        {uma, id, outra}, {});
+  const bool ha_outra = sqlite3_changes(punho_) > 0;
+  corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
+        {outra, id, kSentinella}, {});
+  const bool ambas = ha_uma && ha_outra;
+  sqlite3_exec(punho_, ambas ? "COMMIT;" : "ROLLBACK;", nullptr, nullptr,
+               nullptr);
+  return ambas;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
