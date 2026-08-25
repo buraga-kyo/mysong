@@ -175,5 +175,16 @@ std::string ordem_de_busca_relativa(double deslocamento) {
   return std::string("{\"command\":[\"seek\",") + molde + ",\"relative\"]}\n";
 }
 
+std::string_view razao_da_fita(Fita fita) {
+  switch (fita) {
+    case Fita::Rodando: return "a janella do video está de pé";
+    case Fita::SemMpv: return "falta o mpv: apt install mpv";
+    case Fita::SemVideo: return "essa faixa não tem video";
+    case Fita::SemSoquete: return "a janella subiu, mas não respondeu";
+    case Fita::NaoAbriu: return "não se pôde erguer a janella";
+  }
+  return "desfecho sem nome";
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
