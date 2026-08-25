@@ -49,5 +49,10 @@ struct Rol {
   int quantos = 0;
 };
 
+// saneia_nome_de_rol — apara os brancos das pontas e corta o comprimento. Nome
+// que se reduza a nada devolve cadeia VAZIA, e cadeia vazia não se aceita: lista
+// sem nome não se pode eleger na tela.
+std::string saneia_nome_de_rol(std::string_view crua);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
