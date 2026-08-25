@@ -69,5 +69,23 @@ TEST_CASE("sem numero á frente, o titulo é o nome inteiro") {
   CHECK(nu_.titulo == "05");
 }
 
+// As duas bordas da hierarchia. Arquivo na raiz não tem artista nem album; um
+// degrau só dá artista e deixa o album VAZIO, que dizer que o album se chama
+// como o artista seria affirmar o que não se sabe; e mais fundo que o esperado
+// toma o primeiro degrau por artista e o ultimo por album.
+TEST_CASE("a hierarchia lê-se do primeiro degrau e do ultimo") {
+  const nu::Faixa raiz = nu::deriva_do_caminho("/a/Tear.mp3", "/a");
+  CHECK(raiz.artista.empty());
+  CHECK(raiz.album.empty());
+  CHECK(raiz.titulo == "Tear");
+  const nu::Faixa um = nu::deriva_do_caminho("/a/Ada/Tear.mp3", "/a");
+  CHECK(um.artista == "Ada");
+  CHECK(um.album.empty());
+  const nu::Faixa fundo =
+      nu::deriva_do_caminho("/a/Ada/1843/Máquina/CD1/Tear.mp3", "/a");
+  CHECK(fundo.artista == "Ada");
+  CHECK(fundo.album == "CD1");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
