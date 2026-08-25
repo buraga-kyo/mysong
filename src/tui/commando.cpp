@@ -80,6 +80,7 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
     return {Verbo::Volta, 0.0};
   if (tecla == ftxui::Event::Character('/')) return {Verbo::AbreBusca, 0.0};
   if (tecla == ftxui::Event::Character('r')) return {Verbo::Varre, 0.0};
+  if (tecla == ftxui::Event::Character('b')) return {Verbo::AbreBaixa, 0.0};
 
   return {Verbo::Nada, 0.0};
 }
