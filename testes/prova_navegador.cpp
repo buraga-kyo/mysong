@@ -216,5 +216,38 @@ TEST_CASE("o termo não se herda ao descer nem ao subir") {
   CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace", "Bach"});
 }
 
+// Recarregar depois de o acervo mudar. Se o artista sahiu do disco, cahe-se a
+// Artistas; se sómente o album sahiu, cahe-se a Albuns, e não ao alto.
+TEST_CASE("recarregar conserva a trilha que sobreviveu, e cede a que não") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  {
+    const nu::Biblioteca livraria(cova.banco());
+    tui::Navegador navegador(livraria);
+    navegador.entra();
+    navegador.entra();
+    REQUIRE(navegador.secao() == tui::Secao::Faixas);
+    navegador.recarrega();  // nada mudou: fica onde estava
+    CHECK(navegador.secao() == tui::Secao::Faixas);
+    CHECK(navegador.trilha() ==
+          std::vector<std::string>{"Ada Lovelace", "Máquina"});
+  }
+  // O album «Máquina» sahe do acervo; o artista fica, com o outro album.
+  {
+    nu::Escriba escriba(cova.banco());
+    REQUIRE(escriba.aberto());
+    REQUIRE(escriba.grava(faz("Ada Lovelace", "Notas", "Traducção", 1)));
+    REQUIRE(escriba.grava(faz("Bach", "Cravo", "Fuga", 2)));
+    REQUIRE(escriba.conclui());
+  }
+  const nu::Biblioteca depois(cova.banco());
+  tui::Navegador navegador(depois);
+  navegador.entra();  // Albuns de Ada
+  navegador.entra();  // Faixas de Notas
+  REQUIRE(navegador.trilha() ==
+          std::vector<std::string>{"Ada Lovelace", "Notas"});
+  CHECK(navegador.secao() == tui::Secao::Faixas);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
