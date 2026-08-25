@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <vector>
 #include <string>
 
 #include <taglib/fileref.h>
@@ -255,6 +256,59 @@ TEST_CASE("etiqueta parcial toma da etiqueta o que ella diz") {
   CHECK(achada.numero == 5);            // do caminho
   CHECK(achada.deduzido == (nu::kDeduziuArtista | nu::kDeduziuAlbum |
                             nu::kDeduziuNumero));
+}
+
+// O INCREMENTAL, provado de FÓRA da obra. Depois da primeira corrida tira-se toda
+// permissão dos arquivos, o que NÃO altera hora nem tamanho. Chamada a taglib, a
+// leitura falharia; ella não é chamada, e por isso a segunda corrida sahe egual á
+// primeira com `lidas` em zero. Não se pergunta á obra se ella releu: tira-se-lhe
+// a possibilidade de o fazer, e vê-se se o resultado sobrevive.
+TEST_CASE("segunda corrida não relê etiqueta, provado por chmod zero") {
+  const Cova cova;
+  for (int i = 1; i <= 3; ++i) {
+    const std::filesystem::path faixa =
+        cova.acervo() / "Ada" / "Notas" / ("0" + std::to_string(i) + " - N.wav");
+    faz_wav(faixa, i);
+    poe_etiqueta(faixa, "Ada Lovelace", "Notas", "Nota " + std::to_string(i),
+                 static_cast<unsigned>(i));
+  }
+  {
+    nu::Varredura primeira(cova.banco(), {cova.acervo()});
+    corre_ate_o_fim(primeira);
+    REQUIRE(primeira.desfecho() == nu::Desfecho::Concluido);
+    CHECK(primeira.progresso().lidas == 3u);
+    CHECK(primeira.progresso().reaproveitadas == 0u);
+  }
+  std::vector<nu::Faixa> antes;
+  {
+    const nu::Biblioteca livraria(cova.banco());
+    REQUIRE(livraria.total() == 3u);
+    antes = livraria.faixas_do_album("Ada Lovelace", "Notas");
+  }
+
+  // Toda permissão fóra. Hora e tamanho ficam; sómente a LEITURA morre.
+  for (const auto& entrada :
+       std::filesystem::recursive_directory_iterator(cova.acervo()))
+    if (entrada.is_regular_file())
+      std::filesystem::permissions(entrada.path(), std::filesystem::perms::none);
+
+  nu::Varredura segunda(cova.banco(), {cova.acervo()});
+  corre_ate_o_fim(segunda);
+  CHECK(segunda.desfecho() == nu::Desfecho::Concluido);
+  CHECK(segunda.progresso().lidas == 0u);
+  CHECK(segunda.progresso().reaproveitadas == 3u);
+
+  const nu::Biblioteca livraria(cova.banco());
+  const std::vector<nu::Faixa> depois =
+      livraria.faixas_do_album("Ada Lovelace", "Notas");
+  REQUIRE(depois.size() == antes.size());
+  for (std::size_t i = 0; i < depois.size(); ++i) {
+    CHECK(depois[i].caminho == antes[i].caminho);
+    CHECK(depois[i].titulo == antes[i].titulo);
+    CHECK(depois[i].numero == antes[i].numero);
+    CHECK(depois[i].duracao == antes[i].duracao);
+    CHECK(depois[i].deduzido == antes[i].deduzido);
+  }
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
