@@ -33,5 +33,26 @@ TEST_CASE("a posição vae e volta em microssegundos, e trunca") {
   CHECK(ap::micros_para_segundos(-5) == doctest::Approx(0.0));
 }
 
+TEST_CASE("o volume vae e volta, aparado, e ARREDONDA na volta") {
+  CHECK(ap::porcento_para_volume(0) == doctest::Approx(0.0));
+  CHECK(ap::porcento_para_volume(50) == doctest::Approx(0.5));
+  CHECK(ap::porcento_para_volume(100) == doctest::Approx(1.0));
+  // Apara-se nas duas pontas: cliente algum recebe volume de um vírgula dous.
+  CHECK(ap::porcento_para_volume(150) == doctest::Approx(1.0));
+  CHECK(ap::porcento_para_volume(-10) == doctest::Approx(0.0));
+
+  CHECK(ap::volume_para_porcento(0.0) == 0);
+  CHECK(ap::volume_para_porcento(0.5) == 50);
+  CHECK(ap::volume_para_porcento(1.0) == 100);
+  CHECK(ap::volume_para_porcento(1.5) == 100);
+  CHECK(ap::volume_para_porcento(-0.5) == 0);
+  // ARREDONDA. É a decisão oposta á da posição, e o caso que a prende: o cliente que
+  // põe zero vírgula quatrocentos e noventa e nove espera cincoenta, e truncar daria
+  // quarenta e nove.
+  CHECK(ap::volume_para_porcento(0.499) == 50);
+  CHECK(ap::volume_para_porcento(0.494) == 49);
+  CHECK(ap::volume_para_porcento(std::numeric_limits<double>::quiet_NaN()) == 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
