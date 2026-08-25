@@ -80,6 +80,17 @@ TEST_CASE("a linha do transporte sahe egual á cadeia escripta á mão") {
   CHECK(codepoints(alvo) == 60u);
 }
 
+// E o defeito da collisão, apanhado em toda largura que dê para tudo caber: o
+// relogio nunca se lê collado ao volume.
+TEST_CASE("o relogio nunca se lê collado ao volume") {
+  const tui::Retracto retracto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  for (std::size_t largura = 47; largura <= 200; ++largura) {
+    const std::string linha = a_linha_pintada(retracto, largura);
+    REQUIRE(linha.find("00:30vol") == std::string::npos);
+    REQUIRE(linha.find("00:02 / 00:30 vol 100% ") != std::string::npos);
+  }
+}
+
 TEST_CASE("o tempo sahe em MM:SS, e o que não é tempo sahe em traço") {
   CHECK(tui::mm_ss(0.0) == "00:00");
   CHECK(tui::mm_ss(1.0) == "00:01");
