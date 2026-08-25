@@ -526,5 +526,29 @@ TEST_CASE("mover para cima e para baixo troca a ordem, e o olho segue a faixa") 
   CHECK_FALSE(navegador.desce_no_rol());
 }
 
+TEST_CASE("retirar tira a faixa certa, ainda com filtro posto") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  for (const char* qual : {"/a/alfa.mp3", "/a/beta.mp3", "/a/gama.mp3"})
+    REQUIRE(navegador.junta_ao_rol(qual));
+
+  // FILTRO posto: a vista tem uma linha, e ella é a TERCEIRA do banco. Se a ordem
+  // se tirasse do indice da vista, retirar-se-hia a primeira.
+  navegador.filtra("gama");
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].numero == 3);
+  REQUIRE(navegador.retira_do_rol());
+  navegador.filtra("");
+  REQUIRE(navegador.vista().size() == 2);
+  CHECK(navegador.vista()[0].texto == "alfa.mp3");
+  CHECK(navegador.vista()[1].texto == "beta.mp3");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
