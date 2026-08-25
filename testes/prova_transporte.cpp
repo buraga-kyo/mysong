@@ -76,5 +76,32 @@ TEST_CASE("a barra fecha a largura exacta, de uma a duzentas collunhas") {
   }
 }
 
+// Fila vazia: a tela ergue-se e não affirma cousa alguma sobre o som. É o estado
+// em que o operador acha o programma quando o abre sem argumento.
+TEST_CASE("fila vazia dá barra vazia e tempo em traço") {
+  const tui::Retracto vazio;  // os valores por defeito, que é o que a tela vê
+  CHECK(vazio.estado == nu::Estado::Parado);
+  CHECK(tui::mm_ss(vazio.posicao) == "00:00");
+  CHECK(tui::mm_ss(vazio.duracao) == "00:00");
+  CHECK(tui::enchimento(vazio.posicao, vazio.duracao, 40) == 0u);
+  const std::string linha = tui::linha_da_barra(vazio, 8);
+  // Oito vazios, e nem um cheio: a barra não mente sobre progresso que não ha.
+  CHECK(linha.find("\u2588") == std::string::npos);
+}
+
+// A linha inteira contra alvo ESCRIPTO Á MÃO. Dez collunhas, e trinta por cento
+// de trinta sobre cem: tres cheias e sete vazias, nesta ordem. Comparar a linha
+// com ella mesma não provaria nada, que funcção pura é egual a si por
+// construcção; o que prova é a cadeia que esta mão escreveu.
+TEST_CASE("a linha da barra sahe egual á cadeia escripta á mão") {
+  const tui::Retracto retracto{nu::Estado::Tocando, 30.0, 100.0, 70, "x", 1, 4};
+  CHECK(tui::linha_da_barra(retracto, 10) ==
+        "\u2588\u2588\u2588\u2591\u2591\u2591\u2591\u2591\u2591\u2591");
+  const tui::Retracto no_fim{nu::Estado::Tocando, 100.0, 100.0, 70, "x", 1, 4};
+  CHECK(tui::linha_da_barra(no_fim, 4) == "\u2588\u2588\u2588\u2588");
+  const tui::Retracto no_principio{nu::Estado::Parado, 0.0, 100.0, 70, "x", 0, 4};
+  CHECK(tui::linha_da_barra(no_principio, 4) == "\u2591\u2591\u2591\u2591");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
