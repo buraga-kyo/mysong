@@ -60,5 +60,21 @@ TEST_CASE("o enchimento arredonda ao mais proximo, e cinge-se em um") {
   CHECK(tui::enchimento(49.0, 100.0, 1) == 0u);
 }
 
+// A barra fecha a largura EXACTA, e banda alguma sobra ou falta. Conta-se em
+// CODEPOINTS, que o bloco é multibyte e contar bytes daria tres vezes mais.
+TEST_CASE("a barra fecha a largura exacta, de uma a duzentas collunhas") {
+  for (std::size_t largura = 1; largura <= 200; ++largura) {
+    for (int passo = 0; passo <= 10; ++passo) {
+      const double posicao = static_cast<double>(passo) * 10.0;
+      const std::string linha = tui::linha_da_barra(
+          {nu::Estado::Tocando, posicao, 100.0, 100, "", 0, 1}, largura);
+      std::size_t glifos = 0;
+      for (const unsigned char byte : linha)
+        if ((byte & 0xC0) != 0x80) ++glifos;
+      REQUIRE(glifos == largura);
+    }
+  }
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
