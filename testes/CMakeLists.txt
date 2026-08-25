@@ -15,8 +15,8 @@ target_compile_options(mysong_testes PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong_testes PRIVATE mysong_core doctest::doctest)
 
 # A bateria da sonda (#22). Entra por target_sources, e não na lista do
-# add_executable acima, para não collidir com as tarefas irmãs que mexem neste
-# mesmo arquivo agora: linha nova não collide onde linha alterada collidiria.
+# add_executable acima, porque linha nova não collide onde linha alterada
+# collidiria: é a regra d'esta Casa, e não noticia de uma onda de trabalho.
 target_sources(mysong_testes PRIVATE prova_sonda.cpp prova_tela_requisitos.cpp)
 
 include("${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake")
@@ -40,6 +40,16 @@ target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 # mathematica se prova por espectro.hpp, que declara o plano da fftw adiante, e
 # o contracto por analisador.hpp, que esconde o PipeWire atraz de um punho.
 target_sources(mysong_testes PRIVATE prova_espectro.cpp)
+
+# ─── Provas da taboa da libmpv (issue #28) ──────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
+target_sources(mysong_testes PRIVATE prova_libmpv.cpp)
+# O caminho do binario da tela chega por definição, e a dependencia garante que
+# elle exista quando o caso correr: prova que lê binario ausente não se salta,
+# accusa. É o binario, e não este arquivo, o oraculo de fóra.
+add_dependencies(mysong_testes mysong)
+target_compile_definitions(mysong_testes PRIVATE
+  MYSONG_BINARIO="$<TARGET_FILE:mysong>")
 
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
