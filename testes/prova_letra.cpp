@@ -6,7 +6,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <limits>
 #include <string>
+#include <vector>
 
 #include "nucleo/letra.hpp"
 
@@ -135,6 +137,35 @@ TEST_CASE("o lrc aceita os dous separadores dos centesimos") {
   CHECK(nu::analysa_lrc("[00:").empty());
   CHECK(nu::analysa_lrc("[abc] a").empty());
   CHECK(nu::analysa_lrc("[00:11.00").empty());
+}
+
+// A LINHA CORRENTE, com os alvos escriptos. Os limites são o que importa: o
+// instante EXACTO de um carimbo pertence a esse carimbo, e não ao anterior.
+TEST_CASE("a linha corrente acha-se, e antes da primeira dá menos um") {
+  const std::vector<nu::LinhaDaLetra> linhas = {
+      {10.0, "um"}, {20.0, "dous"}, {30.0, ""}, {40.0, "quatro"}};
+  CHECK(nu::linha_corrente(linhas, 0.0) == -1);
+  CHECK(nu::linha_corrente(linhas, 9.999) == -1);
+  // O instante EXACTO pertence ao carimbo, e não ao anterior.
+  CHECK(nu::linha_corrente(linhas, 10.0) == 0);
+  CHECK(nu::linha_corrente(linhas, 19.999) == 0);
+  CHECK(nu::linha_corrente(linhas, 20.0) == 1);
+  CHECK(nu::linha_corrente(linhas, 29.999) == 1);
+  // O carimbo de texto vazio é linha, e vale: é elle que limpa a tela.
+  CHECK(nu::linha_corrente(linhas, 30.0) == 2);
+  CHECK(nu::linha_corrente(linhas, 39.999) == 2);
+  CHECK(nu::linha_corrente(linhas, 40.0) == 3);
+  // Depois da ultima, fica na ultima: a musica acabou e o verso final fica.
+  CHECK(nu::linha_corrente(linhas, 4000.0) == 3);
+  // Degenerescencias: lista vazia, e posição que não é numero.
+  CHECK(nu::linha_corrente({}, 10.0) == -1);
+  CHECK(nu::linha_corrente(linhas,
+                           std::numeric_limits<double>::quiet_NaN()) == -1);
+  // Lista de UMA linha, que é onde a busca binaria degenera.
+  const std::vector<nu::LinhaDaLetra> uma = {{5.0, "so"}};
+  CHECK(nu::linha_corrente(uma, 4.999) == -1);
+  CHECK(nu::linha_corrente(uma, 5.0) == 0);
+  CHECK(nu::linha_corrente(uma, 500.0) == 0);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
