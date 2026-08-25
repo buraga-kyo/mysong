@@ -39,6 +39,8 @@ enum class Verbo {
   // uma, e ter duas taboadas a olhar a mesma tecla faria uma delas ganhar por
   // ordem de chamada, que é decisão que ninguem escreveu.
   Desce, Sobe, AoPrincipio, AoFim, Entra, Volta, AbreBusca, Varre,
+  // O da aquisição (issue #11).
+  AbreBaixa,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),
