@@ -185,6 +185,19 @@ target_sources(mysong_core PRIVATE src/tui/transporte.cpp src/tui/commando.cpp)
 # ftxui::dom; esta linha segue o precedente, e não abre porta nova.
 target_link_libraries(mysong_core PUBLIC ftxui::component)
 
+# ─── A VARREDURA DO ACERVO (issue #34) ──────────────────────────────────────
+# Entra por target_sources, ACRESCENTANDO linha. Dependencia nova alguma se
+# cobra: a taglib e o sqlite3 já entraram com a bibliotheca na issue #8.
+target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp)
+
+# A prova do esquema mais novo ENVELHECE a Casa por SQL propria, e para isso pede
+# os cabeçalhos do sqlite3. A alternativa era pôr na obra um parametro de versão
+# que sómente a prova usaria, e isso seria uma porta por onde alguem escreveria a
+# versão errada de verdade. Sómente CABEÇALHOS: os symbolos já vêm do nucleo, que
+# liga o sqlite3, e a linha vae aqui e não em testes/ porque é aqui que o
+# pkg_check_modules já correu.
+target_include_directories(mysong_testes SYSTEM PRIVATE ${SQLITE3_INCLUDE_DIRS})
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 

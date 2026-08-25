@@ -64,6 +64,9 @@ target_sources(mysong_testes PRIVATE prova_espectro_tui.cpp)
 # A janella não entra: ella abre terminal, motor e som, e não se prova em bateria.
 target_sources(mysong_testes PRIVATE prova_transporte.cpp prova_commando.cpp)
 
+# ─── A PROVA DA VARREDURA (issue #34) ───────────────────────────────────────
+target_sources(mysong_testes PRIVATE prova_varredura.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
