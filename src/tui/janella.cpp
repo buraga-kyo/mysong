@@ -40,7 +40,10 @@
 #include <ftxui/screen/terminal.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include <algorithm>
+
 #include "nucleo/analisador.hpp"
+#include "nucleo/capa.hpp"
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
@@ -209,6 +212,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::vector<nucleo::LinhaDaLetra> letra;
   std::string letra_de_qual;
   bool mostra_letra = false;
+  nucleo::Galeria galeria;  // a capa converte-se uma vez por album e por tamanho
 
   std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
                        std::cref(sahir), &varrida);
@@ -224,7 +228,18 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
                                              navegador.vista().size(), alt_tab,
                                              primeira_linha);
-    const std::size_t larg_tab = larg > 11 ? larg - 11 : 1;
+    // O painel NOW PLAYING toma um quinto da largura, e nunca mais de vinte
+    // collunhas nem menos de oito: a arte quer quadrado, e o quadrado n'um terminal
+    // pede duas linhas por collunha, donde a altura sahe da largura e não ao
+    // contrario. Terminal apertado não mostra capa alguma, que roubar da tabella
+    // para mostrar arte seria trocar o que serve pelo que enfeita.
+    const std::size_t larg_capa =
+        larg >= 60 ? std::min<std::size_t>(20, larg / 5) : 0;
+    const std::size_t alt_capa =
+        larg_capa == 0 ? 0 : std::min<std::size_t>(alt_tab, larg_capa / 2 + 1);
+    const std::size_t reservado_capa = larg_capa == 0 ? 0 : larg_capa + 1;
+    const std::size_t larg_tab =
+        larg > 11 + reservado_capa ? larg - 11 - reservado_capa : 1;
 
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
@@ -251,6 +266,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                    ftxui::text("  "),
                    tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
                                             larg_tab),
+                   ftxui::text(" "),
+                   tui::elemento_da_capa(
+                       galeria.capa(retracto.titulo, larg_capa, alt_capa),
+                       larg_capa, alt_capa),
                }),
                ftxui::text(""),
                mostra_letra
