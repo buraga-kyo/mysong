@@ -14,6 +14,7 @@
 #include <curl/curl.h>
 
 #include <cctype>
+#include <cstdlib>
 #include <cstdio>
 #include <fstream>
 
@@ -140,6 +141,36 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
   if (letra != nullptr) *letra = le_resposta(corpo);
   return true;
 }
+
+namespace {
+
+// carimbo — lê `[mm:ss.cc]` ou `[mm:ss]` no principio do que resta. Devolve falso
+// quando não ha carimbo alli, e ahi `cursor` não se mexe.
+bool carimbo(std::string_view linha, std::size_t* cursor, double* tempo) {
+  std::size_t i = *cursor;
+  if (i >= linha.size() || linha[i] != '[') return false;
+  ++i;
+  const std::size_t principio_min = i;
+  while (i < linha.size() && std::isdigit(static_cast<unsigned char>(linha[i]))) ++i;
+  if (i == principio_min || i >= linha.size() || linha[i] != ':') return false;
+  const int minutos = std::atoi(std::string(linha.substr(principio_min, i - principio_min)).c_str());
+  ++i;
+  const std::size_t principio_seg = i;
+  while (i < linha.size() &&
+         (std::isdigit(static_cast<unsigned char>(linha[i])) || linha[i] == '.' ||
+          linha[i] == ':'))
+    ++i;
+  if (i == principio_seg || i >= linha.size() || linha[i] != ']') return false;
+  // O separador dos centesimos é ponto ou DOUS PONTOS: o fórmato admitte os dous,
+  // e ha gerador que usa o segundo. Troca-se antes de converter.
+  std::string segundos(linha.substr(principio_seg, i - principio_seg));
+  for (char& letra : segundos) if (letra == ':') letra = '.';
+  *tempo = minutos * 60.0 + std::atof(segundos.c_str());
+  *cursor = i + 1;
+  return true;
+}
+
+}  // namespace
 
 }  // namespace mysong::nucleo
 
