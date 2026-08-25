@@ -35,6 +35,29 @@ namespace mysong::api {
 // d'ellas, e é assim que estes defeitos nascem.
 inline constexpr std::int64_t kMicrosPorSegundo = 1000000;
 
+// segundos_para_micros — a posição do nucleo em microssegundos. Trunca, e não
+// arredonda: microssegundo a mais faria o cliente pedir uma posição que a faixa já
+// não tem. Valor que não é numero, ou negativo, dá ZERO.
+std::int64_t segundos_para_micros(double segundos);
+
+// micros_para_segundos — o caminho de volta, para o `Seek` e o `SetPosition` que
+// chegam pelo barramento.
+double micros_para_segundos(std::int64_t micros);
+
+// porcento_para_volume — o volume do nucleo no `double` do MPRIS. Apara-se em zero e
+// um: cliente algum ha de receber volume de um vírgula dous, ainda que o nucleo o
+// admittisse.
+double porcento_para_volume(int porcento);
+
+// volume_para_porcento — o caminho de volta. Apara em zero e cem, e ARREDONDA: o
+// cliente que põe zero vírgula cinco espera cincoenta, e truncar daria quarenta e
+// nove n'um `double` que sahisse de zero vírgula quatrocentos e noventa e nove.
+int volume_para_porcento(double volume);
+
+// estado_do_mpris — as cadeias que a especificação fixa, e essas exactas. Não são
+// nomes de gosto: cliente que leia «Tocando» não sabe o que fazer com ella.
+std::string_view estado_do_mpris(nucleo::Estado estado);
+
 }  // namespace mysong::api
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
