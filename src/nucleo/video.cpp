@@ -280,5 +280,20 @@ bool Projector::rodando_travado() {
   return false;
 }
 
+bool Projector::manda_travado(const std::string& linha) {
+  if (punho_ < 0 || !rodando_travado()) return false;
+  std::size_t escripto = 0;
+  while (escripto < linha.size()) {
+    const ::ssize_t agora =
+        ::write(punho_, linha.data() + escripto, linha.size() - escripto);
+    if (agora <= 0) {
+      if (agora < 0 && errno == EINTR) continue;
+      return false;
+    }
+    escripto += static_cast<std::size_t>(agora);
+  }
+  return true;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
