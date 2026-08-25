@@ -606,5 +606,38 @@ TEST_CASE("a lista sobrevive a reabrir o roleiro, com a ordem que se deixou") {
   CHECK(depois.vista()[2].texto == "2.mp3");
 }
 
+TEST_CASE("juntar do ACERVO á lista alvo, que é o caminho de quem usa a cousa") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+
+  // O caminho de verdade, passo por passo: cria-se a lista, entra-se n'ella para a
+  // eleger por alvo, volta-se ao acervo, desce-se até uma faixa, e junta-se.
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.volta());
+  REQUIRE(navegador.volta());
+  REQUIRE(navegador.secao() == tui::Secao::Artistas);
+  REQUIRE_FALSE(navegador.entra());  // no artista
+  REQUIRE_FALSE(navegador.entra());  // no album
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  const std::string primeira = navegador.caminho_eleito();
+  REQUIRE_FALSE(primeira.empty());
+  REQUIRE(navegador.junta_ao_rol(primeira));
+  navegador.desce();
+  REQUIRE(navegador.junta_ao_rol(navegador.caminho_eleito()));
+
+  // A lista tem as duas, na ordem em que se juntaram.
+  navegador.mostra_rois();
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].numero == 2);
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.vista().size() == 2);
+  CHECK(navegador.vista()[0].chave == primeira);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
