@@ -532,5 +532,40 @@ TEST_CASE("caso algum da bateria toca os caminhos do operador") {
   }
 }
 
+// A comparação é de DOUS campos, e este caso é o que o prova. Reescreve-se o
+// arquivo com outro tamanho e REPÕE-SE a hora de modificação: comparando-se
+// sómente a hora, a linha velha seria reaproveitada e a duração nova nunca
+// entraria no índice. Mutação corrida nesta Casa: annullando a comparação do
+// tamanho, este caso morre, e sómente elle.
+TEST_CASE("hora egual e tamanho diverso faz reler a etiqueta") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.acervo() / "A" / "B" / "01 - T.wav";
+  faz_wav(faixa, 2);
+  {
+    nu::Varredura primeira(cova.banco(), {cova.acervo()});
+    corre_ate_o_fim(primeira);
+    REQUIRE(primeira.desfecho() == nu::Desfecho::Concluido);
+  }
+  {
+    const nu::Biblioteca livraria(cova.banco());
+    nu::Faixa antes;
+    REQUIRE(livraria.acha_por_caminho(faixa.string(), antes));
+    REQUIRE(antes.duracao == 2);
+  }
+
+  const auto hora = std::filesystem::last_write_time(faixa);
+  faz_wav(faixa, 9);  // outro tamanho, e outra duração
+  std::filesystem::last_write_time(faixa, hora);  // e a MESMA hora
+
+  nu::Varredura segunda(cova.banco(), {cova.acervo()});
+  corre_ate_o_fim(segunda);
+  CHECK(segunda.progresso().lidas == 1u);
+  CHECK(segunda.progresso().reaproveitadas == 0u);
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Faixa depois;
+  REQUIRE(livraria.acha_por_caminho(faixa.string(), depois));
+  CHECK(depois.duracao == 9);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
