@@ -55,6 +55,21 @@ Letra le_resposta(std::string_view corpo);
 // extensão. É onde o tocador o ha de procurar, e onde os outros tocadores o põem.
 std::filesystem::path caminho_do_lrc(const std::filesystem::path& audio);
 
+// ── E AGORA O QUE TOCA A REDE. Uma funcção só, e no fim.
+
+// busca_letra — pergunta ao LRCLIB. FALSO quando a rede não respondeu; letra
+// vazia com verdadeiro quer dizer que respondeu e não ha letra, que é caso
+// ordinario e não erro. O prazo é de OITO segundos: quem baixa uma faixa não ha de
+// esperar por um serviço de letra mais do que isso.
+bool busca_letra(std::string_view artista, std::string_view titulo,
+                 Letra* letra);
+
+// grava_lrc — escreve a letra sincronizada em `.lrc` ao lado do audio. Não grava a
+// PLANA: `.lrc` é fórmato de letra com tempo, e pôr letra sem tempo n'um `.lrc`
+// faria todo tocador do mundo mostrar a musica inteira n'uma linha. Falso quando
+// não ha letra sincronizada, e ahi arquivo algum se cria.
+bool grava_lrc(const std::filesystem::path& audio, const Letra& letra);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
