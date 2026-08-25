@@ -41,6 +41,40 @@ bool contem_sem_caixa(const std::string& palheiro, const std::string& agulha) {
 
 }  // namespace
 
+// A PORTA UNICA da vista. Toda mudança de secção, de trilha ou de termo passa por
+// aqui, e é aqui que o eleito se apara. Não ha segunda aparadura em logar algum:
+// havendo duas, uma delas ficaria por corrigir no dia em que a regra mudasse.
+void Navegador::refaz_vista() {
+  vista_.clear();
+  switch (secao_) {
+    case Secao::Artistas:
+      for (const std::string& nome : livraria_.artistas())
+        if (contem_sem_caixa(nome, termo_)) vista_.push_back({nome, nome, 0, 0, {}});
+      break;
+
+    case Secao::Albuns:
+      for (const std::string& nome : livraria_.albuns(trilha_.front()))
+        if (contem_sem_caixa(nome, termo_)) vista_.push_back({nome, nome, 0, 0, {}});
+      break;
+
+    case Secao::Faixas:
+      for (const nucleo::Faixa& faixa :
+           livraria_.faixas_do_album(trilha_.front(), trilha_.back()))
+        if (contem_sem_caixa(faixa.titulo, termo_))
+          vista_.push_back({faixa.titulo, faixa.caminho, faixa.numero,
+                            faixa.duracao, faixa.artista});
+      break;
+
+    case Secao::Busca:
+      for (const nucleo::Faixa& faixa : livraria_.busca_faixa(termo_))
+        vista_.push_back({faixa.titulo, faixa.caminho, faixa.numero,
+                          faixa.duracao, faixa.artista});
+      break;
+  }
+  if (vista_.empty()) eleito_ = 0;
+  else if (eleito_ >= vista_.size()) eleito_ = vista_.size() - 1;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
