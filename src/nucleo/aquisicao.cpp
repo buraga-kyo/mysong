@@ -103,6 +103,36 @@ std::filesystem::path destino(const std::filesystem::path& raiz,
   return caminho / (folha + saneia_nome(pedido.titulo));
 }
 
+std::vector<std::string> argumentos_da_sonda(const std::string& url) {
+  // A ordem d'estes seis `--print` é o CONTRACTO com le_etiqueta_remota, e por
+  // isso os dous vivem no mesmo arquivo e a prova afere os dous juntos.
+  return {"yt-dlp",   "--no-warnings",      "--no-playlist",
+          "--print",  "%(title)s",          "--print",
+          "%(uploader)s", "--print",        "%(artist)s",
+          "--print", "%(album)s",           "--print",
+          "%(track_number)s", "--print",    "%(duration)s",
+          "--",      url};
+}
+
+std::vector<std::string> argumentos_do_download(
+    const std::string& url, const std::filesystem::path& molde) {
+  return {"yt-dlp",
+          "--no-warnings",
+          "--no-playlist",
+          // `--no-overwrites` é a segunda guarda contra perder arquivo. A
+          // primeira é a checagem do destino; ter as duas quer dizer que uma
+          // corrida entre duas aquisições não apaga o que a outra gravou.
+          "--no-overwrites",
+          "--extract-audio",
+          "--audio-format", "mp3",
+          "--audio-quality", "0",
+          // Etiqueta NENHUMA se embute: quem a escreve é esta Casa, com a taglib,
+          // e a razão está no tractado do cabeçalho.
+          "--no-embed-metadata",
+          "--output", molde.string() + ".%(ext)s",
+          "--", url};
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
