@@ -46,5 +46,25 @@ int Cova::semente_ = 0;
 
 }  // namespace
 
+TEST_CASE("a capa ao lado acha-se pela ordem de preferencia") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  // Pasta sem capa alguma: vazio, e não erro.
+  CHECK(nu::capa_ao_lado(faixa).empty());
+
+  // Pondo o menos preferido primeiro, elle sahe, que é o unico que ha.
+  cova.poe("album.jpg");
+  CHECK(nu::capa_ao_lado(faixa).filename() == "album.jpg");
+  // Pondo o `folder`, elle ganha do `album`.
+  cova.poe("folder.jpg");
+  CHECK(nu::capa_ao_lado(faixa).filename() == "folder.jpg");
+  // E o `cover` ganha de todos, que é o que o Picard grava.
+  cova.poe("cover.jpg");
+  CHECK(nu::capa_ao_lado(faixa).filename() == "cover.jpg");
+  // Nome que não está na lista fechada não conta.
+  cova.poe("arte.jpg");
+  CHECK(nu::capa_ao_lado(faixa).filename() == "cover.jpg");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
