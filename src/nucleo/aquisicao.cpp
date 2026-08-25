@@ -346,6 +346,23 @@ bool busca_no_youtube(const std::string& termo, int quantos,
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
+  // SEM URL, mas com titulo: busca-se o audio por si, e casa-se pela duração. É o
+  // caminho da issue #13, e é o mesmo `baixa` de sempre depois de achado o endereço:
+  // as etiquetas continuam a ser as que o operador disse, que aqui vêm do catalogo.
+  if (pedido.url.empty()) {
+    if (pedido.titulo.empty()) return Colheita::UrlRecusada;
+    std::vector<Achado> achados;
+    const std::string termo = pedido.artista.empty()
+                                  ? pedido.titulo
+                                  : pedido.artista + " " + pedido.titulo;
+    if (!busca_no_youtube(termo, 10, &achados)) return Colheita::SemFerramenta;
+    const int qual = melhor_achado(achados, pedido, TOLERANCIA_DO_CASAMENTO);
+    if (qual < 0) return Colheita::Duvidosa;
+    Pedido com_url = pedido;
+    com_url.url = achados[static_cast<std::size_t>(qual)].url;
+    return baixa(raiz, com_url, gravado);
+  }
+
   EtiquetaRemota remota;
   if (!sonda_url(pedido.url, &remota)) {
     // Não se distingue aqui «yt-dlp ausente» de «URL recusada» pelo codigo, que
