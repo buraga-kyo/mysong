@@ -398,6 +398,75 @@ CasaDoMpris::~CasaDoMpris() {
 bool CasaDoMpris::viva() const noexcept { return punho_->ligacao != nullptr; }
 const std::string& CasaDoMpris::razao() const noexcept { return punho_->razao; }
 
+namespace {
+
+// responde_propriedades — o `Get`, o `GetAll` e o `Set` da interface de propriedades.
+DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedido,
+                                   const std::string& membro) {
+  DBusMessageIter leitor;
+  if (!dbus_message_iter_init(pedido, &leitor) ||
+      dbus_message_iter_get_arg_type(&leitor) != DBUS_TYPE_STRING)
+    return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                  "faltou o nome da interface");
+  const char* interface_crua = nullptr;
+  dbus_message_iter_get_basic(&leitor, &interface_crua);
+  const std::string interface(interface_crua != nullptr ? interface_crua : "");
+
+  if (membro == "GetAll") {
+    if (interface != kRaiz && interface != kTocador)
+      return dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_INTERFACE,
+                                    "esta Casa não serve essa interface");
+    DBusMessage* resposta = dbus_message_new_method_return(pedido);
+    if (resposta != nullptr) responde_get_all(resposta, interface, punho.tocador);
+    return resposta;
+  }
+
+  dbus_message_iter_next(&leitor);
+  if (dbus_message_iter_get_arg_type(&leitor) != DBUS_TYPE_STRING)
+    return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                  "faltou o nome da propriedade");
+  const char* nome_cru = nullptr;
+  dbus_message_iter_get_basic(&leitor, &nome_cru);
+  const std::string nome(nome_cru != nullptr ? nome_cru : "");
+
+  if (membro == "Get") {
+    DBusMessage* resposta = dbus_message_new_method_return(pedido);
+    if (resposta == nullptr) return nullptr;
+    DBusMessageIter fóra;
+    dbus_message_iter_init_append(resposta, &fóra);
+    if (escreve_propriedade(&fóra, interface, nome, punho.tocador)) return resposta;
+    // Propriedade que não ha: desfaz-se a resposta meia e manda-se erro NOMEADO.
+    dbus_message_unref(resposta);
+    return dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_PROPERTY,
+                                  "esta Casa não tem essa propriedade");
+  }
+
+  if (membro == "Set") {
+    // SÓMENTE o volume se põe, que é o unico `readwrite` da introspecção. Aceitar
+    // outro faria a Casa mentir sobre o que a introspecção promette.
+    if (interface != kTocador || nome != "Volume")
+      return dbus_message_new_error(pedido, DBUS_ERROR_PROPERTY_READ_ONLY,
+                                    "sómente o volume se põe");
+    dbus_message_iter_next(&leitor);
+    DBusMessageIter dentro;
+    if (dbus_message_iter_get_arg_type(&leitor) != DBUS_TYPE_VARIANT)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o volume ha de vir n'uma variante");
+    dbus_message_iter_recurse(&leitor, &dentro);
+    if (dbus_message_iter_get_arg_type(&dentro) != DBUS_TYPE_DOUBLE)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o volume é um duplo de zero a um");
+    double valor = 0.0;
+    dbus_message_iter_get_basic(&dentro, &valor);
+    punho.tocador.volume(volume_para_porcento(valor));
+    return dbus_message_new_method_return(pedido);
+  }
+  return dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_METHOD,
+                                "esta Casa não conhece esse metodo");
+}
+
+}  // namespace
+
 }  // namespace mysong::api
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
