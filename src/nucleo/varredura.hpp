@@ -34,6 +34,19 @@
 
 namespace mysong::nucleo {
 
+// O PROGRESSO da corrida. Cada campo existe para uma pergunta que o operador ou
+// a prova ha de fazer, e nenhum é ornamento: `lidas` contra `reaproveitadas` é
+// como se prova que a segunda corrida não releu etiqueta alguma.
+struct Progresso {
+  std::size_t vistas = 0;            // arquivos considerados
+  std::size_t lidas = 0;             // etiquetas abertas por taglib
+  std::size_t reaproveitadas = 0;    // linhas copiadas do índice antigo
+  std::size_t recusadas = 0;         // extensão alheia, ou não é audio
+  std::size_t desaparecidas = 0;     // sumiu entre listar e ler
+  std::size_t ligacoes_saltadas = 0; // directorio symbólico, que não se desce
+  std::size_t raizes_falhadas = 0;   // ausente, ou sem permissão
+};
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
