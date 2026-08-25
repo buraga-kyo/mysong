@@ -80,5 +80,21 @@ TEST_CASE("a pagina de embutir é a que se pede, e sómente com identificador") 
   CHECK(nu::url_do_embed("").empty());
 }
 
+TEST_CASE("a leitura tira as faixas de dentro do embrulho, na ordem da lista") {
+  const nu::Catalogo lida = nu::le_catalogo(kPagina);
+  CHECK(lida.nome == "Today’s Top Hits");
+  // TRES no corpo, e DUAS sahem: a terceira não tem titulo, e sem titulo não se
+  // pode buscar cousa alguma.
+  REQUIRE(lida.faixas.size() == 2);
+  CHECK(lida.faixas[0].titulo == "Loser");
+  CHECK(lida.faixas[0].artista == "Tame Impala");
+  CHECK(lida.faixas[0].duracao_ms == 223069);
+  CHECK(lida.faixas[0].numero == 1);
+  CHECK(lida.faixas[1].titulo == "hate that i made you love me");
+  // TRES, e não dous: a ordem é a da LISTA, e a do meio, recusada, não empurra
+  // numero algum para traz. É por este numero que a etiqueta grava a faixa.
+  CHECK(lida.faixas[1].numero == 3);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
