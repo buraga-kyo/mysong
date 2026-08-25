@@ -109,5 +109,23 @@ TEST_CASE("o objecto ANINHADO não engana a leitura dos campos da faixa") {
   CHECK(lida.faixas[1].numero == 3);
 }
 
+TEST_CASE("chave de FUNDO DOUS não vira campo da faixa") {
+  // Objecto construido de proposito, e NÃO recortado: o Spotify de hoje não põe
+  // `title` dentro de `audioPreview`. Mas a promessa d'esta leitura é o fundo UM, e
+  // promessa que a bateria não afere é promessa que se perde na primeira mudança da
+  // pagina d'elles.
+  //
+  // O aninhado vem ANTES do de fóra, e é isso que faz o caso valer: vindo depois,
+  // uma leitura que buscasse em qualquer fundo acharia primeiro o de fóra e daria a
+  // resposta certa por accidente.
+  constexpr char kAninhado[] =
+      R"({"trackList":[{"audioPreview":{"title":"De dentro","duration":9999},)"
+      R"("title":"De fóra","subtitle":"Alguem","duration":1000}]})";
+  const nu::Catalogo lida = nu::le_catalogo(kAninhado);
+  REQUIRE(lida.faixas.size() == 1);
+  CHECK(lida.faixas[0].titulo == "De fóra");
+  CHECK(lida.faixas[0].duracao_ms == 1000);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
