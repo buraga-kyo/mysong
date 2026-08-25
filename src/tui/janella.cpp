@@ -144,7 +144,8 @@ constexpr int ACHADOS_POR_BUSCA = 15;
 // no fio da tela, e cadeia lida enquanto outro fio a muta não é engano benigno.
 std::string assignatura_do_visivel(nucleo::Tocador& tocador,
                                    const std::string& recado, bool mostra_letra,
-                                   bool varrida, unsigned long geracao) {
+                                   bool varrida, unsigned long geracao,
+                                   bool video) {
   std::string marca;
   marca.reserve(128);
   marca += std::to_string(static_cast<int>(tocador.estado()));
@@ -177,6 +178,10 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   // nada apparecia até o operador carregar n'uma tecla por acaso.
   marca += ':';
   marca += std::to_string(geracao);
+  // A janella do video acaba POR SI quando a faixa acaba, ou quando o operador a
+  // fecha com o rato. Nenhuma d'essas duas cousas é tecla, donde sem esta linha a
+  // trilha continuaria a dizer «video: tal» depois de a janella se ter ido.
+  marca += video ? 'V' : '.';
   return marca;
 }
 
@@ -496,6 +501,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     if (navegador.rol_corrente() != 0 &&
         navegador.secao() != tui::Secao::NoRol)
       trilha += "   [\ue0b1 " + navegador.nome_corrente() + "]";
+    // A janella do video diz-se enquanto ella viver. Deixando de viver, a linha
+    // cala-se por si: é a pergunta ao processo que o diz, e não bandeira nossa que
+    // pudesse ficar a mentir.
+    if (projector.rodando())
+      trilha += "   [video: " + projector.faixa().filename().string() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
     if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
@@ -756,7 +766,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       // tela escreve zero: é a correcção da issue #48.
       const std::string agora = assignatura_do_visivel(
           tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
-          mostra_letra.load(), varrida.load(), correio.geracao());
+          mostra_letra.load(), varrida.load(), correio.geracao(),
+          projector.rodando());
       if (agora != ultima_assignatura) {
         ultima_assignatura = agora;
         tela.PostEvent(ftxui::Event::Custom);
