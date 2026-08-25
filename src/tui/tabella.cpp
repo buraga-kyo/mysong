@@ -143,6 +143,52 @@ ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas
   return ftxui::vbox(std::move(pintadas));
 }
 
+ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
+                                std::size_t collunas, std::size_t linhas) {
+  if (collunas == 0 || linhas == 0) return ftxui::text("");
+  if (capa.achada) {
+    // Cada corrida vira UM elemento com a sua tinta. Não se passa a cadeia crua do
+    // chafa: o FTXUI contaria os octetos do escape como LARGURA, e a capa esmagaria a
+    // barra lateral e a tabella. Medi-o, e está registrado no tractado da capa.
+    std::vector<ftxui::Element> pintadas;
+    pintadas.reserve(capa.linhas.size());
+    for (const std::vector<nucleo::Corrida>& linha : capa.linhas) {
+      std::vector<ftxui::Element> corridas;
+      corridas.reserve(linha.size());
+      for (const nucleo::Corrida& corrida : linha) {
+        ftxui::Element pedaco = ftxui::text(corrida.texto);
+        if (corrida.r_frente >= 0)
+          pedaco = pedaco | ftxui::color(ftxui::Color::RGB(
+                                corrida.r_frente, corrida.g_frente,
+                                corrida.b_frente));
+        if (corrida.r_fundo >= 0)
+          pedaco = pedaco | ftxui::bgcolor(ftxui::Color::RGB(
+                                corrida.r_fundo, corrida.g_fundo,
+                                corrida.b_fundo));
+        corridas.push_back(std::move(pedaco));
+      }
+      pintadas.push_back(ftxui::hbox(std::move(corridas)));
+    }
+    return ftxui::vbox(std::move(pintadas));
+  }
+
+  // O MARCADOR: uma nota musical no meio de um quadro de orla, com os tokens d'esta
+  // Casa. Não é enfeite: album sem capa mostra que NÃO TEM, e não um buraco que o
+  // operador tomaria por falha da tela.
+  std::vector<ftxui::Element> pintadas;
+  const std::size_t meio = linhas / 2;
+  for (std::size_t l = 0; l < linhas; ++l) {
+    if (l == meio) {
+      const std::size_t esquerda = collunas > 1 ? (collunas - 1) / 2 : 0;
+      pintadas.push_back(pinta(std::string(esquerda, ' ') + "\u266b",
+                               tokens::text_faint));
+    } else {
+      pintadas.push_back(pinta(std::string(collunas, ' '), tokens::inset));
+    }
+  }
+  return ftxui::vbox(std::move(pintadas)) | ftxui::border;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
