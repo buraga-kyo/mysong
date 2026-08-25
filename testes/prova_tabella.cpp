@@ -123,5 +123,26 @@ TEST_CASE("as duas linhas sahem com o MESMO comprimento, e não transbordam") {
   CHECK(escriptas(linhas[0]) <= 60);
 }
 
+TEST_CASE("sem autor algum a columna do canal não se abre, e o titulo fica largo") {
+  Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  // Titulo de setenta e cinco caracteres. Sem columna de canal, o que sobra para
+  // elle é maior, e por isso corta-se mais tarde: é o que este caso lê.
+  const std::string comprido(75, 'x');
+  navegador.mostra_rede({{comprido, "https://y/1", 0, 100, {}}});
+  const std::vector<std::string> sem = pintar(navegador, 1, 60);
+  navegador.mostra_rede({{comprido, "https://y/1", 0, 100, "Canal"}});
+  const std::vector<std::string> com = pintar(navegador, 1, 60);
+  const auto quantos_x = [](const std::vector<std::string>& onde) {
+    std::size_t conta = 0;
+    for (const std::string& linha : onde)
+      for (const char c : linha)
+        if (c == 'x') ++conta;
+    return conta;
+  };
+  CHECK(quantos_x(sem) > quantos_x(com));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
