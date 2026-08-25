@@ -269,5 +269,30 @@ TEST_CASE("acervo vazio dá vista vazia, e ordem alguma estoura") {
   CHECK(navegador.vista().empty());
 }
 
+// A ROLAGEM, com os alvos escriptos á mão. Cem linhas n'uma tabella de dez.
+TEST_CASE("a rolagem rola o menos que baste, e não perde a posição") {
+  // Cabendo tudo, fatia alguma se rola.
+  CHECK(tui::primeira_a_mostrar(0, 5, 10, 0) == 0u);
+  CHECK(tui::primeira_a_mostrar(4, 5, 10, 0) == 0u);
+  // Descendo dentro da fatia, ella não se mexe.
+  CHECK(tui::primeira_a_mostrar(9, 100, 10, 0) == 0u);
+  // Passando UMA linha do fundo, rola-se UMA linha, e não meia tela.
+  CHECK(tui::primeira_a_mostrar(10, 100, 10, 0) == 1u);
+  CHECK(tui::primeira_a_mostrar(11, 100, 10, 1) == 2u);
+  // Subindo acima do topo, rola-se para o eleito.
+  CHECK(tui::primeira_a_mostrar(30, 100, 10, 40) == 30u);
+  // Voltando ao logar de antes, devolve-se a MESMA fatia.
+  CHECK(tui::primeira_a_mostrar(45, 100, 10, 40) == 40u);
+  // No fim da lista, a fatia encosta-se ao fim e não passa d'elle.
+  CHECK(tui::primeira_a_mostrar(99, 100, 10, 0) == 90u);
+  CHECK(tui::primeira_a_mostrar(99, 100, 10, 95) == 90u);
+  // A lista encurtou debaixo da fatia: ella encosta-se ao fim.
+  CHECK(tui::primeira_a_mostrar(0, 12, 10, 40) == 0u);
+  CHECK(tui::primeira_a_mostrar(11, 12, 10, 40) == 2u);
+  // As duas degenerescencias: altura zero e lista vazia.
+  CHECK(tui::primeira_a_mostrar(0, 100, 0, 7) == 0u);
+  CHECK(tui::primeira_a_mostrar(0, 0, 10, 7) == 0u);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
