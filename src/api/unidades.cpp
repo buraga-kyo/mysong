@@ -7,8 +7,10 @@
 // DOMÍNIO ......... escalares dos dous lados.
 // CONTRA-DOMÍNIO .. escalares aparados.
 // INVARIANTE ...... funcção alguma lança, e nenhuma devolve fóra do arco.
-// Q.E.D. .......... `grep dbus` neste arquivo sahe vazio, e é o que faz a promessa
-//                   verificavel em vez de dita.
+// Q.E.D. .......... `grep "#include.*dbus"` neste arquivo sahe VAZIO, e é o que faz a
+//                   promessa verificavel em vez de dita. Escrevi primeiro «grep dbus»,
+//                   e essa affirmação era falsa: o proprio commentario tras a palavra.
+//                   Affirmação sobre um grep ha de ser o grep que se corre.
 // ══════════════════════════════════════════════════════════════════════════
 #include "api/unidades.hpp"
 
