@@ -41,6 +41,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "nucleo/analisador.hpp"
+#include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
@@ -143,6 +144,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
     case tui::Verbo::Volta:
     case tui::Verbo::AbreBusca:
     case tui::Verbo::Varre:
+    case tui::Verbo::AbreBaixa:
       break;
   }
 }
@@ -193,8 +195,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   bool sahir = false;
-  bool digitando = false;
+  // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
+  // booleanos: dous booleanos admittem o estado «ambos», que não existe.
+  enum class Digita { Nada, Busca, Url } digita = Digita::Nada;
   std::string termo_em_curso;
+  std::string aviso_da_baixa;
   std::size_t primeira_linha = 0;
 
   std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
@@ -216,9 +221,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
-    if (digitando) trilha = "/" + termo_em_curso;
+    if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
+    else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
+    if (!aviso_da_baixa.empty()) trilha += "   " + aviso_da_baixa;
 
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
     return ftxui::vbox({
@@ -234,7 +241,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
-                           " · espaço pausa · n/p faixa · q sahe") |
+                           " · b baixa · espaço pausa · n/p faixa · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -243,15 +250,40 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
-    if (digitando) {
+    if (digita != Digita::Nada) {
       if (tecla == ftxui::Event::Escape) {
-        digitando = false;
+        digita = Digita::Nada;
         termo_em_curso.clear();
         return true;
       }
       if (tecla == ftxui::Event::Return) {
-        digitando = false;
-        navegador.filtra(termo_em_curso);
+        const Digita era = digita;
+        digita = Digita::Nada;
+        if (era == Digita::Busca) {
+          navegador.filtra(termo_em_curso);
+        } else if (!termo_em_curso.empty()) {
+          // A baixa corre em fio SOLTO, e de proposito: ella pode levar minutos,
+          // e o operador ha de continuar a ouvir o que já tem. O fio não toca a
+          // tela; deixa recado no aviso, e a tela lê-o.
+          const std::string url = termo_em_curso;
+          aviso_da_baixa = "a baixar...";
+          std::thread([&aviso_da_baixa, &varrida, &recarregado, url, banco] {
+            std::filesystem::path ficou;
+            nucleo::Pedido pedido;
+            pedido.url = url;  // e o resto vem da rede, que o operador não disse
+            const nucleo::Colheita fim =
+                nucleo::baixa(raiz_do_acervo(), pedido, &ficou);
+            aviso_da_baixa = nucleo::razao_da_colheita(fim);
+            if (fim == nucleo::Colheita::Colhido) {
+              varrida.store(false);  // ha faixa nova: varre-se outra vez
+              recarregado = false;
+              nucleo::Varredura outra(banco, {raiz_do_acervo()});
+              while (outra.passo()) {
+              }
+              varrida.store(true);
+            }
+          }).detach();
+        }
         return true;
       }
       if (tecla == ftxui::Event::Backspace) {
@@ -275,7 +307,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       case tui::Verbo::AoFim: navegador.ao_fim(); return true;
       case tui::Verbo::Volta: navegador.volta(); return true;
       case tui::Verbo::AbreBusca:
-        digitando = true;
+        digita = Digita::Busca;
+        termo_em_curso.clear();
+        return true;
+      case tui::Verbo::AbreBaixa:
+        digita = Digita::Url;
         termo_em_curso.clear();
         return true;
       case tui::Verbo::Varre:
