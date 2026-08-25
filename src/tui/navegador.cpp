@@ -78,6 +78,7 @@ void Navegador::refaz_vista() {
       // É d'aqui que vem a innocuidade de recarrega() n'esta secção: não havendo
       // consulta ao acervo n'este ramo, a varredura que conclua no meio de o
       // operador escolher um achado refaz a vista IDENTICA, e não lhe apaga a lista.
+      // Guarda apartada houve, e sahiu: a mutação que a tirava sobrevivia á bateria.
       for (const Linha& achado : rede_)
         if (contem_sem_caixa(achado.texto, termo_)) vista_.push_back(achado);
       break;
@@ -140,6 +141,22 @@ std::string Navegador::caminho_eleito() const {
   return vista_[eleito_].chave;
 }
 
+void Navegador::mostra_rede(std::vector<Linha> achados) {
+  rede_ = std::move(achados);
+  secao_ = Secao::Rede;
+  // A trilha vae-se: ella dizia por onde se andou no acervo, e a rede não está no
+  // acervo. Deixá-la de pé faria o titulo da tabella mentir sobre a origem da lista.
+  trilha_.clear();
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+}
+
+std::string Navegador::url_eleita() const {
+  if (secao_ != Secao::Rede || vista_.empty()) return {};
+  return vista_[eleito_].chave;
+}
+
 bool Navegador::entra() {
   if (vista_.empty()) return false;
   const Linha degrau = vista_[eleito_];  // CÓPIA: refaz_vista limpa a vista
@@ -176,6 +193,9 @@ bool Navegador::volta() {
       break;
     case Secao::Albuns:
     case Secao::Busca:
+      trilha_.clear();
+      secao_ = Secao::Artistas;
+      break;
     case Secao::Rede:
       trilha_.clear();
       secao_ = Secao::Artistas;

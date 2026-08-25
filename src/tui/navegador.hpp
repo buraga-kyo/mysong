@@ -84,6 +84,16 @@ class Navegador {
   // volta — sobe um degrau. Falso quando já se está no alto, e ahi nada muda.
   bool volta();
 
+  // mostra_rede — põe na tela uma lista que veio de FÓRA da bibliotheca, e passa á
+  // secção Rede. A lista guarda-se, e é ella a fonte da vista enquanto se estiver
+  // n'esta secção: o filtro applica-se sobre ella, como nas outras.
+  void mostra_rede(std::vector<Linha> achados);
+
+  // url_eleita — a URL da linha eleita, e SÓMENTE estando-se na Rede. Existe á parte
+  // de caminho_eleito porque as duas cousas não se podem confundir: uma é caminho no
+  // disco, e a outra é endereço na rede. Confundi-las poria uma URL na fila do motor.
+  std::string url_eleita() const;
+
   // O filtro. Cadeia vazia limpa-o. Filtra o que está Á VISTA, e não o acervo:
   // é o que o mockup mostra, e é o que o operador espera de uma barra de busca
   // que vive por cima de uma lista.
