@@ -366,5 +366,30 @@ TEST_CASE("abandonar a meio conserva o índice anterior, e nada sobra") {
   CHECK(vizinhos == 1u);
 }
 
+// Múltiplas raízes: as boas entram TODAS, e as ruins contam-se sem abortar.
+TEST_CASE("raiz ausente e raiz sem permissão contam-se, e não abortam") {
+  const Cova cova;
+  const std::filesystem::path outra = cova.raiz() / "acervo2";
+  const std::filesystem::path trancada = cova.raiz() / "trancada";
+  faz_wav(cova.acervo() / "A" / "B" / "01 - Um.wav", 1);
+  faz_wav(outra / "C" / "D" / "01 - Dous.wav", 1);
+  std::filesystem::create_directories(trancada / "E");
+  faz_wav(trancada / "E" / "01 - Tres.wav", 1);
+  std::filesystem::permissions(trancada, std::filesystem::perms::none);
+
+  nu::Varredura varredura(cova.banco(),
+                          {cova.acervo(), outra, cova.raiz() / "nao-existe",
+                           trancada});
+  corre_ate_o_fim(varredura);
+  CHECK(varredura.desfecho() == nu::Desfecho::Concluido);
+  CHECK(varredura.progresso().raizes_falhadas >= 1u);
+  // As DUAS raízes boas entraram inteiras, que é o que importa.
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK(livraria.total() == 2u);
+  CHECK(livraria.busca_faixa("Um").size() == 1u);
+  CHECK(livraria.busca_faixa("Dous").size() == 1u);
+  std::filesystem::permissions(trancada, std::filesystem::perms::owner_all);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
