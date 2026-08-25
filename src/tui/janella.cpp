@@ -21,7 +21,11 @@
 //                   e adivinhar; e a decisão de abrir depende de UM predicado
 //                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
+#include <chrono>
 #include <iostream>
+#include <optional>
+#include <thread>
+#include <vector>
 #include <string>
 #include <string_view>
 
@@ -80,27 +84,40 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
   }
 }
 
-// erguer_tocador — o tocador de hoje, palavra por palavra como estava no main.
-// Extrahe-se para funcção propria porque agora ha caminho que NÃO chega aqui: o
-// impedimento pinta outra tela e sahe, e convem que o olho veja num relance
-// que aquelle caminho não toca nesta.
-int erguer_tocador() {
-  auto tela = ftxui::ScreenInteractive::FitComponent();
-  auto pintor = ftxui::Renderer([] {
-    return ftxui::vbox({
-               ftxui::text(std::string(mysong::nucleo::marca())) | ftxui::bold,
-               ftxui::text("tecle q para sahir") | ftxui::dim,
-           }) |
-           ftxui::border;
-  });
-  auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
-    if (tecla != ftxui::Event::Character('q')) return false;
-    tela.Exit();
-    return true;
-  });
-  tela.Loop(janella);
-  return 0;
-}
+// A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
+// o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
+// fita tremer por diff de buffer. O risco do tremor está declarado no plano, e
+// esta é a primeira defesa contra elle.
+constexpr int MILESIMOS_DO_QUADRO = 50;
+
+// erguer_tocador — o laço de verdade. Ergue o motor, o tocador e o analisador,
+// enche a fila com o que veio da linha de commando, e pinta a barra de baixo com
+// o espectro por cima. Esta funcção NÃO se prova em bateria: ella abre terminal,
+// abre som e depende de relogio. O que se prova são as duas peças que ella usa,
+// e é por isso que ellas vivem fóra d'aqui.
+int erguer_tocador(const std::vector<std::string>& faixas) {
+  std::string razao;
+  std::optional<nucleo::MotorMpv> motor = nucleo::MotorMpv::abrir(&razao);
+  if (!motor) {
+    // Motor que não abre não derruba o programa: diz o que houve e sahe. A
+    // fabrica devolve um vasio, e não um objecto meio-aberto a que se tivesse de
+    // perguntar se presta.
+    std::cerr << "mysong: a machina de som não abriu: " << razao << "\n";
+    return 1;
+  }
+
+  nucleo::Tocador tocador(*motor);
+  nucleo::Analisador analisador;
+  if (analisador.vivo()) {
+    tocador.observa(analisador);
+  } else {
+    // Espectro é ornamento, e não requisito: sem elle o tocador toca. Diz-se o
+    // que falta, uma vez, e segue-se.
+    std::cerr << "mysong: sem espectro: " << analisador.razao() << "\n";
+  }
+
+  for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
+  if (!tocador.fila().vazia()) tocador.tocar_corrente();
 
 // recusar_e_sahir — pinta a tela dos requisitos, espera tecla e sahe com codigo
 // differente de zero. É a UNICA cousa que apparece havendo impedimento: o
