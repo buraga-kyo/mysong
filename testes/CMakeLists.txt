@@ -106,3 +106,8 @@ target_sources(mysong_testes PRIVATE prova_correio.cpp)
 # ─── A PROVA DAS LISTAS (issue #10) ─────────────────────────────────────────
 # Corre em directorio temporario: o caminho do banco entra por parâmetro.
 target_sources(mysong_testes PRIVATE prova_rol.cpp)
+
+# ─── A PROVA DO PROJECTOR (issue #17) ───────────────────────────────────────
+# Janella alguma se abre: o que se afere é o que se HA DE correr e o que se HA DE
+# mandar. Dous casos erguem processo, e nenhum d'elles abre video.
+target_sources(mysong_testes PRIVATE prova_video.cpp)

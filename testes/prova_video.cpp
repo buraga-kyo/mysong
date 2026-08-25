@@ -45,5 +45,23 @@ int Cova::semente_ = 0;
 
 }  // namespace
 
+TEST_CASE("o juizo do video é pela extensão, e a lista é fechada") {
+  CHECK(nu::tem_video("/a/b/filme.mkv"));
+  CHECK(nu::tem_video("/a/b/filme.mp4"));
+  CHECK(nu::tem_video("/a/b/filme.webm"));
+  // A CAIXA não importa: disco tras nome escripto de qualquer modo.
+  CHECK(nu::tem_video("/a/b/FILME.MKV"));
+  CHECK(nu::tem_video("/a/b/Filme.Mp4"));
+  // Audio puro NÃO abre janella. É esta a assertiva que impede o operador de ver
+  // janella preta a tocar um mp3.
+  CHECK_FALSE(nu::tem_video("/a/b/faixa.mp3"));
+  CHECK_FALSE(nu::tem_video("/a/b/faixa.flac"));
+  CHECK_FALSE(nu::tem_video("/a/b/faixa.opus"));
+  CHECK_FALSE(nu::tem_video("/a/b/faixa.ogg"));
+  // Sem extensão alguma tambem não: lista fechada quer dizer fechada.
+  CHECK_FALSE(nu::tem_video("/a/b/faixa"));
+  CHECK_FALSE(nu::tem_video(""));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
