@@ -54,5 +54,18 @@ struct Rol {
 // sem nome não se pode eleger na tela.
 std::string saneia_nome_de_rol(std::string_view crua);
 
+// O ROLEIRO. Abre para LER E ESCREVER, e cria o banco não havendo nenhum: a
+// primeira lista do operador não ha de falhar por falta de arquivo.
+class Roleiro {
+ public:
+  explicit Roleiro(std::filesystem::path banco);
+  ~Roleiro();
+
+  Roleiro(const Roleiro&) = delete;
+  Roleiro& operator=(const Roleiro&) = delete;
+
+  bool aberto() const noexcept;
+  int versao() const noexcept;
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
