@@ -33,7 +33,13 @@ inline constexpr double PASSO_DA_BUSCA = 5.0;
 // O DEGRAU DO VOLUME, em pontos percentuaes.
 inline constexpr int DEGRAU_DO_VOLUME = 5;
 
-enum class Verbo { Nada, Pausar, Retomar, Proxima, Anterior, Buscar, Volume, Sahir };
+enum class Verbo {
+  Nada, Pausar, Retomar, Proxima, Anterior, Buscar, Volume, Sahir,
+  // Os da navegação (issue #9). Entram no MESMO enum, e não n'outro: a tecla é
+  // uma, e ter duas taboadas a olhar a mesma tecla faria uma delas ganhar por
+  // ordem de chamada, que é decisão que ninguem escreveu.
+  Desce, Sobe, AoPrincipio, AoFim, Entra, Volta, AbreBusca, Varre,
+};
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),
 // e nos outros verbos vale zero de proposito: ordem que não tem alvo não deve
@@ -44,7 +50,13 @@ struct Ordem {
 };
 
 // ordem_da_tecla — a taboada. Não toca no tocador: devolve o que se HA DE fazer.
-Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto);
+//
+// `digitando` diz que a barra de busca está aberta. Estando-o, TECLA ALGUMA da
+// taboada vale: o `n` que trocava de faixa passa a ser a letra `n` do termo. Sem
+// esta guarda, buscar por «nova» trocaria de faixa duas vezes e abriria a busca
+// n'outro logar, que é o defeito classico das TUI que esquecem o modo.
+Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
+                     bool digitando = false);
 
 }  // namespace mysong::tui
 
