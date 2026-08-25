@@ -31,14 +31,54 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/analisador.hpp"
+#include "nucleo/fila.hpp"
 #include "nucleo/marca.hpp"
+#include "nucleo/motor.hpp"
+#include "nucleo/tocador.hpp"
 #include "nucleo/sonda.hpp"
+#include "tui/commando.hpp"
+#include "tui/espectro.hpp"
 #include "tui/tela_requisitos.hpp"
+#include "tui/transporte.hpp"
 
 namespace nucleo = mysong::nucleo;
 namespace tui = mysong::tui;
 
 namespace {
+
+// retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
+// pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
+// poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
+tui::Retracto retracto_do(nucleo::Tocador& tocador) {
+  tui::Retracto retracto;
+  retracto.estado = tocador.estado();
+  retracto.posicao = tocador.posicao();
+  retracto.duracao = tocador.duracao();
+  retracto.volume = tocador.volume();
+  const nucleo::Fila& fila = tocador.fila();
+  retracto.tamanho = fila.tamanho();
+  if (!fila.vazia()) {
+    retracto.indice = fila.indice();
+    retracto.titulo = std::string(fila.corrente());
+  }
+  return retracto;
+}
+
+// cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
+// na taboada acende aviso do compilador aqui, e não passa calado.
+void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
+  switch (ordem.verbo) {
+    case tui::Verbo::Nada: break;
+    case tui::Verbo::Pausar: tocador.pausar(); break;
+    case tui::Verbo::Retomar: tocador.retomar(); break;
+    case tui::Verbo::Proxima: tocador.proxima(); break;
+    case tui::Verbo::Anterior: tocador.anterior(); break;
+    case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
+    case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
+    case tui::Verbo::Sahir: sahir = true; break;
+  }
+}
 
 // erguer_tocador — o tocador de hoje, palavra por palavra como estava no main.
 // Extrahe-se para funcção propria porque agora ha caminho que NÃO chega aqui: o
