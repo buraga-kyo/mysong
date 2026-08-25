@@ -91,6 +91,10 @@ const std::vector<Requisito>& requisitos();
 // nem tela, nem sahida do programa. Nunca lança pela borda.
 Relatorio sondar(const Inquerito& inquerito);
 
+// Diz se a forçagem nomeia esta CHAVE da taboa. Declarada aqui por a taboa da
+// libmpv a consultar: fingida a ausencia, nem a sonda nem o motor a contradizem.
+bool nomeado_na_forcagem(std::string_view chave);
+
 // O inquerito que consulta o systema de verdade, e o UNICO logar d'esta obra a
 // ler variavel de ambiente: MYSONG_SONDA_FORCA nomeia, por chave curta e
 // separadas por virgula, os requisitos que se hão de ter por ausentes.
