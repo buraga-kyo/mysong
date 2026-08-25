@@ -185,6 +185,11 @@ target_sources(mysong_core PRIVATE src/tui/transporte.cpp src/tui/commando.cpp)
 # ftxui::dom; esta linha segue o precedente, e não abre porta nova.
 target_link_libraries(mysong_core PUBLIC ftxui::component)
 
+# ─── A VARREDURA DO ACERVO (issue #34) ──────────────────────────────────────
+# Entra por target_sources, ACRESCENTANDO linha. Dependencia nova alguma se
+# cobra: a taglib e o sqlite3 já entraram com a bibliotheca na issue #8.
+target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
