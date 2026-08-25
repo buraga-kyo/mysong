@@ -44,29 +44,19 @@ TEST_CASE("as tres teclas de verbo simples chegam por si") {
         tui::Verbo::Sahir);
 }
 
-// Tecla que não é do mockup NÃO chega ao tocador. É o caso que prova a
-// negativa, e ella importa tanto como a positiva: sem elle, uma taboada que
-// devolvesse Pausar para tudo passaria os casos de cima.
-TEST_CASE("tecla que não é do mockup dá ordem nenhuma") {
+// Tecla que não tem officio NÃO produz ordem. A lista encurtou com a issue #9,
+// que deu sentido ás setas, ao Return e ao Escape; o que sobra são as letras sem
+// officio, e ellas ficam aqui de propósito, para que uma taboada que devolvesse
+// verbo para tudo não passasse calada.
+TEST_CASE("tecla sem officio dá ordem nenhuma") {
   const tui::Retracto retracto = tocando();
-  for (const char letra : {'a', 'z', 'N', 'P', 'Q', '1', '/', '*'})
+  for (const char letra : {'a', 'z', 'N', 'P', 'Q', '1', '*'})
     CHECK(tui::ordem_da_tecla(ftxui::Event::Character(letra), retracto).verbo ==
           tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowUp, retracto).verbo ==
-        tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowDown, retracto).verbo ==
-        tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::Return, retracto).verbo ==
-        tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::Escape, retracto).verbo ==
-        tui::Verbo::Nada);
   CHECK(tui::ordem_da_tecla(ftxui::Event::Tab, retracto).verbo ==
         tui::Verbo::Nada);
 }
 
-// Os alvos aqui estão escriptos á mão em SEGUNDOS, e não em passos: dizer
-// «posicao mais PASSO_DA_BUSCA» seria perguntar á obra qual o passo para depois
-// conferir que ella o usou, e a assertiva não poderia falhar.
 TEST_CASE("as setas buscam pelo passo, e aparam-se nas duas bordas") {
   const tui::Ordem deante =
       tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando(30.0, 100.0));
