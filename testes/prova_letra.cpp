@@ -117,5 +117,25 @@ TEST_CASE("o lrc analysa-se, com carimbo duplo e cabeçalho saltado") {
   CHECK(linhas[4].texto == "So very special");
 }
 
+TEST_CASE("o lrc aceita os dous separadores dos centesimos") {
+  const std::vector<nu::LinhaDaLetra> ponto = nu::analysa_lrc("[01:02.50] a\n");
+  REQUIRE(ponto.size() == 1u);
+  CHECK(ponto[0].tempo == doctest::Approx(62.5));
+  // Dous pontos: ha gerador que o usa, e recusar faria a letra inteira sahir vazia.
+  const std::vector<nu::LinhaDaLetra> dous = nu::analysa_lrc("[01:02:50] a\n");
+  REQUIRE(dous.size() == 1u);
+  CHECK(dous[0].tempo == doctest::Approx(62.5));
+  // Sem centesimos.
+  const std::vector<nu::LinhaDaLetra> curto = nu::analysa_lrc("[01:02] a\n");
+  REQUIRE(curto.size() == 1u);
+  CHECK(curto[0].tempo == doctest::Approx(62.0));
+  // Lixo que se salta sem estourar.
+  CHECK(nu::analysa_lrc("").empty());
+  CHECK(nu::analysa_lrc("[").empty());
+  CHECK(nu::analysa_lrc("[00:").empty());
+  CHECK(nu::analysa_lrc("[abc] a").empty());
+  CHECK(nu::analysa_lrc("[00:11.00").empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
