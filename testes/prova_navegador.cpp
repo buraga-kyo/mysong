@@ -45,5 +45,43 @@ int Cova::semente_ = 0;
 
 }  // namespace
 
+namespace {
+
+nu::Faixa faz(const std::string& artista, const std::string& album,
+              const std::string& titulo, int numero) {
+  nu::Faixa faixa;
+  faixa.caminho = "/acervo/" + artista + "/" + album + "/" + titulo + ".mp3";
+  faixa.raiz = "/acervo";
+  faixa.artista = artista;
+  faixa.album = album;
+  faixa.titulo = titulo;
+  faixa.numero = numero;
+  faixa.duracao = 100 + numero;
+  return faixa;
+}
+
+// O ACERVO da prova, escripto Á MÃO aqui em cima para que os casos aferem a ORDEM
+// contra uma taboa que se lê, e não contra o que a obra devolveu.
+//   Ada Lovelace / Máquina  : 3 Tear, 7 Nota G
+//   Ada Lovelace / Notas    : 1 Traducção
+//   Bach         / Cravo     : 2 Fuga
+bool enche(const std::filesystem::path& banco) {
+  nu::Escriba escriba(banco);
+  if (!escriba.aberto()) return false;
+  return escriba.grava(faz("Ada Lovelace", "Máquina", "Tear", 3)) &&
+         escriba.grava(faz("Ada Lovelace", "Máquina", "Nota G", 7)) &&
+         escriba.grava(faz("Ada Lovelace", "Notas", "Traducção", 1)) &&
+         escriba.grava(faz("Bach", "Cravo", "Fuga", 2)) &&
+         escriba.conclui();
+}
+
+std::vector<std::string> textos(const tui::Navegador& navegador) {
+  std::vector<std::string> fóra;
+  for (const tui::Linha& linha : navegador.vista()) fóra.push_back(linha.texto);
+  return fóra;
+}
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
