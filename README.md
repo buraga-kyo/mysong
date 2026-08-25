@@ -153,8 +153,23 @@ cmake --build build
 ## Como se roda
 
 ```sh
-./build/mysong        # tecle q para sahir
+./build/mysong                          # abre com a fila vazia
+./build/mysong faixa.mp3 outra.flac     # abre a tocar a primeira
+./build/mysong --sonda                  # so o diagnostico, em texto
 ```
+
+Nao ha varredura de acervo ainda (issue #34): por ora a fila entra pela linha de
+commando.
+
+### As teclas
+
+| tecla | o que faz |
+|---|---|
+| espaco | pausa tocando, retoma pausado |
+| `n` / `p` | faixa seguinte, faixa anterior |
+| seta direita / esquerda | busca cinco segundos para deante ou para tras |
+| `+` / `-` | volume, por degrau de cinco |
+| `q` | sahe |
 
 ## Como se roda a bateria de testes
 
