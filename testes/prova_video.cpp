@@ -145,5 +145,21 @@ TEST_CASE("todo desfecho da fita tem nome, e nenhum é o do vizinho") {
   CHECK(std::unique(ditos.begin(), ditos.end()) == ditos.end());
 }
 
+TEST_CASE("audio puro não abre fita alguma, e o projector fica quieto") {
+  Cova cova;
+  nu::Projector projector(cova.raiz());
+  CHECK(projector.abre("/a/b/faixa.mp3") == nu::Fita::SemVideo);
+  CHECK_FALSE(projector.rodando());
+  CHECK(projector.faixa().empty());
+  // Ordem a projector quieto devolve falso, e não estoura.
+  CHECK_FALSE(projector.pausar());
+  CHECK_FALSE(projector.retomar());
+  CHECK_FALSE(projector.buscar(10.0));
+  CHECK_FALSE(projector.volume(50));
+  // E soquete algum ficou no disco.
+  std::error_code erro;
+  CHECK(std::filesystem::is_empty(cova.raiz(), erro));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
