@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cctype>
 #include <limits>
 #include <string>
 
@@ -52,6 +53,29 @@ TEST_CASE("o volume vae e volta, aparado, e ARREDONDA na volta") {
   CHECK(ap::volume_para_porcento(0.499) == 50);
   CHECK(ap::volume_para_porcento(0.494) == 49);
   CHECK(ap::volume_para_porcento(std::numeric_limits<double>::quiet_NaN()) == 0);
+}
+
+TEST_CASE("o estado sahe nas tres cadeias que a especificação fixa") {
+  CHECK(ap::estado_do_mpris(nu::Estado::Tocando) == "Playing");
+  CHECK(ap::estado_do_mpris(nu::Estado::Pausado) == "Paused");
+  CHECK(ap::estado_do_mpris(nu::Estado::Parado) == "Stopped");
+}
+
+TEST_CASE("o trackid é caminho de objecto, e a fila vazia dá NoTrack") {
+  CHECK(ap::caminho_da_faixa(0, true) == "/br/us/braga/mysong/faixa/0");
+  CHECK(ap::caminho_da_faixa(17, true) == "/br/us/braga/mysong/faixa/17");
+  CHECK(ap::caminho_da_faixa(0, false) ==
+        "/org/mpris/MediaPlayer2/TrackList/NoTrack");
+  // Todo caminho principia por barra, e traz sómente o que o D-Bus admitte n'um
+  // caminho de objecto: letras, digitos, sublinhado e barra.
+  for (const bool ha : {true, false}) {
+    const std::string caminho = ap::caminho_da_faixa(3, ha);
+    REQUIRE_FALSE(caminho.empty());
+    CHECK(caminho.front() == '/');
+    for (const char letra : caminho)
+      CHECK((std::isalnum(static_cast<unsigned char>(letra)) != 0 ||
+             letra == '_' || letra == '/'));
+  }
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
