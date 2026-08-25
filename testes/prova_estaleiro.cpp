@@ -140,5 +140,32 @@ TEST_CASE("a bandeira da colheita consome-se, e a falha não a levanta") {
   CHECK(fim.colhidas == 0);
   CHECK(fim.ultima == "o yt-dlp não leu essa URL");
 }
+
+TEST_CASE("estaleiro quieto e sem historia não tem recado") {
+  CHECK(nu::texto_do_andamento(nu::Andamento{}).empty());
+  // E a razão sósinha tambem não é recado: «(baixado)» na linha da trilha, sem
+  // contador algum a acompanhá-la, não diz de quê.
+  nu::Andamento orfa;
+  orfa.ultima = "baixado";
+  CHECK(nu::texto_do_andamento(orfa).empty());
+}
+
+TEST_CASE("o recado diz sómente o que não é zero, e concorda o plural") {
+  nu::Andamento andamento;
+  andamento.em_curso = 2;
+  andamento.na_espera = 3;
+  CHECK(nu::texto_do_andamento(andamento) == "2 a baixar, 3 na espera");
+
+  nu::Andamento uma;
+  uma.colhidas = 1;
+  uma.ultima = "baixado";
+  CHECK(nu::texto_do_andamento(uma) == "1 colhida (baixado)");
+
+  nu::Andamento duas;
+  duas.colhidas = 2;
+  duas.falhadas = 1;
+  CHECK(nu::texto_do_andamento(duas) == "2 colhidas, 1 falhada");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
