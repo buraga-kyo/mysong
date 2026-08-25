@@ -47,6 +47,7 @@
 
 #include "nucleo/analisador.hpp"
 #include "nucleo/capa.hpp"
+#include "nucleo/catalogo.hpp"
 #include "nucleo/estaleiro.hpp"
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
@@ -277,6 +278,27 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // esta é a primeira defesa contra elle.
 constexpr int MILESIMOS_DO_QUADRO = 50;
 
+// encommenda_do_catalogo — o Pedido que uma faixa do catalogo dá. A URL vae VAZIA de
+// proposito: é isso que manda a aquisição buscar o audio por si e casá-lo pela
+// duração. E as etiquetas vêm todas do CATALOGO, que é a razão de esta tarefa
+// existir: o metadado do YouTube põe o nome do canal por artista.
+//
+// O ALBUM é o nome da LISTA, e fica declarado por que: a pagina publica de embutir
+// não publica album algum, e o disco de onde a faixa sahiu o Spotify não dá sem chave
+// nem conta. Nome de lista por album é o melhor que ha sem quebrar a fronteira.
+nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
+                                      const std::string& lista) {
+  nucleo::Pedido pedido;
+  pedido.artista = faixa.artista;
+  pedido.album = lista;
+  pedido.titulo = faixa.titulo;
+  pedido.numero = faixa.numero;
+  // Milesimos a segundos, arredondando ao mais proximo: truncar perderia meio segundo
+  // em cada faixa, e a tolerancia do casamento é de doze.
+  pedido.duracao = (faixa.duracao_ms + 500) / 1000;
+  return pedido;
+}
+
 // erguer_tocador — o laço de verdade. Ergue o motor, o tocador e o analisador,
 // enche a fila com o que veio da linha de commando, e pinta a barra de baixo com
 // o espectro por cima. Esta funcção NÃO se prova em bateria: ella abre terminal,
@@ -345,6 +367,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::string termo_da_rede;
   std::atomic<bool> pede_buscar{false};
 
+  // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
+  // vector de um: o gabarito do correio carrega vector, e um catalogo é uma cousa.
+  tui::CorreioDe<nucleo::Catalogo> correio_do_catalogo;
+  std::string url_da_lista;
+  std::atomic<bool> pede_catalogo{false};
+
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
   // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
@@ -362,7 +390,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // O NOME e a CONFIRMAÇÃO entram no mesmo enum: são dous destinos mais, e a razão
   // é a mesma que fez a Procura entrar aqui em vez de n'um booleano ao lado.
   enum class Digita {
-    Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma
+    Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma, Lista
   } digita = Digita::Nada;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
@@ -434,6 +462,35 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
   });
 
+  // O FIO DO CATALOGO, permanente como os outros, e por a mesma razão: fio erguido
+  // por cada pedido mexeria no vector de fios de dous lados.
+  ao_fundo.emplace_back([&] {
+    while (!sahir.load()) {
+      if (pede_catalogo.exchange(false)) {
+        std::string qual;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          qual = url_da_lista;
+        }
+        nucleo::Catalogo lido;
+        const bool falou = nucleo::busca_catalogo(qual, &lido);
+        // Tres desfechos, e tres recados. «Não é playlist do Spotify» e «a rede não
+        // respondeu» são cousas differentes, e dizer a mesma palavra ás duas faria o
+        // operador collar a mesma URL outra vez em vão.
+        std::string recado;
+        if (!falou)
+          recado = "não é playlist do Spotify, ou a rede não respondeu";
+        else if (lido.faixas.empty())
+          recado = "a lista veio vazia";
+        else
+          recado = std::to_string(lido.faixas.size()) +
+                   " faixas: enter baixa a eleita, T baixa todas";
+        correio_do_catalogo.poe({std::move(lido)}, std::move(recado));
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
+
   auto pintor = ftxui::Renderer([&] {
     // Os achados da rede chegam AQUI, no fio da tela, que é o unico que pode tocar o
     // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
@@ -444,6 +501,16 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     if (correio.colhe(&achados, &recado)) {
       navegador.mostra_rede(std::move(achados));
       aviso_da_rede = recado;
+    }
+    // O CATALOGO chega pelo mesmo caminho, e no mesmo fio: mostra-se ANTES de se
+    // baixar cousa alguma, que é o que a tarefa pede quando manda devolver a lista
+    // para se conferir.
+    std::vector<nucleo::Catalogo> lidos;
+    std::string recado_da_lista;
+    if (correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
+      if (!lidos.empty() && !lidos.front().faixas.empty())
+        navegador.mostra_catalogo(std::move(lidos.front()));
+      aviso_da_rede = recado_da_lista;
     }
     // A varredura concluiu: o navegador recarrega UMA vez. A bandeira do acervo novo
     // CONSOME-SE na leitura, donde isto corre uma vez por varredura.
@@ -483,6 +550,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
     if (navegador.secao() == tui::Secao::Rede) trilha = "NET";
+    if (navegador.secao() == tui::Secao::Lista) {
+      trilha = "SPOTIFY";
+      if (!navegador.nome_do_catalogo().empty())
+        trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
+    }
     if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
     if (navegador.secao() == tui::Secao::NoRol) {
       trilha = "LISTS";
@@ -492,6 +564,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
     else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
+    else if (digita == Digita::Lista) trilha = "PLAYLIST DO SPOTIFY: " + termo_em_curso;
     else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
     else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
     else if (digita == Digita::Confirma)
@@ -544,7 +617,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                            " · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
                            " · K/J move · R renomeia · D apaga · v video"
-                           " · q sahe") |
+                           " · I spotify · T baixa todas · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -586,6 +659,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         } else if (era == Digita::NomeOutro) {
           if (!navegador.renomeia_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::Lista) {
+          if (!termo_em_curso.empty()) {
+            {
+              std::lock_guard<std::mutex> chave(tranca_do_termo);
+              url_da_lista = termo_em_curso;
+            }
+            pede_catalogo.store(true);
+            aviso_da_rede = "a ler a lista do Spotify...";
+          }
         } else if (era == Digita::Procura) {
           if (!termo_em_curso.empty()) {
             {
@@ -657,6 +739,26 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                             : std::string(nucleo::razao_da_fita(fita));
         return true;
       }
+      case tui::Verbo::AbreCatalogo:
+        digita = Digita::Lista;
+        termo_em_curso.clear();
+        return true;
+      case tui::Verbo::BaixaTudo: {
+        // TODAS as faixas da lista, e sómente d'esta secção: o `T` n'outro logar não
+        // ha de encommendar cousa alguma por engano.
+        if (navegador.secao() != tui::Secao::Lista) {
+          aviso_da_rede = "isso sómente na lista do Spotify (I)";
+          return true;
+        }
+        const std::string lista = navegador.nome_do_catalogo();
+        std::size_t quantas = 0;
+        for (const nucleo::FaixaDoCatalogo& faixa : navegador.faixas_do_catalogo()) {
+          estaleiro.encommenda(encommenda_do_catalogo(faixa, lista));
+          ++quantas;
+        }
+        aviso_da_rede = std::to_string(quantas) + " encommendadas";
+        return true;
+      }
       case tui::Verbo::AbreProcura:
         digita = Digita::Procura;
         termo_em_curso.clear();
@@ -706,6 +808,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (varrida.load()) pede_varrer.store(true);
         return true;
       case tui::Verbo::Entra: {
+        // Na LISTA do Spotify, entrar é BAIXAR a eleita. A URL vae vazia, e a
+        // aquisição busca o audio por si: é o casamento pela duração.
+        if (navegador.ha_faixa_de_catalogo()) {
+          estaleiro.encommenda(encommenda_do_catalogo(
+              navegador.faixa_de_catalogo_eleita(), navegador.nome_do_catalogo()));
+          return true;
+        }
         // Na REDE, entrar é BAIXAR, e a URL vem por punho proprio: caminho_eleito é
         // vazio n'esta secção de proposito, para que endereço algum cahia na fila do
         // motor. Quem baixa é o estaleiro, o mesmo que a URL collada á mão usa.
@@ -768,7 +877,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       // tela escreve zero: é a correcção da issue #48.
       const std::string agora = assignatura_do_visivel(
           tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
-          mostra_letra.load(), varrida.load(), correio.geracao(),
+          mostra_letra.load(), varrida.load(),
+          correio.geracao() + correio_do_catalogo.geracao(),
           projector.rodando());
       if (agora != ultima_assignatura) {
         ultima_assignatura = agora;
