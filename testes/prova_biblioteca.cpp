@@ -19,6 +19,8 @@
 #include <unistd.h>
 
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -82,6 +84,14 @@ nu::Faixa faz(const std::string& artista, const std::string& album,
   faixa.modificado = 1000 + numero;
   faixa.tamanho = 2000 + numero;
   return faixa;
+}
+
+// Lê o arquivo inteiro em bytes, para que a prova do abandono compare o índice
+// antigo com elle mesmo, e não com uma contagem que a obra também produz.
+std::string le_bytes(const std::filesystem::path& caminho) {
+  std::ifstream fonte(caminho, std::ios::binary);
+  return std::string(std::istreambuf_iterator<char>(fonte),
+                     std::istreambuf_iterator<char>());
 }
 
 // Enche um banco com o mesmo acervo de quatro faixas, para que os casos das
@@ -256,6 +266,29 @@ TEST_CASE("banco ausente responde vazio, e não erro") {
   CHECK_FALSE(livraria.acha_por_caminho("/acervo/qualquer.mp3", achada));
   // E a consulta não CRIA o banco por consultar: o disco fica como estava.
   CHECK_FALSE(std::filesystem::exists(cova.banco()));
+}
+
+// Abandonar a meio. O índice antigo fica byte a byte como estava, e resíduo
+// algum sobra: o destructor do Escriba desfaz o temporario que não se concluiu.
+TEST_CASE("abandonar a meio conserva o índice antigo, e nada sobra") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const std::string antes = le_bytes(cova.banco());
+  REQUIRE_FALSE(antes.empty());
+  std::filesystem::path residuo;
+  {
+    nu::Escriba escriba(cova.banco());
+    REQUIRE(escriba.aberto());
+    residuo = escriba.temporario();
+    CHECK(std::filesystem::exists(residuo));
+    CHECK(escriba.grava(faz("Cauchy", "Cours", "Analyse", 1)));
+    // e sahe-se do escopo SEM concluir
+  }
+  CHECK_FALSE(std::filesystem::exists(residuo));
+  CHECK(le_bytes(cova.banco()) == antes);
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK(livraria.total() == 4u);
+  CHECK(livraria.busca_faixa("Analyse").empty());
 }
 
 // ══════════════════════════════════════════════════════════════════════════
