@@ -20,8 +20,17 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <condition_variable>
 #include <cstddef>
+#include <deque>
+#include <filesystem>
+#include <functional>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <vector>  // os obreiros guardam-se n'um vector, e juntam-se no fim
+
+#include "nucleo/aquisicao.hpp"
 
 namespace mysong::nucleo {
 
@@ -43,6 +52,37 @@ struct Andamento {
 // aqui e não na janella. Estaleiro quieto e sem historia devolve cadeia VAZIA:
 // é o que faz a tela calar-se em vez de mostrar «0 a baixar».
 std::string texto_do_andamento(const Andamento& andamento);
+
+// O ESTALEIRO. Ergue `obreiros` fios que consomem a fila, e cada um chama a OBRA,
+// que entra por parametro: é essa juncta que deixa a bateria pôr no logar d'ella
+// uma obra que se possa segurar.
+class Estaleiro {
+ public:
+  using Obra = std::function<Colheita(const Pedido&, std::filesystem::path*)>;
+
+  Estaleiro(std::size_t obreiros, Obra obra);
+  ~Estaleiro();  // fecha, e espera os obreiros: fio solto não sahe d'aqui
+
+  Estaleiro(const Estaleiro&) = delete;
+  Estaleiro& operator=(const Estaleiro&) = delete;
+
+  void encommenda(Pedido pedido);
+  Andamento andamento() const;
+
+  // colheu — CONSOME a bandeira de «entrou faixa nova no disco». Sem o consumo, a
+  // tela varreria o disco a cada quadro para sempre.
+  bool colheu();
+
+  // pico — o maior numero de obras simultaneas de toda a vida do estaleiro. Existe
+  // para que o limite se AFIRA, e não se acredite.
+  std::size_t pico() const;
+
+  void fecha();  // pára de aceitar, acorda os obreiros e espera-os
+
+ private:
+  void obreiro();
+
+};
 
 }  // namespace mysong::nucleo
 
