@@ -73,5 +73,10 @@ std::string nome_da_lista(std::string_view corpo) {
   return api::texto_de_chave("{" + std::string(pedaco) + "}", "name");
 }
 
+std::string url_do_embed(std::string_view id) {
+  if (id.empty()) return {};
+  return "https://open.spotify.com/embed/playlist/" + std::string(id);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
