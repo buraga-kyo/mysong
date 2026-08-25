@@ -94,15 +94,6 @@ ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
 
 }  // namespace
 
-std::string_view nome_do_estado(nucleo::Estado estado) {
-  switch (estado) {
-    case nucleo::Estado::Tocando: return "Tocando";
-    case nucleo::Estado::Pausado: return "Pausado";
-    case nucleo::Estado::Parado: return "Parado";
-  }
-  return "Parado";  // o compilador não o sabe, mas o enum é fechado
-}
-
 // A fita dos botões e do estado. Sentido DEXTRA sómente: misturar os dous
 // lavraria o losango que a regra proscreve, e a Fita já o torna inexprimivel.
 // Os fundos descem pela rampa, do acento cardeal ao fundo do painel, que é a
@@ -113,7 +104,7 @@ ftxui::Element fita_dos_botoes(const Retracto& retracto) {
   fita.junta({" " + std::string(tocando ? "\u23f8" : "\u25b6") + " ",
               tokens::v500, tokens::base});
   fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
-  fita.junta({" " + std::string(nome_do_estado(retracto.estado)) + " ",
+  fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
               tokens::v900, tokens::text_bright});
   return fita_em_elemento(fita.compor());
 }

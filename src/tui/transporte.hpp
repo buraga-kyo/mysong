@@ -55,11 +55,6 @@ std::string mm_ss(double segundos);
 // duração que não é positiva ou não é finita dá zero, sem divisão alguma.
 std::size_t enchimento(double posicao, double duracao, std::size_t largura);
 
-// nome_do_estado — o estado por PALAVRA. Côr sozinha não se lê em bateria nem em
-// terminal monochromo, e o aceite pede que a leitura diga o estado; donde a
-// palavra, e a côr por cima d'ella.
-std::string_view nome_do_estado(nucleo::Estado estado);
-
 // linha_da_barra — a barra de progresso sozinha, em texto: o enchido, o vazio, e
 // nada mais. Sahe á parte do elemento para que a prova conte collunhas sem
 // atravessar o FTXUI.

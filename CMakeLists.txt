@@ -175,6 +175,12 @@ add_executable(fita_espectro exemplos/fita_espectro.cpp)
 target_compile_options(fita_espectro PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_espectro PRIVATE mysong_core)
 
+# ─── A BARRA DE TRANSPORTE (issue #7) ───────────────────────────────────────
+# As duas peças provaveis da tela: a composição, que não conhece Tocador, e a
+# taboada das teclas, que não toca no tocador. Entram no nucleo por
+# target_sources, ACRESCENTANDO linha, como manda a regra d'esta Casa.
+target_sources(mysong_core PRIVATE src/tui/transporte.cpp src/tui/commando.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
