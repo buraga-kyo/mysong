@@ -53,5 +53,14 @@ std::string id_da_playlist(std::string_view crua);
 // url_do_embed — a pagina de embutir d'esse identificador.
 std::string url_do_embed(std::string_view id);
 
+// nome_da_lista — o nome que a pagina dá á playlist. É elle que vae por ALBUM nas
+// etiquetas, e fica declarado por que: a pagina de embutir não publica album algum,
+// e o disco de onde a faixa sahiu o Spotify não dá sem chave nem conta.
+std::string nome_da_lista(std::string_view corpo);
+
+// le_catalogo — o catalogo que o corpo da pagina tras. Corpo que não traga a lista
+// dá catalogo vazio: é resposta, e não erro.
+Catalogo le_catalogo(std::string_view corpo);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
