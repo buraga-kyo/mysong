@@ -67,13 +67,20 @@ std::string saneia_nome(std::string_view crua) {
   while (!limpo.empty() && limpo.front() == '.') limpo.erase(limpo.begin());
   limpo = apara(limpo);
   if (limpo.size() > kMaxComponente) {
-    limpo.resize(kMaxComponente);
-    // Cortar por octeto pode partir um caracter UTF-8 pelo meio. Recúa-se até ao
-    // byte lider, que é melhor que gravar um nome com meio caracter dentro.
-    while (!limpo.empty() &&
-           (static_cast<unsigned char>(limpo.back()) & 0xC0) == 0x80)
-      limpo.pop_back();
-    if (!limpo.empty()) limpo.pop_back();
+    // Cortar por octeto parte caracter UTF-8 pelo meio. Anda-se pois PARA DEANTE
+    // guardando a ultima FRONTEIRA que cabe, em vez de cortar e recuar: recuando,
+    // um corte que já cahia em fronteira perdia um caracter á toa, e foi
+    // exactamente esse o defeito que a prova apanhou nesta linha.
+    std::size_t fronteira = 0;
+    for (std::size_t i = 0; i <= limpo.size(); ++i) {
+      const bool limite =
+          i == limpo.size() ||
+          (static_cast<unsigned char>(limpo[i]) & 0xC0) != 0x80;
+      if (!limite) continue;
+      if (i > kMaxComponente) break;
+      fronteira = i;
+    }
+    limpo.resize(fronteira);
     limpo = apara(limpo);
   }
   return limpo.empty() ? std::string("sem titulo") : limpo;
