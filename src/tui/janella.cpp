@@ -227,7 +227,12 @@ int main(int argc, char** argv) {
   // aprende-se a apertar sem ler.
   const std::string avisos = tui::texto_dos_avisos(relatorio);
   if (!avisos.empty()) std::cerr << avisos;
-  return erguer_tocador();
+
+  // A fila vem da linha de commando. Não ha varredura de acervo ainda (issue
+  // #34), e por isso é assim que uma faixa entra: `mysong caminho.mp3 outro.mp3`.
+  std::vector<std::string> faixas;
+  for (int i = 1; i < argc; ++i) faixas.emplace_back(argv[i]);
+  return erguer_tocador(faixas);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
