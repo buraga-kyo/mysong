@@ -42,6 +42,8 @@
 
 #include <algorithm>
 
+#include "api/mpris.hpp"
+
 #include "nucleo/analisador.hpp"
 #include "nucleo/capa.hpp"
 #include "nucleo/aquisicao.hpp"
@@ -59,6 +61,7 @@
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
 
+namespace api = mysong::api;
 namespace nucleo = mysong::nucleo;
 namespace tui = mysong::tui;
 
@@ -185,6 +188,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     // que falta, uma vez, e segue-se.
     std::cerr << "mysong: sem espectro: " << analisador.razao() << "\n";
   }
+
+  // O MPRIS. Barramento ausente não é falha: diz-se uma vez e o tocador segue, que é o
+  // mesmo padrão do analisador da issue #5.
+  api::CasaDoMpris mpris(tocador);
+  if (!mpris.viva())
+    std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
 
   for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
   if (!tocador.fila().vazia()) tocador.tocar_corrente();
@@ -391,6 +400,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     while (!sahir) {
       tocador.pulsa();
       analisador.pulsa();
+      mpris.pulsa();
       // A varredura concluiu: o navegador recarrega UMA vez. A bandeira impede
       // que elle releia o banco vinte vezes por segundo para sempre.
       if (varrida.load() && !recarregado) {
