@@ -7,14 +7,89 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cctype>
 #include <cmath>
 #include <limits>
 #include <string>
+
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 
 #include "tui/transporte.hpp"
 
 namespace tui = mysong::tui;
 namespace nu = mysong::nucleo;
+
+namespace {
+
+// sem_escape — a linha despida do escape e do retorno de carro, que é o que ella
+// MOSTRA. Mesma technica da prova do espectro, e escripta aqui por não ser peça
+// da obra: prova não exporta ajuda para prova.
+std::string sem_escape(const std::string& linha) {
+  std::string limpa;
+  for (std::size_t i = 0; i < linha.size(); ++i) {
+    const unsigned char oct = static_cast<unsigned char>(linha[i]);
+    if (oct == 0x1b) {
+      while (i < linha.size() &&
+             !std::isalpha(static_cast<unsigned char>(linha[i])))
+        ++i;
+      continue;
+    }
+    if (oct == '\r') continue;
+    limpa += linha[i];
+  }
+  return limpa;
+}
+
+std::size_t codepoints(const std::string& cadeia) {
+  std::size_t conta = 0;
+  for (const unsigned char oct : cadeia)
+    if ((oct & 0xC0) != 0x80) ++conta;
+  return conta;
+}
+
+// a_linha_pintada — o transporte pintado em écran de PAPEL, de uma linha só.
+std::string a_linha_pintada(const tui::Retracto& retracto, std::size_t largura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(static_cast<int>(largura)),
+      ftxui::Dimension::Fixed(1));
+  ftxui::Render(ecran, tui::elemento_do_transporte(retracto, largura));
+  return sem_escape(ecran.ToString());
+}
+
+}  // namespace
+
+// A LINHA INTEIRA contra alvo ESCRIPTO Á MÃO. Note-se que contar codepoints do
+// écran de papel NÃO prova nada: o écran preenche sempre a largura que se lhe
+// pediu, e por isso a contagem é egual por construcção. O que prova é a cadeia,
+// que diz posição e contagem n'uma asserção só.
+//
+// A conta, feita á mão: a fita pede VINTE collunhas (tres do primeiro segmento,
+// cinco do segundo, nove do terceiro, e tres setas), mais uma de separação, mais
+// quinze do relogio e nove do volume: quarenta e cinco. Em sessenta, sobram
+// quinze para a barra; dous sobre trinta de quinze é um exacto, donde UMA cheia
+// e quatorze vazias.
+TEST_CASE("a linha do transporte sahe egual á cadeia escripta á mão") {
+  const tui::Retracto retracto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  const std::string seta = "\ue0b0";
+  std::string alvo = " \u23f8 " + seta + " \u23ee \u23ed " + seta +
+                     " Tocando " + seta + " \u2588";
+  for (int i = 0; i < 14; ++i) alvo += "\u2591";
+  alvo += " 00:02 / 00:30 vol 100% ";
+  CHECK(a_linha_pintada(retracto, 60) == alvo);
+  CHECK(codepoints(alvo) == 60u);
+}
+
+// E o defeito da collisão, apanhado em toda largura que dê para tudo caber: o
+// relogio nunca se lê collado ao volume.
+TEST_CASE("o relogio nunca se lê collado ao volume") {
+  const tui::Retracto retracto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  for (std::size_t largura = 47; largura <= 200; ++largura) {
+    const std::string linha = a_linha_pintada(retracto, largura);
+    REQUIRE(linha.find("00:30vol") == std::string::npos);
+    REQUIRE(linha.find("00:02 / 00:30 vol 100% ") != std::string::npos);
+  }
+}
 
 TEST_CASE("o tempo sahe em MM:SS, e o que não é tempo sahe em traço") {
   CHECK(tui::mm_ss(0.0) == "00:00");
