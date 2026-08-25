@@ -114,6 +114,50 @@ std::string Navegador::caminho_eleito() const {
   return vista_[eleito_].chave;
 }
 
+bool Navegador::entra() {
+  if (vista_.empty()) return false;
+  const Linha degrau = vista_[eleito_];  // CÓPIA: refaz_vista limpa a vista
+  switch (secao_) {
+    case Secao::Artistas:
+      trilha_ = {degrau.chave};
+      secao_ = Secao::Albuns;
+      break;
+    case Secao::Albuns:
+      trilha_ = {trilha_.front(), degrau.chave};
+      secao_ = Secao::Faixas;
+      break;
+    case Secao::Faixas:
+    case Secao::Busca:
+      return true;  // já é faixa: quem chama manda tocar
+  }
+  // O termo NÃO se herda ao descer: elle filtrava a lista de cima, e applicá-lo
+  // á de baixo esconderia faixas por causa de uma busca que já se cumpriu.
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+  return false;
+}
+
+bool Navegador::volta() {
+  switch (secao_) {
+    case Secao::Faixas:
+      trilha_.resize(1);
+      secao_ = Secao::Albuns;
+      break;
+    case Secao::Albuns:
+    case Secao::Busca:
+      trilha_.clear();
+      secao_ = Secao::Artistas;
+      break;
+    case Secao::Artistas:
+      return false;  // já se está no alto
+  }
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+  return true;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
