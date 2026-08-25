@@ -287,6 +287,15 @@ std::filesystem::path acha_o_que_ficou(const std::filesystem::path& molde) {
 
 }  // namespace
 
+bool busca_no_youtube(const std::string& termo, int quantos,
+                      std::vector<Achado>* achados) {
+  if (termo.empty()) return false;
+  std::string colhido;
+  if (corre(argumentos_da_busca(termo, quantos), &colhido) != 0) return false;
+  if (achados != nullptr) *achados = le_achados(colhido);
+  return true;
+}
+
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
   EtiquetaRemota remota;
