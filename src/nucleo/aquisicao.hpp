@@ -37,6 +37,11 @@ struct Pedido {
   std::string album;
   std::string titulo;
   int numero = 0;
+  // A DURAÇÃO esperada, em segundos, e zero é «não sei». Entra na issue #13: com
+  // ella, e sómente com ella, a URL pode vir VAZIA e a baixa busca o audio por si,
+  // casando o achado pela duração. Sem ella não ha casamento de que se possa
+  // confiar, e a faixa sahe por duvidosa em vez de baixar cousa errada calada.
+  int duracao = 0;
 };
 
 // saneia_nome — o nome que se ha de pôr no systema de arquivos. Tira a barra, o
@@ -55,6 +60,7 @@ enum class Colheita {
   JaExiste,         // ha arquivo no destino; NADA se tocou
   FalhouAoBaixar,   // o yt-dlp sahiu com erro
   FalhouAEtiqueta,  // baixou-se, mas a etiqueta não se pôde escrever
+  Duvidosa,         // achado algum casou com confiança; NADA se baixou
 };
 
 // A ETIQUETA que a sonda da URL colheu. Campo vazio quer dizer que a rede não o
@@ -99,6 +105,15 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida);
 // é exhaustivo, e desfecho novo sem palavra não compila.
 std::string_view razao_da_colheita(Colheita colheita);
 
+// ── O CASAMENTO PELO CATALOGO (issue #13) ───────────────────────────────────
+
+// A TOLERANCIA do casamento, em segundos. Doze: o mesmo audio no YouTube costuma
+// trazer um ou dous segundos de silencio nas pontas, e a versão ao vivo ou a
+// estendida differe de muito mais que isso. Doze aceita a primeira e recusa a
+// segunda, e o numero está aqui n'uma constante com nome para que quem o mude mude
+// um logar e diga por que.
+inline constexpr int TOLERANCIA_DO_CASAMENTO = 12;
+
 // ── A BUSCA NO YOUTUBE (issue #12) ──────────────────────────────────────────
 
 // Um ACHADO da busca. É o que a tela mostra, e o que a baixa consome.
@@ -119,6 +134,18 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
 // por linha, e não por separador dentro da linha: titulo de video tras barra vertical,
 // tabulação e tudo o mais, e um separador seria enganado pelo primeiro d'elles.
 std::vector<Achado> le_achados(const std::string& sahida);
+
+// melhor_achado — o indice do achado que casa com o pedido, e MENOS UM não casando
+// nenhum. As regras, e cada uma com o seu porque:
+//
+// 1. duração dentro da tolerancia. É o unico crivo que separa a faixa da versão
+//    estendida, e sem elle baixar-se-hia mistura de dez minutos por faixa de tres.
+// 2. entre as que passam, ganha a que tras o TITULO do pedido no titulo d'ella.
+//    Não passando nenhuma esse segundo crivo, ganha a de duração mais proxima.
+// 3. pedido sem duração NÃO casa. Não é descuido: sem duração não ha crivo algum, e
+//    a tarefa manda marcar por duvidosa em vez de baixar cousa errada calada.
+int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
+                  int tolerancia);
 
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
