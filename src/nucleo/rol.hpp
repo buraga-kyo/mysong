@@ -91,5 +91,15 @@ class Roleiro {
   // não existe. É por aqui que sobe e desce se cumprem.
   bool troca(int id, int uma, int outra);
 
+  // faixas — os caminhos na ordem gravada.
+  std::vector<std::string> faixas(int id) const;
+
+ private:
+  std::filesystem::path banco_;
+  sqlite3* punho_ = nullptr;
+};
+
+}  // namespace mysong::nucleo
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
