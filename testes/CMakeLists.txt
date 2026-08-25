@@ -61,3 +61,9 @@ target_sources(mysong_testes PRIVATE prova_espectro_tui.cpp)
 
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
+
+# ─── Provas da bibliotheca do acervo (issue #8) ──────────────────────────────
+# Por target_sources, e não na lista do add_executable, pela mesma regra das
+# lavras acima: linha nova não collide onde linha alterada collidiria, e a
+# mysong-28 com a mysong-6 lavram neste arquivo agora.
+target_sources(mysong_testes PRIVATE prova_biblioteca.cpp)

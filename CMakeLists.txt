@@ -177,3 +177,22 @@ target_link_libraries(fita_espectro PRIVATE mysong_core)
 
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
+
+# ─── A BIBLIOTHECA DO ACERVO (issue #8) ─────────────────────────────────────
+# Duas dependencias de SYSTEMA novas, por pkg-config e nunca por caminho
+# chumbado: a taglib, que lê as etiquetas, e o sqlite3, que guarda o índice.
+# ACRESCENTA linha, e NÃO altera linha alguma: a mysong-28 lavra em motor.* e
+# sonda.*, e a mysong-6 em src/tui/espectro.*, nos mesmos arquivos de construcção
+# agora, e linha nova não collide onde linha alterada collidiria.
+#
+# A palavra SYSTEM não é enfeite. A taglib não publica os seus cabeçalhos como
+# SYSTEM por si, e elles são muitos: sem a propriedade
+# INTERFACE_SYSTEM_INCLUDE_DIRECTORIES, sujariam o nosso zero aviso com avisos
+# que não são nossos, e o zero aviso d'esta Casa deixaria de valer como sinal.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(TAGLIB REQUIRED IMPORTED_TARGET taglib)
+pkg_check_modules(SQLITE3 REQUIRED IMPORTED_TARGET sqlite3)
+set_property(TARGET PkgConfig::TAGLIB APPEND PROPERTY
+  INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${TAGLIB_INCLUDE_DIRS})
+target_sources(mysong_core PRIVATE src/nucleo/biblioteca.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::SQLITE3 PkgConfig::TAGLIB)
