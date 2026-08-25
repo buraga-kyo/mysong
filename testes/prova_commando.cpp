@@ -57,6 +57,31 @@ TEST_CASE("tecla sem officio dá ordem nenhuma") {
         tui::Verbo::Nada);
 }
 
+// A GUARDA DO MODO: estando-se a digitar na barra de busca, tecla alguma da
+// taboada vale. É o defeito classico das TUI que esquecem o modo, e este caso
+// percorre TODAS as teclas que teriam officio para provar que nenhuma escapa.
+TEST_CASE("digitando, tecla alguma da taboada vale") {
+  const tui::Retracto retracto = tocando();
+  const ftxui::Event teclas[] = {
+      ftxui::Event::Character(' '), ftxui::Event::Character('n'),
+      ftxui::Event::Character('p'), ftxui::Event::Character('q'),
+      ftxui::Event::Character('j'), ftxui::Event::Character('k'),
+      ftxui::Event::Character('g'), ftxui::Event::Character('G'),
+      ftxui::Event::Character('/'), ftxui::Event::Character('r'),
+      ftxui::Event::Character('+'), ftxui::Event::Character('-'),
+      ftxui::Event::ArrowUp,        ftxui::Event::ArrowDown,
+      ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
+      ftxui::Event::Return,         ftxui::Event::Escape,
+      ftxui::Event::Home,           ftxui::Event::End,
+  };
+  for (const ftxui::Event& tecla : teclas) {
+    // Sem o modo, cada uma d'estas tem officio; com o modo, nenhuma.
+    REQUIRE(tui::ordem_da_tecla(tecla, retracto, false).verbo !=
+            tui::Verbo::Nada);
+    CHECK(tui::ordem_da_tecla(tecla, retracto, true).verbo == tui::Verbo::Nada);
+  }
+}
+
 // As teclas da navegação, e as duas fórmas de cada uma: seta e letra do vi.
 TEST_CASE("as teclas da navegação valem por seta e por letra") {
   const tui::Retracto retracto = tocando();
