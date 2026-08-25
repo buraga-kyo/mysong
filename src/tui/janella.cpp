@@ -539,7 +539,17 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         // enfileira dez varreduras.
         if (varrida.load()) pede_varrer.store(true);
         return true;
-      case tui::Verbo::Entra:
+      case tui::Verbo::Entra: {
+        // Na REDE, entrar é BAIXAR, e a URL vem por punho proprio: caminho_eleito é
+        // vazio n'esta secção de proposito, para que endereço algum cahia na fila do
+        // motor. Quem baixa é o estaleiro, o mesmo que a URL collada á mão usa.
+        const std::string url = navegador.url_eleita();
+        if (!url.empty()) {
+          nucleo::Pedido pedido;
+          pedido.url = url;
+          estaleiro.encommenda(pedido);
+          return true;
+        }
         // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
         // é quem tem o tocador na mão.
         if (navegador.entra()) {
@@ -551,6 +561,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           }
         }
         return true;
+      }
       default:
         cumprir(ordem, tocador, sahir);
         if (sahir.load()) tela.Exit();
