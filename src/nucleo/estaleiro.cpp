@@ -111,6 +111,39 @@ std::size_t Estaleiro::pico() const {
   std::lock_guard<std::mutex> chave(tranca_);
   return pico_;
 }
+
+void Estaleiro::obreiro() {
+  for (;;) {
+    Pedido pedido;
+    {
+      std::unique_lock<std::mutex> chave(tranca_);
+      sino_.wait(chave, [this] { return fechado_ || !espera_.empty(); });
+      if (fechado_) return;
+      pedido = std::move(espera_.front());
+      espera_.pop_front();
+      // O incremento vae DENTRO da tranca e ANTES da obra: é o que faz do pico o
+      // pico de verdade, e não uma amostra colhida no intervallo entre os dous.
+      ++em_curso_;
+      if (em_curso_ > pico_) pico_ = em_curso_;
+    }
+    // A OBRA corre FÓRA da tranca. Correndo dentro, dous obreiros nunca correriam
+    // ao mesmo tempo e o limite de dous seria limite de um, dito por engano.
+    std::filesystem::path ficou;
+    const Colheita fim = obra_(pedido, &ficou);
+    {
+      std::lock_guard<std::mutex> chave(tranca_);
+      --em_curso_;
+      ultima_ = std::string(razao_da_colheita(fim));
+      if (fim == Colheita::Colhido) {
+        ++colhidas_;
+        colheu_ = true;
+      } else {
+        ++falhadas_;
+      }
+    }
+  }
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
