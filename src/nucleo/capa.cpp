@@ -11,6 +11,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/capa.hpp"
 
+#include "nucleo/aquisicao.hpp"  // corre(): o fork e o exec sem shell
+
 #include <taglib/attachedpictureframe.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/mpegfile.h>
@@ -114,6 +116,42 @@ std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
 }
 
 }  // namespace
+
+const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
+                                 std::size_t collunas, std::size_t linhas) {
+  const std::string chave = chave_do_cache(faixa, collunas, linhas);
+  const auto assento = guardadas_.find(chave);
+  if (assento != guardadas_.end()) return assento->second;
+
+  CapaPintada pintada;
+  if (collunas > 0 && linhas > 0 && !faixa.empty()) {
+    // A capa AO LADO ganha da embutida: ella é a que o operador pode trocar sem
+    // reescrever a etiqueta, e por isso é a que elle manda.
+    std::filesystem::path imagem = capa_ao_lado(faixa);
+    if (imagem.empty()) imagem = extrahe_embutida(faixa);
+    if (!imagem.empty()) {
+      std::string colhido;
+      if (corre(argumentos_do_chafa(imagem, collunas, linhas), &colhido) == 0 &&
+          !colhido.empty()) {
+        std::size_t principio = 0;
+        while (principio < colhido.size()) {
+          const std::size_t fim = colhido.find('\n', principio);
+          const std::size_t ate = fim == std::string::npos ? colhido.size() : fim;
+          pintada.linhas.push_back(colhido.substr(principio, ate - principio));
+          if (fim == std::string::npos) break;
+          principio = fim + 1;
+        }
+        pintada.achada = !pintada.linhas.empty();
+        ++renders_;
+      }
+    }
+  }
+  // A AUSENCIA guarda-se tambem: sem isto, album sem capa faria a Casa procurar o
+  // arquivo no disco vinte vezes por segundo para achar sempre o mesmo nada.
+  return guardadas_.emplace(chave, std::move(pintada)).first->second;
+}
+
+std::size_t Galeria::quantos_renders() const noexcept { return renders_; }
 
 }  // namespace mysong::nucleo
 
