@@ -410,5 +410,28 @@ TEST_CASE("extensão alheia e falso audio não entram no índice") {
   CHECK(livraria.busca_faixa("Boa").size() == 1u);
 }
 
+// O LAÇO de ligações symbólicas. Sem a guarda, a varredura giraria sem fim; com
+// ella, termina em numero FINITO de passos. O caso tem relogio de guarda proprio:
+// não se confia no `while` para terminar, que é justamente o que se está a provar.
+TEST_CASE("laço de ligação symbólica não faz a varredura girar") {
+  const Cova cova;
+  faz_wav(cova.acervo() / "A" / "B" / "01 - Um.wav", 1);
+  std::error_code erro;
+  std::filesystem::create_directory_symlink(cova.acervo(),
+                                            cova.acervo() / "A" / "volta", erro);
+  REQUIRE_FALSE(erro);
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  std::size_t passos = 0;
+  while (varredura.passo()) {
+    ++passos;
+    REQUIRE(passos < 1000u);  // relogio de guarda: girar seria passar d'aqui
+  }
+  CHECK(varredura.desfecho() == nu::Desfecho::Concluido);
+  CHECK(varredura.progresso().ligacoes_saltadas >= 1u);
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK(livraria.total() == 1u);  // a faixa entrou UMA vez
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
