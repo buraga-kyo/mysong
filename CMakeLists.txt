@@ -148,13 +148,6 @@ target_link_libraries(espia_bandas PRIVATE mysong_core)
 # directorio de inclusão algum, que o mpv/client.h mora em /usr/include.
 target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
 
-# ─── A ÂNCORA DO MOTOR (issue #28) ──────────────────────────────────────────
-# Põe o motor DENTRO do binario da tela hoje, que é a configuração que a issue #7
-# ha de criar. Sem ella, a prova da ligação passaria por ausencia de motor, e não
-# por acerto. Vae por target_sources, ACRESCENTANDO linha, e sem tocar
-# src/tui/janella.cpp, que é da #7. Some quando a #7 chamar o motor de verdade.
-target_sources(mysong PRIVATE src/tui/ancora_do_motor.cpp)
-
 # ─── O DESENHO DO ESPECTRO (issue #6) ───────────────────────────────────────
 # Por target_sources, e NÃO na lista do add_library nem em linha alheia: regra
 # d'esta Casa, e aqui com nome, que as tarefas irmãs mysong-28 e mysong-8 lavram
@@ -174,6 +167,23 @@ target_sources(mysong_core PRIVATE src/tui/espectro.cpp)
 add_executable(fita_espectro exemplos/fita_espectro.cpp)
 target_compile_options(fita_espectro PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_espectro PRIVATE mysong_core)
+
+# ─── A BARRA DE TRANSPORTE (issue #7) ───────────────────────────────────────
+# As duas peças provaveis da tela: a composição, que não conhece Tocador, e a
+# taboada das teclas, que não toca no tocador. Entram no nucleo por
+# target_sources, ACRESCENTANDO linha, como manda a regra d'esta Casa.
+target_sources(mysong_core PRIVATE src/tui/transporte.cpp src/tui/commando.cpp)
+
+# E o nucleo passa a ligar ftxui::component, que é onde `ftxui::Event` mora.
+# ACRESCENTA-SE em linha propria, e não se edita a linha 70, que é lavra alheia.
+#
+# A escolha é deliberada, e a alternativa foi pesada: podia-se inventar um tipo
+# de tecla proprio e mapear `ftxui::Event` para elle em janella.cpp. Mas então o
+# mapeamento moraria na UNICA camada que não se prova, e é justamente o
+# mapeamento que o criterio C6 quer aferir. Prova-se pois contra o evento REAL, e
+# o preço é esta linha. Vale notar que a issue #6 já pôs src/tui/ no nucleo com
+# ftxui::dom; esta linha segue o precedente, e não abre porta nova.
+target_link_libraries(mysong_core PUBLIC ftxui::component)
 
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════

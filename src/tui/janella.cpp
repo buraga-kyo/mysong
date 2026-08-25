@@ -21,7 +21,11 @@
 //                   e adivinhar; e a decisão de abrir depende de UM predicado
 //                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
+#include <chrono>
 #include <iostream>
+#include <optional>
+#include <thread>
+#include <vector>
 #include <string>
 #include <string_view>
 
@@ -29,36 +33,139 @@
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/screen/terminal.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/analisador.hpp"
+#include "nucleo/fila.hpp"
 #include "nucleo/marca.hpp"
+#include "nucleo/motor.hpp"
+#include "nucleo/tocador.hpp"
 #include "nucleo/sonda.hpp"
+#include "tui/commando.hpp"
+#include "tui/espectro.hpp"
 #include "tui/tela_requisitos.hpp"
+#include "tui/transporte.hpp"
 
 namespace nucleo = mysong::nucleo;
 namespace tui = mysong::tui;
 
 namespace {
 
-// erguer_tocador — o tocador de hoje, palavra por palavra como estava no main.
-// Extrahe-se para funcção propria porque agora ha caminho que NÃO chega aqui: o
-// impedimento pinta outra tela e sahe, e convem que o olho veja num relance
-// que aquelle caminho não toca nesta.
-int erguer_tocador() {
-  auto tela = ftxui::ScreenInteractive::FitComponent();
-  auto pintor = ftxui::Renderer([] {
+// retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
+// pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
+// poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
+tui::Retracto retracto_do(nucleo::Tocador& tocador) {
+  tui::Retracto retracto;
+  retracto.estado = tocador.estado();
+  retracto.posicao = tocador.posicao();
+  retracto.duracao = tocador.duracao();
+  retracto.volume = tocador.volume();
+  const nucleo::Fila& fila = tocador.fila();
+  retracto.tamanho = fila.tamanho();
+  if (!fila.vazia()) {
+    retracto.indice = fila.indice();
+    retracto.titulo = std::string(fila.corrente());
+  }
+  return retracto;
+}
+
+// cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
+// na taboada acende aviso do compilador aqui, e não passa calado.
+void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
+  switch (ordem.verbo) {
+    case tui::Verbo::Nada: break;
+    case tui::Verbo::Pausar: tocador.pausar(); break;
+    case tui::Verbo::Retomar: tocador.retomar(); break;
+    case tui::Verbo::Proxima: tocador.proxima(); break;
+    case tui::Verbo::Anterior: tocador.anterior(); break;
+    case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
+    case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
+    case tui::Verbo::Sahir: sahir = true; break;
+  }
+}
+
+// A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
+// o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
+// fita tremer por diff de buffer. O risco do tremor está declarado no plano, e
+// esta é a primeira defesa contra elle.
+constexpr int MILESIMOS_DO_QUADRO = 50;
+
+// erguer_tocador — o laço de verdade. Ergue o motor, o tocador e o analisador,
+// enche a fila com o que veio da linha de commando, e pinta a barra de baixo com
+// o espectro por cima. Esta funcção NÃO se prova em bateria: ella abre terminal,
+// abre som e depende de relogio. O que se prova são as duas peças que ella usa,
+// e é por isso que ellas vivem fóra d'aqui.
+int erguer_tocador(const std::vector<std::string>& faixas) {
+  std::string razao;
+  std::optional<nucleo::MotorMpv> motor = nucleo::MotorMpv::abrir(&razao);
+  if (!motor) {
+    // Motor que não abre não derruba o programa: diz o que houve e sahe. A
+    // fabrica devolve um vasio, e não um objecto meio-aberto a que se tivesse de
+    // perguntar se presta.
+    std::cerr << "mysong: a machina de som não abriu: " << razao << "\n";
+    return 1;
+  }
+
+  nucleo::Tocador tocador(*motor);
+  nucleo::Analisador analisador;
+  if (analisador.vivo()) {
+    tocador.observa(analisador);
+  } else {
+    // Espectro é ornamento, e não requisito: sem elle o tocador toca. Diz-se o
+    // que falta, uma vez, e segue-se.
+    std::cerr << "mysong: sem espectro: " << analisador.razao() << "\n";
+  }
+
+  for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
+  if (!tocador.fila().vazia()) tocador.tocar_corrente();
+
+  auto tela = ftxui::ScreenInteractive::Fullscreen();
+  bool sahir = false;
+
+  auto pintor = ftxui::Renderer([&] {
+    const tui::Retracto retracto = retracto_do(tocador);
+    const int largura = ftxui::Terminal::Size().dimx;
+    const std::size_t larg = largura > 2 ? static_cast<std::size_t>(largura - 2) : 1;
+    const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
+    const std::string cabeca =
+        retracto.tamanho == 0 ? "fila vazia" : retracto.titulo;
     return ftxui::vbox({
-               ftxui::text(std::string(mysong::nucleo::marca())) | ftxui::bold,
-               ftxui::text("tecle q para sahir") | ftxui::dim,
+               ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
+               ftxui::text(cabeca) | ftxui::dim,
+               tui::elemento_do_espectro(quadro),
+               tui::elemento_do_transporte(retracto, larg),
+               ftxui::text("espaço pausa · n/p faixa · setas buscam · +/- volume · q sahe") |
+                   ftxui::dim,
            }) |
            ftxui::border;
   });
+
+
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
-    if (tecla != ftxui::Event::Character('q')) return false;
-    tela.Exit();
+    const tui::Ordem ordem = tui::ordem_da_tecla(tecla, retracto_do(tocador));
+    if (ordem.verbo == tui::Verbo::Nada) return false;  // tecla alheia segue
+    cumprir(ordem, tocador, sahir);
+    if (sahir) tela.Exit();
     return true;
   });
+
+  // O RELOGIO. Vive em fio proprio porque `tela.Loop` não devolve até se sahir, e
+  // o `pulsa` do tocador tem de correr entre quadros: é elle que drena os
+  // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
+  // repinte, e a tela é que serializa.
+  std::thread relogio([&] {
+    while (!sahir) {
+      tocador.pulsa();
+      analisador.pulsa();
+      tela.PostEvent(ftxui::Event::Custom);
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
+
   tela.Loop(janella);
+  sahir = true;  // a sahida pela tela tambem para o relogio
+  relogio.join();
   return 0;
 }
 
@@ -120,7 +227,12 @@ int main(int argc, char** argv) {
   // aprende-se a apertar sem ler.
   const std::string avisos = tui::texto_dos_avisos(relatorio);
   if (!avisos.empty()) std::cerr << avisos;
-  return erguer_tocador();
+
+  // A fila vem da linha de commando. Não ha varredura de acervo ainda (issue
+  // #34), e por isso é assim que uma faixa entra: `mysong caminho.mp3 outro.mp3`.
+  std::vector<std::string> faixas;
+  for (int i = 1; i < argc; ++i) faixas.emplace_back(argv[i]);
+  return erguer_tocador(faixas);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

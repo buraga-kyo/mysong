@@ -46,7 +46,7 @@ ftxui::Color tinta(std::string_view token) {
 // que faltam: saber que a libmpv está presente é metade do valor d'isto.
 std::string texto_do_relatorio(const nucleo::Relatorio& relatorio) {
   std::string texto = "mysong: sonda dos requisitos do systema\n\n";
-  for (const nucleo::Estado& estado : relatorio.estados) {
+  for (const nucleo::Veredicto& estado : relatorio.estados) {
     texto += "  ";
     texto.append(rotulo_da_gravidade(estado.requisito.gravidade));
     texto += estado.presente ? "  presente  " : "  FALTA     ";
@@ -75,7 +75,7 @@ std::string texto_do_relatorio(const nucleo::Relatorio& relatorio) {
 // estorvo.
 std::string texto_dos_avisos(const nucleo::Relatorio& relatorio) {
   std::string texto;
-  for (const nucleo::Estado& estado : relatorio.faltas()) {
+  for (const nucleo::Veredicto& estado : relatorio.faltas()) {
     if (estado.requisito.gravidade != nucleo::Gravidade::Aviso) continue;
     texto += "mysong: falta ";
     texto.append(estado.requisito.nome);
@@ -101,7 +101,7 @@ ftxui::Element elemento_dos_requisitos(const nucleo::Relatorio& relatorio) {
                               : "o mysong abre, mas ha requisito a faltar") |
       ftxui::bold | ftxui::color(tinta(impede ? tokens::crit : tokens::warn)));
   linhas.push_back(ftxui::separatorEmpty());
-  for (const nucleo::Estado& estado : relatorio.faltas()) {
+  for (const nucleo::Veredicto& estado : relatorio.faltas()) {
     const bool grave =
         estado.requisito.gravidade == nucleo::Gravidade::Impedimento;
     linhas.push_back(
