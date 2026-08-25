@@ -105,5 +105,30 @@ TEST_CASE("o escape do JSON cobre a aspa, a barra e o controle") {
   CHECK(nu::escapa_json("com\nlinha") == "com\\u000alinha");
 }
 
+TEST_CASE("as ordens sahem em JSON de uma linha, com o valor na fórma certa") {
+  // A bandeira sahe SEM aspas: o mpv recusa «"true"» por texto onde espera
+  // booleano, e a fita ficava a tocar quando se pedia pausa.
+  CHECK(nu::ordem_de_bandeira("pause", true) ==
+        "{\"command\":[\"set_property\",\"pause\",true]}\n");
+  CHECK(nu::ordem_de_bandeira("pause", false) ==
+        "{\"command\":[\"set_property\",\"pause\",false]}\n");
+  CHECK(nu::ordem_de_numero("volume", 30) ==
+        "{\"command\":[\"set_property\",\"volume\",30.000]}\n");
+  // A busca é ABSOLUTA: quem chama sabe onde quer estar, e relativa faria duas
+  // ordens seguidas somarem-se de modo que a tela não previa.
+  CHECK(nu::ordem_de_busca(12.5) == "{\"command\":[\"seek\",12.500,\"absolute\"]}\n");
+  CHECK(nu::ordem_simples("quit") == "{\"command\":[\"quit\"]}\n");
+  // Cada ordem acaba em UMA quebra de linha: o soquete do mpv lê por linha, e
+  // duas ordens sem quebra entre ellas seriam uma linha que elle recusa.
+  for (const std::string& ordem : {nu::ordem_simples("quit"),
+                                   nu::ordem_de_bandeira("pause", true),
+                                   nu::ordem_de_numero("volume", 1),
+                                   nu::ordem_de_busca(0)}) {
+    REQUIRE_FALSE(ordem.empty());
+    CHECK(ordem.back() == '\n');
+    CHECK(std::count(ordem.begin(), ordem.end(), '\n') == 1);
+  }
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
