@@ -27,6 +27,30 @@ namespace tui = mysong::tui;
 
 namespace {
 
+// A cova e o índice: a tabella pede um Navegador, e o Navegador pede uma
+// Bibliotheca. O acervo fica VAZIO de proposito: os casos abaixo põem a vista por
+// mostra_rede, e acervo enchido só juntaria ruido ao que se lê.
+class Cova {
+ public:
+  Cova() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-tab-" + std::to_string(::getpid()));
+    std::filesystem::create_directories(caminho_);
+    nu::Escriba escriba(caminho_ / "indice.sqlite3");
+    escriba.conclui();
+  }
+  ~Cova() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+  std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+
+ private:
+  std::filesystem::path caminho_;
+};
+
 }  // namespace
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
