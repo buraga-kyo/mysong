@@ -158,5 +158,24 @@ TEST_CASE("o casamento recusa quem está fóra da tolerancia") {
   CHECK(nu::melhor_achado({}, pedido, nu::TOLERANCIA_DO_CASAMENTO) == -1);
 }
 
+TEST_CASE("entre os que passam a duração, ganha quem tras o titulo") {
+  nu::Pedido pedido;
+  pedido.titulo = "Loser";
+  pedido.duracao = 223;
+  // O PRIMEIRO está mais proximo em duração, e não tras o titulo; o segundo está um
+  // segundo mais longe, e tras. Ganha o segundo: o crivo do titulo separa a faixa
+  // certa da vizinha de egual comprimento, que é o que mais engana.
+  const std::vector<nu::Achado> achados = {
+      faz("Outra cousa qualquer", 223),
+      faz("Tame Impala - LOSER (audio)", 224),
+  };
+  CHECK(nu::melhor_achado(achados, pedido, nu::TOLERANCIA_DO_CASAMENTO) == 1);
+
+  // Não passando nenhum o crivo do titulo, ganha o de duração mais proxima.
+  const std::vector<nu::Achado> sem_titulo = {faz("Alheia", 230),
+                                              faz("Outra alheia", 224)};
+  CHECK(nu::melhor_achado(sem_titulo, pedido, nu::TOLERANCIA_DO_CASAMENTO) == 1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
