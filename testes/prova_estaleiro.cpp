@@ -115,5 +115,30 @@ TEST_CASE("fechar ABANDONA a espera, e conta sómente o que correu") {
   estaleiro.encommenda(nu::Pedido{});
   CHECK(estaleiro.andamento().na_espera == 0);
 }
+
+TEST_CASE("a bandeira da colheita consome-se, e a falha não a levanta") {
+  nu::Estaleiro colhedor(1, [](const nu::Pedido&, std::filesystem::path*) {
+    return nu::Colheita::Colhido;
+  });
+  colhedor.encommenda(nu::Pedido{});
+  // espera_a_fila, e não fecha: fecha ABANDONA a espera, e a obra podia nunca ter
+  // corrido. Este caso quer o desfecho, e por isso pede o desfecho.
+  colhedor.espera_a_fila();
+  CHECK(colhedor.colheu());
+  // A SEGUNDA leitura é falsa: a bandeira consumiu-se. Sem o consumo, a tela
+  // veria «ha faixa nova» a cada quadro e varreria o disco para sempre.
+  CHECK_FALSE(colhedor.colheu());
+
+  nu::Estaleiro falhador(1, [](const nu::Pedido&, std::filesystem::path*) {
+    return nu::Colheita::UrlRecusada;
+  });
+  falhador.encommenda(nu::Pedido{});
+  falhador.espera_a_fila();
+  CHECK_FALSE(falhador.colheu());
+  const nu::Andamento fim = falhador.andamento();
+  CHECK(fim.falhadas == 1);
+  CHECK(fim.colhidas == 0);
+  CHECK(fim.ultima == "o yt-dlp não leu essa URL");
+}
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
