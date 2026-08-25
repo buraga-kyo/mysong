@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <set>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 namespace mysong::nucleo {
@@ -93,6 +95,30 @@ Faixa deriva_do_caminho(const std::filesystem::path& caminho,
   }
   return faixa;
 }
+
+// O PUNHO. Todo o estado da corrida vive aqui, e é por isso que se pode parar
+// entre dous passos sem perder cousa alguma.
+struct Varredura::Punho {
+  std::filesystem::path banco;
+  std::vector<std::filesystem::path> raizes;
+
+  // A FASE. Lista-se raiz por raiz, depois lê-se arquivo por arquivo, e o
+  // ultimo passo conclue. Fases separadas, e não entrelaçadas: a conta do
+  // aceite (passos >= arquivos) sómente se lê se cada arquivo tiver o seu passo.
+  enum class Fase { Listar, Ler, Concluir, Fim } fase = Fase::Listar;
+  std::size_t raiz_corrente = 0;
+  std::size_t arquivo_corrente = 0;
+
+  // Os arquivos achados, com a raiz de que vieram. O canónico é a IDENTIDADE:
+  // arquivo alcançavel por duas raízes que se sobrepõem entra UMA vez.
+  std::vector<std::pair<std::filesystem::path, std::filesystem::path>> achados;
+  std::set<std::string> vistos;
+
+  Progresso progresso;
+  Desfecho desfecho = Desfecho::NaoComecou;
+  std::unique_ptr<Escriba> escriba;
+  std::unique_ptr<Biblioteca> antigo;
+};
 
 bool extensao_de_audio(std::string_view extensao) {
   const std::string baixa = minuscula(extensao);
