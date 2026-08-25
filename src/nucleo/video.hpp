@@ -64,5 +64,23 @@ std::filesystem::path caminho_do_soquete(const std::filesystem::path& raiz,
 std::vector<std::string> argumentos_do_projector(
     const std::filesystem::path& faixa, const std::filesystem::path& soquete);
 
+// escapa_json — as tres cousas que uma cadeia JSON não pode ter crús: a aspa, a
+// barra invertida e o controle. Nome de propriedade é nosso, mas caminho de faixa
+// vem do disco, e disco tras nome com aspa.
+std::string escapa_json(std::string_view crua);
+
+// As quatro redacções de ordem. Separadas pela FÓRMA do valor, e não uma que
+// receba texto: `pause` quer `true` sem aspas, e `seek` quer numero. Uma só
+// obrigaria quem chama a escrever o JSON, que é justamente o que se quer provar.
+std::string ordem_simples(std::string_view verbo);
+std::string ordem_de_bandeira(std::string_view propriedade, bool ligada);
+std::string ordem_de_numero(std::string_view propriedade, double valor);
+std::string ordem_de_busca(double segundos);
+
+// ordem_de_busca_relativa — o deslocamento, e não a posição. Existe porque da
+// janella não se sabe a posição sem lhe perguntar pelo soquete e esperar resposta,
+// e o que a tecla do operador quer dizer é «cinco segundos adeante».
+std::string ordem_de_busca_relativa(double deslocamento);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
