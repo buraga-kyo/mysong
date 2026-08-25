@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -474,6 +475,36 @@ TEST_CASE("banco de esquema mais novo não se sobrescreve") {
   nu::Varredura varredura(cova.banco(), {cova.acervo()});
   CHECK_FALSE(varredura.passo());  // não ha passo algum a dar
   CHECK(varredura.desfecho() == nu::Desfecho::EsquemaMaisNovo);
+  std::ifstream fonte2(cova.banco(), std::ios::binary);
+  const std::string depois((std::istreambuf_iterator<char>(fonte2)),
+                           std::istreambuf_iterator<char>());
+  CHECK(depois == antes);
+  std::size_t vizinhos = 0;
+  for (const auto& entrada : std::filesystem::directory_iterator(cova.raiz()))
+    if (entrada.is_regular_file()) ++vizinhos;
+  CHECK(vizinhos == 1u);
+}
+
+// Disco cheio a meio da escripta, injectado por limite de paginas baixo: a falta
+// cahe no TEMPORARIO, o índice anterior sobrevive idêntico, e o temporario some.
+TEST_CASE("disco cheio a meio não estraga o índice anterior") {
+  const Cova cova;
+  for (int i = 1; i <= 40; ++i)
+    faz_wav(cova.acervo() / "A" / "B" /
+                ("0" + std::to_string(i) + " - Faixa Com Nome Comprido.wav"), 1);
+  {
+    nu::Varredura primeira(cova.banco(), {cova.acervo()});
+    corre_ate_o_fim(primeira);
+    REQUIRE(primeira.desfecho() == nu::Desfecho::Concluido);
+  }
+  std::ifstream fonte(cova.banco(), std::ios::binary);
+  const std::string antes((std::istreambuf_iterator<char>(fonte)),
+                          std::istreambuf_iterator<char>());
+  REQUIRE_FALSE(antes.empty());
+
+  nu::Varredura apertada(cova.banco(), {cova.acervo()}, 1);  // uma pagina addicional
+  corre_ate_o_fim(apertada);
+  CHECK(apertada.desfecho() == nu::Desfecho::ErroDeEscripta);
   std::ifstream fonte2(cova.banco(), std::ios::binary);
   const std::string depois((std::istreambuf_iterator<char>(fonte2)),
                            std::istreambuf_iterator<char>());
