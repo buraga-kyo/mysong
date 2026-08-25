@@ -624,6 +624,27 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       case tui::Verbo::TrocaLetra:
         mostra_letra.store(!mostra_letra.load());
         return true;
+      case tui::Verbo::AbreVideo: {
+        // O AUDIO CALA-SE PRIMEIRO, e sómente depois a janella abre. Nesta ordem,
+        // e não na contraria: abrindo primeiro, ha um instante com os dous a tocar,
+        // e é justamente o dobro que a tarefa proibe.
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty()) {
+          aviso_da_rede = "elege uma faixa primeiro";
+          return true;
+        }
+        if (!nucleo::tem_video(qual)) {
+          aviso_da_rede = std::string(nucleo::razao_da_fita(
+              nucleo::Fita::SemVideo));
+          return true;
+        }
+        tocador.pausar();
+        const nucleo::Fita fita = projector.abre(qual);
+        aviso_da_rede = fita == nucleo::Fita::Rodando
+                            ? std::string()
+                            : std::string(nucleo::razao_da_fita(fita));
+        return true;
+      }
       case tui::Verbo::AbreProcura:
         digita = Digita::Procura;
         termo_em_curso.clear();
