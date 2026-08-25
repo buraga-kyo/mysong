@@ -200,5 +200,18 @@ TEST_CASE("a lista sobrevive a fechar e reabrir o banco") {
         std::vector<std::string>{"/a/3.mp3", "/a/2.mp3", "/a/1.mp3"});
 }
 
+TEST_CASE("nome com aspas é nome, e não pedaço de SQL") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  // Se a cadeia fosse por concatenação em vez de amarração, isto abriria cadeia no
+  // meio do SQL e a lista não nasceria.
+  const int id = roleiro.cria("Ária \"Ré\"; DROP TABLE rol;--");
+  REQUIRE(id > 0);
+  REQUIRE(roleiro.junta(id, "/a/1.mp3"));
+  REQUIRE(roleiro.rois().size() == 1);
+  CHECK(roleiro.rois()[0].nome == "Ária \"Ré\"; DROP TABLE rol;--");
+  CHECK(roleiro.faixas(id).size() == 1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
