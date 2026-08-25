@@ -101,6 +101,20 @@ void Navegador::refaz_vista() {
       }
       break;
 
+    case Secao::Lista:
+      // O catalogo lido do Spotify. O INDICE na fonte vae na columna do numero, e é
+      // por elle que a faixa eleita se acha: com filtro posto, o indice da vista e o
+      // da fonte desencontram-se. É o mesmo engano que a ordem das listas ensinou.
+      for (std::size_t i = 0; i < catalogo_.faixas.size(); ++i) {
+        const nucleo::FaixaDoCatalogo& qual = catalogo_.faixas[i];
+        if (!contem_sem_caixa(qual.titulo, termo_) &&
+            !contem_sem_caixa(qual.artista, termo_))
+          continue;
+        vista_.push_back({qual.titulo, {}, static_cast<int>(i) + 1,
+                          qual.duracao_ms / 1000, qual.artista});
+      }
+      break;
+
     case Secao::Rede:
       // A UNICA secção que não pergunta á bibliotheca. A fonte é a lista que veio
       // de fóra, e o filtro applica-se sobre ella como sobre as outras.
@@ -282,6 +296,36 @@ bool Navegador::desce_no_rol() {
   return true;
 }
 
+void Navegador::mostra_catalogo(nucleo::Catalogo catalogo) {
+  catalogo_ = std::move(catalogo);
+  secao_ = Secao::Lista;
+  trilha_.clear();
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+}
+
+const std::string& Navegador::nome_do_catalogo() const noexcept {
+  return catalogo_.nome;
+}
+
+const std::vector<nucleo::FaixaDoCatalogo>& Navegador::faixas_do_catalogo()
+    const noexcept {
+  return catalogo_.faixas;
+}
+
+bool Navegador::ha_faixa_de_catalogo() const {
+  if (secao_ != Secao::Lista || vista_.empty()) return false;
+  const int indice = vista_[eleito_].numero - 1;
+  return indice >= 0 &&
+         static_cast<std::size_t>(indice) < catalogo_.faixas.size();
+}
+
+nucleo::FaixaDoCatalogo Navegador::faixa_de_catalogo_eleita() const {
+  if (!ha_faixa_de_catalogo()) return {};
+  return catalogo_.faixas[static_cast<std::size_t>(vista_[eleito_].numero - 1)];
+}
+
 void Navegador::mostra_rede(std::vector<Linha> achados) {
   rede_ = std::move(achados);
   secao_ = Secao::Rede;
@@ -323,6 +367,11 @@ bool Navegador::entra() {
       break;
     case Secao::NoRol:
       return true;  // já é faixa: quem chama enche a fila e manda tocar
+    case Secao::Lista:
+      // Faixa do catalogo não está no disco, e entrar n'ella não desce degrau: quem
+      // chama pergunta pela eleita e manda BAIXAR. O caminho eleito fica vazio n'esta
+      // secção, de proposito, como na Rede.
+      return false;
     case Secao::Rede:
       // Achado da rede não é faixa, e entrar n'elle não é descer degrau algum:
       // quem chama pergunta pela url_eleita e manda baixar. Nada muda aqui.
@@ -349,6 +398,7 @@ bool Navegador::volta() {
       break;
     case Secao::Rede:
     case Secao::Rois:
+    case Secao::Lista:
       trilha_.clear();
       secao_ = Secao::Artistas;
       break;

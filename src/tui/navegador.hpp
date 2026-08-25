@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/catalogo.hpp"
 #include "nucleo/rol.hpp"
 
 namespace mysong::tui {
@@ -35,7 +36,7 @@ namespace mysong::tui {
 // As LISTAS entram como DUAS secções, e não uma: a lista das listas e o dentro de
 // uma lista são vistas differentes, com ordens differentes e teclas differentes.
 // Uma só obrigaria a perguntar «estou dentro ou fóra?» em todo ramo.
-enum class Secao { Artistas, Albuns, Faixas, Busca, Rede, Rois, NoRol };
+enum class Secao { Artistas, Albuns, Faixas, Busca, Rede, Rois, NoRol, Lista };
 
 // Uma LINHA do que está á vista. O texto é o que se mostra; a `chave` é o que a
 // ordem `entra` consome, e nem sempre são a mesma cousa: o album mostra-se pelo
@@ -103,6 +104,23 @@ class Navegador {
   // disco, e a outra é endereço na rede. Confundi-las poria uma URL na fila do motor.
   std::string url_eleita() const;
 
+  // ── O CATALOGO DO SPOTIFY (issue #13) ─────────────────────────────────────
+
+  // mostra_catalogo — põe na tela o catalogo que se leu, ANTES de se baixar cousa
+  // alguma: é o que a tarefa pede quando manda devolver a lista para se conferir.
+  void mostra_catalogo(nucleo::Catalogo catalogo);
+
+  // O nome da lista lida, que é o que vae por album nas etiquetas. Vazio fóra d'esta
+  // secção.
+  const std::string& nome_do_catalogo() const noexcept;
+
+  // A faixa eleita do catalogo, e TODAS ellas. A eleita acha-se pelo indice que a
+  // linha carrega, e não pelo indice da vista: com filtro posto os dous
+  // desencontram-se, e baixar-se-hia a faixa errada.
+  bool ha_faixa_de_catalogo() const;
+  nucleo::FaixaDoCatalogo faixa_de_catalogo_eleita() const;
+  const std::vector<nucleo::FaixaDoCatalogo>& faixas_do_catalogo() const noexcept;
+
   // ── AS LISTAS (issue #10) ─────────────────────────────────────────────────
 
   // mostra_rois — passa á secção da lista das listas, relendo-a do banco.
@@ -155,6 +173,7 @@ class Navegador {
   Secao secao_ = Secao::Artistas;
   std::vector<Linha> vista_;
   std::vector<Linha> rede_;  // a fonte da vista na secção Rede, e sómente n'ella
+  nucleo::Catalogo catalogo_;  // a fonte da vista na secção Lista
   std::vector<std::string> trilha_;
   std::string termo_;
   std::size_t eleito_ = 0;

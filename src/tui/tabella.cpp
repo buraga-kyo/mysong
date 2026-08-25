@@ -59,6 +59,7 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
       {Secao::Busca, " SEARCH  "},
       {Secao::Rede, " NET     "},
       {Secao::Rois, " LISTS   "},
+      {Secao::Lista, " SPOTIFY "},
   };
   std::vector<ftxui::Element> linhas;
   for (const auto& [degrau, rotulo] : degraus) {
@@ -99,6 +100,9 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
         break;
       case Secao::Rede:
         recado = "  (nada achado: `s` pergunta outra vez)";
+        break;
+      case Secao::Lista:
+        recado = "  (lista alguma lida: `I` cola a URL de uma do Spotify)";
         break;
       case Secao::Busca:
         recado = "  (nada casa com esse termo)";
