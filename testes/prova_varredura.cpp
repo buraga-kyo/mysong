@@ -333,5 +333,38 @@ TEST_CASE("a varredura conduz-se por passos, e o destino não existe antes do fi
   CHECK(std::filesystem::exists(cova.banco()));  // sómente agora
 }
 
+// Abandonar a meio: o índice anterior fica byte a byte, e resíduo algum sobra.
+TEST_CASE("abandonar a meio conserva o índice anterior, e nada sobra") {
+  const Cova cova;
+  faz_wav(cova.acervo() / "A" / "B" / "01 - T.wav", 1);
+  {
+    nu::Varredura primeira(cova.banco(), {cova.acervo()});
+    corre_ate_o_fim(primeira);
+    REQUIRE(primeira.desfecho() == nu::Desfecho::Concluido);
+  }
+  std::ifstream fonte(cova.banco(), std::ios::binary);
+  const std::string antes((std::istreambuf_iterator<char>(fonte)),
+                          std::istreambuf_iterator<char>());
+  REQUIRE_FALSE(antes.empty());
+
+  faz_wav(cova.acervo() / "A" / "B" / "02 - Nova.wav", 1);
+  {
+    nu::Varredura segunda(cova.banco(), {cova.acervo()});
+    REQUIRE(segunda.passo());  // lista
+    REQUIRE(segunda.passo());  // e um arquivo
+    segunda.abandona();
+    CHECK(segunda.desfecho() == nu::Desfecho::Abandonado);
+  }
+  std::ifstream fonte2(cova.banco(), std::ios::binary);
+  const std::string depois((std::istreambuf_iterator<char>(fonte2)),
+                           std::istreambuf_iterator<char>());
+  CHECK(depois == antes);
+  // Resíduo algum: nenhum arquivo fóra do banco no directorio d'elle.
+  std::size_t vizinhos = 0;
+  for (const auto& entrada : std::filesystem::directory_iterator(cova.raiz()))
+    if (entrada.is_regular_file()) ++vizinhos;
+  CHECK(vizinhos == 1u);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
