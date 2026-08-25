@@ -58,5 +58,18 @@ TEST_CASE("o saneamento do nome apara os brancos, e nome vazio não vale") {
   CHECK(cortado == comprido);
 }
 
+TEST_CASE("o banco nasce na primeira abertura, com a versão assentada") {
+  Cova cova;
+  CHECK_FALSE(std::filesystem::exists(cova.banco()));
+  nu::Roleiro roleiro(cova.banco());
+  REQUIRE(roleiro.aberto());
+  CHECK(roleiro.versao() == nu::kVersaoDoRol);
+  CHECK(roleiro.rois().empty());
+  // Abrir DUAS vezes não duplica a versão: o esquema é IF NOT EXISTS, e a versão
+  // sómente se assenta havendo zero linhas.
+  nu::Roleiro outro(cova.banco());
+  CHECK(outro.versao() == nu::kVersaoDoRol);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
