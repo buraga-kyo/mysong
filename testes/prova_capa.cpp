@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include <filesystem>
+#include <cstdlib>
 #include <fstream>
 #include <string>
 
@@ -77,6 +78,45 @@ TEST_CASE("a chave do cache é a pasta e o tamanho, e não a faixa") {
   // Tamanho differente tambem, que a arte tem de encher o painel novo.
   CHECK(uma != nu::chave_do_cache("/a/A/B/01 - Um.mp3", 21, 10));
   CHECK(uma != nu::chave_do_cache("/a/A/B/01 - Um.mp3", 20, 11));
+}
+
+// A GALERIA e o CACHE, com imagem de verdade. A imagem faz-se aqui: um PNG de
+// dezaseis por dezaseis escripto octeto a octeto seria trabalho de mais, e por isso
+// se chama o ffmpeg UMA vez e se salta o caso se elle não estiver. O que se afere não
+// é o chafa: é a CONTAGEM de conversões.
+TEST_CASE("a galeria converte uma vez por album e por tamanho") {
+  const Cova cova;
+  const std::filesystem::path imagem = cova.raiz() / "cover.png";
+  const std::string commando =
+      "ffmpeg -y -f lavfi -i color=c=purple:s=64x64 -frames:v 1 '" +
+      imagem.string() + "' >/dev/null 2>&1";
+  if (std::system(commando.c_str()) != 0 ||
+      !std::filesystem::exists(imagem)) {
+    WARN("sem ffmpeg: o caso do cache não corre");
+    return;
+  }
+
+  nu::Galeria galeria;
+  const std::filesystem::path uma = cova.raiz() / "01 - Um.mp3";
+  const std::filesystem::path outra = cova.raiz() / "02 - Dous.mp3";
+
+  const nu::CapaPintada& primeira = galeria.capa(uma, 10, 5);
+  REQUIRE(primeira.achada);
+  CHECK(primeira.linhas.size() == 5u);
+  CHECK(galeria.quantos_renders() == 1u);
+
+  // A MESMA faixa outra vez: cache, e conversão alguma.
+  galeria.capa(uma, 10, 5);
+  CHECK(galeria.quantos_renders() == 1u);
+  // OUTRA faixa do mesmo album: tambem cache. É a affirmação que a chave carrega.
+  galeria.capa(outra, 10, 5);
+  CHECK(galeria.quantos_renders() == 1u);
+  // Tamanho novo: conversão nova, que a arte tem de encher o painel novo.
+  galeria.capa(uma, 12, 6);
+  CHECK(galeria.quantos_renders() == 2u);
+  // E de volta ao tamanho de antes: cache outra vez.
+  galeria.capa(uma, 10, 5);
+  CHECK(galeria.quantos_renders() == 2u);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
