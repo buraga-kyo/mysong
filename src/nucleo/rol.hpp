@@ -36,5 +36,18 @@ struct sqlite3;
 
 namespace mysong::nucleo {
 
+// A VERSÃO do esquema das listas. Independente da da bibliotheca: são bancos
+// differentes, e fazê-las subir juntas obrigaria a reconstruir um por causa do outro.
+inline constexpr int kVersaoDoRol = 1;
+
+// Uma LISTA. `quantos` vem da conta, e não de columna guardada: columna guardada
+// é numero que se pode desencontrar do que ha, e desencontrar-se-hia no dia em que
+// alguem apagasse item sem a decrementar.
+struct Rol {
+  int id = 0;
+  std::string nome;
+  int quantos = 0;
+};
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
