@@ -127,5 +127,14 @@ TEST_CASE("chave de FUNDO DOUS não vira campo da faixa") {
   CHECK(lida.faixas[0].duracao_ms == 1000);
 }
 
+TEST_CASE("corpo sem lista dá catalogo vazio, e não erro") {
+  CHECK(nu::le_catalogo("").faixas.empty());
+  CHECK(nu::le_catalogo("<html>nada</html>").faixas.empty());
+  CHECK(nu::le_catalogo("{\"trackList\":[]}").faixas.empty());
+  // Arranjo TRUNCADO: nada sahe. Rede que corta a pagina a meio é caso de todo dia.
+  CHECK(nu::le_catalogo("{\"trackList\":[{\"title\":\"Meia\"").faixas.empty());
+  CHECK(nu::nome_da_lista("<html>sem lista</html>").empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
