@@ -96,5 +96,34 @@ TEST_CASE("faltando os dous, o artista fica Desconhecido e não fica o canal") {
   CHECK(nu::resolve({}, canal).artista == "Public Domain Classical Music");
 }
 
+// O CAMINHO na hierarchia, contra alvo escripto á mão.
+TEST_CASE("o destino sahe na hierarchia Artista/Album/NN - Titulo") {
+  nu::Pedido cheio;
+  cheio.artista = "Ada Lovelace";
+  cheio.album = "Máquina Analítica";
+  cheio.titulo = "Tear";
+  cheio.numero = 3;
+  CHECK(nu::destino("/acervo", cheio).string() ==
+        "/acervo/Ada Lovelace/Máquina Analítica/03 - Tear");
+  // Numero de dous digitos não ganha zero á frente.
+  cheio.numero = 12;
+  CHECK(nu::destino("/acervo", cheio).string() ==
+        "/acervo/Ada Lovelace/Máquina Analítica/12 - Tear");
+  // Sem numero, o titulo fica sozinho; sem album, o artista contem a faixa.
+  cheio.numero = 0;
+  CHECK(nu::destino("/acervo", cheio).string() ==
+        "/acervo/Ada Lovelace/Máquina Analítica/Tear");
+  cheio.album.clear();
+  CHECK(nu::destino("/acervo", cheio).string() == "/acervo/Ada Lovelace/Tear");
+  // E o saneamento vale em CADA componente, e não sómente no titulo.
+  nu::Pedido torto;
+  torto.artista = "AC/DC";
+  torto.album = ".occulto";
+  torto.titulo = "a/b";
+  CHECK(nu::destino("/acervo", torto).string() == "/acervo/AC-DC/occulto/a-b");
+  // Extensão alguma se põe: quem a põe é o yt-dlp, que sabe em que fórma sahiu.
+  CHECK(nu::destino("/acervo", cheio).extension().empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
