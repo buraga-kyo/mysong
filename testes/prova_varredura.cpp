@@ -25,5 +25,22 @@ TEST_CASE("a extensão de audio aceita-se em qualquer caixa") {
   CHECK_FALSE(nu::extensao_de_audio(""));
 }
 
+// A derivação, contra alvo ESCRIPTO Á MÃO. Nenhum caso pergunta á obra o que
+// ella derivou para depois conferir que o derivou: os quatro campos vão
+// escriptos aqui, letra por letra.
+TEST_CASE("a derivação lê artista, album, numero e titulo do caminho") {
+  const nu::Faixa cheia =
+      nu::deriva_do_caminho("/acervo/Ada Lovelace/Máquina/03 - Tear.mp3",
+                            "/acervo");
+  CHECK(cheia.artista == "Ada Lovelace");
+  CHECK(cheia.album == "Máquina");
+  CHECK(cheia.numero == 3);
+  CHECK(cheia.titulo == "Tear");
+  CHECK(cheia.raiz == "/acervo");
+  // Todos os quatro bits: a dedução é o piso, e a etiqueta apaga o que disser.
+  CHECK(cheia.deduzido == (nu::kDeduziuArtista | nu::kDeduziuAlbum |
+                           nu::kDeduziuTitulo | nu::kDeduziuNumero));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
