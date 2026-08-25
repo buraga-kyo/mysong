@@ -330,5 +330,52 @@ bool Projector::volume(int porcento) {
   return manda_travado(ordem_de_numero("volume", aparado));
 }
 
+void Projector::fecha() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  fecha_travado();
+}
+
+void Projector::fecha_travado() {
+  if (filho_ < 0) {
+    if (punho_ >= 0) {
+      ::close(punho_);
+      punho_ = -1;
+    }
+    return;
+  }
+  // PEDE-SE primeiro. Pedir deixa o mpv sahir limpo; o signal é o que se manda a
+  // quem não obedece, e não a primeira palavra.
+  if (punho_ >= 0) {
+    const std::string quit = ordem_simples("quit");
+    ::ssize_t ignorado = ::write(punho_, quit.data(), quit.size());
+    (void)ignorado;
+    ::close(punho_);
+    punho_ = -1;
+  }
+  // Espera-se o pedido tomar effeito, e sómente então se insiste.
+  for (int tentativa = 0; tentativa < kTentativasDoSoquete; ++tentativa) {
+    int estado = 0;
+    if (::waitpid(filho_, &estado, WNOHANG) == filho_) {
+      filho_ = -1;
+      break;
+    }
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(kMilesimosPorTentativa));
+  }
+  if (filho_ >= 0) {
+    ::kill(filho_, SIGTERM);
+    int estado = 0;
+    // ESPERA-SE, e sem WNOHANG: é esta espera que faz `pgrep` sahir vazio depois
+    // de a TUI fechar. Sem ella, o filho ficaria zombie até o pae morrer.
+    ::waitpid(filho_, &estado, 0);
+    filho_ = -1;
+  }
+  std::error_code erro;
+  std::filesystem::remove(soquete_, erro);
+  faixa_.clear();
+}
+
+}  // namespace mysong::nucleo
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
