@@ -64,5 +64,14 @@ TEST_CASE("recado novo substitue o velho, e a geração conta os dous") {
   CHECK_FALSE(correio.colhe(&achados, &recado));
 }
 
+TEST_CASE("colher sem querer o conteudo tambem consome") {
+  tui::Correio correio;
+  correio.poe({linha("Toccata")}, "recado");
+  // Punho nullo é pedido legitimo: quem sómente quer saber se houve recado não ha de
+  // ser obrigado a declarar duas variaveis para as jogar fóra.
+  CHECK(correio.colhe(nullptr, nullptr));
+  CHECK_FALSE(correio.colhe(nullptr, nullptr));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
