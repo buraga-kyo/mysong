@@ -311,6 +311,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
   // A PROCURA entra no mesmo enum, pela mesma razão: tres destinos, e não tres
   // booleanos, que tres booleanos admittem o estado «os tres», que não existe.
+  // O NOME e a CONFIRMAÇÃO entram no mesmo enum: são dous destinos mais, e a razão
+  // é a mesma que fez a Procura entrar aqui em vez de n'um booleano ao lado.
   enum class Digita {
     Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma
   } digita = Digita::Nada;
@@ -487,7 +489,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
                            " · b baixa por URL · r varre · l letra · espaço pausa"
-                           " · n/p faixa · ,. busca no som · +- volume · q sahe") |
+                           " · n/p faixa · P listas · c cria · a junta · t retira"
+                           " · K/J move · R renomeia · D apaga · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -636,6 +639,23 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           nucleo::Pedido pedido;
           pedido.url = url;
           estaleiro.encommenda(pedido);
+          return true;
+        }
+        // Dentro de uma lista, entrar enche a fila com a lista TODA na ordem
+        // gravada, e não sómente com a faixa eleita: é o que a tarefa pede quando diz
+        // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
+        if (navegador.secao() == tui::Secao::NoRol) {
+          const std::size_t eleita = navegador.eleito();
+          const std::size_t antes = tocador.fila().tamanho();
+          std::size_t quantas = 0;
+          for (const tui::Linha& linha : navegador.vista()) {
+            tocador.fila().junta(linha.chave);
+            ++quantas;
+          }
+          if (quantas > 0) {
+            tocador.fila().ir_para(antes + std::min(eleita, quantas - 1));
+            tocador.tocar_corrente();
+          }
           return true;
         }
         // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
