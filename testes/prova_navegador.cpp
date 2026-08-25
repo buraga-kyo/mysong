@@ -183,5 +183,20 @@ TEST_CASE("o filtro corta a vista, sem caixa, e limpa-se com cadeia vazia") {
   CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace", "Bach"});
 }
 
+// O ELEITO nunca sahe da vista. É o invariante, e a prova exercita-o pelo caminho
+// que o quebraria: eleger o ultimo de uma lista longa e depois encurtá-la.
+TEST_CASE("o eleito apara-se quando a vista encurta") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.ao_fim();
+  REQUIRE(navegador.eleito() == 1u);
+  navegador.filtra("Bach");            // um só sobra
+  REQUIRE(navegador.vista().size() == 1u);
+  CHECK(navegador.eleito() == 0u);     // e o eleito cabe n'ella
+  CHECK(navegador.vista()[navegador.eleito()].texto == "Bach");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
