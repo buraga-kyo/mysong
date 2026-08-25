@@ -38,5 +38,21 @@
 
 namespace mysong::nucleo {
 
+// A CLASSE da janella. Fixa, e n'uma constante com nome: é por ella que o
+// RADICAL-OS a governa por regra, e regra que aponte para nome que se mova é regra
+// que se quebra calada.
+inline constexpr char kClasseDoVideo[] = "mysong-video";
+
+// tem_video — o juizo pela EXTENSÃO, e a lista é fechada. O limite vae declarado:
+// um `.mkv` sem faixa de video existe, e este juizo diz que tem. Perguntar ao mpv
+// seria certo e custaria um processo por faixa a cada quadro da tela.
+bool tem_video(const std::filesystem::path& faixa);
+
+// extensao_com_video — a mesma pergunta, feita á extensão sósinha. Existe porque a
+// VARREDURA tambem precisa d'esta lista, e duas listas em dous arquivos dariam
+// duas verdades: o dia em que uma ganhasse `.mkv` e a outra não, o acervo indexava
+// o que a tela recusava abrir. A lista tem UM logar, e é este.
+bool extensao_com_video(std::string_view extensao);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
