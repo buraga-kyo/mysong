@@ -75,6 +75,21 @@ void Navegador::refaz_vista() {
   else if (eleito_ >= vista_.size()) eleito_ = vista_.size() - 1;
 }
 
+std::size_t primeira_a_mostrar(std::size_t eleito, std::size_t quantas,
+                               std::size_t altura,
+                               std::size_t primeira_de_antes) {
+  if (altura == 0 || quantas == 0) return 0;
+  if (quantas <= altura) return 0;  // cabe tudo: não ha rolagem que fazer
+
+  std::size_t primeira = primeira_de_antes;
+  // Se a fatia de antes já não cabe na lista, encosta-se ao fim.
+  if (primeira + altura > quantas) primeira = quantas - altura;
+  // E rola-se o MENOS que baste para o eleito caber.
+  if (eleito < primeira) primeira = eleito;
+  else if (eleito >= primeira + altura) primeira = eleito - altura + 1;
+  return primeira;
+}
+
 Navegador::Navegador(const nucleo::Biblioteca& livraria) : livraria_(livraria) {
   refaz_vista();
 }

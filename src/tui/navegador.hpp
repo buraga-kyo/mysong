@@ -41,6 +41,17 @@ struct Linha {
   std::string autor;   // sómente em faixas: o artista, para a columna do meio
 };
 
+// A JANELLA da rolagem: qual a primeira linha a mostrar, dada a altura da
+// tabella. Funcção PURA de (eleito, quantas, altura), e não estado guardado no
+// navegador: guardada, ella divergiria da vista depois de um filtro, e a tela
+// mostraria uma fatia que já não contem o eleito.
+//
+// A regra é MINIMA: rola-se o menos que baste para o eleito caber. Assim descer
+// uma linha não salta meia tela, e voltar ao logar de antes devolve a mesma
+// fatia, que é o que o aceite pede quando diz que a rolagem não perde a posição.
+std::size_t primeira_a_mostrar(std::size_t eleito, std::size_t quantas,
+                               std::size_t altura, std::size_t primeira_de_antes);
+
 // O NAVEGADOR. A bibliotheca é EMPRESTADA e vive mais que elle: o navegador não a
 // possue, e por isso não a fecha nem a reabre ás escondidas.
 class Navegador {
