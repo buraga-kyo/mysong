@@ -583,6 +583,44 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Procura;
         termo_em_curso.clear();
         return true;
+      case tui::Verbo::AbreRois:
+        navegador.mostra_rois();
+        return true;
+      case tui::Verbo::CriaRol:
+        digita = Digita::NomeNovo;
+        termo_em_curso.clear();
+        return true;
+      case tui::Verbo::RenomeiaRol:
+        if (!navegador.nome_do_rol_eleito().empty()) {
+          digita = Digita::NomeOutro;
+          termo_em_curso = navegador.nome_do_rol_eleito();
+        }
+        return true;
+      case tui::Verbo::ApagaRol:
+        // PERGUNTA-SE. É o unico verbo d'esta obra que apaga cousa que o operador
+        // fez á mão, e apagar sem perguntar é o que a tarefa proibe.
+        if (!navegador.nome_do_rol_eleito().empty()) digita = Digita::Confirma;
+        return true;
+      case tui::Verbo::JuntaAoRol: {
+        // A faixa eleita vae á lista CORRENTE. Fóra de uma lista não ha corrente, e
+        // ahi diz-se o que falta em vez de se calar.
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty())
+          aviso_da_rede = "elege uma faixa primeiro";
+        else if (!navegador.junta_ao_rol(qual))
+          aviso_da_rede = "entra n'uma lista primeiro (P)";
+        return true;
+      }
+      case tui::Verbo::RetiraDoRol:
+        if (!navegador.retira_do_rol())
+          aviso_da_rede = "isso sómente dentro de uma lista";
+        return true;
+      case tui::Verbo::SobeNoRol:
+        navegador.sobe_no_rol();
+        return true;
+      case tui::Verbo::DesceNoRol:
+        navegador.desce_no_rol();
+        return true;
       case tui::Verbo::Varre:
         // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
         // apaga-o, donde carregar dez vezes no `r` durante uma varredura não
