@@ -61,6 +61,21 @@ std::size_t enchimento(double posicao, double duracao, std::size_t largura) {
 
 namespace {
 
+// pinta — texto com tinta de token, que é o que se repete em toda a barra.
+ftxui::Element pinta(const std::string& texto, std::string_view token) {
+  const tokens::Triade c = tokens::rgb(token);
+  return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
+}
+
+// repete — n copias do glifo. O glifo é multibyte, donde std::string(n, ch) não
+// serve: ella repetiria UM byte, e a barra sahiria em lixo.
+std::string repete(std::string_view glifo, std::size_t n) {
+  std::string feito;
+  feito.reserve(glifo.size() * n);
+  for (std::size_t i = 0; i < n; ++i) feito += glifo;
+  return feito;
+}
+
 // Os pedaços da fita em elementos. A regra do DESIGN_SYSTEM manda que a côr da
 // seta seja a côr do segmento que ella SEGUE, e a fita já a resolveu: aqui
 // sómente se pinta o que ella diz.
