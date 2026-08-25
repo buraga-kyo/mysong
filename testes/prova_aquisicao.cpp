@@ -220,5 +220,39 @@ TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
   CHECK(nu::argumentos_da_busca("x", 100).back() == "ytsearch20:x");
 }
 
+TEST_CASE("os achados lêem-se por LINHA, e titulo com barra não os parte") {
+  // A barra vertical no titulo é o caso que um separador dentro da linha erraria.
+  const std::string sahida =
+      "Bach | Toccata e Fuga\nCanal do Orgao\n542\nhttps://y/1\n"
+      "Bach\tPartita\nOutro Canal\nNA\nhttps://y/2\n";
+  const std::vector<nu::Achado> achados = nu::le_achados(sahida);
+  REQUIRE(achados.size() == 2);
+  CHECK(achados[0].titulo == "Bach | Toccata e Fuga");
+  CHECK(achados[0].canal == "Canal do Orgao");
+  CHECK(achados[0].duracao == 542);
+  CHECK(achados[0].url == "https://y/1");
+  CHECK(achados[1].titulo == "Bach\tPartita");
+  // O NA da duração é «não disse», e não é duração zero mentida como numero.
+  CHECK(achados[1].duracao == 0);
+  // E o NA num campo de TEXTO fica vazio, e não fica a palavra NA: mostrar «NA»
+  // por canal seria inventar um canal chamado NA.
+  const std::vector<nu::Achado> mudo =
+      nu::le_achados("Titulo\nNA\n60\nhttps://y/9\n");
+  REQUIRE(mudo.size() == 1);
+  CHECK(mudo[0].canal.empty());
+}
+
+TEST_CASE("achado meio não se mostra, e duração que não é numero não vira lixo") {
+  // Tres linhas: o grupo de quatro não fecha, e o achado meio cahe. Se ficasse, o
+  // operador elegia-o e a baixa falhava sem URL.
+  CHECK(nu::le_achados("Titulo\nCanal\n100\n").empty());
+  // Sem URL não ha o que baixar, ainda que o grupo feche.
+  CHECK(nu::le_achados("Titulo\nCanal\n100\n\n").empty());
+  // Duração que o yt-dlp escreva por extenso não se lê a metade: fica zero.
+  const std::vector<nu::Achado> um = nu::le_achados("T\nC\n9m02s\nhttps://y/3\n");
+  REQUIRE(um.size() == 1);
+  CHECK(um[0].duracao == 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
