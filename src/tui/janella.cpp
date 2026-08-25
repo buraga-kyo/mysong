@@ -46,6 +46,7 @@
 
 #include "nucleo/analisador.hpp"
 #include "nucleo/capa.hpp"
+#include "nucleo/estaleiro.hpp"
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
@@ -113,7 +114,7 @@ std::filesystem::path raiz_do_acervo() {
 std::string assignatura_do_visivel(nucleo::Tocador& tocador,
                                    const tui::Navegador& navegador,
                                    int digita, const std::string& termo_em_curso,
-                                   const std::string& aviso, bool mostra_letra,
+                                   const std::string& recado, bool mostra_letra,
                                    bool varrida) {
   std::string marca;
   marca.reserve(128);
@@ -142,7 +143,7 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += std::to_string(digita);
   marca += termo_em_curso;
   marca += ':';
-  marca += aviso;
+  marca += recado;
   marca += mostra_letra ? 'L' : 'e';
   marca += varrida ? 'v' : '.';
   marca += ':';
@@ -260,6 +261,16 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::atomic<bool> pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
 
+  // O ESTALEIRO das baixas. A obra que elle cumpre é a aquisição da issue #11, e é a
+  // MESMA para a URL colada á mão e para o achado eleito na rede: o caminho
+  // reaproveita-se inteiro, em vez de se duplicar.
+  nucleo::Estaleiro estaleiro(
+      nucleo::OBREIROS_DA_BAIXA,
+      [](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
+        return nucleo::baixa(raiz_do_acervo(), pedido, ficou);
+      });
+
+
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
   // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
@@ -274,7 +285,6 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
   enum class Digita { Nada, Busca, Url } digita = Digita::Nada;
   std::string termo_em_curso;
-  std::string aviso_da_baixa;
   std::size_t primeira_linha = 0;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
@@ -351,7 +361,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
-    if (!aviso_da_baixa.empty()) trilha += "   " + aviso_da_baixa;
+    const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
+    if (!andamento.empty()) trilha += "   " + andamento;
 
     // A letra relê-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
@@ -404,23 +415,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (era == Digita::Busca) {
           navegador.filtra(termo_em_curso);
         } else if (!termo_em_curso.empty()) {
-          // A baixa corre em fio SOLTO, e de proposito: ella pode levar minutos,
-          // e o operador ha de continuar a ouvir o que já tem. O fio não toca a
-          // tela; deixa recado no aviso, e a tela lê-o.
-          const std::string url = termo_em_curso;
-          aviso_da_baixa = "a baixar...";
-          ao_fundo.emplace_back([&aviso_da_baixa, &pede_varrer, url] {
-            std::filesystem::path ficou;
-            nucleo::Pedido pedido;
-            pedido.url = url;  // e o resto vem da rede, que o operador não disse
-            const nucleo::Colheita fim =
-                nucleo::baixa(raiz_do_acervo(), pedido, &ficou);
-            aviso_da_baixa = nucleo::razao_da_colheita(fim);
-            // Ha faixa nova: pede-se varredura ao fio que a faz, em vez de a fazer
-            // aqui. Dous fios a varrer o mesmo banco ao mesmo tempo é o que isto
-            // evita, e era o que succedia antes.
-            if (fim == nucleo::Colheita::Colhido) pede_varrer.store(true);
-          });
+          // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
+          // declarado, conta o andamento, e a tela lê-o: duas encommendas seguidas
+          // não se atropelam, e a segunda espera em vez de disputar a rede.
+          nucleo::Pedido pedido;
+          pedido.url = termo_em_curso;  // o resto vem da rede: o operador não disse
+          estaleiro.encommenda(pedido);
         }
         return true;
       }
@@ -487,13 +487,17 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::thread relogio([&] {
     while (!sahir.load()) {
       tocador.pulsa();
+      // Colheu-se faixa nova: pede-se varredura. A bandeira do estaleiro CONSOME-SE
+      // na leitura, donde isto sahe uma vez por colheita, e não a cada quadro.
+      if (estaleiro.colheu()) pede_varrer.store(true);
       analisador.pulsa();
       mpris.pulsa();
       // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
       // tela escreve zero: é a correcção da issue #48.
       const std::string agora = assignatura_do_visivel(
           tocador, navegador, static_cast<int>(digita), termo_em_curso,
-          aviso_da_baixa, mostra_letra, varrida.load());
+          nucleo::texto_do_andamento(estaleiro.andamento()), mostra_letra,
+          varrida.load());
       if (agora != ultima_assignatura) {
         ultima_assignatura = agora;
         tela.PostEvent(ftxui::Event::Custom);
