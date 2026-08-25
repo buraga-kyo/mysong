@@ -21,7 +21,10 @@
 //                   e adivinhar; e a decisão de abrir depende de UM predicado
 //                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
+#include <atomic>
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -42,9 +45,12 @@
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/tocador.hpp"
+#include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
 #include "tui/commando.hpp"
 #include "tui/espectro.hpp"
+#include "tui/navegador.hpp"
+#include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
 
@@ -52,6 +58,49 @@ namespace nucleo = mysong::nucleo;
 namespace tui = mysong::tui;
 
 namespace {
+
+// caminho_do_indice — `$XDG_DATA_HOME/mysong/indice.sqlite3`, e sem elle
+// `~/.local/share/...`. Cria-se o directorio com modo 0700, como no precedente
+// do agenda_index.py: o que o operador escuta é dado d'elle, e não do mundo.
+std::filesystem::path caminho_do_indice() {
+  const char* dados = std::getenv("XDG_DATA_HOME");
+  std::filesystem::path raiz;
+  if (dados != nullptr && dados[0] != '\0') {
+    raiz = std::filesystem::path(dados);
+  } else {
+    const char* casa = std::getenv("HOME");
+    if (casa == nullptr) return {};
+    raiz = std::filesystem::path(casa) / ".local" / "share";
+  }
+  const std::filesystem::path pasta = raiz / "mysong";
+  std::error_code erro;
+  std::filesystem::create_directories(pasta, erro);
+  std::filesystem::permissions(pasta, std::filesystem::perms::owner_all,
+                               std::filesystem::perm_options::replace, erro);
+  return pasta / "indice.sqlite3";
+}
+
+// raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
+// que o operador com monte de rede não tenha de mover o acervo para casa.
+std::filesystem::path raiz_do_acervo() {
+  const char* posto = std::getenv("MYSONG_ACERVO");
+  if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
+  const char* casa = std::getenv("HOME");
+  if (casa == nullptr) return {};
+  return std::filesystem::path(casa) / "Música";
+}
+
+// varre_em_fio — a varredura em fio proprio, passo a passo, sem travar a tela. A
+// conducção por passos da issue #34 existe justamente para isto: o fio pode
+// parar entre dous passos, e a bandeira `sahir` é onde elle olha.
+void varre_em_fio(const std::filesystem::path& banco,
+                  const std::filesystem::path& acervo, const bool& sahir,
+                  std::atomic<bool>* concluida) {
+  nucleo::Varredura varredura(banco, {acervo});
+  while (!sahir && varredura.passo()) {
+  }
+  concluida->store(true);
+}
 
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
 // pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
@@ -83,6 +132,18 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
     case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
     case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
     case tui::Verbo::Sahir: sahir = true; break;
+    // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
+    // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
+    // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
+    case tui::Verbo::Desce:
+    case tui::Verbo::Sobe:
+    case tui::Verbo::AoPrincipio:
+    case tui::Verbo::AoFim:
+    case tui::Verbo::Entra:
+    case tui::Verbo::Volta:
+    case tui::Verbo::AbreBusca:
+    case tui::Verbo::Varre:
+      break;
   }
 }
 
@@ -121,39 +182,127 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
   if (!tocador.fila().vazia()) tocador.tocar_corrente();
 
+  // O ÍNDICE e a VARREDURA. A varredura corre em fio proprio e o navegador
+  // recarrega quando ella concluir: assim a tela abre de pronto, com o acervo da
+  // corrida anterior, em vez de esperar pelo disco.
+  const std::filesystem::path banco = caminho_do_indice();
+  nucleo::Biblioteca livraria(banco);
+  tui::Navegador navegador(livraria);
+  std::atomic<bool> varrida{false};
+  bool recarregado = false;
+
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   bool sahir = false;
+  bool digitando = false;
+  std::string termo_em_curso;
+  std::size_t primeira_linha = 0;
+
+  std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
+                       std::cref(sahir), &varrida);
 
   auto pintor = ftxui::Renderer([&] {
     const tui::Retracto retracto = retracto_do(tocador);
-    const int largura = ftxui::Terminal::Size().dimx;
-    const std::size_t larg = largura > 2 ? static_cast<std::size_t>(largura - 2) : 1;
+    const int col = ftxui::Terminal::Size().dimx;
+    const int lin = ftxui::Terminal::Size().dimy;
+    const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
+    // A tabella toma o que sobra em altura: cinco linhas de guarnição (marca,
+    // trilha, espectro de oito, transporte, rodapé) mais a orla.
+    const std::size_t alt_tab = lin > 16 ? static_cast<std::size_t>(lin - 16) : 1;
+    primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
+                                             navegador.vista().size(), alt_tab,
+                                             primeira_linha);
+    const std::size_t larg_tab = larg > 11 ? larg - 11 : 1;
+
+    std::string trilha = "ARTISTS";
+    for (const std::string& degrau : navegador.trilha())
+      trilha += "  \ue0b1  " + degrau;
+    if (digitando) trilha = "/" + termo_em_curso;
+    else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    if (!varrida.load()) trilha += "   (a varrer o acervo...)";
+
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
-    // O NOME do arquivo, e não o caminho. O retracto guarda o caminho inteiro
-    // de proposito, que é o que o socket e o MPRIS haverão de querer; a TELA
-    // mostra o nome, que é o que cabe na largura e o que o olho procura.
-    const std::string cabeca =
-        retracto.tamanho == 0
-            ? std::string("fila vazia")
-            : std::filesystem::path(retracto.titulo).filename().string();
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
-               ftxui::text(cabeca) | ftxui::dim,
+               ftxui::text(trilha) | ftxui::dim,
+               ftxui::hbox({
+                   tui::elemento_da_barra(navegador),
+                   ftxui::text("  "),
+                   tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
+                                            larg_tab),
+               }),
+               ftxui::text(""),
                tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("espaço pausa · n/p faixa · setas buscam · +/- volume · q sahe") |
+               ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
+                           " · espaço pausa · n/p faixa · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
   });
 
-
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
-    const tui::Ordem ordem = tui::ordem_da_tecla(tecla, retracto_do(tocador));
-    if (ordem.verbo == tui::Verbo::Nada) return false;  // tecla alheia segue
-    cumprir(ordem, tocador, sahir);
-    if (sahir) tela.Exit();
-    return true;
+    // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
+    // por onde uma tecla chegue ás duas leituras.
+    if (digitando) {
+      if (tecla == ftxui::Event::Escape) {
+        digitando = false;
+        termo_em_curso.clear();
+        return true;
+      }
+      if (tecla == ftxui::Event::Return) {
+        digitando = false;
+        navegador.filtra(termo_em_curso);
+        return true;
+      }
+      if (tecla == ftxui::Event::Backspace) {
+        if (!termo_em_curso.empty()) termo_em_curso.pop_back();
+        return true;
+      }
+      if (tecla.is_character()) {
+        termo_em_curso += tecla.character();
+        return true;
+      }
+      return true;  // dentro do modo, tecla alguma sahe para fóra
+    }
+
+    const tui::Ordem ordem =
+        tui::ordem_da_tecla(tecla, retracto_do(tocador), false);
+    switch (ordem.verbo) {
+      case tui::Verbo::Nada: return false;  // tecla alheia segue
+      case tui::Verbo::Desce: navegador.desce(); return true;
+      case tui::Verbo::Sobe: navegador.sobe(); return true;
+      case tui::Verbo::AoPrincipio: navegador.ao_principio(); return true;
+      case tui::Verbo::AoFim: navegador.ao_fim(); return true;
+      case tui::Verbo::Volta: navegador.volta(); return true;
+      case tui::Verbo::AbreBusca:
+        digitando = true;
+        termo_em_curso.clear();
+        return true;
+      case tui::Verbo::Varre:
+        if (varrida.load()) {  // uma varredura por vez, e não vinte
+          varrida.store(false);
+          recarregado = false;
+          std::thread(varre_em_fio, banco, raiz_do_acervo(), std::cref(sahir),
+                      &varrida).detach();
+        }
+        return true;
+      case tui::Verbo::Entra:
+        // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
+        // é quem tem o tocador na mão.
+        if (navegador.entra()) {
+          const std::string caminho = navegador.caminho_eleito();
+          if (!caminho.empty()) {
+            tocador.fila().junta(caminho);
+            tocador.fila().ir_para(tocador.fila().tamanho() - 1);
+            tocador.tocar_corrente();
+          }
+        }
+        return true;
+      default:
+        cumprir(ordem, tocador, sahir);
+        if (sahir) tela.Exit();
+        return true;
+    }
   });
 
   // O RELOGIO. Vive em fio proprio porque `tela.Loop` não devolve até se sahir, e
@@ -164,6 +313,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     while (!sahir) {
       tocador.pulsa();
       analisador.pulsa();
+      // A varredura concluiu: o navegador recarrega UMA vez. A bandeira impede
+      // que elle releia o banco vinte vezes por segundo para sempre.
+      if (varrida.load() && !recarregado) {
+        recarregado = true;
+        livraria.reabre();
+        navegador.recarrega();
+      }
       tela.PostEvent(ftxui::Event::Custom);
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
@@ -172,6 +328,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   tela.Loop(janella);
   sahir = true;  // a sahida pela tela tambem para o relogio
   relogio.join();
+  // O varredor espera-se tambem: elle tem referencia para a bandeira e para o
+  // banco, que vivem nesta pilha. Deixá-lo solto seria fio a ler memoria de
+  // quadro já desfeito, e isso não perdoa.
+  if (varredor.joinable()) varredor.join();
   return 0;
 }
 

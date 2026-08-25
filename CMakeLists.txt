@@ -198,6 +198,9 @@ target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp)
 # pkg_check_modules já correu.
 target_include_directories(mysong_testes SYSTEM PRIVATE ${SQLITE3_INCLUDE_DIRS})
 
+# ─── A NAVEGAÇÃO DA BIBLIOTHECA (issue #9) ──────────────────────────────────
+target_sources(mysong_core PRIVATE src/tui/navegador.cpp src/tui/tabella.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 

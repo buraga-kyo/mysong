@@ -1,0 +1,118 @@
+// ══════════════════════════════════════════════════════════════════════════
+//   TRACTADO DA TABELLA — src/tui/tabella.cpp
+// ══════════════════════════════════════════════════════════════════════════
+// A pintura. Vale a regra do cabeçalho: pinta e sahe.
+//
+// DOMÍNIO ......... o Navegador por leitura, e a geometria.
+// CONTRA-DOMÍNIO .. elementos do FTXUI.
+// INVARIANTE ...... funcção alguma d'aqui muta o navegador. O parametro é
+//                   `const&`, e o compilador guarda a regra.
+// Q.E.D. .......... a decisão toda vive no navegador, e é lá que se prova; aqui
+//                   sómente se traduz estado em tinta.
+// ══════════════════════════════════════════════════════════════════════════
+#include "tui/tabella.hpp"
+
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "tui/tokens.hpp"
+#include "tui/transporte.hpp"
+
+namespace mysong::tui {
+
+namespace {
+
+ftxui::Element pinta(const std::string& texto, std::string_view token) {
+  const tokens::Triade c = tokens::rgb(token);
+  return ftxui::text(texto) |
+         ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
+}
+
+// apara — a cadeia em `largura` collunhas, contando CODEPOINTS e não bytes. Sem
+// isto, um titulo com acentos sahiria mais curto do que a conta diz e a tabella
+// perderia o alinhamento das columnas.
+std::string apara(const std::string& crua, std::size_t largura) {
+  std::string feita;
+  std::size_t contadas = 0;
+  for (std::size_t i = 0; i < crua.size(); ++i) {
+    if ((static_cast<unsigned char>(crua[i]) & 0xC0) != 0x80) {
+      if (contadas == largura) break;
+      ++contadas;
+    }
+    feita += crua[i];
+  }
+  while (contadas++ < largura) feita += ' ';
+  return feita;
+}
+
+}  // namespace
+
+ftxui::Element elemento_da_barra(const Navegador& navegador) {
+  // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
+  // faz o dedo do operador errar o alvo que já sabia de memoria.
+  const std::pair<Secao, const char*> degraus[] = {
+      {Secao::Artistas, " ARTISTS "},
+      {Secao::Albuns, " ALBUMS  "},
+      {Secao::Faixas, " TRACKS  "},
+      {Secao::Busca, " SEARCH  "},
+  };
+  std::vector<ftxui::Element> linhas;
+  for (const auto& [degrau, rotulo] : degraus) {
+    const bool aqui = navegador.secao() == degrau;
+    ftxui::Element linha = pinta(rotulo, aqui ? tokens::text_bright
+                                              : tokens::text_muted);
+    if (aqui) {
+      const tokens::Triade fundo = tokens::rgb(tokens::v700);
+      linha = linha | ftxui::bgcolor(
+                          ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+    }
+    linhas.push_back(std::move(linha));
+  }
+  return ftxui::vbox(std::move(linhas));
+}
+
+ftxui::Element elemento_da_tabella(const Navegador& navegador,
+                                   std::size_t primeira, std::size_t altura,
+                                   std::size_t largura) {
+  if (altura == 0 || largura == 0) return ftxui::text("");
+  const std::vector<Linha>& vista = navegador.vista();
+  if (vista.empty())
+    return pinta("  (nada aqui: varra o acervo, ou baixe uma faixa)",
+                 tokens::text_faint);
+
+  // As tres columnas fixas: numero, tempo, e o que sobra para o titulo. O tempo
+  // e o numero são de largura conhecida, e por isso o titulo é que cede.
+  const std::size_t larg_num = 4, larg_tempo = 7;
+  const std::size_t larg_titulo =
+      largura > larg_num + larg_tempo + 2 ? largura - larg_num - larg_tempo - 2 : 1;
+
+  std::vector<ftxui::Element> linhas;
+  const std::size_t fim = std::min(primeira + altura, vista.size());
+  for (std::size_t i = primeira; i < fim; ++i) {
+    const Linha& linha = vista[i];
+    const bool eleita = i == navegador.eleito();
+    const std::string numero =
+        linha.numero > 0 ? apara(std::to_string(linha.numero), larg_num)
+                         : apara("", larg_num);
+    const std::string tempo =
+        linha.duracao > 0 ? apara(" " + mm_ss(linha.duracao), larg_tempo)
+                          : apara("", larg_tempo);
+    ftxui::Element pintada =
+        pinta(numero + apara(linha.texto, larg_titulo) + tempo,
+              eleita ? tokens::text_bright : tokens::text_muted);
+    if (eleita) {
+      const tokens::Triade fundo = tokens::rgb(tokens::v900);
+      pintada = pintada | ftxui::bgcolor(
+                              ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+    }
+    linhas.push_back(std::move(pintada));
+  }
+  return ftxui::vbox(std::move(linhas));
+}
+
+}  // namespace mysong::tui
+
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════

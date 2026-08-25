@@ -157,6 +157,14 @@ Biblioteca::Biblioteca(std::filesystem::path banco)
 
 Biblioteca::~Biblioteca() { sqlite3_close(punho_); }
 
+// O punho velho fecha-se ANTES de o novo abrir, e não depois: abrindo primeiro,
+// um caminho que já não existe deixaria o velho aberto e a Casa a ler o inode
+// antigo sem o saber, que é justamente o defeito que esta funcção veio corrigir.
+void Biblioteca::reabre() {
+  sqlite3_close(punho_);
+  punho_ = abre_para_ler(banco_);
+}
+
 bool Biblioteca::aberta() const noexcept { return punho_ != nullptr; }
 
 // Sem corre(), e de proposito: esta funcção é noexcept, e o corre() aloca

@@ -44,29 +44,65 @@ TEST_CASE("as tres teclas de verbo simples chegam por si") {
         tui::Verbo::Sahir);
 }
 
-// Tecla que não é do mockup NÃO chega ao tocador. É o caso que prova a
-// negativa, e ella importa tanto como a positiva: sem elle, uma taboada que
-// devolvesse Pausar para tudo passaria os casos de cima.
-TEST_CASE("tecla que não é do mockup dá ordem nenhuma") {
+// Tecla que não tem officio NÃO produz ordem. A lista encurtou com a issue #9,
+// que deu sentido ás setas, ao Return e ao Escape; o que sobra são as letras sem
+// officio, e ellas ficam aqui de propósito, para que uma taboada que devolvesse
+// verbo para tudo não passasse calada.
+TEST_CASE("tecla sem officio dá ordem nenhuma") {
   const tui::Retracto retracto = tocando();
-  for (const char letra : {'a', 'z', 'N', 'P', 'Q', '1', '/', '*'})
+  for (const char letra : {'a', 'z', 'N', 'P', 'Q', '1', '*'})
     CHECK(tui::ordem_da_tecla(ftxui::Event::Character(letra), retracto).verbo ==
           tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowUp, retracto).verbo ==
-        tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowDown, retracto).verbo ==
-        tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::Return, retracto).verbo ==
-        tui::Verbo::Nada);
-  CHECK(tui::ordem_da_tecla(ftxui::Event::Escape, retracto).verbo ==
-        tui::Verbo::Nada);
   CHECK(tui::ordem_da_tecla(ftxui::Event::Tab, retracto).verbo ==
         tui::Verbo::Nada);
 }
 
-// Os alvos aqui estão escriptos á mão em SEGUNDOS, e não em passos: dizer
-// «posicao mais PASSO_DA_BUSCA» seria perguntar á obra qual o passo para depois
-// conferir que ella o usou, e a assertiva não poderia falhar.
+// A GUARDA DO MODO: estando-se a digitar na barra de busca, tecla alguma da
+// taboada vale. É o defeito classico das TUI que esquecem o modo, e este caso
+// percorre TODAS as teclas que teriam officio para provar que nenhuma escapa.
+TEST_CASE("digitando, tecla alguma da taboada vale") {
+  const tui::Retracto retracto = tocando();
+  const ftxui::Event teclas[] = {
+      ftxui::Event::Character(' '), ftxui::Event::Character('n'),
+      ftxui::Event::Character('p'), ftxui::Event::Character('q'),
+      ftxui::Event::Character('j'), ftxui::Event::Character('k'),
+      ftxui::Event::Character('g'), ftxui::Event::Character('G'),
+      ftxui::Event::Character('/'), ftxui::Event::Character('r'),
+      ftxui::Event::Character('+'), ftxui::Event::Character('-'),
+      ftxui::Event::ArrowUp,        ftxui::Event::ArrowDown,
+      ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
+      ftxui::Event::Return,         ftxui::Event::Escape,
+      ftxui::Event::Home,           ftxui::Event::End,
+  };
+  for (const ftxui::Event& tecla : teclas) {
+    // Sem o modo, cada uma d'estas tem officio; com o modo, nenhuma.
+    REQUIRE(tui::ordem_da_tecla(tecla, retracto, false).verbo !=
+            tui::Verbo::Nada);
+    CHECK(tui::ordem_da_tecla(tecla, retracto, true).verbo == tui::Verbo::Nada);
+  }
+}
+
+// As teclas da navegação, e as duas fórmas de cada uma: seta e letra do vi.
+TEST_CASE("as teclas da navegação valem por seta e por letra") {
+  const tui::Retracto retracto = tocando();
+  const auto verbo = [&retracto](const ftxui::Event& t) {
+    return tui::ordem_da_tecla(t, retracto).verbo;
+  };
+  CHECK(verbo(ftxui::Event::ArrowDown) == tui::Verbo::Desce);
+  CHECK(verbo(ftxui::Event::Character('j')) == tui::Verbo::Desce);
+  CHECK(verbo(ftxui::Event::ArrowUp) == tui::Verbo::Sobe);
+  CHECK(verbo(ftxui::Event::Character('k')) == tui::Verbo::Sobe);
+  CHECK(verbo(ftxui::Event::Home) == tui::Verbo::AoPrincipio);
+  CHECK(verbo(ftxui::Event::Character('g')) == tui::Verbo::AoPrincipio);
+  CHECK(verbo(ftxui::Event::End) == tui::Verbo::AoFim);
+  CHECK(verbo(ftxui::Event::Character('G')) == tui::Verbo::AoFim);
+  CHECK(verbo(ftxui::Event::Return) == tui::Verbo::Entra);
+  CHECK(verbo(ftxui::Event::Escape) == tui::Verbo::Volta);
+  CHECK(verbo(ftxui::Event::Backspace) == tui::Verbo::Volta);
+  CHECK(verbo(ftxui::Event::Character('/')) == tui::Verbo::AbreBusca);
+  CHECK(verbo(ftxui::Event::Character('r')) == tui::Verbo::Varre);
+}
+
 TEST_CASE("as setas buscam pelo passo, e aparam-se nas duas bordas") {
   const tui::Ordem deante =
       tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando(30.0, 100.0));
