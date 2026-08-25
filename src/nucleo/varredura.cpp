@@ -263,6 +263,46 @@ Varredura::Varredura(std::filesystem::path banco,
   }
 }
 
+bool Varredura::passo() {
+  Punho& punho = *punho_;
+  switch (punho.fase) {
+    case Punho::Fase::Listar:
+      if (punho.raiz_corrente < punho.raizes.size()) {
+        lista_raiz(punho.raizes[punho.raiz_corrente++], &punho.progresso,
+                   &punho.vistos, &punho.achados);
+        return true;
+      }
+      punho.fase = Punho::Fase::Ler;
+      return true;
+
+    case Punho::Fase::Ler:
+      if (punho.arquivo_corrente < punho.achados.size()) {
+        if (!trata_arquivo(punho.achados[punho.arquivo_corrente++],
+                           *punho.antigo, *punho.escriba, &punho.progresso)) {
+          // O SQLite recusou: o índice anterior fica, e o temporario some.
+          punho.escriba.reset();
+          punho.desfecho = Desfecho::ErroDeEscripta;
+          punho.fase = Punho::Fase::Fim;
+          return false;
+        }
+        return true;
+      }
+      punho.fase = Punho::Fase::Concluir;
+      return true;
+
+    case Punho::Fase::Concluir:
+      punho.desfecho = punho.escriba->conclui() ? Desfecho::Concluido
+                                                : Desfecho::ErroDeEscripta;
+      punho.escriba.reset();
+      punho.fase = Punho::Fase::Fim;
+      return false;
+
+    case Punho::Fase::Fim:
+      return false;
+  }
+  return false;
+}
+
 Varredura::~Varredura() = default;
 
 Desfecho Varredura::desfecho() const noexcept { return punho_->desfecho; }
