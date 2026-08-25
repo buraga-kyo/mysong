@@ -59,6 +59,11 @@ target_compile_definitions(mysong_testes PRIVATE
 # lista do CMake, e zero casos corridos dá status de successo. Já succedeu.
 target_sources(mysong_testes PRIVATE prova_espectro_tui.cpp)
 
+# ─── A PROVA DO TRANSPORTE (issue #7) ───────────────────────────────────────
+# As duas peças provaveis da barra de baixo: a composição e a taboada das teclas.
+# A janella não entra: ella abre terminal, motor e som, e não se prova em bateria.
+target_sources(mysong_testes PRIVATE prova_transporte.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
