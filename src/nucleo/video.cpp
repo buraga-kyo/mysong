@@ -58,5 +58,31 @@ std::string minuscula(std::string_view crua) {
 
 // abre_soquete — o punho ligado ao soquete do mpv, e menos um não havendo. Tenta
 // mais de uma vez, com pausa: o soquete nasce depois do processo.
+int abre_soquete(const std::filesystem::path& soquete) {
+  for (int tentativa = 0; tentativa < kTentativasDoSoquete; ++tentativa) {
+    const int punho = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (punho < 0) return -1;
+    sockaddr_un posto{};
+    posto.sun_family = AF_UNIX;
+    const std::string caminho = soquete.string();
+    // O caminho do soquete tem tecto de comprimento no proprio kernel. Cortá-lo
+    // daria punho que liga ao logar errado; melhor recusar de vez.
+    if (caminho.size() + 1 > sizeof(posto.sun_path)) {
+      ::close(punho);
+      return -1;
+    }
+    std::memcpy(posto.sun_path, caminho.c_str(), caminho.size() + 1);
+    if (::connect(punho, reinterpret_cast<sockaddr*>(&posto), sizeof(posto)) ==
+        0)
+      return punho;
+    ::close(punho);
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(kMilesimosPorTentativa));
+  }
+  return -1;
+}
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
