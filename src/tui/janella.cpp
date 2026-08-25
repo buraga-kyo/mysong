@@ -198,18 +198,37 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador) {
   return retracto;
 }
 
-// cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
-// na taboada acende aviso do compilador aqui, e não passa calado.
+// O ROTEAMENTO das ordens de transporte. Havendo janella de video de pé, é ELLA
+// que pausa, retoma, busca e muda de volume: o motor de audio está calado, e mandar
+// a ordem a quem está calado seria a tecla não fazer nada. Sem janella, vae ao
+// motor, que é o caminho de sempre.
 void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
-             std::atomic<bool>& sahir) {
+             nucleo::Projector& projector, std::atomic<bool>& sahir) {
+  const bool na_janella = projector.rodando();
   switch (ordem.verbo) {
     case tui::Verbo::Nada: break;
-    case tui::Verbo::Pausar: tocador.pausar(); break;
-    case tui::Verbo::Retomar: tocador.retomar(); break;
+    case tui::Verbo::Pausar:
+      if (na_janella) projector.pausar();
+      else tocador.pausar();
+      break;
+    case tui::Verbo::Retomar:
+      if (na_janella) projector.retomar();
+      else tocador.retomar();
+      break;
     case tui::Verbo::Proxima: tocador.proxima(); break;
     case tui::Verbo::Anterior: tocador.anterior(); break;
-    case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
-    case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
+    case tui::Verbo::Buscar:
+      if (na_janella) {
+        if (ordem.relativo) projector.buscar_relativo(ordem.alvo);
+        else projector.buscar(ordem.alvo);
+      } else {
+        tocador.buscar(ordem.alvo);
+      }
+      break;
+    case tui::Verbo::Volume:
+      if (na_janella) projector.volume(static_cast<int>(ordem.alvo));
+      else tocador.volume(static_cast<int>(ordem.alvo));
+      break;
     case tui::Verbo::Sahir: sahir.store(true); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
@@ -687,7 +706,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         return true;
       }
       default:
-        cumprir(ordem, tocador, sahir);
+        cumprir(ordem, tocador, projector, sahir);
         if (sahir.load()) tela.Exit();
         return true;
     }
