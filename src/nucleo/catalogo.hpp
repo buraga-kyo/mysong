@@ -30,5 +30,20 @@
 
 namespace mysong::nucleo {
 
+// Uma FAIXA do catalogo. A duração vem em MILESIMOS porque é assim que o Spotify a
+// dá, e converter aqui perderia a precisão que o casamento usa.
+struct FaixaDoCatalogo {
+  std::string titulo;
+  std::string artista;
+  int numero = 0;       // a posição na lista, contada de um
+  int duracao_ms = 0;   // zero é «não disse»
+};
+
+// O CATALOGO inteiro: o nome da lista, e as faixas na ordem d'ella.
+struct Catalogo {
+  std::string nome;
+  std::vector<FaixaDoCatalogo> faixas;
+};
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
