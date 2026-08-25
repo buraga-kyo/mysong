@@ -235,5 +235,27 @@ TEST_CASE("sem etiqueta, tudo entra pelo caminho e deduzido nomeia os quatro") {
                             nu::kDeduziuTitulo | nu::kDeduziuNumero));
 }
 
+// Etiqueta PARCIAL: sómente o titulo. Um bit apagado, tres acesos, e o campo da
+// etiqueta preservado ao lado dos tres que vieram do caminho.
+TEST_CASE("etiqueta parcial toma da etiqueta o que ella diz") {
+  const Cova cova;
+  const std::filesystem::path faixa =
+      cova.acervo() / "Bach" / "Suites" / "05 - Nome Do Caminho.wav";
+  faz_wav(faixa, 2);
+  poe_etiqueta(faixa, "", "", "Sarabanda", 0);
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  corre_ate_o_fim(varredura);
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Faixa achada;
+  REQUIRE(livraria.acha_por_caminho(faixa.string(), achada));
+  CHECK(achada.titulo == "Sarabanda");  // da etiqueta
+  CHECK(achada.artista == "Bach");      // do caminho
+  CHECK(achada.album == "Suites");      // do caminho
+  CHECK(achada.numero == 5);            // do caminho
+  CHECK(achada.deduzido == (nu::kDeduziuArtista | nu::kDeduziuAlbum |
+                            nu::kDeduziuNumero));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
