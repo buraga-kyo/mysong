@@ -142,6 +142,33 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   });
 
 
+  auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
+    const tui::Ordem ordem = tui::ordem_da_tecla(tecla, retracto_do(tocador));
+    if (ordem.verbo == tui::Verbo::Nada) return false;  // tecla alheia segue
+    cumprir(ordem, tocador, sahir);
+    if (sahir) tela.Exit();
+    return true;
+  });
+
+  // O RELOGIO. Vive em fio proprio porque `tela.Loop` não devolve até se sahir, e
+  // o `pulsa` do tocador tem de correr entre quadros: é elle que drena os
+  // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
+  // repinte, e a tela é que serializa.
+  std::thread relogio([&] {
+    while (!sahir) {
+      tocador.pulsa();
+      analisador.pulsa();
+      tela.PostEvent(ftxui::Event::Custom);
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
+
+  tela.Loop(janella);
+  sahir = true;  // a sahida pela tela tambem para o relogio
+  relogio.join();
+  return 0;
+}
+
 // recusar_e_sahir — pinta a tela dos requisitos, espera tecla e sahe com codigo
 // differente de zero. É a UNICA cousa que apparece havendo impedimento: o
 // tocador não se ergue nem por um quadro, e por isso esta funcção não o chama.
