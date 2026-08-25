@@ -47,6 +47,23 @@ struct Progresso {
   std::size_t raizes_falhadas = 0;   // ausente, ou sem permissão
 };
 
+// deriva_do_caminho — o que o caminho diz de uma faixa. Funcção pura, e por isso
+// aferivel contra alvo escripto á mão sem disco algum. O artista é o componente
+// logo sob a raiz; o album é o directorio que contem o arquivo; e do nome do
+// arquivo tira-se `NN - Titulo`. Arquivo directamente na raiz não tem artista
+// nem album, e os dous bits acendem-se.
+//
+// Devolve a faixa com sómente estes quatro campos postos, e a máscara `deduzido`
+// a nomear TODOS elles: quem lê a etiqueta depois apaga o bit do que a etiqueta
+// disser. Assim a dedução é o piso, e a etiqueta o que se lhe sobrepõe.
+Faixa deriva_do_caminho(const std::filesystem::path& caminho,
+                        const std::filesystem::path& raiz);
+
+// extensao_de_audio — se a extensão é das que se offerecem á taglib. Filtra-se
+// ANTES de abrir: offerecer todo arquivo á taglib faria a varredura abrir cada
+// PNG e cada texto do acervo para nada.
+bool extensao_de_audio(std::string_view extensao);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
