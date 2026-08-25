@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "nucleo/capa.hpp"
 
@@ -131,6 +132,47 @@ TEST_CASE("album sem capa devolve a ausencia, e guarda-a") {
   // pondo a capa AGORA: estando a ausencia em cache, ella não se vê.
   cova.poe("cover.jpg");
   CHECK_FALSE(galeria.capa(faixa, 10, 5).achada);
+}
+
+// A ANALYSE do SGR, contra linhas escriptas á mão com a fórma que o chafa produz.
+// Foi este parser que curou o defeito da largura, e é aqui que elle se prende.
+TEST_CASE("o SGR do chafa parte-se em corridas com as suas côres") {
+  // Uma linha de verdade, copiada da sahida do chafa e escripta aqui á mão.
+  const std::string linha =
+      "\x1b[0m\x1b[38;2;167;0;167;48;2;173;0;173m\u2580"
+      "\x1b[38;2;163;0;163;48;2;170;0;170m\u2580\x1b[0m";
+  const std::vector<nu::Corrida> corridas = nu::analysa_sgr(linha);
+  REQUIRE(corridas.size() == 2u);
+  CHECK(corridas[0].texto == "\u2580");
+  CHECK(corridas[0].r_frente == 167);
+  CHECK(corridas[0].g_frente == 0);
+  CHECK(corridas[0].b_frente == 167);
+  CHECK(corridas[0].r_fundo == 173);
+  CHECK(corridas[1].texto == "\u2580");
+  CHECK(corridas[1].r_frente == 163);
+  CHECK(corridas[1].r_fundo == 170);
+
+  // O `39` e o `49` apagam a côr, e é assim que o chafa diz «sem côr».
+  const std::vector<nu::Corrida> apagada =
+      nu::analysa_sgr("\x1b[38;2;1;2;3m a \x1b[39m\x1b[49m b ");
+  REQUIRE(apagada.size() == 2u);
+  CHECK(apagada[0].texto == " a ");
+  CHECK(apagada[0].r_frente == 1);
+  CHECK(apagada[1].texto == " b ");
+  CHECK(apagada[1].r_frente == -1);
+  CHECK(apagada[1].r_fundo == -1);
+
+  // Texto sem escape algum dá UMA corrida sem côr.
+  const std::vector<nu::Corrida> nua = nu::analysa_sgr("abc");
+  REQUIRE(nua.size() == 1u);
+  CHECK(nua[0].texto == "abc");
+  CHECK(nua[0].r_frente == -1);
+  // Linha vazia dá corrida alguma, e não uma corrida vazia.
+  CHECK(nu::analysa_sgr("").empty());
+  // Escape que não se conheça ignora-se, e o texto passa.
+  const std::vector<nu::Corrida> alheio = nu::analysa_sgr("\x1b[7mx");
+  REQUIRE(alheio.size() == 1u);
+  CHECK(alheio[0].texto == "x");
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
