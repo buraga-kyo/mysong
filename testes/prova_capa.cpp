@@ -119,5 +119,19 @@ TEST_CASE("a galeria converte uma vez por album e por tamanho") {
   CHECK(galeria.quantos_renders() == 2u);
 }
 
+TEST_CASE("album sem capa devolve a ausencia, e guarda-a") {
+  const Cova cova;
+  nu::Galeria galeria;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Um.mp3";
+  const nu::CapaPintada& nada = galeria.capa(faixa, 10, 5);
+  CHECK_FALSE(nada.achada);
+  CHECK(nada.linhas.empty());
+  CHECK(galeria.quantos_renders() == 0u);
+  // E pedir outra vez não volta ao disco: a ausencia tambem está guardada. Prova-se
+  // pondo a capa AGORA: estando a ausencia em cache, ella não se vê.
+  cova.poe("cover.jpg");
+  CHECK_FALSE(galeria.capa(faixa, 10, 5).achada);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
