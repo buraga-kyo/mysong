@@ -69,5 +69,21 @@ bool corre(sqlite3* punho, const char* sql,
   return veredicto == SQLITE_DONE;
 }
 
+std::string texto(sqlite3_stmt* passo, int columna) {
+  const unsigned char* bruto = sqlite3_column_text(passo, columna);
+  if (bruto == nullptr) return std::string();
+  return std::string(reinterpret_cast<const char*>(bruto));
+}
+
+// O COMPRIMENTO maximo do nome, em octetos. Cento e vinte: o que cabe na barra
+// lateral do terminal mais estreito que esta Casa promette.
+constexpr std::size_t kOctetosDoNome = 120;
+
+// A SENTINELLA da troca. Negativa de proposito: ordem de item verdadeiro é
+// sempre zero ou mais, donde menos um não collide com linha alguma.
+constexpr int kSentinella = -1;
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
