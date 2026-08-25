@@ -98,6 +98,20 @@ void assenta_versao_e_limite(sqlite3* punho, long limite) {
   sqlite3_exec(punho, sql, nullptr, nullptr, nullptr);
 }
 
+
+// Escapa os curingas do LIKE. Amarrar o termo NÃO os neutraliza: o SQLite
+// concatena o valor amarrado no padrão e sómente depois o lê como padrão, donde
+// um por cento vindo do operador continua a valer «qualquer cousa». Medido nesta
+// Casa antes de se corrigir: buscar «%» devolvia o acervo inteiro.
+std::string escapa_curingas(std::string_view termo) {
+  std::string limpo;
+  limpo.reserve(termo.size());
+  for (const char letra : termo) {
+    if (letra == '\\' || letra == '%' || letra == '_') limpo += '\\';
+    limpo += letra;
+  }
+  return limpo;
+}
 }  // namespace
 
 // Anda byte a byte, e sómente aceita a sequencia que TODA a regra do UTF-8
@@ -232,8 +246,10 @@ std::vector<Faixa> Biblioteca::busca_faixa(std::string_view termo) const {
   std::vector<Faixa> faixas;
   const std::string sql = std::string("SELECT ") + kColumnas +
                           " FROM faixas WHERE titulo LIKE '%' || ?1 || '%'"
-                          " ORDER BY artista, album, numero, titulo;";
-  corre(punho_, sql.c_str(), {termo},
+                          " ESCAPE '\\' ORDER BY artista, album, numero,"
+                          " titulo;";
+  const std::string procurado = escapa_curingas(termo);
+  corre(punho_, sql.c_str(), {procurado},
         [&faixas](sqlite3_stmt* passo) {
           faixas.push_back(faixa_da_linha(passo));
         });
