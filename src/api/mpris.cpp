@@ -124,6 +124,49 @@ void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
   dbus_message_iter_close_container(pae, &variante);
 }
 
+
+// escreve_propriedade — UMA propriedade, pelo nome. Falso quando o nome não é d'esta
+// Casa, e ahi quem chama devolve o erro nomeado que a especificação pede.
+bool escreve_propriedade(DBusMessageIter* pae, const std::string& interface,
+                         const std::string& nome, nucleo::Tocador& tocador) {
+  if (interface == kRaiz) {
+    if (nome == "Identity") { escreve_variante_texto(pae, "mysong"); return true; }
+    if (nome == "DesktopEntry") { escreve_variante_texto(pae, "mysong"); return true; }
+    // As tres que o playerctl consulta antes de commandar. `CanQuit` falso e
+    // `CanRaise` falso são a verdade: esta Casa não sahe nem se ergue por commando de
+    // fóra, e mentir alli faria o cliente pedir o que não se faz.
+    if (nome == "CanQuit") { escreve_variante_bool(pae, false); return true; }
+    if (nome == "CanRaise") { escreve_variante_bool(pae, false); return true; }
+    if (nome == "HasTrackList") { escreve_variante_bool(pae, false); return true; }
+    return false;
+  }
+  if (interface != kTocador) return false;
+  if (nome == "PlaybackStatus") {
+    escreve_variante_texto(pae, std::string(estado_do_mpris(tocador.estado())));
+    return true;
+  }
+  if (nome == "Metadata") { escreve_metadados(pae, tocador); return true; }
+  if (nome == "Position") {
+    escreve_variante_int64(pae, segundos_para_micros(tocador.posicao()));
+    return true;
+  }
+  if (nome == "Volume") {
+    escreve_variante_duplo(pae, porcento_para_volume(tocador.volume()));
+    return true;
+  }
+  if (nome == "Rate" || nome == "MinimumRate" || nome == "MaximumRate") {
+    escreve_variante_duplo(pae, 1.0);  // esta Casa não muda a velocidade
+    return true;
+  }
+  // As seis capacidades. Todas verdadeiras menos a de girar a lista, que não ha.
+  if (nome == "CanGoNext" || nome == "CanGoPrevious" || nome == "CanPlay" ||
+      nome == "CanPause" || nome == "CanSeek" || nome == "CanControl") {
+    escreve_variante_bool(pae, true);
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 }  // namespace mysong::api
