@@ -66,5 +66,18 @@ TEST_CASE("a capa ao lado acha-se pela ordem de preferencia") {
   CHECK(nu::capa_ao_lado(faixa).filename() == "cover.jpg");
 }
 
+// A CHAVE é a PASTA mais o tamanho, e não a faixa: é ella que faz um album de vinte
+// faixas pedir uma conversão, e não vinte.
+TEST_CASE("a chave do cache é a pasta e o tamanho, e não a faixa") {
+  const std::string uma = nu::chave_do_cache("/a/A/B/01 - Um.mp3", 20, 10);
+  const std::string outra = nu::chave_do_cache("/a/A/B/02 - Dous.mp3", 20, 10);
+  CHECK(uma == outra);  // mesmo album: a MESMA chave
+  // Album differente dá chave differente.
+  CHECK(uma != nu::chave_do_cache("/a/A/C/01 - Um.mp3", 20, 10));
+  // Tamanho differente tambem, que a arte tem de encher o painel novo.
+  CHECK(uma != nu::chave_do_cache("/a/A/B/01 - Um.mp3", 21, 10));
+  CHECK(uma != nu::chave_do_cache("/a/A/B/01 - Um.mp3", 20, 11));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
