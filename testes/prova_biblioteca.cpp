@@ -208,6 +208,36 @@ TEST_CASE("o curinga do operador vale por si, e não por padrão") {
   CHECK(livraria.busca_faixa("\\").empty());
 }
 
+// Nome de verdade: acento, aspa, apóstrofo, ponto e virgula e por cento. Tudo
+// atravessa a gravação e as quatro consultas intacto, e a cadeia que se parece
+// com commando não vira commando.
+TEST_CASE("nome com acento, aspas e espaço atravessa intacto") {
+  const Cova cova;
+  const std::string artista = "Ária \"Ré\" à Noite";
+  const std::string album = "L'Été; DROP TABLE faixas--";
+  const std::string titulo = "Nº 1 «Prélude» 100%";
+  {
+    nu::Escriba escriba(cova.banco());
+    REQUIRE(escriba.aberto());
+    REQUIRE(escriba.grava(faz(artista, album, titulo, 5)));
+    REQUIRE(escriba.conclui());
+  }
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK(livraria.total() == 1);
+  CHECK(livraria.artistas() == std::vector<std::string>{artista});
+  CHECK(livraria.albuns(artista) == std::vector<std::string>{album});
+  const std::vector<nu::Faixa> faixas =
+      livraria.faixas_do_album(artista, album);
+  REQUIRE(faixas.size() == 1);
+  CHECK(faixas[0].titulo == titulo);
+  // O por cento do termo é TEXTO a procurar: acha esta faixa por ella o traser
+  // no titulo, e não por curinga. O sublinhado não está no titulo, e não acha.
+  CHECK(livraria.busca_faixa("100%").size() == 1);
+  CHECK(livraria.busca_faixa("%").size() == 1);
+  CHECK(livraria.busca_faixa("_").empty());
+  CHECK(livraria.busca_faixa("N_").empty());
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
