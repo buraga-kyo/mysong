@@ -124,5 +124,26 @@ std::vector<std::string> argumentos_do_projector(
   };
 }
 
+std::string escapa_json(std::string_view crua) {
+  std::string limpa;
+  limpa.reserve(crua.size() + 8);
+  for (const char letra : crua) {
+    if (letra == '"' || letra == '\\') {
+      limpa += '\\';
+      limpa += letra;
+    } else if (static_cast<unsigned char>(letra) < 0x20) {
+      // Controle vae na fórma longa: o JSON não admitte byte de controle crú, e
+      // nome de arquivo com tabulação existe.
+      char molde[8] = {0};
+      std::snprintf(molde, sizeof(molde), "\\u%04x",
+                    static_cast<unsigned>(static_cast<unsigned char>(letra)));
+      limpa += molde;
+    } else {
+      limpa += letra;
+    }
+  }
+  return limpa;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
