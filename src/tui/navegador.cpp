@@ -16,6 +16,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <filesystem>
+#include <string>
 #include <utility>
 
 namespace mysong::tui {
@@ -71,6 +74,33 @@ void Navegador::refaz_vista() {
                           faixa.duracao, faixa.artista});
       break;
 
+    case Secao::Rois:
+      // As listas do banco. A conta dos itens vae na columna do numero, que é a que
+      // a tabella já sabe pintar: lista de tres faixas mostra tres.
+      if (roleiro_ != nullptr)
+        for (const nucleo::Rol& rol : roleiro_->rois())
+          if (contem_sem_caixa(rol.nome, termo_))
+            vista_.push_back(
+                {rol.nome, std::to_string(rol.id), rol.quantos, 0, {}});
+      break;
+
+    case Secao::NoRol:
+      // As faixas de UMA lista, na ordem gravada. O texto é o NOME DO ARQUIVO, e
+      // não o titulo da etiqueta: perguntar o titulo de cada uma á bibliotheca seria
+      // uma consulta por linha a cada quadro. E a ordem no banco vae na columna do
+      // numero, donde retirar e mover não precisam de a adivinhar.
+      if (roleiro_ != nullptr) {
+        int ordem = 0;
+        for (const std::string& caminho : roleiro_->faixas(rol_corrente_)) {
+          const std::string curto =
+              std::filesystem::path(caminho).filename().string();
+          if (contem_sem_caixa(curto, termo_))
+            vista_.push_back({curto, caminho, ordem + 1, 0, {}});
+          ++ordem;
+        }
+      }
+      break;
+
     case Secao::Rede:
       // A UNICA secção que não pergunta á bibliotheca. A fonte é a lista que veio
       // de fóra, e o filtro applica-se sobre ella como sobre as outras.
@@ -102,7 +132,9 @@ std::size_t primeira_a_mostrar(std::size_t eleito, std::size_t quantas,
   return primeira;
 }
 
-Navegador::Navegador(const nucleo::Biblioteca& livraria) : livraria_(livraria) {
+Navegador::Navegador(const nucleo::Biblioteca& livraria,
+                     nucleo::Roleiro* roleiro)
+    : livraria_(livraria), roleiro_(roleiro) {
   refaz_vista();
 }
 
@@ -137,7 +169,9 @@ void Navegador::filtra(std::string termo) {
 
 std::string Navegador::caminho_eleito() const {
   if (vista_.empty()) return {};
-  if (secao_ != Secao::Faixas && secao_ != Secao::Busca) return {};
+  if (secao_ != Secao::Faixas && secao_ != Secao::Busca &&
+      secao_ != Secao::NoRol)
+    return {};
   return vista_[eleito_].chave;
 }
 
@@ -172,6 +206,16 @@ bool Navegador::entra() {
     case Secao::Faixas:
     case Secao::Busca:
       return true;  // já é faixa: quem chama manda tocar
+    case Secao::Rois:
+      // Entrar n'uma lista é abri-la. O id guarda-se, e a trilha leva o nome, que
+      // é o que a tela mostra por titulo.
+      rol_corrente_ = std::atoi(degrau.chave.c_str());
+      nome_corrente_ = degrau.texto;
+      trilha_ = {degrau.texto};
+      secao_ = Secao::NoRol;
+      break;
+    case Secao::NoRol:
+      return true;  // já é faixa: quem chama enche a fila e manda tocar
     case Secao::Rede:
       // Achado da rede não é faixa, e entrar n'elle não é descer degrau algum:
       // quem chama pergunta pela url_eleita e manda baixar. Nada muda aqui.
@@ -197,8 +241,15 @@ bool Navegador::volta() {
       secao_ = Secao::Artistas;
       break;
     case Secao::Rede:
+    case Secao::Rois:
       trilha_.clear();
       secao_ = Secao::Artistas;
+      break;
+    case Secao::NoRol:
+      // De dentro de uma lista volta-se á lista das listas, e não ao acervo: é o
+      // degrau de que se veio. O ALVO fica: vêr é que se deixou de estar dentro.
+      trilha_.clear();
+      secao_ = Secao::Rois;
       break;
     case Secao::Artistas:
       return false;  // já se está no alto

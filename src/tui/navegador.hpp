@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/rol.hpp"
 
 namespace mysong::tui {
 
@@ -31,7 +32,10 @@ namespace mysong::tui {
 // A secção REDE (issue #12) é a unica cujas linhas NÃO vêm da bibliotheca: ellas
 // vêm de fóra, por mostra_rede. Entra no mesmo enum porque a barra lateral é uma, e
 // duas listas de secções fariam a barra depender de qual d'ellas se lesse primeiro.
-enum class Secao { Artistas, Albuns, Faixas, Busca, Rede };
+// As LISTAS entram como DUAS secções, e não uma: a lista das listas e o dentro de
+// uma lista são vistas differentes, com ordens differentes e teclas differentes.
+// Uma só obrigaria a perguntar «estou dentro ou fóra?» em todo ramo.
+enum class Secao { Artistas, Albuns, Faixas, Busca, Rede, Rois, NoRol };
 
 // Uma LINHA do que está á vista. O texto é o que se mostra; a `chave` é o que a
 // ordem `entra` consome, e nem sempre são a mesma cousa: o album mostra-se pelo
@@ -59,7 +63,12 @@ std::size_t primeira_a_mostrar(std::size_t eleito, std::size_t quantas,
 // possue, e por isso não a fecha nem a reabre ás escondidas.
 class Navegador {
  public:
-  explicit Navegador(const nucleo::Biblioteca& livraria);
+  // O ROLEIRO entra por punho que pode ser NULLO, e não por referencia: a bateria da
+  // navegação do acervo não ha de ser obrigada a erguer banco de listas para provar
+  // que descer de artista para album funcciona. Nullo quer dizer «esta corrida não
+  // tem listas», e as secções d'ellas ficam vazias em vez de estourarem.
+  explicit Navegador(const nucleo::Biblioteca& livraria,
+                     nucleo::Roleiro* roleiro = nullptr);
 
   Navegador(const Navegador&) = delete;
   Navegador& operator=(const Navegador&) = delete;
@@ -94,6 +103,11 @@ class Navegador {
   // disco, e a outra é endereço na rede. Confundi-las poria uma URL na fila do motor.
   std::string url_eleita() const;
 
+  // ── AS LISTAS (issue #10) ─────────────────────────────────────────────────
+
+  // mostra_rois — passa á secção da lista das listas, relendo-a do banco.
+  void mostra_rois();
+
   // O filtro. Cadeia vazia limpa-o. Filtra o que está Á VISTA, e não o acervo:
   // é o que o mockup mostra, e é o que o operador espera de uma barra de busca
   // que vive por cima de uma lista.
@@ -109,7 +123,13 @@ class Navegador {
  private:
   void refaz_vista();
 
+  // id_do_eleito — o id da lista eleita na secção Rois, e zero não havendo.
+  int id_do_eleito() const;
+
   const nucleo::Biblioteca& livraria_;
+  nucleo::Roleiro* roleiro_ = nullptr;
+  int rol_corrente_ = 0;
+  std::string nome_corrente_;
   Secao secao_ = Secao::Artistas;
   std::vector<Linha> vista_;
   std::vector<Linha> rede_;  // a fonte da vista na secção Rede, e sómente n'ella
