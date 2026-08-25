@@ -51,5 +51,23 @@ TEST_CASE("o separador do numero aceita-se nas tres fórmas") {
   CHECK(nu::deriva_do_caminho("/a/A/B/12. Fuga.mp3", "/a").titulo == "Fuga");
 }
 
+TEST_CASE("sem numero á frente, o titulo é o nome inteiro") {
+  const nu::Faixa sem = nu::deriva_do_caminho("/a/A/B/Tear.mp3", "/a");
+  CHECK(sem.numero == 0);
+  CHECK(sem.titulo == "Tear");
+  // Digitos collados a letra são NOME, e não numero de faixa.
+  const nu::Faixa pac = nu::deriva_do_caminho("/a/A/B/2Pac.mp3", "/a");
+  CHECK(pac.numero == 0);
+  CHECK(pac.titulo == "2Pac");
+  // Mais de tres digitos não é numero de faixa.
+  const nu::Faixa anno = nu::deriva_do_caminho("/a/A/B/1998 - Tear.mp3", "/a");
+  CHECK(anno.numero == 0);
+  CHECK(anno.titulo == "1998 - Tear");
+  // Sómente o numero, sem titulo depois: o nome inteiro é o titulo.
+  const nu::Faixa nu_ = nu::deriva_do_caminho("/a/A/B/05.mp3", "/a");
+  CHECK(nu_.numero == 0);
+  CHECK(nu_.titulo == "05");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
