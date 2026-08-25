@@ -183,8 +183,13 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
 // pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
 // poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
-tui::Retracto retracto_do(nucleo::Tocador& tocador) {
+tui::Retracto retracto_do(nucleo::Tocador& tocador,
+                          nucleo::Projector& projector) {
   tui::Retracto retracto;
+  // A janella entra no retracto, e não n'uma consulta á parte: a taboada das teclas
+  // é funcção PURA do retracto, e o que ella não vê n'elle não pode governar.
+  retracto.video = projector.rodando();
+  retracto.video_pausada = projector.pausada();
   retracto.estado = tocador.estado();
   retracto.posicao = tocador.posicao();
   retracto.duracao = tocador.duracao();
@@ -198,6 +203,8 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador) {
   return retracto;
 }
 
+// cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
+// na taboada acende aviso do compilador aqui, e não passa calado.
 // O ROTEAMENTO das ordens de transporte. Havendo janella de video de pé, é ELLA
 // que pausa, retoma, busca e muda de volume: o motor de audio está calado, e mandar
 // a ordem a quem está calado seria a tecla não fazer nada. Sem janella, vae ao
@@ -443,7 +450,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       livraria.reabre();
       navegador.recarrega();
     }
-    const tui::Retracto retracto = retracto_do(tocador);
+    const tui::Retracto retracto = retracto_do(tocador, projector);
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
@@ -598,7 +605,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
 
     const tui::Ordem ordem =
-        tui::ordem_da_tecla(tecla, retracto_do(tocador), false);
+        tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
       case tui::Verbo::Nada: return false;  // tecla alheia segue
       case tui::Verbo::Desce: navegador.desce(); return true;
