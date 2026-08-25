@@ -177,5 +177,24 @@ TEST_CASE("entre os que passam a duração, ganha quem tras o titulo") {
   CHECK(nu::melhor_achado(sem_titulo, pedido, nu::TOLERANCIA_DO_CASAMENTO) == 1);
 }
 
+TEST_CASE("pedido SEM duração não casa com ninguem") {
+  nu::Pedido pedido;
+  pedido.titulo = "Loser";
+  pedido.duracao = 0;  // o catalogo não disse
+  const std::vector<nu::Achado> achados = {faz("Loser", 223), faz("Loser", 224)};
+  // Menos um, e não zero. Sem duração não ha crivo algum, e a tarefa manda marcar
+  // por duvidosa em vez de baixar cousa errada calada.
+  CHECK(nu::melhor_achado(achados, pedido, nu::TOLERANCIA_DO_CASAMENTO) == -1);
+  // E o caso que mostra por que a guarda presta: achado de CINCO segundos. Sem a
+  // guarda, a distancia d'elle a uma duração desconhecida sahe cinco, que cabe na
+  // tolerancia, e baixava-se um trecho de cinco segundos por faixa inteira.
+  CHECK(nu::melhor_achado({faz("Loser", 5)}, pedido,
+                          nu::TOLERANCIA_DO_CASAMENTO) == -1);
+  // E achado sem duração tambem não se pode crivar: fica de fóra.
+  pedido.duracao = 223;
+  CHECK(nu::melhor_achado({faz("Loser", 0)}, pedido,
+                          nu::TOLERANCIA_DO_CASAMENTO) == -1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
