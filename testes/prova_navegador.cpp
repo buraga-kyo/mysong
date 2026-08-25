@@ -144,5 +144,25 @@ TEST_CASE("a lista não dá a volta nas duas pontas") {
   CHECK(navegador.eleito() == 1u);
 }
 
+// Voltar sobe UM degrau, e no alto não faz nada.
+TEST_CASE("voltar sobe um degrau, e no alto devolve falso") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.entra();  // Albuns de Ada Lovelace
+  navegador.entra();  // Faixas de Máquina
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Albuns);
+  CHECK(navegador.trilha() == std::vector<std::string>{"Ada Lovelace"});
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(navegador.trilha().empty());
+  CHECK_FALSE(navegador.volta());  // no alto, nada
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
