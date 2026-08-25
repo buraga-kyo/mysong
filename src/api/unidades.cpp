@@ -50,6 +50,32 @@ std::string_view estado_do_mpris(nucleo::Estado estado) {
   return "Stopped";
 }
 
+std::string caminho_da_faixa(std::size_t indice, bool ha_faixa) {
+  // O `NoTrack` da especificação, e não um caminho inventado.
+  if (!ha_faixa) return "/org/mpris/MediaPlayer2/TrackList/NoTrack";
+  return "/br/us/braga/mysong/faixa/" + std::to_string(indice);
+}
+
+std::string url_do_arquivo(std::string_view caminho) {
+  static const char kCifras[] = "0123456789ABCDEF";
+  std::string url = "file://";
+  for (const unsigned char octeto : caminho) {
+    // A BARRA passa: ella é a estructura do caminho, e escapá-la faria a URL deixar
+    // de nomear um arquivo. O resto do arco livre é o do RFC 3986.
+    const bool livre = std::isalnum(octeto) != 0 || octeto == '/' ||
+                       octeto == '-' || octeto == '.' || octeto == '_' ||
+                       octeto == '~';
+    if (livre) {
+      url += static_cast<char>(octeto);
+      continue;
+    }
+    url += '%';
+    url += kCifras[octeto >> 4];
+    url += kCifras[octeto & 0x0F];
+  }
+  return url;
+}
+
 }  // namespace mysong::api
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
