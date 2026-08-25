@@ -132,5 +132,32 @@ class Projector {
 
   // fecha — pede «quit» pelo soquete, e sómente não obedecendo manda o signal.
   // Pedir primeiro é o que deixa o mpv gravar a posição e sahir limpo.
+  void fecha();
+
+  // faixa — o caminho da que está na janella. Devolve por CÓPIA, e não por
+  // referencia: quem lê corre n'outro fio que o que a pode limpar, e referencia
+  // para dentro seria referencia que se desfaz debaixo de quem a lê.
+  std::filesystem::path faixa() const;
+
+  // A tranca é PUBLICA na promessa, e não sómente na implementação: o punho d'este
+  // objecto é chamado de DOUS fios, o da tela e o do relogio, e por isso todo punho
+  // publico d'elle a toma. As tres funcções privadas são as mesmas SEM a tomar, e
+  // existem para que uma que já a tenha possa chamar outra sem se trancar a si.
+ private:
+  bool rodando_travado();
+  bool manda_travado(const std::string& linha);
+  void fecha_travado();
+
+  mutable std::mutex tranca_;
+  std::filesystem::path raiz_;
+  std::filesystem::path soquete_;
+  std::filesystem::path faixa_;
+  int punho_ = -1;
+  ::pid_t filho_ = -1;
+  bool pausada_ = false;
+};
+
+}  // namespace mysong::nucleo
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
