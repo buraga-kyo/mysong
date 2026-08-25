@@ -72,6 +72,37 @@ std::string saneia_nome(std::string_view crua) {
   return limpo.empty() ? std::string("sem titulo") : limpo;
 }
 
+Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota) {
+  Pedido feito = pedido;
+  // O OPERADOR GANHA sempre. Cada campo cede á rede sómente quando o operador
+  // calou, e nunca ao contrario: o contrario seria a rede a corrigir o operador.
+  if (feito.titulo.empty()) feito.titulo = remota.titulo;
+  if (feito.album.empty()) feito.album = remota.album;
+  if (feito.numero == 0) feito.numero = remota.numero;
+  if (feito.artista.empty()) {
+    // A ordem: o que a rede chama artista, depois o canal, depois o desconhecido.
+    // O canal entra em ULTIMO logar de proposito: elle é o que estava errado no
+    // acervo de verdade, e sómente serve por não haver melhor.
+    feito.artista = !remota.artista.empty() ? remota.artista : remota.canal;
+  }
+  if (feito.artista.empty()) feito.artista = "Desconhecido";
+  if (feito.titulo.empty()) feito.titulo = "sem titulo";
+  return feito;
+}
+
+std::filesystem::path destino(const std::filesystem::path& raiz,
+                              const Pedido& pedido) {
+  std::filesystem::path caminho = raiz / saneia_nome(pedido.artista);
+  if (!pedido.album.empty()) caminho /= saneia_nome(pedido.album);
+  std::string folha;
+  if (pedido.numero > 0) {
+    char molde[8] = {0};
+    std::snprintf(molde, sizeof molde, "%02d - ", pedido.numero);
+    folha = molde;
+  }
+  return caminho / (folha + saneia_nome(pedido.titulo));
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
