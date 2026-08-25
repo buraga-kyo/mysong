@@ -205,6 +205,14 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::AbreBaixa:
     case tui::Verbo::TrocaLetra:
     case tui::Verbo::AbreProcura:
+    case tui::Verbo::AbreRois:
+    case tui::Verbo::CriaRol:
+    case tui::Verbo::RenomeiaRol:
+    case tui::Verbo::ApagaRol:
+    case tui::Verbo::JuntaAoRol:
+    case tui::Verbo::RetiraDoRol:
+    case tui::Verbo::SobeNoRol:
+    case tui::Verbo::DesceNoRol:
       break;
   }
 }
