@@ -224,6 +224,11 @@ target_sources(mysong_core PRIVATE src/nucleo/capa.cpp)
 # O `grep dbus src/api/unidades.cpp` sahe vazio, e é o que faz a promessa verificavel.
 target_sources(mysong_core PRIVATE src/api/unidades.cpp)
 
+# E o encanamento, que pede a libdbus-1. Entra como SYSTEM, como as demais alheias.
+pkg_check_modules(DBUS REQUIRED IMPORTED_TARGET dbus-1)
+target_sources(mysong_core PRIVATE src/api/mpris.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::DBUS)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
