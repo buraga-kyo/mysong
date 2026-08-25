@@ -34,5 +34,18 @@
 namespace mysong::nucleo {
 namespace {
 
+// As extensões que costumam trazer video. Lista FECHADA: extensão que não está
+// aqui não abre janella, e é melhor recusar de mais que abrir janella vazia.
+constexpr const char* kExtensoesComVideo[] = {
+    ".mkv", ".mp4", ".webm", ".avi", ".mov", ".m4v", ".ogv", ".flv", ".wmv",
+    ".mpg", ".mpeg", ".ts",
+};
+
+// O PRAZO da espera pelo soquete, e o passo d'ella. O mpv cria o soquete depois
+// de subir, e subir leva tempo de disco: tentar uma vez e desistir daria «sem
+// soquete» na machina carregada, que é falha inventada.
+constexpr int kTentativasDoSoquete = 60;
+constexpr int kMilesimosPorTentativa = 25;
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
