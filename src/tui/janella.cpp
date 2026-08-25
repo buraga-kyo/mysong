@@ -27,6 +27,7 @@
 #include <filesystem>
 #include <filesystem>
 #include <iostream>
+#include <mutex>
 #include <optional>
 #include <thread>
 #include <vector>
@@ -56,6 +57,7 @@
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
 #include "tui/commando.hpp"
+#include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/navegador.hpp"
 #include "tui/tabella.hpp"
@@ -99,6 +101,10 @@ std::filesystem::path raiz_do_acervo() {
   return std::filesystem::path(casa) / "Música";
 }
 
+
+// QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
+// rolar muito, e o `--flat-playlist` faz d'isso uma sonda de rede só.
+constexpr int ACHADOS_POR_BUSCA = 15;
 
 // assignatura_do_visivel — uma cadeia barata que resume TUDO o que a tela mostra. O fio do
 // relogio sómente pede repintura quando ella muda.
@@ -271,6 +277,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       });
 
 
+  // O CORREIO da busca na rede, e o pedido que o fio d'ella espera.
+  tui::Correio correio;
+  std::mutex tranca_do_termo;
+  std::string termo_da_rede;
+  std::atomic<bool> pede_buscar{false};
+
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
   // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
@@ -318,6 +330,35 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
   });
 
+
+  // A BUSCA NA REDE, em fio permanente do mesmo modo. Elle NÃO toca a tela nem o
+  // navegador: deixa o que achou no correio, e o fio da tela colhe-o.
+  ao_fundo.emplace_back([&] {
+    while (!sahir.load()) {
+      if (pede_buscar.exchange(false)) {
+        std::string termo;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          termo = termo_da_rede;
+        }
+        std::vector<nucleo::Achado> achados;
+        const bool falou =
+            nucleo::busca_no_youtube(termo, ACHADOS_POR_BUSCA, &achados);
+        std::vector<tui::Linha> linhas;
+        linhas.reserve(achados.size());
+        for (const nucleo::Achado& achado : achados)
+          linhas.push_back(
+              {achado.titulo, achado.url, 0, achado.duracao, achado.canal});
+        // Tres desfechos, e tres recados: a rede muda, a rede que nada achou, e os
+        // achados. «Nada se achou» e «não respondeu» são cousas differentes, e dizer
+        // a mesma palavra ás duas faria o operador buscar outra vez em vão.
+        correio.poe(std::move(linhas),
+                    !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
+                           : (achados.empty() ? "nada se achou" : "achados na rede"));
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
 
   auto pintor = ftxui::Renderer([&] {
     // A varredura concluiu: o navegador recarrega UMA vez. A bandeira do acervo novo
