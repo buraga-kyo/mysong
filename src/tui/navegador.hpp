@@ -108,6 +108,17 @@ class Navegador {
   // mostra_rois — passa á secção da lista das listas, relendo-a do banco.
   void mostra_rois();
 
+  // O ALVO: a ultima lista em que se entrou. Sobrevive a sahir d'ella, e é isso que
+  // faz `a` poder juntar do ACERVO: para juntar uma faixa é preciso estar onde a
+  // faixa está, e a faixa não está dentro da lista. Zero antes de se entrar na
+  // primeira, e zero outra vez quando a lista alvo se apaga.
+  int rol_corrente() const noexcept;
+  const std::string& nome_corrente() const noexcept;
+
+  // O nome da lista eleita, para a tela poder perguntar «apagar «tal»?». Vazio
+  // fóra da secção das listas.
+  std::string nome_do_rol_eleito() const;
+
   // O filtro. Cadeia vazia limpa-o. Filtra o que está Á VISTA, e não o acervo:
   // é o que o mockup mostra, e é o que o operador espera de uma barra de busca
   // que vive por cima de uma lista.

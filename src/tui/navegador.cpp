@@ -175,6 +175,34 @@ std::string Navegador::caminho_eleito() const {
   return vista_[eleito_].chave;
 }
 
+void Navegador::mostra_rois() {
+  // O ALVO não se limpa aqui. Limpá-lo faria `a` deixar de funccionar assim que o
+  // operador sahisse da lista, e sahir d'ella é justamente o que elle tem de fazer
+  // para ir buscar a faixa que quer juntar.
+  secao_ = Secao::Rois;
+  trilha_.clear();
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+}
+
+int Navegador::rol_corrente() const noexcept { return rol_corrente_; }
+
+const std::string& Navegador::nome_corrente() const noexcept {
+  return nome_corrente_;
+}
+
+int Navegador::id_do_eleito() const {
+  if (secao_ != Secao::Rois || vista_.empty()) return 0;
+  return std::atoi(vista_[eleito_].chave.c_str());
+}
+
+std::string Navegador::nome_do_rol_eleito() const {
+  if (secao_ == Secao::Rois && !vista_.empty()) return vista_[eleito_].texto;
+  if (secao_ == Secao::NoRol && !trilha_.empty()) return trilha_.front();
+  return {};
+}
+
 void Navegador::mostra_rede(std::vector<Linha> achados) {
   rede_ = std::move(achados);
   secao_ = Secao::Rede;
