@@ -62,5 +62,13 @@ std::string nome_da_lista(std::string_view corpo);
 // dá catalogo vazio: é resposta, e não erro.
 Catalogo le_catalogo(std::string_view corpo);
 
+// ── E AGORA O QUE TOCA O MUNDO ──────────────────────────────────────────────
+
+// busca_catalogo — pede a pagina de embutir e lê-a. Falso quando a rede não
+// respondeu, ou quando a URL não tras identificador algum.
+bool busca_catalogo(std::string_view crua, Catalogo* catalogo);
+
+}  // namespace mysong::nucleo
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
