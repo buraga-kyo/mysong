@@ -111,3 +111,8 @@ target_sources(mysong_testes PRIVATE prova_rol.cpp)
 # Janella alguma se abre: o que se afere é o que se HA DE correr e o que se HA DE
 # mandar. Dous casos erguem processo, e nenhum d'elles abre video.
 target_sources(mysong_testes PRIVATE prova_video.cpp)
+
+# ─── A PROVA DO CATALOGO (issue #13) ────────────────────────────────────────
+# Sem rede: a pagina de embutir vae escripta á mão, com o embrulho e os objectos
+# aninhados conservados, que são as duas cousas que um leitor plano erraria.
+target_sources(mysong_testes PRIVATE prova_catalogo.cpp)
