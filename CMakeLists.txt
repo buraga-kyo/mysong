@@ -262,3 +262,7 @@ target_link_libraries(mysong_core PRIVATE PkgConfig::SQLITE3 PkgConfig::TAGLIB)
 find_package(Threads REQUIRED)
 target_sources(mysong_core PRIVATE src/nucleo/estaleiro.cpp)
 target_link_libraries(mysong_core PUBLIC Threads::Threads)
+
+# ─── O CORREIO DOS ACHADOS (issue #12) ──────────────────────────────────────
+# O recado que o fio da rede deixa ao fio da tela. Dependencia nova alguma.
+target_sources(mysong_core PRIVATE src/tui/correio.cpp)
