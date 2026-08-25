@@ -464,5 +464,34 @@ TEST_CASE("criar mostra a lista, e entrar n'ella abre o dentro") {
   CHECK(navegador.rol_corrente() > 0);
 }
 
+TEST_CASE("juntar tres faixas põe-nas na ordem, e o caminho eleito é o d'ellas") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  // FÓRA de uma lista não ha alvo, e juntar recusa: o alvo é a lista em que se
+  // ESTÁ, e não uma que se adivinhe. Quem recusa é a chave estrangeira, que não
+  // conhece lista de id zero.
+  CHECK_FALSE(navegador.junta_ao_rol("/acervo/A/B/1.mp3"));
+  REQUIRE_FALSE(navegador.entra());
+
+  REQUIRE(navegador.junta_ao_rol("/acervo/A/B/1.mp3"));
+  REQUIRE(navegador.junta_ao_rol("/acervo/A/B/2.mp3"));
+  REQUIRE(navegador.junta_ao_rol("/acervo/A/B/3.mp3"));
+  REQUIRE(navegador.vista().size() == 3);
+  CHECK(navegador.vista()[0].texto == "1.mp3");
+  CHECK(navegador.vista()[0].numero == 1);
+  CHECK(navegador.vista()[2].numero == 3);
+  // O caminho eleito é o do disco, e é elle que a fila do nucleo recebe.
+  CHECK(navegador.caminho_eleito() == "/acervo/A/B/1.mp3");
+  navegador.ao_fim();
+  CHECK(navegador.caminho_eleito() == "/acervo/A/B/3.mp3");
+  // E entrar n'uma faixa da lista DIZ que era faixa: quem chama enche a fila.
+  CHECK(navegador.entra());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
