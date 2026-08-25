@@ -404,5 +404,27 @@ class CovaDoRol {
 
 int CovaDoRol::semente_ = 0;
 
+TEST_CASE("sem roleiro, as secções das listas ficam vazias e nada estoura") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);  // punho nullo: corrida sem listas
+
+  navegador.mostra_rois();
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  CHECK(navegador.vista().empty());
+  // As sete operações devolvem falso, e ordem alguma estoura.
+  CHECK_FALSE(navegador.cria_rol("Da manhã"));
+  CHECK_FALSE(navegador.renomeia_rol("Outra"));
+  CHECK_FALSE(navegador.apaga_rol());
+  CHECK_FALSE(navegador.junta_ao_rol("/a/1.mp3"));
+  CHECK_FALSE(navegador.retira_do_rol());
+  CHECK_FALSE(navegador.sobe_no_rol());
+  CHECK_FALSE(navegador.desce_no_rol());
+  CHECK_FALSE(navegador.entra());
+  CHECK(navegador.rol_corrente() == 0);
+  CHECK(navegador.nome_corrente().empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
