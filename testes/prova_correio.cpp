@@ -47,5 +47,22 @@ TEST_CASE("a colheita CONSOME, e a segunda vem vazia") {
   CHECK(correio.geracao() == 1);
 }
 
+TEST_CASE("recado novo substitue o velho, e a geração conta os dous") {
+  tui::Correio correio;
+  correio.poe({linha("velho")}, "primeira busca");
+  correio.poe({linha("novo"), linha("outro")}, "segunda busca");
+  CHECK(correio.geracao() == 2);
+
+  std::vector<tui::Linha> achados;
+  std::string recado;
+  REQUIRE(correio.colhe(&achados, &recado));
+  // O velho NÃO chega: ninguem quer ver a busca de antes cahir depois da de agora.
+  REQUIRE(achados.size() == 2);
+  CHECK(achados[0].texto == "novo");
+  CHECK(recado == "segunda busca");
+  // Duas postas e uma colheita: a colheita apanha as duas, e não sobra a primeira.
+  CHECK_FALSE(correio.colhe(&achados, &recado));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
