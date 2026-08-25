@@ -185,5 +185,22 @@ TEST_CASE("o NA do yt-dlp é campo ausente, e não titulo") {
   CHECK(lixo.duracao == 0);
 }
 
+TEST_CASE("os argumentos do download não embutem etiqueta, e não sobrescrevem") {
+  const std::vector<std::string> ditos =
+      nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T");
+  const auto tem = [&ditos](const std::string& q) {
+    return std::find(ditos.begin(), ditos.end(), q) != ditos.end();
+  };
+  CHECK(tem("--no-overwrites"));
+  CHECK(tem("--extract-audio"));
+  CHECK(tem("--no-embed-metadata"));
+  CHECK_FALSE(tem("--embed-metadata"));
+  CHECK(tem("--no-playlist"));
+  CHECK(ditos.back() == "https://exemplo/x");
+  CHECK(ditos[ditos.size() - 2] == "--");
+  // O molde leva a extensão do yt-dlp, e não uma que nós adivinhemos.
+  CHECK(tem("/acervo/A/B/01 - T.%(ext)s"));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
