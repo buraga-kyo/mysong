@@ -39,6 +39,35 @@ struct Pedido {
   int numero = 0;
 };
 
+// saneia_nome — o nome que se ha de pôr no systema de arquivos. Tira a barra, o
+// NUL e o ponto inicial; apara os espaços das pontas; e corta o comprimento, que
+// o ext4 não aceita nome de mais de duzentos e cincoenta e cinco octetos. Nome
+// que se reduza a nada devolve «sem titulo», que é resposta e não erro: arquivo
+// sem nome não se pode gravar.
+std::string saneia_nome(std::string_view crua);
+
+// O DESFECHO de uma aquisição. Toda falha tem nome, porque «falhou» não diz ao
+// operador se ha de tentar outra vez, corrigir a URL ou installar o yt-dlp.
+enum class Colheita {
+  Colhido,          // o arquivo está no logar, com as etiquetas
+  SemFerramenta,    // o yt-dlp não está no caminho
+  UrlRecusada,      // o yt-dlp não conseguiu ler a URL
+  JaExiste,         // ha arquivo no destino; NADA se tocou
+  FalhouAoBaixar,   // o yt-dlp sahiu com erro
+  FalhouAEtiqueta,  // baixou-se, mas a etiqueta não se pôde escrever
+};
+
+// A ETIQUETA que a sonda da URL colheu. Campo vazio quer dizer que a rede não o
+// soube dizer, e não que elle seja vazio.
+struct EtiquetaRemota {
+  std::string titulo;
+  std::string canal;
+  std::string artista;
+  std::string album;
+  int numero = 0;
+  int duracao = 0;
+};
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
