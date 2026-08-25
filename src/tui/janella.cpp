@@ -83,6 +83,18 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
     case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
     case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
     case tui::Verbo::Sahir: sahir = true; break;
+    // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
+    // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
+    // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
+    case tui::Verbo::Desce:
+    case tui::Verbo::Sobe:
+    case tui::Verbo::AoPrincipio:
+    case tui::Verbo::AoFim:
+    case tui::Verbo::Entra:
+    case tui::Verbo::Volta:
+    case tui::Verbo::AbreBusca:
+    case tui::Verbo::Varre:
+      break;
   }
 }
 
