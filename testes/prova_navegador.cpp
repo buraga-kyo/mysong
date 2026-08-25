@@ -493,5 +493,38 @@ TEST_CASE("juntar tres faixas põe-nas na ordem, e o caminho eleito é o d'ellas
   CHECK(navegador.entra());
 }
 
+TEST_CASE("mover para cima e para baixo troca a ordem, e o olho segue a faixa") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+    REQUIRE(navegador.junta_ao_rol(qual));
+
+  navegador.ao_fim();  // a terceira
+  REQUIRE(navegador.sobe_no_rol());
+  CHECK(navegador.vista()[1].texto == "3.mp3");
+  // O OLHO segue a faixa que se moveu: sem isso, subir uma vez elegia a vizinha e
+  // subir duas vezes movia a faixa errada.
+  CHECK(navegador.eleito() == 1);
+  REQUIRE(navegador.sobe_no_rol());
+  CHECK(navegador.vista()[0].texto == "3.mp3");
+  CHECK(navegador.eleito() == 0);
+  // O primeiro não sobe, e a lista fica como estava.
+  CHECK_FALSE(navegador.sobe_no_rol());
+  CHECK(navegador.vista()[0].texto == "3.mp3");
+
+  REQUIRE(navegador.desce_no_rol());
+  CHECK(navegador.vista()[1].texto == "3.mp3");
+  CHECK(navegador.eleito() == 1);
+  navegador.ao_fim();
+  // O ultimo não desce: a troca com a ordem que não ha recusa-se em baixo.
+  CHECK_FALSE(navegador.desce_no_rol());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
