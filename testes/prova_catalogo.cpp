@@ -74,5 +74,11 @@ TEST_CASE("o identificador sahe das tres fórmas que o Spotify dá") {
   CHECK(nu::id_da_playlist("https://exemplo/playlists/abc").empty());
 }
 
+TEST_CASE("a pagina de embutir é a que se pede, e sómente com identificador") {
+  CHECK(nu::url_do_embed("abc") ==
+        "https://open.spotify.com/embed/playlist/abc");
+  CHECK(nu::url_do_embed("").empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
