@@ -47,5 +47,36 @@ TEST_CASE("o recorte do primeiro objecto respeita aspas e contra-barra") {
   CHECK(nu::primeiro_objecto("{\"a\":1}") == "{\"a\":1}");
 }
 
+// A LEITURA da resposta, sobre corpos com a fórma que o LRCLIB de facto devolve.
+TEST_CASE("a resposta lê-se, e a instrumental dá letra vazia sem erro") {
+  const std::string corpo =
+      "[{\"id\":30020794,\"trackName\":\"Creep\",\"artistName\":\"Radiohead\","
+      "\"duration\":237.0,\"instrumental\":false,"
+      "\"plainLyrics\":\"When you were here before\\nYou float like a feather\","
+      "\"syncedLyrics\":\"[00:11.00] When you were here before\\n"
+      "[00:16.30] You float like a feather\"}]";
+  const nu::Letra lida = nu::le_resposta(corpo);
+  CHECK(lida.sincronizada ==
+        "[00:11.00] When you were here before\n[00:16.30] You float like a feather");
+  CHECK(lida.plana == "When you were here before\nYou float like a feather");
+
+  // Instrumental: o LRCLIB devolve nulo, e ler texto de um nulo daria cadeia vazia
+  // por ACASO. O typo confere-se, donde é por decisão.
+  const nu::Letra muda = nu::le_resposta(
+      "[{\"trackName\":\"Prelude\",\"instrumental\":true,"
+      "\"plainLyrics\":null,\"syncedLyrics\":null}]");
+  CHECK(muda.sincronizada.empty());
+  CHECK(muda.plana.empty());
+
+  // Corpo vazio, corpo de erro, e corpo que não é JSON: os tres dão letra vazia.
+  CHECK(nu::le_resposta("").sincronizada.empty());
+  CHECK(nu::le_resposta("[]").sincronizada.empty());
+  const nu::Letra erro = nu::le_resposta(
+      "{\"message\":\"Failed to find specified track\","
+      "\"name\":\"TrackNotFound\",\"statusCode\":404}");
+  CHECK(erro.sincronizada.empty());
+  CHECK(erro.plana.empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
