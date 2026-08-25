@@ -241,11 +241,68 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   });
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
-    const tui::Ordem ordem = tui::ordem_da_tecla(tecla, retracto_do(tocador));
-    if (ordem.verbo == tui::Verbo::Nada) return false;  // tecla alheia segue
-    cumprir(ordem, tocador, sahir);
-    if (sahir) tela.Exit();
-    return true;
+    // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
+    // por onde uma tecla chegue ás duas leituras.
+    if (digitando) {
+      if (tecla == ftxui::Event::Escape) {
+        digitando = false;
+        termo_em_curso.clear();
+        return true;
+      }
+      if (tecla == ftxui::Event::Return) {
+        digitando = false;
+        navegador.filtra(termo_em_curso);
+        return true;
+      }
+      if (tecla == ftxui::Event::Backspace) {
+        if (!termo_em_curso.empty()) termo_em_curso.pop_back();
+        return true;
+      }
+      if (tecla.is_character()) {
+        termo_em_curso += tecla.character();
+        return true;
+      }
+      return true;  // dentro do modo, tecla alguma sahe para fóra
+    }
+
+    const tui::Ordem ordem =
+        tui::ordem_da_tecla(tecla, retracto_do(tocador), false);
+    switch (ordem.verbo) {
+      case tui::Verbo::Nada: return false;  // tecla alheia segue
+      case tui::Verbo::Desce: navegador.desce(); return true;
+      case tui::Verbo::Sobe: navegador.sobe(); return true;
+      case tui::Verbo::AoPrincipio: navegador.ao_principio(); return true;
+      case tui::Verbo::AoFim: navegador.ao_fim(); return true;
+      case tui::Verbo::Volta: navegador.volta(); return true;
+      case tui::Verbo::AbreBusca:
+        digitando = true;
+        termo_em_curso.clear();
+        return true;
+      case tui::Verbo::Varre:
+        if (varrida.load()) {  // uma varredura por vez, e não vinte
+          varrida.store(false);
+          recarregado = false;
+          std::thread(varre_em_fio, banco, raiz_do_acervo(), std::cref(sahir),
+                      &varrida).detach();
+        }
+        return true;
+      case tui::Verbo::Entra:
+        // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
+        // é quem tem o tocador na mão.
+        if (navegador.entra()) {
+          const std::string caminho = navegador.caminho_eleito();
+          if (!caminho.empty()) {
+            tocador.fila().junta(caminho);
+            tocador.fila().ir_para(tocador.fila().tamanho() - 1);
+            tocador.tocar_corrente();
+          }
+        }
+        return true;
+      default:
+        cumprir(ordem, tocador, sahir);
+        if (sahir) tela.Exit();
+        return true;
+    }
   });
 
   // O RELOGIO. Vive em fio proprio porque `tela.Loop` não devolve até se sahir, e
