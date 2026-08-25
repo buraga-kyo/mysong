@@ -43,6 +43,23 @@ struct Retracto {
   std::size_t tamanho = 0;
 };
 
+// mm_ss — segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não
+// arredonda para cima: o operador que vê `02:05` ouviu dous minutos e cinco
+// segundos, e nunca um segundo que ainda não passou.
+std::string mm_ss(double segundos);
+
+// enchimento — quantas collunhas da barra estão cheias. `round`, e não `floor`:
+// com `floor` a barra fica uma collunha atrás do som por metade do tempo, e a
+// ultima collunha só acende no fim exacto. Razão maior que um cinge-se em um, e
+// duração que não é positiva ou não é finita dá zero, sem divisão alguma.
+std::size_t enchimento(double posicao, double duracao, std::size_t largura);
+
+// elemento_do_transporte — a barra inteira: os botões em fita arrowline, a barra
+// de progresso enchida em v500 sobre inset, o tempo em MM:SS / MM:SS, e o
+// volume. Largura zero dá elemento vazio, e nunca quadro roto.
+ftxui::Element elemento_do_transporte(const Retracto& retracto,
+                                      std::size_t largura);
+
 }  // namespace mysong::tui
 
 #endif  // MYSONG_TUI_TRANSPORTE_HPP
