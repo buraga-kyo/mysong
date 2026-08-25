@@ -304,6 +304,40 @@ void responde_get_all(DBusMessage* resposta, const std::string& interface,
 
 }  // namespace
 
+namespace {
+
+// annuncia_mudanca — o `PropertiesChanged` das tres que podem mudar. `Position` NÃO
+// entra: é decreto da especificação do MPRIS, porque ella muda a todo instante e um
+// pregão por instante afogaria o barramento. Quem quer a posição chama `Get`.
+void annuncia_mudanca(DBusConnection* ligacao, nucleo::Tocador& tocador) {
+  DBusMessage* pregao =
+      dbus_message_new_signal(kCaminho, kPropriedades, "PropertiesChanged");
+  if (pregao == nullptr) return;
+  DBusMessageIter fóra, mapa, vazio;
+  dbus_message_iter_init_append(pregao, &fóra);
+  const char* interface = kTocador;
+  dbus_message_iter_append_basic(&fóra, DBUS_TYPE_STRING, &interface);
+  dbus_message_iter_open_container(&fóra, DBUS_TYPE_ARRAY, "{sv}", &mapa);
+  for (const char* nome : {"PlaybackStatus", "Metadata", "Volume"}) {
+    DBusMessageIter entrada;
+    dbus_message_iter_open_container(&mapa, DBUS_TYPE_DICT_ENTRY, nullptr,
+                                     &entrada);
+    dbus_message_iter_append_basic(&entrada, DBUS_TYPE_STRING, &nome);
+    escreve_propriedade(&entrada, kTocador, nome, tocador);
+    dbus_message_iter_close_container(&mapa, &entrada);
+  }
+  dbus_message_iter_close_container(&fóra, &mapa);
+  // O terceiro argumento é a lista das INVALIDADAS, e vae vazia: as tres que mudaram
+  // vão com o seu valor, donde nada fica por reler. Omittir o container faria a
+  // mensagem não casar com a assignatura e o barramento recusá-la.
+  dbus_message_iter_open_container(&fóra, DBUS_TYPE_ARRAY, "s", &vazio);
+  dbus_message_iter_close_container(&fóra, &vazio);
+  dbus_connection_send(ligacao, pregao, nullptr);
+  dbus_message_unref(pregao);
+}
+
+}  // namespace
+
 struct CasaDoMpris::Punho {
   nucleo::Tocador& tocador;
   DBusConnection* ligacao = nullptr;
