@@ -9,9 +9,15 @@
 
 #include <unistd.h>
 
+#include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <string>
 
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
+
+#include "nucleo/biblioteca.hpp"
 #include "nucleo/varredura.hpp"
 
 namespace nu = mysong::nucleo;
@@ -48,6 +54,50 @@ class Cova {
 };
 
 int Cova::semente_ = 0;
+
+
+// faz_wav — um WAV valido escripto byte a byte. Não se chama ffmpeg: prova que
+// depende de programma externo falha por razão que não é a sua. Quarenta e quatro
+// octetos de cabeçalho, e silencio no corpo; a taglib abre-o e mede-lhe a
+// duração, que é tudo o que esta bateria precisa d'elle.
+void faz_wav(const std::filesystem::path& onde, int segundos) {
+  std::filesystem::create_directories(onde.parent_path());
+  const std::uint32_t taxa = 8000, canaes = 1, bits = 8;
+  const std::uint32_t corpo = taxa * canaes * (bits / 8) * segundos;
+  std::ofstream saida(onde, std::ios::binary);
+  auto le32 = [&saida](std::uint32_t v) {
+    for (int i = 0; i < 4; ++i) saida.put(static_cast<char>((v >> (8 * i)) & 0xFF));
+  };
+  auto le16 = [&saida](std::uint16_t v) {
+    for (int i = 0; i < 2; ++i) saida.put(static_cast<char>((v >> (8 * i)) & 0xFF));
+  };
+  saida.write("RIFF", 4); le32(36 + corpo); saida.write("WAVE", 4);
+  saida.write("fmt ", 4); le32(16); le16(1); le16(canaes);
+  le32(taxa); le32(taxa * canaes * (bits / 8)); le16(canaes * (bits / 8)); le16(bits);
+  saida.write("data", 4); le32(corpo);
+  for (std::uint32_t i = 0; i < corpo; ++i) saida.put(static_cast<char>(0x80));
+}
+
+// poe_etiqueta — a etiqueta posta pela PROPRIA taglib. Cadeia vazia e numero zero
+// querem dizer «não põe este campo», que é como se arma o caso da etiqueta
+// parcial sem escrever um arquivo á mão para cada combinação.
+void poe_etiqueta(const std::filesystem::path& onde, const std::string& artista,
+                  const std::string& album, const std::string& titulo,
+                  unsigned numero) {
+  TagLib::FileRef arquivo(onde.c_str());
+  REQUIRE_FALSE(arquivo.isNull());
+  TagLib::Tag* etiqueta = arquivo.tag();
+  REQUIRE(etiqueta != nullptr);
+  // UTF8 EXPLICITO. `TagLib::String` construida de std::string assume LATIN-1, e
+  // gravar «Máquina» como latin-1 fá-lo voltar «MÃ¡quina»: foi o que esta prova
+  // apanhou de si mesma antes de julgar a obra.
+  const auto utf8 = TagLib::String::UTF8;
+  if (!artista.empty()) etiqueta->setArtist(TagLib::String(artista, utf8));
+  if (!album.empty()) etiqueta->setAlbum(TagLib::String(album, utf8));
+  if (!titulo.empty()) etiqueta->setTitle(TagLib::String(titulo, utf8));
+  if (numero != 0) etiqueta->setTrack(numero);
+  REQUIRE(arquivo.save());
+}
 
 }  // namespace
 
