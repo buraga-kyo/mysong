@@ -167,5 +167,19 @@ TEST_CASE("apagar leva os itens consigo, e a lista some") {
   CHECK_FALSE(roleiro.apaga(id));  // apagada duas vezes, a segunda é falsa
 }
 
+TEST_CASE("renomear conserva os itens, e recusa o nome vazio") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int id = roleiro.cria("Da manhã");
+  REQUIRE(roleiro.junta(id, "/a/1.mp3"));
+  REQUIRE(roleiro.renomeia(id, "  Da tarde  "));
+  REQUIRE(roleiro.rois().size() == 1);
+  CHECK(roleiro.rois()[0].nome == "Da tarde");
+  CHECK(roleiro.faixas(id) == std::vector<std::string>{"/a/1.mp3"});
+  CHECK_FALSE(roleiro.renomeia(id, "   "));
+  CHECK_FALSE(roleiro.renomeia(id + 999, "Alheia"));
+  CHECK(roleiro.rois()[0].nome == "Da tarde");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
