@@ -448,5 +448,41 @@ TEST_CASE("arquivo alcançavel por duas raízes entra uma vez") {
   CHECK(livraria.total() == 1u);
 }
 
+// Esquema mais NOVO em disco: nada se toca. Nem se abre escriba, donde
+// temporario algum chega a existir, e o arquivo fica byte a byte.
+TEST_CASE("banco de esquema mais novo não se sobrescreve") {
+  const Cova cova;
+  faz_wav(cova.acervo() / "A" / "B" / "01 - Um.wav", 1);
+  {
+    nu::Varredura primeira(cova.banco(), {cova.acervo()});
+    corre_ate_o_fim(primeira);
+    REQUIRE(primeira.desfecho() == nu::Desfecho::Concluido);
+  }
+  // Envelhece-se a Casa por SQL propria, e não por knob novo na obra: dar ao
+  // Escriba um parametro de versão sómente para esta prova poria na obra uma
+  // porta por onde alguem escreveria a versão errada de verdade.
+  sqlite3* punho = nullptr;
+  REQUIRE(sqlite3_open(cova.banco().c_str(), &punho) == SQLITE_OK);
+  REQUIRE(sqlite3_exec(punho, "UPDATE esquema SET versao = 99;", nullptr,
+                       nullptr, nullptr) == SQLITE_OK);
+  sqlite3_close(punho);
+  std::ifstream fonte(cova.banco(), std::ios::binary);
+  const std::string antes((std::istreambuf_iterator<char>(fonte)),
+                          std::istreambuf_iterator<char>());
+  REQUIRE_FALSE(antes.empty());
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  CHECK_FALSE(varredura.passo());  // não ha passo algum a dar
+  CHECK(varredura.desfecho() == nu::Desfecho::EsquemaMaisNovo);
+  std::ifstream fonte2(cova.banco(), std::ios::binary);
+  const std::string depois((std::istreambuf_iterator<char>(fonte2)),
+                           std::istreambuf_iterator<char>());
+  CHECK(depois == antes);
+  std::size_t vizinhos = 0;
+  for (const auto& entrada : std::filesystem::directory_iterator(cova.raiz()))
+    if (entrada.is_regular_file()) ++vizinhos;
+  CHECK(vizinhos == 1u);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
