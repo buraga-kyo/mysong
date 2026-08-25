@@ -16,6 +16,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/aquisicao.hpp"
 
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -205,7 +206,16 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
   if (filho == 0) {
     ::close(cano[0]);
     ::dup2(cano[1], STDOUT_FILENO);
-    ::dup2(cano[1], STDERR_FILENO);
+    // O STDERR NÃO se junta ao stdout. Medido nesta Casa: o yt-dlp escreve no
+    // stderr o aviso «Deprecated Feature: Support for Python version 3.10 has
+    // been deprecated», e juntando-se os dous esse aviso vinha como PRIMEIRA
+    // linha, donde o titulo da faixa passava a ser o aviso e o canal passava a
+    // ser o titulo. O contracto dos `--print` é do stdout, e sómente d'elle.
+    //
+    // E o stderr vae para o buraco, e não para o terminal: esta Casa corre debaixo
+    // de uma tela do FTXUI, e uma linha de aviso no meio do quadro estraga-o.
+    const int buraco = ::open("/dev/null", O_WRONLY);
+    if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
     ::close(cano[1]);
     // O vector vira argv aqui, no filho, e sem shell: `execvp` recebe os
     // argumentos tal e qual, donde a URL não atravessa interpretador algum.
