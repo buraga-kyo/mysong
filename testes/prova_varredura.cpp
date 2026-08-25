@@ -214,5 +214,26 @@ TEST_CASE("etiqueta completa entra pela etiqueta, e deduzido sahe em zero") {
   CHECK(achada.deduzido == nu::kDeduziuNada);
 }
 
+// Sem etiqueta ALGUMA: tudo entra pelo caminho, e a máscara nomeia os quatro.
+TEST_CASE("sem etiqueta, tudo entra pelo caminho e deduzido nomeia os quatro") {
+  const Cova cova;
+  const std::filesystem::path faixa =
+      cova.acervo() / "Bach" / "Cravo Bem Temperado" / "02 - Fuga.wav";
+  faz_wav(faixa, 2);  // e NÃO se põe etiqueta alguma
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  corre_ate_o_fim(varredura);
+  REQUIRE(varredura.desfecho() == nu::Desfecho::Concluido);
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Faixa achada;
+  REQUIRE(livraria.acha_por_caminho(faixa.string(), achada));
+  CHECK(achada.artista == "Bach");
+  CHECK(achada.album == "Cravo Bem Temperado");
+  CHECK(achada.titulo == "Fuga");
+  CHECK(achada.numero == 2);
+  CHECK(achada.deduzido == (nu::kDeduziuArtista | nu::kDeduziuAlbum |
+                            nu::kDeduziuTitulo | nu::kDeduziuNumero));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
