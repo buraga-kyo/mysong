@@ -41,6 +41,58 @@ struct Linha {
   std::string autor;   // sómente em faixas: o artista, para a columna do meio
 };
 
+// O NAVEGADOR. A bibliotheca é EMPRESTADA e vive mais que elle: o navegador não a
+// possue, e por isso não a fecha nem a reabre ás escondidas.
+class Navegador {
+ public:
+  explicit Navegador(const nucleo::Biblioteca& livraria);
+
+  Navegador(const Navegador&) = delete;
+  Navegador& operator=(const Navegador&) = delete;
+
+  Secao secao() const noexcept;
+  const std::vector<Linha>& vista() const noexcept;
+  std::size_t eleito() const noexcept;
+
+  // A trilha do que se atravessou, para o titulo da tabella: vazia em Artistas,
+  // com o artista em Albuns, com artista e album em Faixas.
+  const std::vector<std::string>& trilha() const noexcept;
+
+  void desce() noexcept;
+  void sobe() noexcept;
+  void ao_principio() noexcept;
+  void ao_fim() noexcept;
+
+  // entra — desce um degrau. VERDADEIRO quando o degrau era uma FAIXA, que é o
+  // signal para quem chama mandar tocar; nesse caso `caminho_eleito` diz qual.
+  bool entra();
+
+  // volta — sobe um degrau. Falso quando já se está no alto, e ahi nada muda.
+  bool volta();
+
+  // O filtro. Cadeia vazia limpa-o. Filtra o que está Á VISTA, e não o acervo:
+  // é o que o mockup mostra, e é o que o operador espera de uma barra de busca
+  // que vive por cima de uma lista.
+  void filtra(std::string termo);
+  const std::string& termo() const noexcept;
+
+  std::string caminho_eleito() const;
+
+  // Relê o acervo da bibliotheca, conservando a secção e a trilha se ainda
+  // existirem. Chama-se depois de a varredura concluir.
+  void recarrega();
+
+ private:
+  void refaz_vista();
+
+  const nucleo::Biblioteca& livraria_;
+  Secao secao_ = Secao::Artistas;
+  std::vector<Linha> vista_;
+  std::vector<std::string> trilha_;
+  std::string termo_;
+  std::size_t eleito_ = 0;
+};
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
