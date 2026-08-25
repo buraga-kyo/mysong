@@ -16,6 +16,7 @@
 #include <vector>
 #include <string>
 
+#include <sqlite3.h>
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 
@@ -431,6 +432,20 @@ TEST_CASE("laço de ligação symbólica não faz a varredura girar") {
   CHECK(varredura.progresso().ligacoes_saltadas >= 1u);
   const nu::Biblioteca livraria(cova.banco());
   CHECK(livraria.total() == 1u);  // a faixa entrou UMA vez
+}
+
+// Raízes que se SOBREPÕEM: o mesmo arquivo alcançavel por duas entra UMA vez,
+// pelo caminho canónico.
+TEST_CASE("arquivo alcançavel por duas raízes entra uma vez") {
+  const Cova cova;
+  faz_wav(cova.acervo() / "A" / "B" / "01 - Um.wav", 1);
+  nu::Varredura varredura(cova.banco(),
+                          {cova.acervo(), cova.acervo() / "A"});
+  corre_ate_o_fim(varredura);
+  CHECK(varredura.desfecho() == nu::Desfecho::Concluido);
+  CHECK(varredura.progresso().vistas == 1u);
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK(livraria.total() == 1u);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
