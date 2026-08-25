@@ -35,6 +35,20 @@ std::string mm_ss(double segundos) {
   return std::string(molde);
 }
 
+std::size_t enchimento(double posicao, double duracao, std::size_t largura) {
+  if (largura == 0) return 0;
+  // Duração que não presta dá barra vazia, e a guarda vem ANTES da divisão: o
+  // mpv entrega duração zero enquanto a faixa carrega, e dividir alli daria
+  // infinito, que o `round` converteria em numero qualquer.
+  if (!std::isfinite(duracao) || duracao <= 0.0) return 0;
+  if (!std::isfinite(posicao) || posicao <= 0.0) return 0;
+  double razao = posicao / duracao;
+  if (razao > 1.0) razao = 1.0;  // buscou-se para o fim, ou o mpv passou d'elle
+  const double collunhas = std::round(razao * static_cast<double>(largura));
+  const std::size_t cheias = static_cast<std::size_t>(collunhas);
+  return cheias > largura ? largura : cheias;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
