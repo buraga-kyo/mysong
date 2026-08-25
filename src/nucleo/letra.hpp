@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace mysong::nucleo {
 
@@ -54,6 +55,32 @@ Letra le_resposta(std::string_view corpo);
 // caminho_do_lrc — o `.lrc` ao lado do audio: mesma pasta, mesmo nome, outra
 // extensão. É onde o tocador o ha de procurar, e onde os outros tocadores o põem.
 std::filesystem::path caminho_do_lrc(const std::filesystem::path& audio);
+
+// ── A LETRA NA TELA (issue #15) ─────────────────────────────────────────────
+
+// Uma LINHA de letra com o seu instante. `tempo` em segundos, com os centesimos
+// que o `.lrc` traz.
+struct LinhaDaLetra {
+  double tempo = 0.0;
+  std::string texto;
+};
+
+// analysa_lrc — as linhas de um `.lrc`, em ordem de tempo. Linha sem carimbo
+// ignora-se; carimbo sem texto CONSERVA-SE, com texto vazio, porque é assim que o
+// LRCLIB marca o silencio entre estrophes e é isso que faz a linha anterior sahir
+// da tela na hora certa.
+//
+// Um carimbo pode trazer MAIS DE UM tempo (`[00:11.00][01:23.00] refrão`), que é
+// como o fórmato diz «esta mesma linha repete-se»: sahem duas linhas.
+std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto);
+
+// linha_corrente — o indice da linha que vale n'um instante, ou menos um antes da
+// primeira. As linhas HÃO DE vir ordenadas, que é como analysa_lrc as devolve.
+int linha_corrente(const std::vector<LinhaDaLetra>& linhas, double posicao);
+
+// le_lrc_do_disco — as linhas do `.lrc` que estiver ao lado do audio. Vazio quando
+// não ha arquivo, e isso não é erro: a maior parte do acervo não tem letra.
+std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
 
 // ── E AGORA O QUE TOCA A REDE. Uma funcção só, e no fim.
 
