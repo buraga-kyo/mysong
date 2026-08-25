@@ -22,6 +22,13 @@
 
 namespace mysong::tui {
 
+// Os dous glifos da barra. Bloco cheio e bloco leve, e não espaço para o vazio:
+// espaço com fundo pintado depende de o terminal honrar o fundo até á borda da
+// célulla, e ha emulador que o não faz; glifo desenhado sahe sempre.
+inline constexpr std::string_view kBarraCheia = "\u2588";
+inline constexpr std::string_view kBarraVazia = "\u2591";
+
+
 std::string mm_ss(double segundos) {
   // Tempo que não é tempo mostra-se como tal, e não como `00:00`: zero é uma
   // affirmação (a faixa está no principio), e o traço é a confissão de que a
@@ -47,6 +54,24 @@ std::size_t enchimento(double posicao, double duracao, std::size_t largura) {
   const double collunhas = std::round(razao * static_cast<double>(largura));
   const std::size_t cheias = static_cast<std::size_t>(collunhas);
   return cheias > largura ? largura : cheias;
+}
+
+std::string_view nome_do_estado(nucleo::Estado estado) {
+  switch (estado) {
+    case nucleo::Estado::Tocando: return "Tocando";
+    case nucleo::Estado::Pausado: return "Pausado";
+    case nucleo::Estado::Parado: return "Parado";
+  }
+  return "Parado";  // o compilador não o sabe, mas o enum é fechado
+}
+
+std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
+  const std::size_t cheias = enchimento(retracto.posicao, retracto.duracao, largura);
+  std::string linha;
+  linha.reserve(largura * 3);
+  for (std::size_t c = 0; c < largura; ++c)
+    linha += (c < cheias) ? kBarraCheia : kBarraVazia;
+  return linha;
 }
 
 }  // namespace mysong::tui
