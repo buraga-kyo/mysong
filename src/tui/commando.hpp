@@ -47,6 +47,11 @@ enum class Verbo {
   // duas cousas differentes acontecem, que uma filtra o que ha e a outra pergunta
   // ao mundo, e verbo com bandeira é verbo que se lê errado n'um switch.
   AbreProcura,
+  // As LISTAS (issue #10). Oito verbos, e não um com alvo: cada tecla faz uma cousa
+  // differente, e verbo com alvo obrigaria o switch a olhar duas cousas para saber
+  // qual d'ellas se pediu.
+  AbreRois, CriaRol, RenomeiaRol, ApagaRol, JuntaAoRol, RetiraDoRol,
+  SobeNoRol, DesceNoRol,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

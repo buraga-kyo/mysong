@@ -16,6 +16,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <filesystem>
+#include <string>
 #include <utility>
 
 namespace mysong::tui {
@@ -71,6 +74,33 @@ void Navegador::refaz_vista() {
                           faixa.duracao, faixa.artista});
       break;
 
+    case Secao::Rois:
+      // As listas do banco. A conta dos itens vae na columna do numero, que é a que
+      // a tabella já sabe pintar: lista de tres faixas mostra tres.
+      if (roleiro_ != nullptr)
+        for (const nucleo::Rol& rol : roleiro_->rois())
+          if (contem_sem_caixa(rol.nome, termo_))
+            vista_.push_back(
+                {rol.nome, std::to_string(rol.id), rol.quantos, 0, {}});
+      break;
+
+    case Secao::NoRol:
+      // As faixas de UMA lista, na ordem gravada. O texto é o NOME DO ARQUIVO, e
+      // não o titulo da etiqueta: perguntar o titulo de cada uma á bibliotheca seria
+      // uma consulta por linha a cada quadro. E a ordem no banco vae na columna do
+      // numero, donde retirar e mover não precisam de a adivinhar.
+      if (roleiro_ != nullptr) {
+        int ordem = 0;
+        for (const std::string& caminho : roleiro_->faixas(rol_corrente_)) {
+          const std::string curto =
+              std::filesystem::path(caminho).filename().string();
+          if (contem_sem_caixa(curto, termo_))
+            vista_.push_back({curto, caminho, ordem + 1, 0, {}});
+          ++ordem;
+        }
+      }
+      break;
+
     case Secao::Rede:
       // A UNICA secção que não pergunta á bibliotheca. A fonte é a lista que veio
       // de fóra, e o filtro applica-se sobre ella como sobre as outras.
@@ -102,7 +132,9 @@ std::size_t primeira_a_mostrar(std::size_t eleito, std::size_t quantas,
   return primeira;
 }
 
-Navegador::Navegador(const nucleo::Biblioteca& livraria) : livraria_(livraria) {
+Navegador::Navegador(const nucleo::Biblioteca& livraria,
+                     nucleo::Roleiro* roleiro)
+    : livraria_(livraria), roleiro_(roleiro) {
   refaz_vista();
 }
 
@@ -137,8 +169,117 @@ void Navegador::filtra(std::string termo) {
 
 std::string Navegador::caminho_eleito() const {
   if (vista_.empty()) return {};
-  if (secao_ != Secao::Faixas && secao_ != Secao::Busca) return {};
+  if (secao_ != Secao::Faixas && secao_ != Secao::Busca &&
+      secao_ != Secao::NoRol)
+    return {};
   return vista_[eleito_].chave;
+}
+
+void Navegador::mostra_rois() {
+  // O ALVO não se limpa aqui. Limpá-lo faria `a` deixar de funccionar assim que o
+  // operador sahisse da lista, e sahir d'ella é justamente o que elle tem de fazer
+  // para ir buscar a faixa que quer juntar.
+  secao_ = Secao::Rois;
+  trilha_.clear();
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+}
+
+int Navegador::rol_corrente() const noexcept { return rol_corrente_; }
+
+const std::string& Navegador::nome_corrente() const noexcept {
+  return nome_corrente_;
+}
+
+int Navegador::id_do_eleito() const {
+  if (secao_ != Secao::Rois || vista_.empty()) return 0;
+  return std::atoi(vista_[eleito_].chave.c_str());
+}
+
+std::string Navegador::nome_do_rol_eleito() const {
+  if (secao_ == Secao::Rois && !vista_.empty()) return vista_[eleito_].texto;
+  if (secao_ == Secao::NoRol && !trilha_.empty()) return trilha_.front();
+  return {};
+}
+
+bool Navegador::cria_rol(const std::string& nome) {
+  if (roleiro_ == nullptr) return false;
+  if (roleiro_->cria(nome) == 0) return false;
+  // Passa-se á secção das listas, e não se fica onde se estava: quem cria uma
+  // lista quer vê-la, e vê-la é o unico modo de conferir que ella nasceu.
+  mostra_rois();
+  return true;
+}
+
+bool Navegador::renomeia_rol(const std::string& nome) {
+  const int qual = secao_ == Secao::NoRol ? rol_corrente_ : id_do_eleito();
+  if (roleiro_ == nullptr || qual == 0) return false;
+  if (!roleiro_->renomeia(qual, nome)) return false;
+  const std::string limpo = nucleo::saneia_nome_de_rol(nome);
+  if (secao_ == Secao::NoRol && !trilha_.empty()) trilha_.front() = limpo;
+  if (qual == rol_corrente_) nome_corrente_ = limpo;
+  refaz_vista();
+  return true;
+}
+
+bool Navegador::apaga_rol() {
+  const int qual = secao_ == Secao::NoRol ? rol_corrente_ : id_do_eleito();
+  if (roleiro_ == nullptr || qual == 0) return false;
+  if (!roleiro_->apaga(qual)) return false;
+  // Apagado o ALVO, elle vae-se: apontar para lista que já não existe faria `a`
+  // falhar sem dizer porque.
+  if (qual == rol_corrente_) {
+    rol_corrente_ = 0;
+    nome_corrente_.clear();
+  }
+  // E não ha dentro onde ficar: sahe-se para a lista das listas. Ficar dentro
+  // mostraria vista vazia sem dizer porque.
+  mostra_rois();
+  return true;
+}
+
+bool Navegador::junta_ao_rol(const std::string& caminho) {
+  // Fóra de uma lista, `rol_corrente_` é zero, e a camada de baixo recusa o zero
+  // pela chave estrangeira: rowid do SQLite parte de um, donde lista de id zero não
+  // existe nunca. Guarda propria houve, e sahiu por codigo morto: a mutação que a
+  // tirava sobrevivia á bateria, porque a chave já fazia o serviço.
+  if (roleiro_ == nullptr) return false;
+  if (!roleiro_->junta(rol_corrente_, caminho)) return false;
+  refaz_vista();  // estando-se dentro d'ella, a faixa nova apparece
+  return true;
+}
+
+bool Navegador::retira_do_rol() {
+  if (roleiro_ == nullptr || secao_ != Secao::NoRol || vista_.empty())
+    return false;
+  // A ORDEM vem da columna do numero, que refaz_vista encheu com a ordem mais um.
+  // Não vem do indice do eleito: com filtro posto, o indice da vista e a ordem no
+  // banco desencontram-se, e retirar-se-hia a faixa errada.
+  if (!roleiro_->retira(rol_corrente_, vista_[eleito_].numero - 1)) return false;
+  refaz_vista();
+  return true;
+}
+
+bool Navegador::sobe_no_rol() {
+  if (roleiro_ == nullptr || secao_ != Secao::NoRol || vista_.empty())
+    return false;
+  const int ordem = vista_[eleito_].numero - 1;
+  if (ordem <= 0) return false;  // o primeiro não sobe
+  if (!roleiro_->troca(rol_corrente_, ordem, ordem - 1)) return false;
+  if (eleito_ > 0) --eleito_;  // o olho segue a faixa que se moveu
+  refaz_vista();
+  return true;
+}
+
+bool Navegador::desce_no_rol() {
+  if (roleiro_ == nullptr || secao_ != Secao::NoRol || vista_.empty())
+    return false;
+  const int ordem = vista_[eleito_].numero - 1;
+  if (!roleiro_->troca(rol_corrente_, ordem, ordem + 1)) return false;
+  if (eleito_ + 1 < vista_.size()) ++eleito_;
+  refaz_vista();
+  return true;
 }
 
 void Navegador::mostra_rede(std::vector<Linha> achados) {
@@ -172,6 +313,16 @@ bool Navegador::entra() {
     case Secao::Faixas:
     case Secao::Busca:
       return true;  // já é faixa: quem chama manda tocar
+    case Secao::Rois:
+      // Entrar n'uma lista é abri-la. O id guarda-se, e a trilha leva o nome, que
+      // é o que a tela mostra por titulo.
+      rol_corrente_ = std::atoi(degrau.chave.c_str());
+      nome_corrente_ = degrau.texto;
+      trilha_ = {degrau.texto};
+      secao_ = Secao::NoRol;
+      break;
+    case Secao::NoRol:
+      return true;  // já é faixa: quem chama enche a fila e manda tocar
     case Secao::Rede:
       // Achado da rede não é faixa, e entrar n'elle não é descer degrau algum:
       // quem chama pergunta pela url_eleita e manda baixar. Nada muda aqui.
@@ -197,8 +348,15 @@ bool Navegador::volta() {
       secao_ = Secao::Artistas;
       break;
     case Secao::Rede:
+    case Secao::Rois:
       trilha_.clear();
       secao_ = Secao::Artistas;
+      break;
+    case Secao::NoRol:
+      // De dentro de uma lista volta-se á lista das listas, e não ao acervo: é o
+      // degrau de que se veio. O ALVO fica: vêr é que se deixou de estar dentro.
+      trilha_.clear();
+      secao_ = Secao::Rois;
       break;
     case Secao::Artistas:
       return false;  // já se está no alto

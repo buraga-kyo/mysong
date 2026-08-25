@@ -177,12 +177,31 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `b` | baixa por URL |
 | `l` | troca o espectro pela letra |
 | `r` | varre o acervo outra vez |
+| `P` | as listas |
+| `c` | cria lista (pede o nome) |
+| `R` | renomeia a lista |
+| `D` | apaga a lista (pede confirmacao) |
+| `a` | junta a faixa eleita a lista alvo |
+| `t` | retira o item eleito da lista |
+| `K` / `J` | move o item para cima, para baixo |
 | `q` | sahe |
 
 Duas buscas ha, e ellas nao sao a mesma: o `/` FILTRA o que esta a vista, sem
 tocar a rede; o `s` PERGUNTA ao YouTube. Na secção NET, Enter encommenda a baixa
 do achado eleito, e duas baixas correm ao mesmo tempo no maximo: as demais
 esperam, e a linha do titulo diz quantas correm e quantas esperam.
+
+### As listas
+
+As listas vivem em `rol.sqlite3`, ao lado do indice, e NAO dentro delle: o indice
+e reconstruido a cada varredura, e taboa de lista la dentro sahiria com a
+varredura.
+
+O caminho de usar: `P` abre as listas, `c` cria uma, seta direita entra nella. A
+lista em que se entrou fica sendo a ALVO, e o titulo passa a mostra-la; volta-se
+ao acervo, elege-se a faixa e tecla-se `a`. Dentro da lista, `K` e `J` movem o
+item, `t` retira-o, e Enter enche a fila do nucleo com a lista TODA na ordem
+gravada, comecando na faixa eleita.
 
 ## Como se roda a bateria de testes
 

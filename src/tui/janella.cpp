@@ -53,6 +53,7 @@
 #include "nucleo/letra.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
+#include "nucleo/rol.hpp"
 #include "nucleo/tocador.hpp"
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
@@ -89,6 +90,14 @@ std::filesystem::path caminho_do_indice() {
   std::filesystem::permissions(pasta, std::filesystem::perms::owner_all,
                                std::filesystem::perm_options::replace, erro);
   return pasta / "indice.sqlite3";
+}
+
+// caminho_das_listas — `rol.sqlite3` ao lado do índice, e NÃO dentro d'elle: o
+// índice é reconstruido a cada varredura por temporario e rename, e taboa de lista
+// lá dentro sahiria com a varredura.
+std::filesystem::path caminho_das_listas(const std::filesystem::path& indice) {
+  if (indice.empty()) return {};
+  return indice.parent_path() / "rol.sqlite3";
 }
 
 // raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
@@ -205,6 +214,14 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::AbreBaixa:
     case tui::Verbo::TrocaLetra:
     case tui::Verbo::AbreProcura:
+    case tui::Verbo::AbreRois:
+    case tui::Verbo::CriaRol:
+    case tui::Verbo::RenomeiaRol:
+    case tui::Verbo::ApagaRol:
+    case tui::Verbo::JuntaAoRol:
+    case tui::Verbo::RetiraDoRol:
+    case tui::Verbo::SobeNoRol:
+    case tui::Verbo::DesceNoRol:
       break;
   }
 }
@@ -255,7 +272,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // corrida anterior, em vez de esperar pelo disco.
   const std::filesystem::path banco = caminho_do_indice();
   nucleo::Biblioteca livraria(banco);
-  tui::Navegador navegador(livraria);
+  nucleo::Roleiro roleiro(caminho_das_listas(banco));
+  tui::Navegador navegador(livraria, &roleiro);
   std::atomic<bool> varrida{false};
   // O PEDIDO de varredura e o AVISO de que o acervo mudou. Bandeiras, e não fio novo
   // por cada pedido: fio erguido de dentro do tratador de teclas e de dentro do fio da
@@ -293,7 +311,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
   // A PROCURA entra no mesmo enum, pela mesma razão: tres destinos, e não tres
   // booleanos, que tres booleanos admittem o estado «os tres», que não existe.
-  enum class Digita { Nada, Busca, Url, Procura } digita = Digita::Nada;
+  // O NOME e a CONFIRMAÇÃO entram no mesmo enum: são dous destinos mais, e a razão
+  // é a mesma que fez a Procura entrar aqui em vez de n'um booleano ao lado.
+  enum class Digita {
+    Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma
+  } digita = Digita::Nada;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -413,10 +435,25 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
     if (navegador.secao() == tui::Secao::Rede) trilha = "NET";
+    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
+    if (navegador.secao() == tui::Secao::NoRol) {
+      trilha = "LISTS";
+      for (const std::string& degrau : navegador.trilha())
+        trilha += "  \ue0b1  " + degrau;
+    }
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
     else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
+    else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
+    else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
+    else if (digita == Digita::Confirma)
+      trilha = "apagar «" + navegador.nome_do_rol_eleito() + "»? s/n";
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
+    // `a` manda a faixa, e o operador não ha de o adivinhar.
+    if (navegador.rol_corrente() != 0 &&
+        navegador.secao() != tui::Secao::NoRol)
+      trilha += "   [\ue0b1 " + navegador.nome_corrente() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
     if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
@@ -452,7 +489,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
                            " · b baixa por URL · r varre · l letra · espaço pausa"
-                           " · n/p faixa · ,. busca no som · +- volume · q sahe") |
+                           " · n/p faixa · P listas · c cria · a junta · t retira"
+                           " · K/J move · R renomeia · D apaga · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -461,6 +499,22 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
+    // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
+    // antes do resto para que a letra «s» não vá parar ao termo em curso.
+    if (digita == Digita::Confirma) {
+      if (tecla == ftxui::Event::Character('s') ||
+          tecla == ftxui::Event::Character('S')) {
+        digita = Digita::Nada;
+        if (!navegador.apaga_rol()) aviso_da_rede = "não se pôde apagar";
+        return true;
+      }
+      if (tecla.is_character() || tecla == ftxui::Event::Escape ||
+          tecla == ftxui::Event::Return) {
+        digita = Digita::Nada;  // qualquer outra tecla é «não»
+        return true;
+      }
+      return true;
+    }
     if (digita != Digita::Nada) {
       if (tecla == ftxui::Event::Escape) {
         digita = Digita::Nada;
@@ -472,6 +526,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Nada;
         if (era == Digita::Busca) {
           navegador.filtra(termo_em_curso);
+        } else if (era == Digita::NomeNovo) {
+          if (!navegador.cria_rol(termo_em_curso))
+            aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::NomeOutro) {
+          if (!navegador.renomeia_rol(termo_em_curso))
+            aviso_da_rede = "esse nome já existe, ou é vazio";
         } else if (era == Digita::Procura) {
           if (!termo_em_curso.empty()) {
             {
@@ -526,6 +586,44 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Procura;
         termo_em_curso.clear();
         return true;
+      case tui::Verbo::AbreRois:
+        navegador.mostra_rois();
+        return true;
+      case tui::Verbo::CriaRol:
+        digita = Digita::NomeNovo;
+        termo_em_curso.clear();
+        return true;
+      case tui::Verbo::RenomeiaRol:
+        if (!navegador.nome_do_rol_eleito().empty()) {
+          digita = Digita::NomeOutro;
+          termo_em_curso = navegador.nome_do_rol_eleito();
+        }
+        return true;
+      case tui::Verbo::ApagaRol:
+        // PERGUNTA-SE. É o unico verbo d'esta obra que apaga cousa que o operador
+        // fez á mão, e apagar sem perguntar é o que a tarefa proibe.
+        if (!navegador.nome_do_rol_eleito().empty()) digita = Digita::Confirma;
+        return true;
+      case tui::Verbo::JuntaAoRol: {
+        // A faixa eleita vae á lista CORRENTE. Fóra de uma lista não ha corrente, e
+        // ahi diz-se o que falta em vez de se calar.
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty())
+          aviso_da_rede = "elege uma faixa primeiro";
+        else if (!navegador.junta_ao_rol(qual))
+          aviso_da_rede = "entra n'uma lista primeiro (P)";
+        return true;
+      }
+      case tui::Verbo::RetiraDoRol:
+        if (!navegador.retira_do_rol())
+          aviso_da_rede = "isso sómente dentro de uma lista";
+        return true;
+      case tui::Verbo::SobeNoRol:
+        navegador.sobe_no_rol();
+        return true;
+      case tui::Verbo::DesceNoRol:
+        navegador.desce_no_rol();
+        return true;
       case tui::Verbo::Varre:
         // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
         // apaga-o, donde carregar dez vezes no `r` durante uma varredura não
@@ -541,6 +639,23 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           nucleo::Pedido pedido;
           pedido.url = url;
           estaleiro.encommenda(pedido);
+          return true;
+        }
+        // Dentro de uma lista, entrar enche a fila com a lista TODA na ordem
+        // gravada, e não sómente com a faixa eleita: é o que a tarefa pede quando diz
+        // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
+        if (navegador.secao() == tui::Secao::NoRol) {
+          const std::size_t eleita = navegador.eleito();
+          const std::size_t antes = tocador.fila().tamanho();
+          std::size_t quantas = 0;
+          for (const tui::Linha& linha : navegador.vista()) {
+            tocador.fila().junta(linha.chave);
+            ++quantas;
+          }
+          if (quantas > 0) {
+            tocador.fila().ir_para(antes + std::min(eleita, quantas - 1));
+            tocador.tocar_corrente();
+          }
           return true;
         }
         // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
 
 namespace nu = mysong::nucleo;
@@ -372,6 +373,270 @@ TEST_CASE("recarregar na rede não mexe na vista, e voltar sahe da secção") {
   CHECK_FALSE(navegador.vista().empty());
   CHECK(navegador.vista()[0].texto == "Ada Lovelace");
   CHECK(navegador.url_eleita().empty());
+}
+
+// ── AS LISTAS (issue #10) ───────────────────────────────────────────────────
+// A navegação das listas prova-se contra um Roleiro de verdade, n'uma cova propria:
+// o banco d'ellas entra por parâmetro, como o do índice.
+
+// CovaDoRol — o banco das listas, á parte do índice. São dous arquivos porque são
+// dous bancos, e a razão está no tractado do rol.
+class CovaDoRol {
+ public:
+  CovaDoRol() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-navrol-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++semente_));
+    std::filesystem::create_directories(caminho_);
+  }
+  ~CovaDoRol() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  CovaDoRol(const CovaDoRol&) = delete;
+  CovaDoRol& operator=(const CovaDoRol&) = delete;
+  std::filesystem::path banco() const { return caminho_ / "rol.sqlite3"; }
+
+ private:
+  std::filesystem::path caminho_;
+  static int semente_;
+};
+
+int CovaDoRol::semente_ = 0;
+
+TEST_CASE("sem roleiro, as secções das listas ficam vazias e nada estoura") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);  // punho nullo: corrida sem listas
+
+  navegador.mostra_rois();
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  CHECK(navegador.vista().empty());
+  // As sete operações devolvem falso, e ordem alguma estoura.
+  CHECK_FALSE(navegador.cria_rol("Da manhã"));
+  CHECK_FALSE(navegador.renomeia_rol("Outra"));
+  CHECK_FALSE(navegador.apaga_rol());
+  CHECK_FALSE(navegador.junta_ao_rol("/a/1.mp3"));
+  CHECK_FALSE(navegador.retira_do_rol());
+  CHECK_FALSE(navegador.sobe_no_rol());
+  CHECK_FALSE(navegador.desce_no_rol());
+  CHECK_FALSE(navegador.entra());
+  CHECK(navegador.rol_corrente() == 0);
+  CHECK(navegador.nome_corrente().empty());
+}
+
+TEST_CASE("criar mostra a lista, e entrar n'ella abre o dentro") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  // Criar LEVA á secção das listas: quem cria quer ver que ella nasceu.
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Da manhã");
+  CHECK(navegador.vista()[0].numero == 0);  // vazia, e a columna do numero conta
+  CHECK(navegador.nome_do_rol_eleito() == "Da manhã");
+  // Nome repetido não cria segunda, e a tela fica como estava.
+  CHECK_FALSE(navegador.cria_rol("  Da manhã  "));
+  CHECK(navegador.vista().size() == 1);
+
+  CHECK_FALSE(navegador.entra());  // lista não é faixa: nada se toca
+  CHECK(navegador.secao() == tui::Secao::NoRol);
+  CHECK(navegador.rol_corrente() > 0);
+  CHECK(navegador.trilha() == std::vector<std::string>{"Da manhã"});
+  CHECK(navegador.vista().empty());
+  // Voltar de dentro vae á lista das listas, e não ao acervo: é o degrau de que
+  // se veio.
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  // E o ALVO fica. É d'isto que depende o `a` do acervo: para juntar uma faixa é
+  // preciso estar onde a faixa está, e a faixa não está dentro da lista. Se o alvo
+  // se perdesse ao sahir, juntar do acervo nunca poderia funccionar.
+  CHECK(navegador.rol_corrente() > 0);
+  CHECK(navegador.nome_corrente() == "Da manhã");
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(navegador.rol_corrente() > 0);
+}
+
+TEST_CASE("juntar tres faixas põe-nas na ordem, e o caminho eleito é o d'ellas") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  // FÓRA de uma lista não ha alvo, e juntar recusa: o alvo é a lista em que se
+  // ESTÁ, e não uma que se adivinhe. Quem recusa é a chave estrangeira, que não
+  // conhece lista de id zero.
+  CHECK_FALSE(navegador.junta_ao_rol("/acervo/A/B/1.mp3"));
+  REQUIRE_FALSE(navegador.entra());
+
+  REQUIRE(navegador.junta_ao_rol("/acervo/A/B/1.mp3"));
+  REQUIRE(navegador.junta_ao_rol("/acervo/A/B/2.mp3"));
+  REQUIRE(navegador.junta_ao_rol("/acervo/A/B/3.mp3"));
+  REQUIRE(navegador.vista().size() == 3);
+  CHECK(navegador.vista()[0].texto == "1.mp3");
+  CHECK(navegador.vista()[0].numero == 1);
+  CHECK(navegador.vista()[2].numero == 3);
+  // O caminho eleito é o do disco, e é elle que a fila do nucleo recebe.
+  CHECK(navegador.caminho_eleito() == "/acervo/A/B/1.mp3");
+  navegador.ao_fim();
+  CHECK(navegador.caminho_eleito() == "/acervo/A/B/3.mp3");
+  // E entrar n'uma faixa da lista DIZ que era faixa: quem chama enche a fila.
+  CHECK(navegador.entra());
+}
+
+TEST_CASE("mover para cima e para baixo troca a ordem, e o olho segue a faixa") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+    REQUIRE(navegador.junta_ao_rol(qual));
+
+  navegador.ao_fim();  // a terceira
+  REQUIRE(navegador.sobe_no_rol());
+  CHECK(navegador.vista()[1].texto == "3.mp3");
+  // O OLHO segue a faixa que se moveu: sem isso, subir uma vez elegia a vizinha e
+  // subir duas vezes movia a faixa errada.
+  CHECK(navegador.eleito() == 1);
+  REQUIRE(navegador.sobe_no_rol());
+  CHECK(navegador.vista()[0].texto == "3.mp3");
+  CHECK(navegador.eleito() == 0);
+  // O primeiro não sobe, e a lista fica como estava.
+  CHECK_FALSE(navegador.sobe_no_rol());
+  CHECK(navegador.vista()[0].texto == "3.mp3");
+
+  REQUIRE(navegador.desce_no_rol());
+  CHECK(navegador.vista()[1].texto == "3.mp3");
+  CHECK(navegador.eleito() == 1);
+  navegador.ao_fim();
+  // O ultimo não desce: a troca com a ordem que não ha recusa-se em baixo.
+  CHECK_FALSE(navegador.desce_no_rol());
+}
+
+TEST_CASE("retirar tira a faixa certa, ainda com filtro posto") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  for (const char* qual : {"/a/alfa.mp3", "/a/beta.mp3", "/a/gama.mp3"})
+    REQUIRE(navegador.junta_ao_rol(qual));
+
+  // FILTRO posto: a vista tem uma linha, e ella é a TERCEIRA do banco. Se a ordem
+  // se tirasse do indice da vista, retirar-se-hia a primeira.
+  navegador.filtra("gama");
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].numero == 3);
+  REQUIRE(navegador.retira_do_rol());
+  navegador.filtra("");
+  REQUIRE(navegador.vista().size() == 2);
+  CHECK(navegador.vista()[0].texto == "alfa.mp3");
+  CHECK(navegador.vista()[1].texto == "beta.mp3");
+}
+
+TEST_CASE("renomear conserva o dentro, e apagar sahe para a lista das listas") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.junta_ao_rol("/a/1.mp3"));
+
+  REQUIRE(navegador.renomeia_rol("  Da tarde  "));
+  // A trilha muda com o nome: sem isso, o titulo da tabella continuava a dizer o
+  // nome velho até se sahir e tornar a entrar.
+  CHECK(navegador.trilha() == std::vector<std::string>{"Da tarde"});
+  CHECK(navegador.nome_do_rol_eleito() == "Da tarde");
+  CHECK(navegador.vista().size() == 1);
+
+  REQUIRE(navegador.apaga_rol());
+  // Apagada a lista em que se estava, não ha dentro onde ficar; e o ALVO vae-se
+  // com ella, que apontar para lista que já não existe faria `a` falhar calado.
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  CHECK(navegador.vista().empty());
+  CHECK(navegador.rol_corrente() == 0);
+  CHECK(navegador.nome_corrente().empty());
+}
+
+TEST_CASE("a lista sobrevive a reabrir o roleiro, com a ordem que se deixou") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  {
+    nu::Roleiro roleiro(coval.banco());
+    tui::Navegador navegador(livraria, &roleiro);
+    REQUIRE(navegador.cria_rol("Da manhã"));
+    REQUIRE_FALSE(navegador.entra());
+    for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+      REQUIRE(navegador.junta_ao_rol(qual));
+    navegador.ao_fim();
+    REQUIRE(navegador.sobe_no_rol());
+  }
+  // O aceite da tarefa pela porta da tela: fechar e abrir de novo, e a ordem é a
+  // que se deixou.
+  nu::Roleiro outra_vez(coval.banco());
+  tui::Navegador depois(livraria, &outra_vez);
+  depois.mostra_rois();
+  REQUIRE(depois.vista().size() == 1);
+  CHECK(depois.vista()[0].numero == 3);  // tres faixas
+  REQUIRE_FALSE(depois.entra());
+  REQUIRE(depois.vista().size() == 3);
+  CHECK(depois.vista()[0].texto == "1.mp3");
+  CHECK(depois.vista()[1].texto == "3.mp3");
+  CHECK(depois.vista()[2].texto == "2.mp3");
+}
+
+TEST_CASE("juntar do ACERVO á lista alvo, que é o caminho de quem usa a cousa") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+
+  // O caminho de verdade, passo por passo: cria-se a lista, entra-se n'ella para a
+  // eleger por alvo, volta-se ao acervo, desce-se até uma faixa, e junta-se.
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.volta());
+  REQUIRE(navegador.volta());
+  REQUIRE(navegador.secao() == tui::Secao::Artistas);
+  REQUIRE_FALSE(navegador.entra());  // no artista
+  REQUIRE_FALSE(navegador.entra());  // no album
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  const std::string primeira = navegador.caminho_eleito();
+  REQUIRE_FALSE(primeira.empty());
+  REQUIRE(navegador.junta_ao_rol(primeira));
+  navegador.desce();
+  REQUIRE(navegador.junta_ao_rol(navegador.caminho_eleito()));
+
+  // A lista tem as duas, na ordem em que se juntaram.
+  navegador.mostra_rois();
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].numero == 2);
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.vista().size() == 2);
+  CHECK(navegador.vista()[0].chave == primeira);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

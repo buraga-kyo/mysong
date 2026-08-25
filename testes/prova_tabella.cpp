@@ -160,5 +160,24 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
 }
 
+TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
+  Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);  // acervo vazio, e sem roleiro
+  // No acervo, o recado manda varrer. Dentro de uma lista de faixas escolhidas á
+  // mão, mandar varrer o acervo seria mandar o operador ao logar errado.
+  const std::vector<std::string> acervo = pintar(navegador, 1, 70);
+  CHECK(acervo[0].find("varra o acervo") != std::string::npos);
+
+  navegador.mostra_rois();
+  const std::vector<std::string> listas = pintar(navegador, 1, 70);
+  CHECK(listas[0].find("cria uma") != std::string::npos);
+  CHECK(listas[0].find("varra o acervo") == std::string::npos);
+
+  navegador.mostra_rede({});
+  const std::vector<std::string> rede = pintar(navegador, 1, 70);
+  CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

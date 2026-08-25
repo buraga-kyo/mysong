@@ -58,10 +58,16 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
       {Secao::Faixas, " TRACKS  "},
       {Secao::Busca, " SEARCH  "},
       {Secao::Rede, " NET     "},
+      {Secao::Rois, " LISTS   "},
   };
   std::vector<ftxui::Element> linhas;
   for (const auto& [degrau, rotulo] : degraus) {
-    const bool aqui = navegador.secao() == degrau;
+    // Dentro de uma lista, a fileira que accende é a das LISTAS: é lá que se está,
+    // um degrau abaixo. Fileira propria para o dentro seria fileira que o operador
+    // nunca pode eleger, e barra com degrau morto ensina o dedo a errar.
+    const bool aqui = navegador.secao() == degrau ||
+                      (degrau == Secao::Rois &&
+                       navegador.secao() == Secao::NoRol);
     ftxui::Element linha = pinta(rotulo, aqui ? tokens::text_bright
                                               : tokens::text_muted);
     if (aqui) {
@@ -79,9 +85,31 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t largura) {
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
-  if (vista.empty())
-    return pinta("  (nada aqui: varra o acervo, ou baixe uma faixa)",
-                 tokens::text_faint);
+  if (vista.empty()) {
+    // O recado do vazio é POR SECÇÃO. Um recado só dizia «varra o acervo» dentro de
+    // uma lista de faixas escolhidas á mão, que é conselho que não serve para nada
+    // e manda o operador ao logar errado.
+    const char* recado = "  (nada aqui: varra o acervo, ou baixe uma faixa)";
+    switch (navegador.secao()) {
+      case Secao::Rois:
+        recado = "  (lista alguma ainda: `c` cria uma)";
+        break;
+      case Secao::NoRol:
+        recado = "  (lista vazia: elege uma faixa no acervo e tecla `a`)";
+        break;
+      case Secao::Rede:
+        recado = "  (nada achado: `s` pergunta outra vez)";
+        break;
+      case Secao::Busca:
+        recado = "  (nada casa com esse termo)";
+        break;
+      case Secao::Artistas:
+      case Secao::Albuns:
+      case Secao::Faixas:
+        break;
+    }
+    return pinta(recado, tokens::text_faint);
+  }
 
   // As columnas fixas: numero, tempo, o AUTOR quando ha, e o que sobra para o
   // titulo. O tempo e o numero são de largura conhecida, e por isso o titulo cede.

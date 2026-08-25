@@ -102,3 +102,7 @@ target_sources(mysong_testes PRIVATE prova_tabella.cpp)
 
 # ─── A PROVA DO CORREIO (issue #12) ─────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_correio.cpp)
+
+# ─── A PROVA DAS LISTAS (issue #10) ─────────────────────────────────────────
+# Corre em directorio temporario: o caminho do banco entra por parâmetro.
+target_sources(mysong_testes PRIVATE prova_rol.cpp)
