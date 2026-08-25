@@ -54,6 +54,7 @@
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/rol.hpp"
+#include "nucleo/video.hpp"
 #include "nucleo/tocador.hpp"
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
@@ -98,6 +99,16 @@ std::filesystem::path caminho_do_indice() {
 std::filesystem::path caminho_das_listas(const std::filesystem::path& indice) {
   if (indice.empty()) return {};
   return indice.parent_path() / "rol.sqlite3";
+}
+
+// raiz_do_soquete — onde o soquete de commando da janella do video mora.
+// `$XDG_RUNTIME_DIR` primeiro, que é o logar que o systema apaga ao fim da sessão;
+// `/tmp` sem elle, que soquete tem de morar em algum logar e recusar abrir video
+// por falta de directorio de tempo seria recusa que ninguem entende.
+std::filesystem::path raiz_do_soquete() {
+  const char* posto = std::getenv("XDG_RUNTIME_DIR");
+  if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
+  return std::filesystem::path("/tmp");
 }
 
 // raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
@@ -297,6 +308,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::mutex tranca_do_termo;
   std::string termo_da_rede;
   std::atomic<bool> pede_buscar{false};
+
+  // O PROJECTOR do video. Vive nesta pilha, e o destructor d'elle FECHA a janella:
+  // é isso que faz `pgrep` sahir vazio depois de a TUI fechar.
+  nucleo::Projector projector(raiz_do_soquete());
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
