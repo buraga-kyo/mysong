@@ -127,5 +127,28 @@ TEST_CASE("retirar do MEIO fecha o buraco da ordem") {
         std::vector<std::string>{"/a/1.mp3", "/a/4.mp3", "/a/3.mp3"});
 }
 
+TEST_CASE("trocar move para cima e para baixo, e recusa a ordem que não ha") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int id = roleiro.cria("Da manhã");
+  for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+    REQUIRE(roleiro.junta(id, qual));
+
+  REQUIRE(roleiro.troca(id, 0, 1));
+  CHECK(roleiro.faixas(id) ==
+        std::vector<std::string>{"/a/2.mp3", "/a/1.mp3", "/a/3.mp3"});
+  // Trocar não vizinhas tambem vale: é a mesma operação.
+  REQUIRE(roleiro.troca(id, 0, 2));
+  CHECK(roleiro.faixas(id) ==
+        std::vector<std::string>{"/a/3.mp3", "/a/1.mp3", "/a/2.mp3"});
+  // Ordem que não existe não troca, e a lista fica como estava: sem a
+  // transacção, a primeira das tres escriptas deixava a linha na sentinella e a
+  // faixa desapparecia da lista.
+  CHECK_FALSE(roleiro.troca(id, 0, 9));
+  CHECK(roleiro.faixas(id) ==
+        std::vector<std::string>{"/a/3.mp3", "/a/1.mp3", "/a/2.mp3"});
+  CHECK_FALSE(roleiro.troca(id, 0, 0));  // consigo mesma não é troca
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
