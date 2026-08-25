@@ -34,5 +34,35 @@ TEST_CASE("o espaço alterna segundo o estado, e nada faz estando parado") {
         tui::Verbo::Nada);
 }
 
+TEST_CASE("as tres teclas de verbo simples chegam por si") {
+  const tui::Retracto retracto = tocando();
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('n'), retracto).verbo ==
+        tui::Verbo::Proxima);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('p'), retracto).verbo ==
+        tui::Verbo::Anterior);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('q'), retracto).verbo ==
+        tui::Verbo::Sahir);
+}
+
+// Tecla que não é do mockup NÃO chega ao tocador. É o caso que prova a
+// negativa, e ella importa tanto como a positiva: sem elle, uma taboada que
+// devolvesse Pausar para tudo passaria os casos de cima.
+TEST_CASE("tecla que não é do mockup dá ordem nenhuma") {
+  const tui::Retracto retracto = tocando();
+  for (const char letra : {'a', 'z', 'N', 'P', 'Q', '1', '/', '*'})
+    CHECK(tui::ordem_da_tecla(ftxui::Event::Character(letra), retracto).verbo ==
+          tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowUp, retracto).verbo ==
+        tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowDown, retracto).verbo ==
+        tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Return, retracto).verbo ==
+        tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Escape, retracto).verbo ==
+        tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Tab, retracto).verbo ==
+        tui::Verbo::Nada);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
