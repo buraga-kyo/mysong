@@ -121,5 +121,28 @@ TEST_CASE("de artistas a uma faixa, o caminho inteiro do aceite") {
   CHECK(navegador.secao() == tui::Secao::Faixas);
 }
 
+// A LISTA NÃO DÁ A VOLTA. Descer no ultimo fica no ultimo, e subir no primeiro
+// fica no primeiro: dar a volta n'uma lista de mil artistas faria o operador
+// perder o logar sem saber como.
+TEST_CASE("a lista não dá a volta nas duas pontas") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vista().size() == 2u);
+
+  CHECK(navegador.eleito() == 0u);
+  navegador.sobe();
+  CHECK(navegador.eleito() == 0u);  // no primeiro, subir não passa
+  navegador.desce();
+  CHECK(navegador.eleito() == 1u);
+  navegador.desce();
+  CHECK(navegador.eleito() == 1u);  // no ultimo, descer não passa
+  navegador.ao_principio();
+  CHECK(navegador.eleito() == 0u);
+  navegador.ao_fim();
+  CHECK(navegador.eleito() == 1u);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
