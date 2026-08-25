@@ -82,5 +82,14 @@ class Roleiro {
 
   // junta — a faixa no FIM da lista. Repetida não se recusa: quem quer a mesma
   // faixa duas vezes na mesma lista tem direito a ella.
+  bool junta(int id, std::string_view caminho);
+
+  // retira — o item de ordem `ordem`, e FECHA o buraco que elle deixou.
+  bool retira(int id, int ordem);
+
+  // troca — os itens de duas ordens vizinhas ou não. Falso quando alguma das duas
+  // não existe. É por aqui que sobe e desce se cumprem.
+  bool troca(int id, int uma, int outra);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
