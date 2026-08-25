@@ -158,6 +158,27 @@ bool Navegador::volta() {
   return true;
 }
 
+void Navegador::recarrega() {
+  // Conserva a secção e a trilha SE ellas ainda existirem no acervo novo. Um
+  // artista que sahiu do disco não pode continuar a ser o titulo da tabella, e
+  // insistir n'elle mostraria lista vazia sem dizer porque.
+  if (!trilha_.empty()) {
+    const std::vector<std::string> nomes = livraria_.artistas();
+    if (std::find(nomes.begin(), nomes.end(), trilha_.front()) == nomes.end()) {
+      trilha_.clear();
+      secao_ = Secao::Artistas;
+    }
+  }
+  if (secao_ == Secao::Faixas && trilha_.size() == 2) {
+    const std::vector<std::string> albuns = livraria_.albuns(trilha_.front());
+    if (std::find(albuns.begin(), albuns.end(), trilha_.back()) == albuns.end()) {
+      trilha_.resize(1);
+      secao_ = Secao::Albuns;
+    }
+  }
+  refaz_vista();
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
