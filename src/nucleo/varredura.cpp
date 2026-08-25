@@ -13,6 +13,10 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/varredura.hpp"
 
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
+#include <taglib/tpropertymap.h>
+
 #include <algorithm>
 #include <cctype>
 #include <set>
@@ -158,6 +162,39 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
     if (!vistos->insert(canonico).second) continue;  // já veio por outra
     achados->emplace_back(entrada.path(), raiz);
   }
+}
+
+// le_etiqueta — sobrepõe á faixa derivada o que a etiqueta disser, e APAGA o bit
+// da máscara de cada campo que ella disse. Falso quando taglib não abre o
+// arquivo: é o `.txt` renomeado para `.mp3`, e esse não entra no índice.
+bool le_etiqueta(const std::filesystem::path& caminho, Faixa* faixa) {
+  TagLib::FileRef arquivo(caminho.c_str());
+  if (arquivo.isNull() || arquivo.audioProperties() == nullptr) return false;
+
+  if (const TagLib::Tag* etiqueta = arquivo.tag()) {
+    const std::string artista = etiqueta->artist().to8Bit(true);
+    const std::string album = etiqueta->album().to8Bit(true);
+    const std::string titulo = etiqueta->title().to8Bit(true);
+    if (!artista.empty()) {
+      faixa->artista = saneia_utf8(artista);
+      faixa->deduzido &= ~static_cast<unsigned>(kDeduziuArtista);
+    }
+    if (!album.empty()) {
+      faixa->album = saneia_utf8(album);
+      faixa->deduzido &= ~static_cast<unsigned>(kDeduziuAlbum);
+    }
+    if (!titulo.empty()) {
+      faixa->titulo = saneia_utf8(titulo);
+      faixa->deduzido &= ~static_cast<unsigned>(kDeduziuTitulo);
+    }
+    if (etiqueta->track() != 0) {
+      faixa->numero = static_cast<int>(etiqueta->track());
+      faixa->deduzido &= ~static_cast<unsigned>(kDeduziuNumero);
+    }
+    faixa->anno = static_cast<int>(etiqueta->year());
+  }
+  faixa->duracao = arquivo.audioProperties()->lengthInSeconds();
+  return true;
 }
 
 bool extensao_de_audio(std::string_view extensao) {
