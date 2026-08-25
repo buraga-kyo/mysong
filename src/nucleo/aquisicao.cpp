@@ -16,6 +16,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/aquisicao.hpp"
 
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -163,6 +166,41 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {
   remota.numero = inteiro(linhas[4]);
   remota.duracao = inteiro(linhas[5]);
   return remota;
+}
+
+int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
+  if (argumentos.empty()) return -1;
+  int cano[2] = {-1, -1};
+  if (::pipe(cano) != 0) return -1;
+
+  const ::pid_t filho = ::fork();
+  if (filho < 0) { ::close(cano[0]); ::close(cano[1]); return -1; }
+  if (filho == 0) {
+    ::close(cano[0]);
+    ::dup2(cano[1], STDOUT_FILENO);
+    ::dup2(cano[1], STDERR_FILENO);
+    ::close(cano[1]);
+    // O vector vira argv aqui, no filho, e sem shell: `execvp` recebe os
+    // argumentos tal e qual, donde a URL não atravessa interpretador algum.
+    std::vector<char*> argv;
+    argv.reserve(argumentos.size() + 1);
+    for (const std::string& um : argumentos)
+      argv.push_back(const_cast<char*>(um.c_str()));
+    argv.push_back(nullptr);
+    ::execvp(argv[0], argv.data());
+    ::_exit(127);  // o 127 do shell para «commando não achado»
+  }
+
+  ::close(cano[1]);
+  char pedaco[4096];
+  ::ssize_t lidos = 0;
+  while ((lidos = ::read(cano[0], pedaco, sizeof pedaco)) > 0)
+    if (colhido != nullptr) colhido->append(pedaco, static_cast<std::size_t>(lidos));
+  ::close(cano[0]);
+
+  int estado = 0;
+  if (::waitpid(filho, &estado, 0) < 0) return -1;
+  return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
 
 }  // namespace mysong::nucleo
