@@ -13,6 +13,7 @@
 
 #include <curl/curl.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <cstdio>
@@ -171,6 +172,42 @@ bool carimbo(std::string_view linha, std::size_t* cursor, double* tempo) {
 }
 
 }  // namespace
+
+std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto) {
+  std::vector<LinhaDaLetra> linhas;
+  std::size_t principio = 0;
+  while (principio <= texto.size()) {
+    std::size_t fim = texto.find('\n', principio);
+    if (fim == std::string_view::npos) fim = texto.size();
+    std::string_view linha = texto.substr(principio, fim - principio);
+    if (!linha.empty() && linha.back() == '\r') linha.remove_suffix(1);
+    principio = fim + 1;
+
+    // Todos os carimbos da frente, e sómente depois o texto: o mesmo verso pode
+    // trazer varios tempos, e cada um d'elles gera a sua linha.
+    std::vector<double> tempos;
+    std::size_t cursor = 0;
+    double tempo = 0.0;
+    while (carimbo(linha, &cursor, &tempo)) tempos.push_back(tempo);
+    if (tempos.empty()) continue;  // linha sem carimbo: cabeçalho ou lixo
+
+    std::string corpo(linha.substr(cursor));
+    // Apara-se sómente o espaço da FRENTE: o do fim pode ser intencional em letra
+    // que se alinhe, e tirá-lo não melhora cousa alguma.
+    std::size_t desde = 0;
+    while (desde < corpo.size() &&
+           std::isspace(static_cast<unsigned char>(corpo[desde])) != 0)
+      ++desde;
+    corpo.erase(0, desde);
+    for (const double quando : tempos) linhas.push_back({quando, corpo});
+    if (fim == texto.size()) break;
+  }
+  std::stable_sort(linhas.begin(), linhas.end(),
+                   [](const LinhaDaLetra& a, const LinhaDaLetra& b) {
+                     return a.tempo < b.tempo;
+                   });
+  return linhas;
+}
 
 }  // namespace mysong::nucleo
 
