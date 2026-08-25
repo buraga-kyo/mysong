@@ -161,5 +161,31 @@ TEST_CASE("audio puro não abre fita alguma, e o projector fica quieto") {
   CHECK(std::filesystem::is_empty(cova.raiz(), erro));
 }
 
+TEST_CASE("falta o mpv no caminho: a fita diz o nome d'essa falta") {
+  Cova cova;
+  // O caminho de busca fica com um só directorio, e elle está vazio: o `execvp`
+  // não acha o mpv, e o filho sahe com o codigo que o pae distingue. É a unica
+  // injecção de falha que esta bateria faz, e ella não abre janella alguma.
+  const char* antes = ::getenv("PATH");
+  const std::string guardado = antes == nullptr ? std::string() : antes;
+  const std::filesystem::path vazio = cova.raiz() / "sem-nada";
+  std::filesystem::create_directories(vazio);
+  REQUIRE(::setenv("PATH", vazio.c_str(), 1) == 0);
+
+  {
+    nu::Projector projector(cova.raiz());
+    const nu::Fita fita = projector.abre("/a/b/filme.mkv");
+    CHECK(fita == nu::Fita::SemMpv);
+    CHECK(nu::razao_da_fita(fita).find("mpv") != std::string_view::npos);
+    CHECK_FALSE(projector.rodando());
+  }
+
+  if (guardado.empty()) ::unsetenv("PATH");
+  else ::setenv("PATH", guardado.c_str(), 1);
+  // O soquete que se ia usar não ficou no disco: fechar limpa-o.
+  CHECK_FALSE(std::filesystem::exists(
+      nu::caminho_do_soquete(cova.raiz(), static_cast<long>(::getpid()))));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
