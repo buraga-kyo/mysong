@@ -251,5 +251,16 @@ bool Roleiro::troca(int id, int uma, int outra) {
   return ambas;
 }
 
+std::vector<std::string> Roleiro::faixas(int id) const {
+  std::vector<std::string> caminhos;
+  corre(punho_, "SELECT caminho FROM item WHERE rol = ? ORDER BY ordem;", {id},
+        {}, [&caminhos](sqlite3_stmt* passo) {
+          caminhos.push_back(texto(passo, 0));
+        });
+  return caminhos;
+}
+
+}  // namespace mysong::nucleo
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
