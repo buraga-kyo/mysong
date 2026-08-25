@@ -144,5 +144,21 @@ TEST_CASE("sem autor algum a columna do canal não se abre, e o titulo fica larg
   CHECK(quantos_x(sem) > quantos_x(com));
 }
 
+TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
+  Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  // A PRIMEIRA linha não tem autor, a segunda tem. Decidindo-se pela primeira, a
+  // columna ficava fechada e o canal da segunda não apparecia; decidindo-se pela
+  // FATIA, ella abre-se para as duas e as columnas alinham.
+  const std::string comprido(75, 'x');
+  navegador.mostra_rede({{comprido, "https://y/1", 0, 100, {}},
+                         {"Fuga", "https://y/2", 0, 65, "Canal do Orgao"}});
+  const std::vector<std::string> linhas = pintar(navegador, 2, 60);
+  REQUIRE(linhas.size() == 2);
+  CHECK(linhas[1].find("Canal do Orgao") != std::string::npos);
+  CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
