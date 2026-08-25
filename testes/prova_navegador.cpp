@@ -352,5 +352,27 @@ TEST_CASE("fóra da rede não ha URL eleita, e o filtro corta os achados") {
   CHECK(navegador.vista().size() == 3);
 }
 
+TEST_CASE("recarregar na rede não mexe na vista, e voltar sahe da secção") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+
+  navegador.mostra_rede({achado("Toccata", "A", 1, "https://y/1")});
+  // Recarregar corre quando a varredura conclue, e ella conclue a qualquer hora.
+  // Na rede ella NÃO ha de mexer na vista: apagaria os achados por baixo do olho
+  // do operador, no meio de elle escolher qual baixar.
+  navegador.recarrega();
+  CHECK(navegador.secao() == tui::Secao::Rede);
+  CHECK(navegador.vista().size() == 1);
+
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  // Voltando, a vista é o ACERVO outra vez, e não os achados.
+  CHECK_FALSE(navegador.vista().empty());
+  CHECK(navegador.vista()[0].texto == "Ada Lovelace");
+  CHECK(navegador.url_eleita().empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
