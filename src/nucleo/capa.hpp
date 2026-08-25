@@ -29,6 +29,29 @@ namespace mysong::nucleo {
 // preferem. A lista é fechada, e a ordem é a convenção que os ripadores usam.
 const std::vector<std::string>& nomes_de_capa();
 
+// capa_ao_lado — o arquivo de capa que estiver na pasta da faixa, pela ordem dos
+// nomes preferidos. Vazio quando não ha nenhum. Não desce nem sobe: capa de album
+// vive junto das faixas d'elle, e ir buscá-la mais longe traria a do album vizinho.
+std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa);
+
+// chave_do_cache — o que identifica um render. É a PASTA da faixa mais o tamanho,
+// e não o caminho da faixa: as faixas de um album partilham a capa, e usar o
+// caminho faria converter uma vez por faixa em vez de uma por album.
+std::string chave_do_cache(const std::filesystem::path& faixa,
+                           std::size_t collunas, std::size_t linhas);
+
+// argumentos_do_chafa — o que se corre. Meio-bloco fixado, e a geometria em
+// collunhas por linhas.
+std::vector<std::string> argumentos_do_chafa(const std::filesystem::path& imagem,
+                                             std::size_t collunas,
+                                             std::size_t linhas);
+
+// A CAPA renderizada: as linhas prontas a pintar, com os escapes dentro.
+struct CapaPintada {
+  std::vector<std::string> linhas;
+  bool achada = false;
+};
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
