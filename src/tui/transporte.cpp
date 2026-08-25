@@ -127,6 +127,32 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
   return linha;
 }
 
+ftxui::Element elemento_do_transporte(const Retracto& retracto,
+                                      std::size_t largura) {
+  if (largura == 0) return ftxui::text("");
+
+  const std::string relogio =
+      " " + mm_ss(retracto.posicao) + " / " + mm_ss(retracto.duracao) + " ";
+  const std::string som = "vol " + std::to_string(retracto.volume) + "% ";
+
+  // A barra toma o que sobra, e nunca menos que uma collunha. A subtracção é
+  // GUARDADA: em std::size_t, tirar mais do que ha dá numero enorme, e a barra
+  // tentaria pintar bilhões de collunhas em vez de encolher.
+  const std::size_t reservado = relogio.size() + som.size() + 14;
+  const std::size_t larg_barra = largura > reservado ? largura - reservado : 1;
+  const std::size_t cheias =
+      enchimento(retracto.posicao, retracto.duracao, larg_barra);
+
+  return ftxui::hbox({
+      fita_dos_botoes(retracto),
+      ftxui::text(" "),
+      pinta(repete(kBarraCheia, cheias), tokens::v500),
+      pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset),
+      pinta(relogio, tokens::text_bright),
+      pinta(som, tokens::text_muted),
+  });
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
