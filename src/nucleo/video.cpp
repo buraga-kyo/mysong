@@ -186,5 +186,15 @@ std::string_view razao_da_fita(Fita fita) {
   return "desfecho sem nome";
 }
 
+Projector::Projector(std::filesystem::path raiz_do_soquete)
+    : raiz_(std::move(raiz_do_soquete)) {}
+
+Projector::~Projector() { fecha(); }
+
+std::filesystem::path Projector::faixa() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return faixa_;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
