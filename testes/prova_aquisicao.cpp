@@ -86,5 +86,15 @@ TEST_CASE("o operador ganha da rede, campo a campo") {
   CHECK(seu.numero == 9);
 }
 
+TEST_CASE("faltando os dous, o artista fica Desconhecido e não fica o canal") {
+  const nu::Pedido nada = nu::resolve({}, {});
+  CHECK(nada.artista == "Desconhecido");
+  CHECK(nada.titulo == "sem titulo");
+  // Havendo SÓ canal, elle serve, que não ha melhor; mas serve em ultimo logar.
+  nu::EtiquetaRemota canal;
+  canal.canal = "Public Domain Classical Music";
+  CHECK(nu::resolve({}, canal).artista == "Public Domain Classical Music");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
