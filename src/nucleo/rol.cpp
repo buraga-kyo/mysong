@@ -197,5 +197,39 @@ bool Roleiro::apaga(int id) {
   return sqlite3_changes(punho_) > 0;
 }
 
+bool Roleiro::junta(int id, std::string_view caminho) {
+  if (caminho.empty()) return false;
+  const std::string qual(caminho);
+  // A ordem nova é o que ha mais um. COALESCE porque MAX de lista vazia é nullo,
+  // e nullo mais um continua nullo: sem elle, a primeira faixa nunca entrava.
+  // Lista que não existe recusa-se pela CHAVE ESTRANGEIRA, e não por um WHERE
+  // EXISTS ao lado: houve o WHERE, e a mutação que o tirava sobrevivia, porque a
+  // chave já fazia o serviço. Vale aqui a mesma razão que em apaga().
+  return corre(punho_,
+               "INSERT INTO item (rol, ordem, caminho) SELECT ?1, "
+               "COALESCE((SELECT MAX(ordem) + 1 FROM item WHERE rol = ?1), 0),"
+               " ?2;",
+               {id}, {qual}) &&
+         sqlite3_changes(punho_) > 0;
+}
+
+bool Roleiro::retira(int id, int ordem) {
+  if (punho_ == nullptr) return false;
+  // UMA transacção para as duas cousas. Sem ella, uma queda entre o DELETE e o
+  // fechamento do buraco deixaria a lista com buraco no disco, e mover para cima
+  // passaria a adivinhar quem é o vizinho.
+  sqlite3_exec(punho_, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
+  corre(punho_, "DELETE FROM item WHERE rol = ?1 AND ordem = ?2;", {id, ordem},
+        {});
+  const bool havia = sqlite3_changes(punho_) > 0;
+  if (havia)
+    corre(punho_,
+          "UPDATE item SET ordem = ordem - 1 WHERE rol = ?1 AND ordem > ?2;",
+          {id, ordem}, {});
+  sqlite3_exec(punho_, havia ? "COMMIT;" : "ROLLBACK;", nullptr, nullptr,
+               nullptr);
+  return havia;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
