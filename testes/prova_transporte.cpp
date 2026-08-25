@@ -59,6 +59,27 @@ std::string a_linha_pintada(const tui::Retracto& retracto, std::size_t largura) 
 
 }  // namespace
 
+// A LINHA INTEIRA contra alvo ESCRIPTO Á MÃO. Note-se que contar codepoints do
+// écran de papel NÃO prova nada: o écran preenche sempre a largura que se lhe
+// pediu, e por isso a contagem é egual por construcção. O que prova é a cadeia,
+// que diz posição e contagem n'uma asserção só.
+//
+// A conta, feita á mão: a fita pede VINTE collunhas (tres do primeiro segmento,
+// cinco do segundo, nove do terceiro, e tres setas), mais uma de separação, mais
+// quinze do relogio e nove do volume: quarenta e cinco. Em sessenta, sobram
+// quinze para a barra; dous sobre trinta de quinze é um exacto, donde UMA cheia
+// e quatorze vazias.
+TEST_CASE("a linha do transporte sahe egual á cadeia escripta á mão") {
+  const tui::Retracto retracto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  const std::string seta = "\ue0b0";
+  std::string alvo = " \u23f8 " + seta + " \u23ee \u23ed " + seta +
+                     " Tocando " + seta + " \u2588";
+  for (int i = 0; i < 14; ++i) alvo += "\u2591";
+  alvo += " 00:02 / 00:30 vol 100% ";
+  CHECK(a_linha_pintada(retracto, 60) == alvo);
+  CHECK(codepoints(alvo) == 60u);
+}
+
 TEST_CASE("o tempo sahe em MM:SS, e o que não é tempo sahe em traço") {
   CHECK(tui::mm_ss(0.0) == "00:00");
   CHECK(tui::mm_ss(1.0) == "00:01");
