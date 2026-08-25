@@ -63,5 +63,16 @@ TEST_CASE("o juizo do video é pela extensão, e a lista é fechada") {
   CHECK_FALSE(nu::tem_video(""));
 }
 
+TEST_CASE("o soquete leva o pid no nome, e mora na raiz que se disse") {
+  const std::filesystem::path posto =
+      nu::caminho_do_soquete("/run/user/1000", 4242);
+  CHECK(posto.parent_path() == "/run/user/1000");
+  // O PID no nome é o que impede duas corridas do mysong de disputarem o mesmo
+  // soquete: a segunda ligaria á janella da primeira.
+  CHECK(posto.filename() == "mysong-video-4242.sock");
+  CHECK(nu::caminho_do_soquete("/run/user/1000", 1).filename() !=
+        posto.filename());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
