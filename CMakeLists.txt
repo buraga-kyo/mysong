@@ -250,3 +250,15 @@ set_property(TARGET PkgConfig::TAGLIB APPEND PROPERTY
   INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${TAGLIB_INCLUDE_DIRS})
 target_sources(mysong_core PRIVATE src/nucleo/biblioteca.cpp)
 target_link_libraries(mysong_core PRIVATE PkgConfig::SQLITE3 PkgConfig::TAGLIB)
+
+# ─── O ESTALEIRO DAS BAIXAS (issue #12) ─────────────────────────────────────
+# A fila com limite declarado. Dependencia nova alguma se cobra: a obra entra por
+# std::function, e quem a cumpre é a aquisição da #11, que já está no alvo.
+#
+# E o Threads, que até aqui vinha de graça: o std::thread da janella ligava por a
+# glibc de hoje trazer o pthread dentro de si. Pedir-lhe o nome torna a ligação
+# DITA em vez de sorteada, e é o que faz esta obra compilar em machina cuja
+# bibliotheca de C ainda separe as duas.
+find_package(Threads REQUIRED)
+target_sources(mysong_core PRIVATE src/nucleo/estaleiro.cpp)
+target_link_libraries(mysong_core PUBLIC Threads::Threads)
