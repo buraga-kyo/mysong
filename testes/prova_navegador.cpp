@@ -83,5 +83,43 @@ std::vector<std::string> textos(const tui::Navegador& navegador) {
 
 }  // namespace
 
+// O CAMINHO DO ACEITE, de ponta a ponta: de Artistas a um artista, d'elle a um
+// album, e d'alli a uma faixa que se manda tocar. Cada degrau afere-se contra a
+// taboa escripta no arnês.
+TEST_CASE("de artistas a uma faixa, o caminho inteiro do aceite") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace", "Bach"});
+  CHECK(navegador.trilha().empty());
+  CHECK(navegador.eleito() == 0u);
+  // Artista não tem caminho: pedi-lo aqui devolve vazio de proposito.
+  CHECK(navegador.caminho_eleito().empty());
+
+  CHECK_FALSE(navegador.entra());  // entrou n'um artista, e não n'uma faixa
+  CHECK(navegador.secao() == tui::Secao::Albuns);
+  CHECK(navegador.trilha() == std::vector<std::string>{"Ada Lovelace"});
+  CHECK(textos(navegador) == std::vector<std::string>{"Máquina", "Notas"});
+
+  CHECK_FALSE(navegador.entra());  // entrou n'um album
+  CHECK(navegador.secao() == tui::Secao::Faixas);
+  CHECK(navegador.trilha() ==
+        std::vector<std::string>{"Ada Lovelace", "Máquina"});
+  // Ordem de NUMERO: gravou-se Tear com tres e Nota G com sete.
+  CHECK(textos(navegador) == std::vector<std::string>{"Tear", "Nota G"});
+  CHECK(navegador.vista()[0].numero == 3);
+  CHECK(navegador.vista()[0].duracao == 103);
+  CHECK(navegador.vista()[0].autor == "Ada Lovelace");
+
+  CHECK(navegador.entra());  // AGORA é faixa: quem chama manda tocar
+  CHECK(navegador.caminho_eleito() ==
+        "/acervo/Ada Lovelace/Máquina/Tear.mp3");
+  // E entrar n'uma faixa não muda a secção: continua-se onde se estava.
+  CHECK(navegador.secao() == tui::Secao::Faixas);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
