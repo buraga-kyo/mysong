@@ -46,5 +46,17 @@ int Cova::semente_ = 0;
 
 }  // namespace
 
+TEST_CASE("o saneamento do nome apara os brancos, e nome vazio não vale") {
+  CHECK(nu::saneia_nome_de_rol("  Da manhã  ") == "Da manhã");
+  CHECK(nu::saneia_nome_de_rol("\t\n ").empty());
+  CHECK(nu::saneia_nome_de_rol("").empty());
+  // O corte pelo comprimento recúa até ao byte lider: cortar UTF-8 a meio deixaria
+  // byte solto, e o nome sahiria com um losango no fim.
+  const std::string comprido(119, 'x');
+  const std::string cortado = nu::saneia_nome_de_rol(comprido + "á");
+  CHECK(cortado.size() == 119);
+  CHECK(cortado == comprido);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
