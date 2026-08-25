@@ -90,5 +90,32 @@ TEST_CASE("o caminho do lrc é o do audio com outra extensão") {
   CHECK(nu::caminho_do_lrc("/a/Tear").string() == "/a/Tear.lrc");
 }
 
+// A ANALYSE do lrc, sobre texto escripto á mão com as fórmas de verdade.
+TEST_CASE("o lrc analysa-se, com carimbo duplo e cabeçalho saltado") {
+  const std::string cru =
+      "[ar:Radiohead]\n"
+      "[ti:Creep]\n"
+      "[00:19.19] When you were here before\n"
+      "[00:28.94]You're just like an angel\n"   // sem espaço depois do carimbo
+      "[00:47.27]\n"                            // carimbo SEM texto: o silencio
+      "[01:00.00][02:30.50] So very special\n"  // carimbo DUPLO: repete-se
+      "linha sem carimbo, que se salta\n";
+  const std::vector<nu::LinhaDaLetra> linhas = nu::analysa_lrc(cru);
+  REQUIRE(linhas.size() == 5u);
+  CHECK(linhas[0].tempo == doctest::Approx(19.19));
+  CHECK(linhas[0].texto == "When you were here before");
+  CHECK(linhas[1].tempo == doctest::Approx(28.94));
+  CHECK(linhas[1].texto == "You're just like an angel");
+  // O carimbo sem texto CONSERVA-SE, com texto vazio: é elle que tira o verso
+  // anterior da tela na hora certa.
+  CHECK(linhas[2].tempo == doctest::Approx(47.27));
+  CHECK(linhas[2].texto.empty());
+  // O carimbo duplo deu DUAS linhas, com o mesmo texto e tempos differentes.
+  CHECK(linhas[3].tempo == doctest::Approx(60.0));
+  CHECK(linhas[3].texto == "So very special");
+  CHECK(linhas[4].tempo == doctest::Approx(150.5));
+  CHECK(linhas[4].texto == "So very special");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
