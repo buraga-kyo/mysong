@@ -208,6 +208,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   bool recarregado = false;
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
+  // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
+  // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
+  // ainda que ninguem carregue em botão algum. Dentro de tmux essas sequencias vazam, e
+  // o que o operador vê é o teclado a cuspir lixo e a comer teclas.
+  //
+  // E esta Casa não usa rato: tratador de rato algum se ligou em issue alguma. Pagar o
+  // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
+  tela.TrackMouse(false);
   bool sahir = false;
   // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
@@ -435,6 +443,7 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
   // limite perdia as ultimas linhas, que é justamente o que ella existe para
   // dizer. Tomando-se a tela toda, cabe tudo, e o pé deixa de ser sorte.
   auto tela = ftxui::ScreenInteractive::Fullscreen();
+  tela.TrackMouse(false);  // idem: esta tela é a primeira que o operador vê
   auto pintor = ftxui::Renderer(
       [&relatorio] { return tui::elemento_dos_requisitos(relatorio); });
   auto quadro = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
