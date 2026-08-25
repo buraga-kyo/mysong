@@ -257,5 +257,28 @@ Fita Projector::abre(const std::filesystem::path& faixa) {
   return Fita::Rodando;
 }
 
+bool Projector::rodando() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return rodando_travado();
+}
+
+bool Projector::rodando_travado() {
+  if (filho_ < 0) return false;
+  int estado = 0;
+  const ::pid_t visto = ::waitpid(filho_, &estado, WNOHANG);
+  if (visto != filho_) return true;  // ainda corre
+  // Morreu, e acaba de se enterrar: é isto que faz fechar a janella á mão
+  // devolver o commando á TUI sem deixar zombie atraz.
+  filho_ = -1;
+  if (punho_ >= 0) {
+    ::close(punho_);
+    punho_ = -1;
+  }
+  std::error_code erro;
+  std::filesystem::remove(soquete_, erro);
+  faixa_.clear();
+  return false;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
