@@ -52,6 +52,33 @@ std::string texto_do_andamento(const Andamento& andamento) {
   if (!andamento.ultima.empty()) dito += " (" + andamento.ultima + ")";
   return dito;
 }
+
+Estaleiro::Estaleiro(std::size_t obreiros, Obra obra) : obra_(std::move(obra)) {
+  // Zero obreiro seria estaleiro que aceita encommenda e nunca a cumpre, que é
+  // pior que erro: é silencio. Um, pelo menos.
+  const std::size_t quantos = obreiros == 0 ? 1 : obreiros;
+  obreiros_.reserve(quantos);
+  for (std::size_t i = 0; i < quantos; ++i)
+    obreiros_.emplace_back(&Estaleiro::obreiro, this);
+}
+
+Estaleiro::~Estaleiro() { fecha(); }
+
+void Estaleiro::fecha() {
+  {
+    std::lock_guard<std::mutex> chave(tranca_);
+    if (fechado_) return;  // fechado duas vezes: a segunda não junta os fios outra vez
+    fechado_ = true;
+    // A ESPERA abandona-se. Esperar por ella faria sahir do programa depender de
+    // quantas baixas o operador encommendou, e ninguem espera meia hora para fechar
+    // uma tela. A obra EM VOO espera-se, que essa já escreve no disco.
+    espera_.clear();
+  }
+  sino_.notify_all();
+  for (std::thread& fio : obreiros_)
+    if (fio.joinable()) fio.join();
+  obreiros_.clear();
+}
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
