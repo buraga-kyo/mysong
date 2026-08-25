@@ -77,7 +77,8 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('c'), ftxui::Event::Character('R'),
       ftxui::Event::Character('D'), ftxui::Event::Character('a'),
       ftxui::Event::Character('t'), ftxui::Event::Character('K'),
-      ftxui::Event::Character('J'), ftxui::Event::ArrowUp,
+      ftxui::Event::Character('J'), ftxui::Event::Character('v'),
+      ftxui::Event::ArrowUp,
       ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
       ftxui::Event::Return,         ftxui::Event::Escape,
@@ -129,6 +130,9 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   CHECK(verbo(ftxui::Event::Character('t')) == tui::Verbo::RetiraDoRol);
   CHECK(verbo(ftxui::Event::Character('K')) == tui::Verbo::SobeNoRol);
   CHECK(verbo(ftxui::Event::Character('J')) == tui::Verbo::DesceNoRol);
+  // O `v` do video é MINUSCULA porque não estraga cousa gravada: abre janella, e
+  // fechá-la não perde nada. As maiusculas ficam para o que muta o disco.
+  CHECK(verbo(ftxui::Event::Character('v')) == tui::Verbo::AbreVideo);
   // E a minuscula d'ellas continua a ser a do vi: `k` e `j` andam, e não movem.
   CHECK(verbo(ftxui::Event::Character('k')) == tui::Verbo::Sobe);
   CHECK(verbo(ftxui::Event::Character('j')) == tui::Verbo::Desce);
@@ -185,6 +189,62 @@ TEST_CASE("o volume anda por degrau, e apara-se em zero e cem") {
                             tocando(0.0, 100.0, 2)).alvo == doctest::Approx(0.0));
   CHECK(tui::ordem_da_tecla(ftxui::Event::Character('+'),
                             tocando(0.0, 100.0, 100)).alvo == doctest::Approx(100.0));
+}
+
+// ── A JANELLA DO VÍDEO (issue #17) ─────────────────────────────────────────
+// Estando a janella de pé, o motor de audio está CALADO, e as teclas de transporte
+// governam a janella. Sem isto, o espaço lia o estado do motor: motor parado dava
+// Ordem::Nada, e a tecla não pausava nada. Foi defeito medido n'um pty, e não
+// suposto, e estes casos são o que o guarda.
+
+TEST_CASE("com janella de pé, o espaço governa a janella e não o motor") {
+  tui::Retracto retracto;              // motor PARADO, que é o que succede
+  retracto.estado = mysong::nucleo::Estado::Parado;
+  retracto.video = true;
+  retracto.video_pausada = false;
+  // Sem o campo do video, isto dava Ordem::Nada: parado não tem o que pausar.
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character(' '), retracto).verbo ==
+        tui::Verbo::Pausar);
+  retracto.video_pausada = true;
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character(' '), retracto).verbo ==
+        tui::Verbo::Retomar);
+  // E a janella GANHA do motor: com os dous a dizer cousas differentes, vale ella,
+  // que é a que está a tocar.
+  retracto.estado = mysong::nucleo::Estado::Tocando;
+  retracto.video_pausada = true;
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character(' '), retracto).verbo ==
+        tui::Verbo::Retomar);
+  // Sem janella, volta a valer o motor.
+  retracto.video = false;
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character(' '), retracto).verbo ==
+        tui::Verbo::Pausar);
+}
+
+TEST_CASE("com janella de pé, a busca sahe RELATIVA e não absoluta") {
+  tui::Retracto retracto;
+  retracto.video = true;
+  retracto.posicao = 30.0;  // do MOTOR, e o motor não é quem toca
+  retracto.duracao = 100.0;
+  const tui::Ordem deante =
+      tui::ordem_da_tecla(ftxui::Event::Character('.'), retracto);
+  CHECK(deante.verbo == tui::Verbo::Buscar);
+  CHECK(deante.relativo);
+  // CINCO, e não trinta e cinco: o alvo é deslocamento, e a posição do motor não
+  // diz nada da janella. Se sahisse absoluto, teclar `.` saltava a janella para o
+  // segundo trinta e cinco, que não é onde ella estava.
+  CHECK(deante.alvo == doctest::Approx(5.0));
+
+  const tui::Ordem atras =
+      tui::ordem_da_tecla(ftxui::Event::Character(','), retracto);
+  CHECK(atras.relativo);
+  CHECK(atras.alvo == doctest::Approx(-5.0));
+
+  // Sem janella, ABSOLUTA como sempre, e o relativo fica falso.
+  retracto.video = false;
+  const tui::Ordem no_motor =
+      tui::ordem_da_tecla(ftxui::Event::Character('.'), retracto);
+  CHECK_FALSE(no_motor.relativo);
+  CHECK(no_motor.alvo == doctest::Approx(35.0));
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
