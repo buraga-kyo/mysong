@@ -99,3 +99,6 @@ target_sources(mysong_testes PRIVATE prova_estaleiro.cpp)
 # Pinta em écran de PAPEL, e lê-o CELLA A CELLA: é o unico modo de aferir
 # alinhamento de columna sem o olho de quem abriu o programa.
 target_sources(mysong_testes PRIVATE prova_tabella.cpp)
+
+# ─── A PROVA DO CORREIO (issue #12) ─────────────────────────────────────────
+target_sources(mysong_testes PRIVATE prova_correio.cpp)
