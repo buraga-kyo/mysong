@@ -74,5 +74,13 @@ class Roleiro {
   // do mesmo nome na tela não se distinguem.
   int cria(std::string_view nome);
 
+  bool renomeia(int id, std::string_view nome);
+
+  // apaga — a lista e os itens d'ella. A confirmação NÃO é d'aqui: quem pergunta
+  // ao operador é a tela, e esta camada obedece.
+  bool apaga(int id);
+
+  // junta — a faixa no FIM da lista. Repetida não se recusa: quem quer a mesma
+  // faixa duas vezes na mesma lista tem direito a ella.
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
