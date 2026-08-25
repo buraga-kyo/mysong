@@ -34,6 +34,36 @@ int aparar_volume(int pedido) {
 
 }  // namespace
 
+Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto) {
+  // O espaço alterna segundo o ESTADO, e não segundo uma lembrança propria: a
+  // tela não guarda estado em duplicata, donde não ha como ella e o motor
+  // discordarem sobre quem está a tocar.
+  if (tecla == ftxui::Event::Character(' ')) {
+    if (retracto.estado == nucleo::Estado::Tocando) return {Verbo::Pausar, 0.0};
+    if (retracto.estado == nucleo::Estado::Pausado) return {Verbo::Retomar, 0.0};
+    return {Verbo::Nada, 0.0};  // parado: não ha o que pausar nem retomar
+  }
+  if (tecla == ftxui::Event::Character('n')) return {Verbo::Proxima, 0.0};
+  if (tecla == ftxui::Event::Character('p')) return {Verbo::Anterior, 0.0};
+  if (tecla == ftxui::Event::Character('q')) return {Verbo::Sahir, 0.0};
+
+  if (tecla == ftxui::Event::ArrowRight)
+    return {Verbo::Buscar,
+            aparar_busca(retracto.posicao + PASSO_DA_BUSCA, retracto.duracao)};
+  if (tecla == ftxui::Event::ArrowLeft)
+    return {Verbo::Buscar,
+            aparar_busca(retracto.posicao - PASSO_DA_BUSCA, retracto.duracao)};
+
+  if (tecla == ftxui::Event::Character('+'))
+    return {Verbo::Volume, static_cast<double>(
+                               aparar_volume(retracto.volume + DEGRAU_DO_VOLUME))};
+  if (tecla == ftxui::Event::Character('-'))
+    return {Verbo::Volume, static_cast<double>(
+                               aparar_volume(retracto.volume - DEGRAU_DO_VOLUME))};
+
+  return {Verbo::Nada, 0.0};
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
