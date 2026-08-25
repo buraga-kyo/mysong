@@ -58,10 +58,16 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
       {Secao::Faixas, " TRACKS  "},
       {Secao::Busca, " SEARCH  "},
       {Secao::Rede, " NET     "},
+      {Secao::Rois, " LISTS   "},
   };
   std::vector<ftxui::Element> linhas;
   for (const auto& [degrau, rotulo] : degraus) {
-    const bool aqui = navegador.secao() == degrau;
+    // Dentro de uma lista, a fileira que accende é a das LISTAS: é lá que se está,
+    // um degrau abaixo. Fileira propria para o dentro seria fileira que o operador
+    // nunca pode eleger, e barra com degrau morto ensina o dedo a errar.
+    const bool aqui = navegador.secao() == degrau ||
+                      (degrau == Secao::Rois &&
+                       navegador.secao() == Secao::NoRol);
     ftxui::Element linha = pinta(rotulo, aqui ? tokens::text_bright
                                               : tokens::text_muted);
     if (aqui) {
