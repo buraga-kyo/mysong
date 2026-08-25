@@ -515,21 +515,26 @@ TEST_CASE("disco cheio a meio não estraga o índice anterior") {
   CHECK(vizinhos == 1u);
 }
 
-// A bateria não escreve nos caminhos do operador. Afere-se AQUI, dentro da
-// bateria, para que a garantia corra em toda corrida e não sómente quando alguem
-// se lembra de olhar á mão.
-TEST_CASE("caso algum da bateria toca os caminhos do operador") {
+// A bateria não escreve nos caminhos do operador. A garantia é ESTRUCTURAL, e não
+// por existencia: todo caminho de prova sahe da Cova, e a Cova cava debaixo de
+// `temp_directory_path()`. Affirmar que `~/.local/share/mysong` NÃO existe era o
+// que este caso fazia antes, e era errado: elle passa a existir na primeira vez que
+// o operador corre o programma, e ahi a prova ficava vermelha por obra do uso
+// legitimo. O que ha de valer é a proveniencia do caminho, e é ella que se afere.
+TEST_CASE("caminho algum da bateria sahe de fóra do directorio temporario") {
+  const std::filesystem::path temporario =
+      std::filesystem::temp_directory_path();
+  const Cova cova;
+  const std::string raiz = cova.raiz().string();
+  const std::string banco = cova.banco().string();
+  const std::string acervo = cova.acervo().string();
+  CHECK(raiz.compare(0, temporario.string().size(), temporario.string()) == 0);
+  CHECK(banco.compare(0, temporario.string().size(), temporario.string()) == 0);
+  CHECK(acervo.compare(0, temporario.string().size(), temporario.string()) == 0);
+  // E os caminhos do operador não apparecem em caminho algum d'esta bateria.
   const char* casa = ::getenv("HOME");
   REQUIRE(casa != nullptr);
-  const std::filesystem::path indice =
-      std::filesystem::path(casa) / ".local" / "share" / "mysong";
-  CHECK_FALSE(std::filesystem::exists(indice));
-  const std::filesystem::path musica = std::filesystem::path(casa) / "Música";
-  if (std::filesystem::exists(musica)) {
-    // Existindo, ella é do OPERADOR: o que se afere é que a bateria não lhe
-    // acrescentou banco algum, e não que ella esteja vazia.
-    CHECK_FALSE(std::filesystem::exists(musica / "indice.sqlite3"));
-  }
+  CHECK(raiz.find(casa) == std::string::npos);
 }
 
 // A comparação é de DOUS campos, e este caso é o que o prova. Reescreve-se o
