@@ -95,5 +95,15 @@ TEST_CASE("os argumentos declaram a classe da janella nas duas fórmas") {
   CHECK(ditos.front() == "mpv");
 }
 
+TEST_CASE("o escape do JSON cobre a aspa, a barra e o controle") {
+  CHECK(nu::escapa_json("simples") == "simples");
+  CHECK(nu::escapa_json("com \"aspa\"") == "com \\\"aspa\\\"");
+  CHECK(nu::escapa_json("com \\ barra") == "com \\\\ barra");
+  // Byte de controle vae na fórma longa: o JSON não o admitte crú, e nome de
+  // arquivo com tabulação existe no disco.
+  CHECK(nu::escapa_json("com\ttab") == "com\\u0009tab");
+  CHECK(nu::escapa_json("com\nlinha") == "com\\u000alinha");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
