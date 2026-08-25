@@ -213,6 +213,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::Varre:
     case tui::Verbo::AbreBaixa:
     case tui::Verbo::TrocaLetra:
+    case tui::Verbo::AbreProcura:
       break;
   }
 }
