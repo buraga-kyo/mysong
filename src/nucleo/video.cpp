@@ -84,5 +84,21 @@ int abre_soquete(const std::filesystem::path& soquete) {
 
 }  // namespace
 
+bool extensao_com_video(std::string_view extensao) {
+  const std::string baixa = minuscula(extensao);
+  if (baixa.empty()) return false;
+  return std::find(std::begin(kExtensoesComVideo), std::end(kExtensoesComVideo),
+                   baixa) != std::end(kExtensoesComVideo);
+}
+
+bool tem_video(const std::filesystem::path& faixa) {
+  return extensao_com_video(faixa.extension().string());
+}
+
+std::filesystem::path caminho_do_soquete(const std::filesystem::path& raiz,
+                                         long pid) {
+  return raiz / ("mysong-video-" + std::to_string(pid) + ".sock");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
