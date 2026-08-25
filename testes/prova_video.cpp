@@ -74,5 +74,26 @@ TEST_CASE("o soquete leva o pid no nome, e mora na raiz que se disse") {
         posto.filename());
 }
 
+TEST_CASE("os argumentos declaram a classe da janella nas duas fórmas") {
+  const std::vector<std::string> ditos =
+      nu::argumentos_do_projector("/acervo/A/B/01 - Tal.mkv", "/run/s.sock");
+  const auto tem = [&ditos](const std::string& qual) {
+    return std::find(ditos.begin(), ditos.end(), qual) != ditos.end();
+  };
+  // As DUAS fórmas: o X11 lê uma e o Wayland a outra, e quem corre não sabe qual
+  // das duas o systema d'elle usa. É por este nome que o RADICAL-OS a governa.
+  CHECK(tem("--x11-name=mysong-video"));
+  CHECK(tem("--wayland-app-id=mysong-video"));
+  CHECK(tem("--input-ipc-server=/run/s.sock"));
+  // SEM terminal: elle é nosso, e a TUI está a pintar n'elle.
+  CHECK(tem("--no-terminal"));
+  CHECK(tem("--force-window=yes"));
+  // O `--` fecha as opções, e a faixa vae DEPOIS d'elle: sem isso, faixa chamada
+  // `--version` viraria opção do mpv.
+  CHECK(ditos[ditos.size() - 2] == "--");
+  CHECK(ditos.back() == "/acervo/A/B/01 - Tal.mkv");
+  CHECK(ditos.front() == "mpv");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
