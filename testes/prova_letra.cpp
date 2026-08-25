@@ -215,5 +215,43 @@ std::vector<std::string> as_linhas(
 
 }  // namespace
 
+// A LETRA na tela, a acompanhar o relogio. O `.lrc` vae escripto á mão, e o alvo de
+// cada instante tambem: é a prova de que o painel mostra o verso que se canta.
+TEST_CASE("o painel mostra o verso do instante, e as vizinhas em volta") {
+  const std::vector<nu::LinhaDaLetra> letra = nu::analysa_lrc(
+      "[00:02.00] verso um\n"
+      "[00:05.00] verso dous\n"
+      "[00:08.00] verso tres\n"
+      "[00:11.00] verso quatro\n"
+      "[00:14.00]\n"
+      "[00:17.00] verso cinco\n");
+  REQUIRE(letra.size() == 6u);
+
+  // Em cinco segundos e um decimo, o verso dous é o corrente. A janella de tres
+  // linhas põe-no no MEIO: sahe «um, dous, tres».
+  const std::vector<std::string> aos_cinco = as_linhas(letra, 5.1, 3, 20);
+  REQUIRE(aos_cinco.size() == 3u);
+  CHECK(aos_cinco[0].substr(0, 10) == "  verso um");
+  CHECK(aos_cinco[1].substr(0, 12) == "  verso dous");
+  CHECK(aos_cinco[2].substr(0, 12) == "  verso tres");
+
+  // Em onze segundos e um decimo, o corrente é «quatro»: sahe «tres, quatro, vazia».
+  const std::vector<std::string> aos_onze = as_linhas(letra, 11.1, 3, 20);
+  REQUIRE(aos_onze.size() == 3u);
+  CHECK(aos_onze[0].substr(0, 12) == "  verso tres");
+  CHECK(aos_onze[1].substr(0, 14) == "  verso quatro");
+  CHECK(aos_onze[2].find("verso") == std::string::npos);  // o carimbo vazio
+
+  // Antes do primeiro verso, mostram-se as primeiras apagadas, e não quadro vazio.
+  const std::vector<std::string> antes = as_linhas(letra, 0.5, 3, 20);
+  REQUIRE(antes.size() == 3u);
+  CHECK(antes[0].substr(0, 10) == "  verso um");
+
+  // Letra AUSENTE diz o que se passa, e não fica em branco.
+  const std::vector<std::string> sem = as_linhas({}, 5.0, 3, 40);
+  REQUIRE(!sem.empty());
+  CHECK(sem[0].find("sem letra") != std::string::npos);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
