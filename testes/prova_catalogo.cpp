@@ -96,5 +96,18 @@ TEST_CASE("a leitura tira as faixas de dentro do embrulho, na ordem da lista") {
   CHECK(lida.faixas[1].numero == 3);
 }
 
+TEST_CASE("o objecto ANINHADO não engana a leitura dos campos da faixa") {
+  const nu::Catalogo lida = nu::le_catalogo(kPagina);
+  REQUIRE(lida.faixas.size() == 2);
+  // A primeira faixa tras `audioPreview` com `url` e `format` DENTRO, e
+  // `contentRatings` com um arranjo dentro. Um leitor que buscasse a chave em
+  // qualquer fundo apanharia esses; o d'esta Casa lê fundo UM, e por isso o
+  // `format` do preview não vira campo da faixa e a duração é a de fóra.
+  CHECK(lida.faixas[0].duracao_ms == 223069);
+  CHECK(lida.faixas[0].artista == "Tame Impala");
+  // E a ORDEM conta as tres, e não as duas que sobreviveram.
+  CHECK(lida.faixas[1].numero == 3);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
