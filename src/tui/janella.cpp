@@ -53,6 +53,7 @@
 #include "nucleo/letra.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
+#include "nucleo/rol.hpp"
 #include "nucleo/tocador.hpp"
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
@@ -89,6 +90,14 @@ std::filesystem::path caminho_do_indice() {
   std::filesystem::permissions(pasta, std::filesystem::perms::owner_all,
                                std::filesystem::perm_options::replace, erro);
   return pasta / "indice.sqlite3";
+}
+
+// caminho_das_listas — `rol.sqlite3` ao lado do índice, e NÃO dentro d'elle: o
+// índice é reconstruido a cada varredura por temporario e rename, e taboa de lista
+// lá dentro sahiria com a varredura.
+std::filesystem::path caminho_das_listas(const std::filesystem::path& indice) {
+  if (indice.empty()) return {};
+  return indice.parent_path() / "rol.sqlite3";
 }
 
 // raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
@@ -263,7 +272,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // corrida anterior, em vez de esperar pelo disco.
   const std::filesystem::path banco = caminho_do_indice();
   nucleo::Biblioteca livraria(banco);
-  tui::Navegador navegador(livraria);
+  nucleo::Roleiro roleiro(caminho_das_listas(banco));
+  tui::Navegador navegador(livraria, &roleiro);
   std::atomic<bool> varrida{false};
   // O PEDIDO de varredura e o AVISO de que o acervo mudou. Bandeiras, e não fio novo
   // por cada pedido: fio erguido de dentro do tratador de teclas e de dentro do fio da
@@ -421,10 +431,21 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
     if (navegador.secao() == tui::Secao::Rede) trilha = "NET";
+    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
+    if (navegador.secao() == tui::Secao::NoRol) {
+      trilha = "LISTS";
+      for (const std::string& degrau : navegador.trilha())
+        trilha += "  \ue0b1  " + degrau;
+    }
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
     else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
+    // `a` manda a faixa, e o operador não ha de o adivinhar.
+    if (navegador.rol_corrente() != 0 &&
+        navegador.secao() != tui::Secao::NoRol)
+      trilha += "   [\ue0b1 " + navegador.nome_corrente() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
     if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
