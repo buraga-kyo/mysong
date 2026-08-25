@@ -85,6 +85,11 @@ class Estaleiro {
 
   void fecha();  // pára de aceitar, acorda os obreiros e espera-os
 
+  // fechado — verdadeiro depois de fecha() ter tomado a tranca. Existe para que o
+  // abandono da espera se possa AFERIR: quem prova espera por este punho, e sómente
+  // então solta a obra em voo, donde a ordem dos passos deixa de ser sorte.
+  bool fechado() const;
+
  private:
   void obreiro();
 

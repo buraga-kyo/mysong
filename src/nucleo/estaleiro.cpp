@@ -112,6 +112,11 @@ bool Estaleiro::colheu() {
   return houve;
 }
 
+bool Estaleiro::fechado() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return fechado_;
+}
+
 std::size_t Estaleiro::pico() const {
   std::lock_guard<std::mutex> chave(tranca_);
   return pico_;
