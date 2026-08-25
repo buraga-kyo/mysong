@@ -36,6 +36,30 @@ std::string minuscula(std::string_view crua) {
   return baixa;
 }
 
+
+// numero_e_titulo — parte `NN - Titulo` no numero e no titulo. Sem numero á
+// frente, o titulo é o nome inteiro e o numero fica zero, que quer dizer «sem
+// numero» e não «faixa zero». O separador aceita-se com ou sem espaços, e tanto
+// hyphen como ponto: `01 - Tear`, `01-Tear` e `01. Tear` sahem eguaes.
+void numero_e_titulo(const std::string& talo, int* numero, std::string* titulo) {
+  *numero = 0;
+  *titulo = talo;
+  std::size_t i = 0;
+  while (i < talo.size() && std::isdigit(static_cast<unsigned char>(talo[i])))
+    ++i;
+  if (i == 0 || i > 3) return;  // sem digitos á frente, ou numero improvavel
+
+  std::size_t j = i;
+  while (j < talo.size() && talo[j] == ' ') ++j;
+  if (j < talo.size() && (talo[j] == '-' || talo[j] == '.')) ++j;
+  else if (j == i) return;  // digitos collados a letra: é nome, e não numero
+  while (j < talo.size() && talo[j] == ' ') ++j;
+  if (j >= talo.size()) return;  // sómente o numero, sem titulo depois
+
+  *numero = std::stoi(talo.substr(0, i));
+  *titulo = talo.substr(j);
+}
+
 }  // namespace
 
 bool extensao_de_audio(std::string_view extensao) {
