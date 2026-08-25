@@ -64,6 +64,34 @@ Faixa deriva_do_caminho(const std::filesystem::path& caminho,
 // PNG e cada texto do acervo para nada.
 bool extensao_de_audio(std::string_view extensao);
 
+// A VARREDURA. Conduz-se por passos, e nasce com o Escriba já aberto sobre um
+// temporario: donde o destino não existe até se concluir, e o destructor desfaz
+// o temporario de quem a abandonou.
+class Varredura {
+ public:
+  Varredura(std::filesystem::path banco,
+            std::vector<std::filesystem::path> raizes);
+  ~Varredura();
+
+  Varredura(const Varredura&) = delete;
+  Varredura& operator=(const Varredura&) = delete;
+
+  // Um passo. FALSO quando já não ha o que fazer, e ahi o desfecho diz o que
+  // houve. Um passo trata UM arquivo, ou lista UMA raiz, ou conclue: nunca o
+  // acervo inteiro, que é a razão de a tela não congelar.
+  bool passo();
+
+  // Desiste. O temporario desfaz-se, e o índice anterior fica intacto.
+  void abandona();
+
+  Desfecho desfecho() const noexcept;
+  const Progresso& progresso() const noexcept;
+
+ private:
+  struct Punho;
+  std::unique_ptr<Punho> punho_;
+};
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
