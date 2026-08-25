@@ -111,6 +111,64 @@ void varre_em_fio(const std::filesystem::path& banco,
   concluida->store(true);
 }
 
+// assignatura_do_visivel — uma cadeia barata que resume TUDO o que a tela mostra. O fio do
+// relogio sómente pede repintura quando ella muda.
+//
+// Sem isto, medido n'um pty de quarenta por cento e vinte: cento e trinta e oito KiB por
+// segundo com a fila VAZIA e nada a tocar. São sete KiB por quadro a vinte quadros por
+// segundo, a tela inteira, repintada porque o relogio bateu. Dentro de tmux é o cursor do
+// operador a piscar, porque o tmux ha de reparsear e reposicionar vinte vezes por segundo
+// para sempre.
+//
+// A posição entra em SEGUNDOS inteiros, e não em decimos: a barra e o relogio mostram
+// segundos, e a fracção mudaria a assignatura sem mudar um pixel.
+std::string assignatura_do_visivel(nucleo::Tocador& tocador,
+                                   const tui::Navegador& navegador,
+                                   int digita, const std::string& termo_em_curso,
+                                   const std::string& aviso, bool mostra_letra,
+                                   bool varrida) {
+  std::string marca;
+  marca.reserve(128);
+  marca += std::to_string(static_cast<int>(tocador.estado()));
+  marca += ':';
+  marca += std::to_string(static_cast<long>(tocador.posicao()));
+  marca += ':';
+  marca += std::to_string(static_cast<long>(tocador.duracao()));
+  marca += ':';
+  marca += std::to_string(tocador.volume());
+  marca += ':';
+  const nucleo::Fila& fila = tocador.fila();
+  marca += std::to_string(fila.tamanho());
+  marca += ':';
+  marca += fila.vazia() ? std::string() : std::string(fila.corrente());
+  marca += ':';
+  // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
+  // pagava a animação que não mostrava: medido em cento e trinta e dous KiB por segundo,
+  // contra dous e sete pausado. Assignatura ha de resumir o que se VÊ, e não o que ha.
+  if (!mostra_letra)
+    for (const float banda : tocador.bandas())
+      marca += static_cast<char>(
+          static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
+                           99.0f) + 32);
+  marca += ':';
+  marca += std::to_string(digita);
+  marca += termo_em_curso;
+  marca += ':';
+  marca += aviso;
+  marca += mostra_letra ? 'L' : 'e';
+  marca += varrida ? 'v' : '.';
+  marca += ':';
+  marca += std::to_string(static_cast<int>(navegador.secao()));
+  marca += ':';
+  marca += std::to_string(navegador.eleito());
+  marca += ':';
+  marca += std::to_string(navegador.vista().size());
+  marca += ':';
+  marca += navegador.termo();
+  for (const std::string& degrau : navegador.trilha()) marca += degrau;
+  return marca;
+}
+
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
 // pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
 // poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
@@ -237,6 +295,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
   // sahindo o programma primeiro, liam memoria morta. Fio solto que aponta para pilha
   // alheia não se justifica, e agora não ha nenhum.
+  // A ultima assignatura do que se vê. Vazia de saida, para que o primeiro quadro sahia.
+  std::string ultima_assignatura;
   std::vector<std::thread> ao_fundo;
   ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir, &varrida);
 
@@ -301,9 +361,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
-                           " · b baixa · l letra · espaço pausa · n/p faixa"
-                           " · q sahe") |
+               ftxui::text("↑↓ anda · → entra · ← volta · / busca · r varre · b baixa"
+                           " · l letra · espaço pausa · n/p faixa · ,. busca no som"
+                           " · +- volume · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -423,7 +483,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         livraria.reabre();
         navegador.recarrega();
       }
-      tela.PostEvent(ftxui::Event::Custom);
+      // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
+      // tela escreve zero: é a correcção da issue #48.
+      const std::string agora = assignatura_do_visivel(
+          tocador, navegador, static_cast<int>(digita), termo_em_curso,
+          aviso_da_baixa, mostra_letra, varrida.load());
+      if (agora != ultima_assignatura) {
+        ultima_assignatura = agora;
+        tela.PostEvent(ftxui::Event::Custom);
+      }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
   });
