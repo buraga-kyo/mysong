@@ -82,6 +82,18 @@ class Estaleiro {
  private:
   void obreiro();
 
+  mutable std::mutex tranca_;
+  std::condition_variable sino_;
+  std::deque<Pedido> espera_;
+  std::vector<std::thread> obreiros_;
+  Obra obra_;
+  std::size_t em_curso_ = 0;
+  std::size_t pico_ = 0;
+  std::size_t colhidas_ = 0;
+  std::size_t falhadas_ = 0;
+  std::string ultima_;
+  bool colheu_ = false;
+  bool fechado_ = false;
 };
 
 }  // namespace mysong::nucleo
