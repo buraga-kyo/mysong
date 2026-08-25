@@ -42,5 +42,14 @@ TEST_CASE("a derivação lê artista, album, numero e titulo do caminho") {
                            nu::kDeduziuTitulo | nu::kDeduziuNumero));
 }
 
+TEST_CASE("o separador do numero aceita-se nas tres fórmas") {
+  CHECK(nu::deriva_do_caminho("/a/A/B/01 - Tear.mp3", "/a").numero == 1);
+  CHECK(nu::deriva_do_caminho("/a/A/B/01 - Tear.mp3", "/a").titulo == "Tear");
+  CHECK(nu::deriva_do_caminho("/a/A/B/07-Nota G.mp3", "/a").numero == 7);
+  CHECK(nu::deriva_do_caminho("/a/A/B/07-Nota G.mp3", "/a").titulo == "Nota G");
+  CHECK(nu::deriva_do_caminho("/a/A/B/12. Fuga.mp3", "/a").numero == 12);
+  CHECK(nu::deriva_do_caminho("/a/A/B/12. Fuga.mp3", "/a").titulo == "Fuga");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
