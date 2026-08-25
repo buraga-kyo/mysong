@@ -515,5 +515,22 @@ TEST_CASE("disco cheio a meio não estraga o índice anterior") {
   CHECK(vizinhos == 1u);
 }
 
+// A bateria não escreve nos caminhos do operador. Afere-se AQUI, dentro da
+// bateria, para que a garantia corra em toda corrida e não sómente quando alguem
+// se lembra de olhar á mão.
+TEST_CASE("caso algum da bateria toca os caminhos do operador") {
+  const char* casa = ::getenv("HOME");
+  REQUIRE(casa != nullptr);
+  const std::filesystem::path indice =
+      std::filesystem::path(casa) / ".local" / "share" / "mysong";
+  CHECK_FALSE(std::filesystem::exists(indice));
+  const std::filesystem::path musica = std::filesystem::path(casa) / "Música";
+  if (std::filesystem::exists(musica)) {
+    // Existindo, ella é do OPERADOR: o que se afere é que a bateria não lhe
+    // acrescentou banco algum, e não que ella esteja vazia.
+    CHECK_FALSE(std::filesystem::exists(musica / "indice.sqlite3"));
+  }
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
