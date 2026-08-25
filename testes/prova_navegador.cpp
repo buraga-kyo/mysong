@@ -577,5 +577,34 @@ TEST_CASE("renomear conserva o dentro, e apagar sahe para a lista das listas") {
   CHECK(navegador.nome_corrente().empty());
 }
 
+TEST_CASE("a lista sobrevive a reabrir o roleiro, com a ordem que se deixou") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  {
+    nu::Roleiro roleiro(coval.banco());
+    tui::Navegador navegador(livraria, &roleiro);
+    REQUIRE(navegador.cria_rol("Da manhã"));
+    REQUIRE_FALSE(navegador.entra());
+    for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+      REQUIRE(navegador.junta_ao_rol(qual));
+    navegador.ao_fim();
+    REQUIRE(navegador.sobe_no_rol());
+  }
+  // O aceite da tarefa pela porta da tela: fechar e abrir de novo, e a ordem é a
+  // que se deixou.
+  nu::Roleiro outra_vez(coval.banco());
+  tui::Navegador depois(livraria, &outra_vez);
+  depois.mostra_rois();
+  REQUIRE(depois.vista().size() == 1);
+  CHECK(depois.vista()[0].numero == 3);  // tres faixas
+  REQUIRE_FALSE(depois.entra());
+  REQUIRE(depois.vista().size() == 3);
+  CHECK(depois.vista()[0].texto == "1.mp3");
+  CHECK(depois.vista()[1].texto == "3.mp3");
+  CHECK(depois.vista()[2].texto == "2.mp3");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
