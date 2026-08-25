@@ -38,10 +38,11 @@ std::string plural(std::size_t quantas, const std::string& singular) {
 
 std::string texto_do_andamento(const Andamento& andamento) {
   // Estaleiro que nunca trabalhou não tem recado: cadeia vazia, e a tela cala-se.
-  // Dizer «0 a baixar» seria occupar a linha da trilha com nada.
-  if (andamento.em_curso == 0 && andamento.na_espera == 0 &&
-      andamento.colhidas == 0 && andamento.falhadas == 0)
-    return {};
+  // Dizer «0 a baixar» seria occupar a linha da trilha com nada. Não ha guarda
+  // apartada para esse caso, e é de proposito: nenhum dos ramos abaixo dispara
+  // com os contadores todos a zero, donde a cadeia sahe vazia por construcção.
+  // A guarda existia, e sahiu por ser codigo morto: a mutação que a apagava
+  // sobrevivia á bateria, que é o signal de que ella nada guardava.
   std::string dito;
   if (andamento.em_curso > 0)
     junta(&dito, std::to_string(andamento.em_curso) + " a baixar");
@@ -49,7 +50,10 @@ std::string texto_do_andamento(const Andamento& andamento) {
     junta(&dito, std::to_string(andamento.na_espera) + " na espera");
   if (andamento.colhidas > 0) junta(&dito, plural(andamento.colhidas, "colhida"));
   if (andamento.falhadas > 0) junta(&dito, plural(andamento.falhadas, "falhada"));
-  if (!andamento.ultima.empty()) dito += " (" + andamento.ultima + ")";
+  // A razão do ultimo desfecho é APPENSO, e não recado por si: sem contador algum
+  // a acompanhá-la, «(baixado)» sósinho na linha da trilha não diz de quê.
+  if (!andamento.ultima.empty() && !dito.empty())
+    dito += " (" + andamento.ultima + ")";
   return dito;
 }
 
