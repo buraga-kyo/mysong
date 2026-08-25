@@ -11,7 +11,13 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/capa.hpp"
 
+#include <taglib/attachedpictureframe.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/mpegfile.h>
+
 #include <algorithm>
+#include <cstdlib>
+#include <fstream>
 #include <cctype>
 
 namespace mysong::nucleo {
@@ -77,6 +83,37 @@ std::vector<std::string> argumentos_do_chafa(
           "--",
           imagem.string()};
 }
+
+namespace {
+
+// extrahe_embutida — a arte que está DENTRO da etiqueta, gravada n'um temporario
+// para que o chafa a possa abrir. O chafa lê arquivo, e não memoria.
+//
+// Grava-se em `$XDG_RUNTIME_DIR`, e não em `/tmp`: arte de album é dado do
+// operador, e o directorio de corrida é privado d'elle por construcção.
+std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
+  TagLib::MPEG::File arquivo(faixa.c_str());
+  if (!arquivo.isValid() || arquivo.ID3v2Tag() == nullptr) return {};
+  const auto& quadros =
+      arquivo.ID3v2Tag()->frameListMap()["APIC"];
+  if (quadros.isEmpty()) return {};
+  const auto* arte =
+      dynamic_cast<const TagLib::ID3v2::AttachedPictureFrame*>(quadros.front());
+  if (arte == nullptr || arte->picture().isEmpty()) return {};
+
+  const char* corrida = std::getenv("XDG_RUNTIME_DIR");
+  std::filesystem::path onde =
+      corrida != nullptr && corrida[0] != '\0'
+          ? std::filesystem::path(corrida)
+          : std::filesystem::temp_directory_path();
+  onde /= "mysong-capa.bin";
+  std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
+  if (!sahida) return {};
+  sahida.write(arte->picture().data(), arte->picture().size());
+  return sahida.good() ? onde : std::filesystem::path();
+}
+
+}  // namespace
 
 }  // namespace mysong::nucleo
 

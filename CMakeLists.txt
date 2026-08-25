@@ -214,6 +214,11 @@ pkg_check_modules(CURL REQUIRED IMPORTED_TARGET libcurl)
 target_sources(mysong_core PRIVATE src/nucleo/letra.cpp)
 target_link_libraries(mysong_core PRIVATE PkgConfig::CURL)
 
+# ─── A CAPA DO ALBUM (issue #16) ────────────────────────────────────────────
+# Dependencia nova alguma: a taglib já entrou na #8, e o chafa corre por fork, como
+# o yt-dlp da #11.
+target_sources(mysong_core PRIVATE src/nucleo/capa.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 

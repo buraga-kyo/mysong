@@ -76,6 +76,9 @@ target_sources(mysong_testes PRIVATE prova_aquisicao.cpp)
 # ─── A PROVA DA LETRA (issue #14) ───────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_letra.cpp)
 
+# ─── A PROVA DA CAPA (issue #16) ────────────────────────────────────────────
+target_sources(mysong_testes PRIVATE prova_capa.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
