@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <sstream>
 
 namespace mysong::nucleo {
@@ -131,6 +132,37 @@ std::vector<std::string> argumentos_do_download(
           "--no-embed-metadata",
           "--output", molde.string() + ".%(ext)s",
           "--", url};
+}
+
+EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {
+  // Seis linhas, na ordem que argumentos_da_sonda fixou. Linha «NA» ou vazia é
+  // campo que a rede não soube dizer: o yt-dlp imprime «NA» para o que falta, e
+  // tomar esse «NA» por titulo poria uma faixa chamada NA no acervo.
+  std::vector<std::string> linhas;
+  std::istringstream fonte(sahida);
+  std::string linha;
+  while (std::getline(fonte, linha)) {
+    if (!linha.empty() && linha.back() == '\r') linha.pop_back();
+    linhas.push_back(linha == "NA" ? std::string() : apara(linha));
+  }
+  linhas.resize(6);  // faltando linha, ella fica vazia, e não lixo da anterior
+
+  EtiquetaRemota remota;
+  remota.titulo = linhas[0];
+  remota.canal = linhas[1];
+  remota.artista = linhas[2];
+  remota.album = linhas[3];
+  // Numero e duração vêm em texto. Texto que não é numero dá ZERO, e não lança:
+  // a rede é fonte alheia, e fonte alheia manda lixo.
+  const auto inteiro = [](const std::string& crua) {
+    if (crua.empty()) return 0;
+    for (const unsigned char c : crua)
+      if (std::isdigit(c) == 0) return 0;
+    return std::atoi(crua.c_str());
+  };
+  remota.numero = inteiro(linhas[4]);
+  remota.duracao = inteiro(linhas[5]);
+  return remota;
 }
 
 }  // namespace mysong::nucleo
