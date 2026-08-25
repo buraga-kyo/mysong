@@ -17,7 +17,10 @@
 
 #include <cmath>
 #include <cstdio>
+#include <utility>
+#include <vector>
 
+#include "tui/arrowline.hpp"
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
@@ -55,6 +58,26 @@ std::size_t enchimento(double posicao, double duracao, std::size_t largura) {
   const std::size_t cheias = static_cast<std::size_t>(collunhas);
   return cheias > largura ? largura : cheias;
 }
+
+namespace {
+
+// Os pedaços da fita em elementos. A regra do DESIGN_SYSTEM manda que a côr da
+// seta seja a côr do segmento que ella SEGUE, e a fita já a resolveu: aqui
+// sómente se pinta o que ella diz.
+ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
+  std::vector<ftxui::Element> partes;
+  partes.reserve(pedacos.size());
+  for (const Pedaco& pedaco : pedacos) {
+    const tokens::Triade frente = tokens::rgb(pedaco.tinta);
+    const tokens::Triade tras = tokens::rgb(pedaco.fundo);
+    partes.push_back(ftxui::text(pedaco.texto) |
+                     ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
+                     ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b)));
+  }
+  return ftxui::hbox(std::move(partes));
+}
+
+}  // namespace
 
 std::string_view nome_do_estado(nucleo::Estado estado) {
   switch (estado) {
