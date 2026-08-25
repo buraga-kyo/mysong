@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,26 @@ std::vector<std::string> argumentos_do_chafa(const std::filesystem::path& imagem
 struct CapaPintada {
   std::vector<std::string> linhas;
   bool achada = false;
+};
+
+// ── E AGORA O QUE TOCA O MUNDO.
+
+// A GALERIA: guarda os renders já feitos, para que converter aconteça uma vez por
+// album e por tamanho. Não é optimização gratuita: o chafa leva dezenas de
+// milesimos, e o pintor corre vinte vezes por segundo.
+class Galeria {
+ public:
+  // Devolve a capa da faixa no tamanho pedido. Achando-a em cache, não corre nada.
+  // Capa ausente devolve `achada` falso, e isso tambem se guarda: sem guardar a
+  // AUSENCIA, um album sem capa faria a Casa procurar o arquivo a cada quadro.
+  const CapaPintada& capa(const std::filesystem::path& faixa,
+                          std::size_t collunas, std::size_t linhas);
+
+  std::size_t quantos_renders() const noexcept;  // serve á prova do cache
+
+ private:
+  std::map<std::string, CapaPintada> guardadas_;
+  std::size_t renders_ = 0;
 };
 
 }  // namespace mysong::nucleo
