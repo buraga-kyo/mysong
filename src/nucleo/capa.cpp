@@ -40,6 +40,44 @@ std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa) {
   return {};
 }
 
+std::string chave_do_cache(const std::filesystem::path& faixa,
+                           std::size_t collunas, std::size_t linhas) {
+  // A PASTA, e não a faixa: as faixas de um album partilham a capa. E o tamanho
+  // entra na chave porque a arte tem de encher o painel, donde redimensionar pede
+  // render novo e não o de antes esticado.
+  return faixa.parent_path().string() + "\x1f" + std::to_string(collunas) +
+         "x" + std::to_string(linhas);
+}
+
+std::vector<std::string> argumentos_do_chafa(
+    const std::filesystem::path& imagem, std::size_t collunas,
+    std::size_t linhas) {
+  // As quatro bandeiras que importam, e todas por medição e não por leitura do
+  // manual. Corri o chafa e li a sahida com `cat -v`:
+  //
+  //   `--polite=on`    inhibe o esconde-cursor `ESC[?25l` e o limpa-tela `ESC[2J`.
+  //                    Sem ella, a primeira linha da capa vinha com um limpa-tela
+  //                    dentro, e o FTXUI pintava-a apagando o quadro inteiro.
+  //   `--relative=off` faz as linhas separarem-se por mudança de linha em vez de
+  //                    por posicionamento de cursor. É o que permitte cortar a
+  //                    sahida em linhas e entregá-las ao FTXUI uma a uma.
+  //   `--animate=off`  uma imagem, e não um filme.
+  //   `--colors=full`  côr de verdade, que é o que a paleta d'esta Casa pede.
+  //
+  // Nota: `--clear` NÃO toma argumento. Escrevi `--clear off` de inicio, e o
+  // `off` virou nome de arquivo: «chafa: Failed to open 'off'».
+  return {"chafa",
+          "--format=symbols",
+          "--symbols=block+half",
+          "--size=" + std::to_string(collunas) + "x" + std::to_string(linhas),
+          "--animate=off",
+          "--relative=off",
+          "--polite=on",
+          "--colors=full",
+          "--",
+          imagem.string()};
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
