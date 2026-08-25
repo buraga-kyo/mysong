@@ -238,6 +238,26 @@ TEST_CASE("nome com acento, aspas e espaço atravessa intacto") {
   CHECK(livraria.busca_faixa("N_").empty());
 }
 
+// Banco que ainda não existe NÃO é avaria: é o acervo que ainda não se varreu,
+// e é o estado em que o operador acha o programma na primeira vez que o abre.
+// Toda consulta responde vazio, e nenhuma lança pela borda.
+TEST_CASE("banco ausente responde vazio, e não erro") {
+  const Cova cova;
+  REQUIRE_FALSE(std::filesystem::exists(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  CHECK_FALSE(livraria.aberta());
+  CHECK(livraria.versao() == 0);
+  CHECK(livraria.total() == 0u);
+  CHECK(livraria.artistas().empty());
+  CHECK(livraria.albuns("Ada Lovelace").empty());
+  CHECK(livraria.faixas_do_album("Ada Lovelace", "Máquina Analítica").empty());
+  CHECK(livraria.busca_faixa("Tear").empty());
+  nu::Faixa achada;
+  CHECK_FALSE(livraria.acha_por_caminho("/acervo/qualquer.mp3", achada));
+  // E a consulta não CRIA o banco por consultar: o disco fica como estava.
+  CHECK_FALSE(std::filesystem::exists(cova.banco()));
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
