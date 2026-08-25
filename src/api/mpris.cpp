@@ -336,41 +336,6 @@ void annuncia_mudanca(DBusConnection* ligacao, nucleo::Tocador& tocador) {
   dbus_message_unref(pregao);
 }
 
-// responde_um — UMA mensagem. Mensagem que esta Casa não conheça recebe ERRO NOMEADO,
-// e nunca silencio: cliente que espera resposta e não a recebe fica pendurado no seu
-// proprio prazo, e o operador vê o playerctl a travar sem razão dita.
-void responde_um(CasaDoMpris::Punho& punho, DBusMessage* pedido) {
-  const char* interface_crua = dbus_message_get_interface(pedido);
-  const char* membro_cru = dbus_message_get_member(pedido);
-  if (interface_crua == nullptr || membro_cru == nullptr) return;
-  const std::string interface(interface_crua), membro(membro_cru);
-  DBusMessage* resposta = nullptr;
-
-  if (interface == "org.freedesktop.DBus.Introspectable" && membro == "Introspect") {
-    resposta = dbus_message_new_method_return(pedido);
-    if (resposta != nullptr) {
-      DBusMessageIter fóra;
-      dbus_message_iter_init_append(resposta, &fóra);
-      escreve_texto(&fóra, kIntrospecção);
-    }
-  } else if (interface == kPropriedades) {
-    resposta = responde_propriedades(punho, pedido, membro);
-  } else if (interface == kRaiz || interface == kTocador) {
-    if (cumpre_metodo(membro, pedido, punho.tocador))
-      resposta = dbus_message_new_method_return(pedido);
-    else
-      resposta = dbus_message_new_error(
-          pedido, DBUS_ERROR_UNKNOWN_METHOD, "esta Casa não conhece esse metodo");
-  } else {
-    resposta = dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_INTERFACE,
-                                      "esta Casa não serve essa interface");
-  }
-  if (resposta != nullptr) {
-    dbus_connection_send(punho.ligacao, resposta, nullptr);
-    dbus_message_unref(resposta);
-  }
-}
-
 }  // namespace
 
 struct CasaDoMpris::Punho {
@@ -500,7 +465,67 @@ DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedid
                                 "esta Casa não conhece esse metodo");
 }
 
+// responde_um — UMA mensagem. Mensagem que esta Casa não conheça recebe ERRO NOMEADO,
+// e nunca silencio: cliente que espera resposta e não a recebe fica pendurado no seu
+// proprio prazo, e o operador vê o playerctl a travar sem razão dita.
+void responde_um(CasaDoMpris::Punho& punho, DBusMessage* pedido) {
+  const char* interface_crua = dbus_message_get_interface(pedido);
+  const char* membro_cru = dbus_message_get_member(pedido);
+  if (interface_crua == nullptr || membro_cru == nullptr) return;
+  const std::string interface(interface_crua), membro(membro_cru);
+  DBusMessage* resposta = nullptr;
+
+  if (interface == "org.freedesktop.DBus.Introspectable" && membro == "Introspect") {
+    resposta = dbus_message_new_method_return(pedido);
+    if (resposta != nullptr) {
+      DBusMessageIter fóra;
+      dbus_message_iter_init_append(resposta, &fóra);
+      escreve_texto(&fóra, kIntrospecção);
+    }
+  } else if (interface == kPropriedades) {
+    resposta = responde_propriedades(punho, pedido, membro);
+  } else if (interface == kRaiz || interface == kTocador) {
+    if (cumpre_metodo(membro, pedido, punho.tocador))
+      resposta = dbus_message_new_method_return(pedido);
+    else
+      resposta = dbus_message_new_error(
+          pedido, DBUS_ERROR_UNKNOWN_METHOD, "esta Casa não conhece esse metodo");
+  } else {
+    resposta = dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_INTERFACE,
+                                      "esta Casa não serve essa interface");
+  }
+  if (resposta != nullptr) {
+    dbus_connection_send(punho.ligacao, resposta, nullptr);
+    dbus_message_unref(resposta);
+  }
+}
+
 }  // namespace
+
+void CasaDoMpris::pulsa() {
+  if (punho_->ligacao == nullptr) return;
+  // NÃO bloqueia: zero de prazo. Quem chama pulsa a vinte por segundo e não ha de
+  // esperar pelo barramento dentro do seu proprio laço de desenho.
+  dbus_connection_read_write(punho_->ligacao, 0);
+
+  while (DBusMessage* pedido = dbus_connection_pop_message(punho_->ligacao)) {
+    responde_um(*punho_, pedido);
+    dbus_message_unref(pedido);
+  }
+
+  // E o pregão, sómente quando muda. A comparação é dos TRES: estado, volume e faixa.
+  const nucleo::Fila& fila = punho_->tocador.fila();
+  const std::string faixa(fila.vazia() ? std::string_view() : fila.corrente());
+  if (punho_->tocador.estado() != punho_->ultimo_estado ||
+      punho_->tocador.volume() != punho_->ultimo_volume ||
+      faixa != punho_->ultima_faixa) {
+    punho_->ultimo_estado = punho_->tocador.estado();
+    punho_->ultimo_volume = punho_->tocador.volume();
+    punho_->ultima_faixa = faixa;
+    annuncia_mudanca(punho_->ligacao, punho_->tocador);
+  }
+  dbus_connection_flush(punho_->ligacao);
+}
 
 }  // namespace mysong::api
 
