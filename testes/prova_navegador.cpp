@@ -550,5 +550,32 @@ TEST_CASE("retirar tira a faixa certa, ainda com filtro posto") {
   CHECK(navegador.vista()[1].texto == "beta.mp3");
 }
 
+TEST_CASE("renomear conserva o dentro, e apagar sahe para a lista das listas") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.junta_ao_rol("/a/1.mp3"));
+
+  REQUIRE(navegador.renomeia_rol("  Da tarde  "));
+  // A trilha muda com o nome: sem isso, o titulo da tabella continuava a dizer o
+  // nome velho até se sahir e tornar a entrar.
+  CHECK(navegador.trilha() == std::vector<std::string>{"Da tarde"});
+  CHECK(navegador.nome_do_rol_eleito() == "Da tarde");
+  CHECK(navegador.vista().size() == 1);
+
+  REQUIRE(navegador.apaga_rol());
+  // Apagada a lista em que se estava, não ha dentro onde ficar; e o ALVO vae-se
+  // com ella, que apontar para lista que já não existe faria `a` falhar calado.
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  CHECK(navegador.vista().empty());
+  CHECK(navegador.rol_corrente() == 0);
+  CHECK(navegador.nome_corrente().empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
