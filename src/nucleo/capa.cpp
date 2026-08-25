@@ -137,7 +137,9 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
         while (principio < colhido.size()) {
           const std::size_t fim = colhido.find('\n', principio);
           const std::size_t ate = fim == std::string::npos ? colhido.size() : fim;
-          pintada.linhas.push_back(colhido.substr(principio, ate - principio));
+          pintada.linhas.push_back(
+              analysa_sgr(std::string_view(colhido).substr(principio,
+                                                           ate - principio)));
           if (fim == std::string::npos) break;
           principio = fim + 1;
         }
@@ -152,6 +154,80 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
 }
 
 std::size_t Galeria::quantos_renders() const noexcept { return renders_; }
+
+namespace {
+
+// aplica_sgr — lê UM escape do chafa e assenta a côr na corrida que vem. Sómente os
+// codigos que o chafa emitte: 38;2;R;G;B, 48;2;R;G;B, 39, 49, 0 e 7. Codigo que não se
+// conheça ignora-se, e não se lança: o chafa é ferramenta alheia e pode mudar.
+void aplica_sgr(std::string_view escape, Corrida* corrida) {
+  // O corpo entre `ESC[` e `m`, partido por ponto e virgula.
+  const std::size_t abre = escape.find('[');
+  if (abre == std::string_view::npos) return;
+  std::string_view corpo = escape.substr(abre + 1);
+  if (!corpo.empty() && corpo.back() == 'm') corpo.remove_suffix(1);
+
+  std::vector<int> cifras;
+  std::size_t principio = 0;
+  while (principio <= corpo.size()) {
+    const std::size_t ponto = corpo.find(';', principio);
+    const std::size_t ate = ponto == std::string_view::npos ? corpo.size() : ponto;
+    const std::string pedaco(corpo.substr(principio, ate - principio));
+    cifras.push_back(pedaco.empty() ? 0 : std::atoi(pedaco.c_str()));
+    if (ponto == std::string_view::npos) break;
+    principio = ponto + 1;
+  }
+
+  for (std::size_t i = 0; i < cifras.size(); ++i) {
+    if (cifras[i] == 0) {
+      *corrida = Corrida{corrida->texto, -1, -1, -1, -1, -1, -1};
+    } else if (cifras[i] == 39) {
+      corrida->r_frente = corrida->g_frente = corrida->b_frente = -1;
+    } else if (cifras[i] == 49) {
+      corrida->r_fundo = corrida->g_fundo = corrida->b_fundo = -1;
+    } else if ((cifras[i] == 38 || cifras[i] == 48) && i + 4 < cifras.size() &&
+               cifras[i + 1] == 2) {
+      const bool frente = cifras[i] == 38;
+      int* alvo = frente ? &corrida->r_frente : &corrida->r_fundo;
+      alvo[0] = cifras[i + 2];
+      alvo[1] = cifras[i + 3];
+      alvo[2] = cifras[i + 4];
+      i += 4;
+    }
+  }
+}
+
+}  // namespace
+
+std::vector<Corrida> analysa_sgr(std::string_view linha) {
+  std::vector<Corrida> corridas;
+  Corrida corrente;
+  for (std::size_t i = 0; i < linha.size();) {
+    if (linha[i] != 0x1b) {  // texto: junta-se á corrida corrente
+      // O caracter inteiro, e não o octeto: cortar UTF-8 pelo meio n'uma corrida
+      // poria meio glifo n'um elemento e meio n'outro.
+      std::size_t largura = 1;
+      while (i + largura < linha.size() &&
+             (static_cast<unsigned char>(linha[i + largura]) & 0xC0) == 0x80)
+        ++largura;
+      corrente.texto.append(linha.substr(i, largura));
+      i += largura;
+      continue;
+    }
+    // Um escape: a corrida corrente fecha-se, e a côr nova principia a seguinte.
+    std::size_t fim = i + 1;
+    while (fim < linha.size() && linha[fim] != 'm' && linha[fim] != 0x1b) ++fim;
+    const std::string_view corpo = linha.substr(i, fim - i + 1);
+    if (!corrente.texto.empty()) {
+      corridas.push_back(corrente);
+      corrente.texto.clear();
+    }
+    aplica_sgr(corpo, &corrente);
+    i = fim < linha.size() ? fim + 1 : linha.size();
+  }
+  if (!corrente.texto.empty()) corridas.push_back(corrente);
+  return corridas;
+}
 
 }  // namespace mysong::nucleo
 

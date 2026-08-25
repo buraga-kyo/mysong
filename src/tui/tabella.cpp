@@ -147,13 +147,28 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
                                 std::size_t collunas, std::size_t linhas) {
   if (collunas == 0 || linhas == 0) return ftxui::text("");
   if (capa.achada) {
-    // As linhas do chafa passam INTACTAS, com os seus escapes dentro. O FTXUI não as
-    // interpreta, e é isso que se quer: quem sabe pintar aquella arte é o chafa, e a
-    // nossa parte é sómente não estragar o que elle escreveu.
+    // Cada corrida vira UM elemento com a sua tinta. Não se passa a cadeia crua do
+    // chafa: o FTXUI contaria os octetos do escape como LARGURA, e a capa esmagaria a
+    // barra lateral e a tabella. Medi-o, e está registrado no tractado da capa.
     std::vector<ftxui::Element> pintadas;
     pintadas.reserve(capa.linhas.size());
-    for (const std::string& linha : capa.linhas)
-      pintadas.push_back(ftxui::text(linha));
+    for (const std::vector<nucleo::Corrida>& linha : capa.linhas) {
+      std::vector<ftxui::Element> corridas;
+      corridas.reserve(linha.size());
+      for (const nucleo::Corrida& corrida : linha) {
+        ftxui::Element pedaco = ftxui::text(corrida.texto);
+        if (corrida.r_frente >= 0)
+          pedaco = pedaco | ftxui::color(ftxui::Color::RGB(
+                                corrida.r_frente, corrida.g_frente,
+                                corrida.b_frente));
+        if (corrida.r_fundo >= 0)
+          pedaco = pedaco | ftxui::bgcolor(ftxui::Color::RGB(
+                                corrida.r_fundo, corrida.g_fundo,
+                                corrida.b_fundo));
+        corridas.push_back(std::move(pedaco));
+      }
+      pintadas.push_back(ftxui::hbox(std::move(corridas)));
+    }
     return ftxui::vbox(std::move(pintadas));
   }
 
