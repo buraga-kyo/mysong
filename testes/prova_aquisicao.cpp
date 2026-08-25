@@ -57,5 +57,34 @@ TEST_CASE("o corte pelo comprimento recúa até ao byte lider") {
   }
 }
 
+// resolve — o operador GANHA sempre, e o canal é o ultimo recurso.
+TEST_CASE("o operador ganha da rede, campo a campo") {
+  nu::EtiquetaRemota remota;
+  remota.titulo = "Titulo Da Rede";
+  remota.canal = "Canal Do YouTube";
+  remota.artista = "Artista Da Rede";
+  remota.album = "Album Da Rede";
+  remota.numero = 9;
+
+  nu::Pedido dito;
+  dito.titulo = "Tear";
+  dito.artista = "Ada Lovelace";
+  dito.album = "Máquina";
+  dito.numero = 3;
+  const nu::Pedido meu = nu::resolve(dito, remota);
+  CHECK(meu.titulo == "Tear");
+  CHECK(meu.artista == "Ada Lovelace");
+  CHECK(meu.album == "Máquina");
+  CHECK(meu.numero == 3);
+
+  // Calando o operador, vale a rede; e o artista vem do campo `artist`, e NÃO do
+  // canal, que é o ultimo recurso.
+  const nu::Pedido seu = nu::resolve({}, remota);
+  CHECK(seu.titulo == "Titulo Da Rede");
+  CHECK(seu.artista == "Artista Da Rede");
+  CHECK(seu.album == "Album Da Rede");
+  CHECK(seu.numero == 9);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
