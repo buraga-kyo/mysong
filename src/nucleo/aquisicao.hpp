@@ -94,6 +94,25 @@ std::vector<std::string> argumentos_do_download(
 // campo que a rede não soube dizer.
 EtiquetaRemota le_etiqueta_remota(const std::string& sahida);
 
+// ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
+// elas vivem juntas no fim: o que se prova está acima, o que se não prova está
+// aqui, e o olho vê a fronteira de um relance.
+
+// corre — corre o commando e colhe a sahida. Não ha shell: `execvp` recebe o
+// vector tal e qual. Devolve o codigo de sahida, e menos um se nem se pôde
+// erguer o processo.
+int corre(const std::vector<std::string>& argumentos, std::string* colhido);
+
+// sonda_url — pergunta á rede o que ella sabe da URL. Falso quando o yt-dlp não
+// respondeu; ahi a etiqueta fica como estava.
+bool sonda_url(const std::string& url, EtiquetaRemota* remota);
+
+// baixa — o acto inteiro: resolve, monta o caminho, cria o directorio, chama o
+// yt-dlp, e escreve a etiqueta com a taglib. `gravado` recebe o caminho do
+// arquivo que ficou, quando ficou algum.
+Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
+               std::filesystem::path* gravado);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
