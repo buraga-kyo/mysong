@@ -13,6 +13,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/varredura.hpp"
 
+#include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 #include <taglib/tpropertymap.h>
@@ -171,6 +172,13 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
 bool le_etiqueta(const std::filesystem::path& caminho, Faixa* faixa) {
   TagLib::FileRef arquivo(caminho.c_str());
   if (arquivo.isNull() || arquivo.audioProperties() == nullptr) return false;
+
+  // A TAXA DE AMOSTRAGEM é o discriminante, e não `isValid()`. Medido nesta Casa
+  // sobre um `.txt` renomeado para `.mp3`: `isNull` dá falso, `isValid` dá
+  // VERDADEIRO, e sómente a taxa e a duração sahem em zero. A taglib aceita
+  // abrir o que não é audio e dá-lhe propriedades vazias; audio de verdade nunca
+  // tem taxa zero, e é por ella que se recusa.
+  if (arquivo.audioProperties()->sampleRate() <= 0) return false;
 
   if (const TagLib::Tag* etiqueta = arquivo.tag()) {
     const std::string artista = etiqueta->artist().to8Bit(true);
