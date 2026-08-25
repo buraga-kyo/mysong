@@ -295,5 +295,40 @@ bool Projector::manda_travado(const std::string& linha) {
   return true;
 }
 
+bool Projector::pausada() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return pausada_;
+}
+
+bool Projector::pausar() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (!manda_travado(ordem_de_bandeira("pause", true))) return false;
+  pausada_ = true;
+  return true;
+}
+
+bool Projector::retomar() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (!manda_travado(ordem_de_bandeira("pause", false))) return false;
+  pausada_ = false;
+  return true;
+}
+
+bool Projector::buscar(double segundos) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return manda_travado(ordem_de_busca(segundos < 0.0 ? 0.0 : segundos));
+}
+
+bool Projector::buscar_relativo(double deslocamento) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return manda_travado(ordem_de_busca_relativa(deslocamento));
+}
+
+bool Projector::volume(int porcento) {
+  const int aparado = porcento < 0 ? 0 : (porcento > 100 ? 100 : porcento);
+  std::lock_guard<std::mutex> chave(tranca_);
+  return manda_travado(ordem_de_numero("volume", aparado));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
