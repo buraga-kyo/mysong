@@ -64,6 +64,11 @@ Estaleiro::Estaleiro(std::size_t obreiros, Obra obra) : obra_(std::move(obra)) {
 
 Estaleiro::~Estaleiro() { fecha(); }
 
+void Estaleiro::espera_a_fila() {
+  std::unique_lock<std::mutex> chave(tranca_);
+  sino_.wait(chave, [this] { return espera_.empty() && em_curso_ == 0; });
+}
+
 void Estaleiro::fecha() {
   {
     std::lock_guard<std::mutex> chave(tranca_);
@@ -141,6 +146,9 @@ void Estaleiro::obreiro() {
         ++falhadas_;
       }
     }
+    // Acorda-se TODOS, e não um: quem espera pela fila espera n'este mesmo sino, e
+    // um notify_one poderia acordar sómente um obreiro e deixá-lo dormir para sempre.
+    sino_.notify_all();
   }
 }
 

@@ -77,6 +77,12 @@ class Estaleiro {
   // para que o limite se AFIRA, e não se acredite.
   std::size_t pico() const;
 
+  // espera_a_fila — bloqueia até a fila esvaziar E as obras em voo acabarem. NÃO
+  // fecha o estaleiro: elle continua a aceitar encommenda depois. Existe porque
+  // fecha() ABANDONA a espera, donde encommendar e fechar em seguida perderia obra;
+  // quem quer o desfecho de todas pede este, e sómente depois fecha.
+  void espera_a_fila();
+
   void fecha();  // pára de aceitar, acorda os obreiros e espera-os
 
  private:
