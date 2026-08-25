@@ -202,5 +202,23 @@ TEST_CASE("os argumentos do download não embutem etiqueta, e não sobrescrevem"
   CHECK(tem("/acervo/A/B/01 - T.%(ext)s"));
 }
 
+TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
+  const std::vector<std::string> ditos = nu::argumentos_da_busca("bach", 5);
+  CHECK(ditos.back() == "ytsearch5:bach");
+  CHECK(ditos[ditos.size() - 2] == "--");
+  const auto tem = [&ditos](const std::string& q) {
+    return std::find(ditos.begin(), ditos.end(), q) != ditos.end();
+  };
+  // Sem esta bandeira, buscar dez custa dez sondas de rede: o yt-dlp abriria
+  // cada resultado para lhe ler os formatos.
+  CHECK(tem("--flat-playlist"));
+  // Quatro campos, e nem um a mais: a ordem d'elles é o contracto de le_achados.
+  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 4);
+  // A aparadura pelas duas pontas. Zero não é pedido, e cem não cabe na tabella.
+  CHECK(nu::argumentos_da_busca("x", 0).back() == "ytsearch1:x");
+  CHECK(nu::argumentos_da_busca("x", -3).back() == "ytsearch1:x");
+  CHECK(nu::argumentos_da_busca("x", 100).back() == "ytsearch20:x");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
