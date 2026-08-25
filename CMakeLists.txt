@@ -155,5 +155,25 @@ target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
 # src/tui/janella.cpp, que é da #7. Some quando a #7 chamar o motor de verdade.
 target_sources(mysong PRIVATE src/tui/ancora_do_motor.cpp)
 
+# ─── O DESENHO DO ESPECTRO (issue #6) ───────────────────────────────────────
+# Por target_sources, e NÃO na lista do add_library nem em linha alheia: regra
+# d'esta Casa, e aqui com nome, que as tarefas irmãs mysong-28 e mysong-8 lavram
+# este mesmo arquivo agora. Dependencia nova alguma se cobra: o desenho é conta
+# inteira mais os tokens, e o FTXUI o nucleo já liga em PUBLIC desde a sonda.
+#
+# NOTA DO HOMONYMO: esta fonte chama-se espectro.cpp como a de src/nucleo/, e as
+# duas entram no MESMO alvo. Não collidem porque o CMake dispõe os objectos pelo
+# caminho RELATIVO da fonte, e não pelo nome nú; uma colhe o espectro, a outra
+# o desenha, e o nome é o certo em ambas.
+target_sources(mysong_core PRIVATE src/tui/espectro.cpp)
+
+# A FITA do espectro: a peça que o olho do operador julga, e a sahida cujos bytes
+# se conferem com o grep. Linha de commando, e SEM FTXUI na conta que ella pinta:
+# a fita resolve-se em quadro, e o quadro emitte-se em SGR cru. Alvo proprio, e
+# não a janella: a janella é da issue #7, e esta onda não lhe toca.
+add_executable(fita_espectro exemplos/fita_espectro.cpp)
+target_compile_options(fita_espectro PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(fita_espectro PRIVATE mysong_core)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
