@@ -105,5 +105,27 @@ TEST_CASE("juntar põe no FIM, e a lista sahe na ordem gravada") {
   CHECK_FALSE(roleiro.junta(id, ""));
 }
 
+TEST_CASE("retirar do MEIO fecha o buraco da ordem") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int id = roleiro.cria("Da manhã");
+  for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+    REQUIRE(roleiro.junta(id, qual));
+
+  REQUIRE(roleiro.retira(id, 1));  // o do meio
+  CHECK(roleiro.faixas(id) == std::vector<std::string>{"/a/1.mp3", "/a/3.mp3"});
+  // O BURACO fechou-se: juntar outra põe na ordem 2, e não na 3. Se o buraco
+  // ficasse, mover para cima teria de adivinhar quem é o vizinho.
+  REQUIRE(roleiro.junta(id, "/a/4.mp3"));
+  REQUIRE(roleiro.troca(id, 1, 2));
+  CHECK(roleiro.faixas(id) ==
+        std::vector<std::string>{"/a/1.mp3", "/a/4.mp3", "/a/3.mp3"});
+  // Ordem que não existe não se retira, e a lista fica como estava: a transacção
+  // desfaz-se, e não deixa a renumeração meia.
+  CHECK_FALSE(roleiro.retira(id, 9));
+  CHECK(roleiro.faixas(id) ==
+        std::vector<std::string>{"/a/1.mp3", "/a/4.mp3", "/a/3.mp3"});
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
