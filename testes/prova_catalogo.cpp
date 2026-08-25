@@ -36,7 +36,43 @@ constexpr char kPagina[] = R"(<html><body>
  ]}}}}},"page":"/playlist/[id]"}
 </script></body></html>)";
 
+nu::Achado faz(const std::string& titulo, int duracao) {
+  nu::Achado achado;
+  achado.titulo = titulo;
+  achado.canal = "Um Canal";
+  achado.duracao = duracao;
+  achado.url = "https://y/" + titulo;
+  return achado;
+}
+
 }  // namespace
+
+TEST_CASE("o identificador sahe das tres fórmas que o Spotify dá") {
+  CHECK(nu::id_da_playlist(
+            "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M") ==
+        "37i9dQZF1DXcBWIGoYBM5M");
+  // Com o `?si=` que o Spotify pendura em toda ligação que se copia: o
+  // identificador acaba no `?`, e não o leva consigo.
+  CHECK(nu::id_da_playlist(
+            "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=abc") ==
+        "37i9dQZF1DXcBWIGoYBM5M");
+  CHECK(nu::id_da_playlist("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M") ==
+        "37i9dQZF1DXcBWIGoYBM5M");
+  CHECK(nu::id_da_playlist(
+            "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M") ==
+        "37i9dQZF1DXcBWIGoYBM5M");
+
+  // O que NÃO é playlist não dá identificador: album e faixa são outra cousa, e
+  // baixar um album como se fosse lista daria lista de uma faixa só.
+  CHECK(nu::id_da_playlist("https://open.spotify.com/album/1234").empty());
+  CHECK(nu::id_da_playlist("https://open.spotify.com/track/1234").empty());
+  CHECK(nu::id_da_playlist("nao sou url").empty());
+  CHECK(nu::id_da_playlist("").empty());
+  // `playlist` sem SEPARADOR depois não vale: é palavra dentro de outra, e sem esta
+  // exigencia `playlistabc` daria o identificador «bc», que é lixo que parece bom.
+  CHECK(nu::id_da_playlist("https://exemplo/playlistabc").empty());
+  CHECK(nu::id_da_playlist("https://exemplo/playlists/abc").empty());
+}
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
