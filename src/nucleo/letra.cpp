@@ -38,6 +38,43 @@ std::string escapa_para_url(std::string_view crua) {
   return obra;
 }
 
+std::string url_da_busca(std::string_view artista, std::string_view titulo) {
+  std::string url = "https://lrclib.net/api/search?track_name=";
+  url += escapa_para_url(titulo);
+  if (!artista.empty()) {
+    url += "&artist_name=";
+    url += escapa_para_url(artista);
+  }
+  return url;
+}
+
+std::string primeiro_objecto(std::string_view arranjo) {
+  std::size_t principio = arranjo.find('{');
+  if (principio == std::string_view::npos) return {};
+  int fundo = 0;
+  bool dentro_de_aspas = false, escapado = false;
+  for (std::size_t i = principio; i < arranjo.size(); ++i) {
+    const char octeto = arranjo[i];
+    // A ordem d'estas tres guardas é load-bearing. O escapado consome-se antes de
+    // tudo; as aspas mudam o modo; e sómente FÓRA das aspas as chaves contam. Sem
+    // isto, uma letra de musica que traga `}` fecharia o objecto a meio.
+    if (escapado) { escapado = false; continue; }
+    if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+    if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
+    if (dentro_de_aspas) continue;
+    if (octeto == '{') ++fundo;
+    else if (octeto == '}' && --fundo == 0)
+      return std::string(arranjo.substr(principio, i - principio + 1));
+  }
+  return {};  // arranjo truncado: não se devolve objecto meio, devolve-se nada
+}
+
+std::filesystem::path caminho_do_lrc(const std::filesystem::path& audio) {
+  std::filesystem::path lrc = audio;
+  lrc.replace_extension(".lrc");
+  return lrc;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
