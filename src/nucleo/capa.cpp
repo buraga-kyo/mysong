@@ -203,15 +203,15 @@ std::vector<Corrida> analysa_sgr(std::string_view linha) {
   std::vector<Corrida> corridas;
   Corrida corrente;
   for (std::size_t i = 0; i < linha.size();) {
-    if (linha[i] != 0x1b) {  // texto: junta-se á corrida corrente
-      // O caracter inteiro, e não o octeto: cortar UTF-8 pelo meio n'uma corrida
-      // poria meio glifo n'um elemento e meio n'outro.
-      std::size_t largura = 1;
-      while (i + largura < linha.size() &&
-             (static_cast<unsigned char>(linha[i + largura]) & 0xC0) == 0x80)
-        ++largura;
-      corrente.texto.append(linha.substr(i, largura));
-      i += largura;
+    if (linha[i] != 0x1b) {  // texto: junta-se, octeto a octeto, á corrida corrente
+      // Octeto a octeto BASTA, e o multibyte não pede cuidado algum: acumulando-se
+      // contiguamente na mesma cadeia, tomar um octeto ou tres dá o mesmo resultado,
+      // e o caracter sómente se poderia partir se a corrida fechasse a meio d'elle,
+      // o que não acontece porque sómente um escape a fecha e escape nunca vem no
+      // meio de um caracter. Escrevi primeiro o laço que junta as continuações, e a
+      // mutação provou-o inutil: tirá-lo não mata caso algum.
+      corrente.texto += linha[i];
+      ++i;
       continue;
     }
     // Um escape: a corrida corrente fecha-se, e a côr nova principia a seguinte.
