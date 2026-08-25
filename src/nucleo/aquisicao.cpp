@@ -178,6 +178,18 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {
   return remota;
 }
 
+std::string_view razao_da_colheita(Colheita colheita) {
+  switch (colheita) {
+    case Colheita::Colhido: return "baixado";
+    case Colheita::SemFerramenta: return "falta o yt-dlp: uv tool install yt-dlp";
+    case Colheita::UrlRecusada: return "o yt-dlp não leu essa URL";
+    case Colheita::JaExiste: return "essa faixa já está no acervo";
+    case Colheita::FalhouAoBaixar: return "o download falhou";
+    case Colheita::FalhouAEtiqueta: return "baixou, mas a etiqueta não se escreveu";
+  }
+  return "desfecho sem nome";
+}
+
 int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
   if (argumentos.empty()) return -1;
   int cano[2] = {-1, -1};

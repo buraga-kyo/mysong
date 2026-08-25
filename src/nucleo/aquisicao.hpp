@@ -94,6 +94,11 @@ std::vector<std::string> argumentos_do_download(
 // campo que a rede não soube dizer.
 EtiquetaRemota le_etiqueta_remota(const std::string& sahida);
 
+// razao_da_colheita — a palavra que se mostra ao operador. Vive aqui, e não na
+// tela, para que quem acrescente um desfecho seja obrigado a nomeá-lo: o `switch`
+// é exhaustivo, e desfecho novo sem palavra não compila.
+std::string_view razao_da_colheita(Colheita colheita);
+
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
 // aqui, e o olho vê a fronteira de um relance.
