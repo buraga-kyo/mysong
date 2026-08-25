@@ -271,6 +271,39 @@ constexpr const char* kIntrospecção =
 
 }  // namespace
 
+namespace {
+
+// responde_get_all — o `a{sv}` de TODAS as propriedades de uma interface. O
+// `playerctl` chama-o antes de chamar `Get`, e uma Casa que sómente saiba `Get`
+// parece muda a elle.
+void responde_get_all(DBusMessage* resposta, const std::string& interface,
+                      nucleo::Tocador& tocador) {
+  static const char* kDaRaiz[] = {"Identity", "DesktopEntry", "CanQuit",
+                                  "CanRaise", "HasTrackList"};
+  static const char* kDoTocador[] = {
+      "PlaybackStatus", "Metadata",   "Position",  "Volume",     "Rate",
+      "MinimumRate",    "MaximumRate", "CanGoNext", "CanGoPrevious",
+      "CanPlay",        "CanPause",   "CanSeek",   "CanControl"};
+
+  DBusMessageIter fóra, mapa;
+  dbus_message_iter_init_append(resposta, &fóra);
+  dbus_message_iter_open_container(&fóra, DBUS_TYPE_ARRAY, "{sv}", &mapa);
+  const bool raiz = interface == kRaiz;
+  const std::size_t quantas = raiz ? 5u : 13u;
+  for (std::size_t i = 0; i < quantas; ++i) {
+    const char* nome = raiz ? kDaRaiz[i] : kDoTocador[i];
+    DBusMessageIter entrada;
+    dbus_message_iter_open_container(&mapa, DBUS_TYPE_DICT_ENTRY, nullptr,
+                                     &entrada);
+    dbus_message_iter_append_basic(&entrada, DBUS_TYPE_STRING, &nome);
+    escreve_propriedade(&entrada, interface, nome, tocador);
+    dbus_message_iter_close_container(&mapa, &entrada);
+  }
+  dbus_message_iter_close_container(&fóra, &mapa);
+}
+
+}  // namespace
+
 struct CasaDoMpris::Punho {
   nucleo::Tocador& tocador;
   DBusConnection* ligacao = nullptr;
