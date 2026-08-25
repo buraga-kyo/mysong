@@ -143,6 +143,37 @@ ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas
   return ftxui::vbox(std::move(pintadas));
 }
 
+ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
+                                std::size_t collunas, std::size_t linhas) {
+  if (collunas == 0 || linhas == 0) return ftxui::text("");
+  if (capa.achada) {
+    // As linhas do chafa passam INTACTAS, com os seus escapes dentro. O FTXUI não as
+    // interpreta, e é isso que se quer: quem sabe pintar aquella arte é o chafa, e a
+    // nossa parte é sómente não estragar o que elle escreveu.
+    std::vector<ftxui::Element> pintadas;
+    pintadas.reserve(capa.linhas.size());
+    for (const std::string& linha : capa.linhas)
+      pintadas.push_back(ftxui::text(linha));
+    return ftxui::vbox(std::move(pintadas));
+  }
+
+  // O MARCADOR: uma nota musical no meio de um quadro de orla, com os tokens d'esta
+  // Casa. Não é enfeite: album sem capa mostra que NÃO TEM, e não um buraco que o
+  // operador tomaria por falha da tela.
+  std::vector<ftxui::Element> pintadas;
+  const std::size_t meio = linhas / 2;
+  for (std::size_t l = 0; l < linhas; ++l) {
+    if (l == meio) {
+      const std::size_t esquerda = collunas > 1 ? (collunas - 1) / 2 : 0;
+      pintadas.push_back(pinta(std::string(esquerda, ' ') + "\u266b",
+                               tokens::text_faint));
+    } else {
+      pintadas.push_back(pinta(std::string(collunas, ' '), tokens::inset));
+    }
+  }
+  return ftxui::vbox(std::move(pintadas)) | ftxui::border;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

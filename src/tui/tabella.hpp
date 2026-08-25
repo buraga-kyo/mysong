@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/capa.hpp"
 #include "nucleo/letra.hpp"
 #include "tui/navegador.hpp"
 
@@ -41,6 +42,12 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
 ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
                                  int corrente, std::size_t altura,
                                  std::size_t largura);
+
+// A CAPA no painel (issue #16). Achada, pinta-se linha a linha, com os escapes que o
+// chafa produziu passados intactos. Não achada, desenha-se o MARCADOR com os tokens
+// d'esta Casa: um buraco não diz nada, e o marcador diz «este album não tem capa».
+ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
+                                std::size_t collunas, std::size_t linhas);
 
 }  // namespace mysong::tui
 
