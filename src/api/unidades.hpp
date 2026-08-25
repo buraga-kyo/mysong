@@ -22,6 +22,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -57,6 +58,20 @@ int volume_para_porcento(double volume);
 // estado_do_mpris — as cadeias que a especificação fixa, e essas exactas. Não são
 // nomes de gosto: cliente que leia «Tocando» não sabe o que fazer com ella.
 std::string_view estado_do_mpris(nucleo::Estado estado);
+
+// caminho_da_faixa — o `mpris:trackid`, que é caminho de objecto D-Bus e não cadeia
+// livre: sómente letras, digitos e sublinhado nos segmentos, e ha de principiar por
+// barra. O indice da fila serve de identidade, e o prefixo é o d'esta Casa.
+//
+// Fila vazia dá `/org/mpris/MediaPlayer2/TrackList/NoTrack`, que é o que a
+// especificação manda para «não ha faixa». Inventar um caminho alli faria o cliente
+// crer que ha faixa e pedir-lhe metadados que não existem.
+std::string caminho_da_faixa(std::size_t indice, bool ha_faixa);
+
+// url_do_arquivo — o `xesam:url`: `file://` mais o caminho com percent-encoding. Não
+// se escapa a barra, que ella é a estructura do caminho; escapa-se tudo o mais que não
+// seja do arco livre do RFC 3986.
+std::string url_do_arquivo(std::string_view caminho);
 
 }  // namespace mysong::api
 
