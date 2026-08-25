@@ -54,6 +54,7 @@
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/rol.hpp"
+#include "nucleo/video.hpp"
 #include "nucleo/tocador.hpp"
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
@@ -100,6 +101,16 @@ std::filesystem::path caminho_das_listas(const std::filesystem::path& indice) {
   return indice.parent_path() / "rol.sqlite3";
 }
 
+// raiz_do_soquete — onde o soquete de commando da janella do video mora.
+// `$XDG_RUNTIME_DIR` primeiro, que é o logar que o systema apaga ao fim da sessão;
+// `/tmp` sem elle, que soquete tem de morar em algum logar e recusar abrir video
+// por falta de directorio de tempo seria recusa que ninguem entende.
+std::filesystem::path raiz_do_soquete() {
+  const char* posto = std::getenv("XDG_RUNTIME_DIR");
+  if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
+  return std::filesystem::path("/tmp");
+}
+
 // raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
 // que o operador com monte de rede não tenha de mover o acervo para casa.
 std::filesystem::path raiz_do_acervo() {
@@ -133,7 +144,8 @@ constexpr int ACHADOS_POR_BUSCA = 15;
 // no fio da tela, e cadeia lida enquanto outro fio a muta não é engano benigno.
 std::string assignatura_do_visivel(nucleo::Tocador& tocador,
                                    const std::string& recado, bool mostra_letra,
-                                   bool varrida, unsigned long geracao) {
+                                   bool varrida, unsigned long geracao,
+                                   bool video) {
   std::string marca;
   marca.reserve(128);
   marca += std::to_string(static_cast<int>(tocador.estado()));
@@ -166,14 +178,23 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   // nada apparecia até o operador carregar n'uma tecla por acaso.
   marca += ':';
   marca += std::to_string(geracao);
+  // A janella do video acaba POR SI quando a faixa acaba, ou quando o operador a
+  // fecha com o rato. Nenhuma d'essas duas cousas é tecla, donde sem esta linha a
+  // trilha continuaria a dizer «video: tal» depois de a janella se ter ido.
+  marca += video ? 'V' : '.';
   return marca;
 }
 
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
 // pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
 // poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
-tui::Retracto retracto_do(nucleo::Tocador& tocador) {
+tui::Retracto retracto_do(nucleo::Tocador& tocador,
+                          nucleo::Projector& projector) {
   tui::Retracto retracto;
+  // A janella entra no retracto, e não n'uma consulta á parte: a taboada das teclas
+  // é funcção PURA do retracto, e o que ella não vê n'elle não pode governar.
+  retracto.video = projector.rodando();
+  retracto.video_pausada = projector.pausada();
   retracto.estado = tocador.estado();
   retracto.posicao = tocador.posicao();
   retracto.duracao = tocador.duracao();
@@ -189,16 +210,37 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador) {
 
 // cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
 // na taboada acende aviso do compilador aqui, e não passa calado.
+// O ROTEAMENTO das ordens de transporte. Havendo janella de video de pé, é ELLA
+// que pausa, retoma, busca e muda de volume: o motor de audio está calado, e mandar
+// a ordem a quem está calado seria a tecla não fazer nada. Sem janella, vae ao
+// motor, que é o caminho de sempre.
 void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
-             std::atomic<bool>& sahir) {
+             nucleo::Projector& projector, std::atomic<bool>& sahir) {
+  const bool na_janella = projector.rodando();
   switch (ordem.verbo) {
     case tui::Verbo::Nada: break;
-    case tui::Verbo::Pausar: tocador.pausar(); break;
-    case tui::Verbo::Retomar: tocador.retomar(); break;
+    case tui::Verbo::Pausar:
+      if (na_janella) projector.pausar();
+      else tocador.pausar();
+      break;
+    case tui::Verbo::Retomar:
+      if (na_janella) projector.retomar();
+      else tocador.retomar();
+      break;
     case tui::Verbo::Proxima: tocador.proxima(); break;
     case tui::Verbo::Anterior: tocador.anterior(); break;
-    case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
-    case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
+    case tui::Verbo::Buscar:
+      if (na_janella) {
+        if (ordem.relativo) projector.buscar_relativo(ordem.alvo);
+        else projector.buscar(ordem.alvo);
+      } else {
+        tocador.buscar(ordem.alvo);
+      }
+      break;
+    case tui::Verbo::Volume:
+      if (na_janella) projector.volume(static_cast<int>(ordem.alvo));
+      else tocador.volume(static_cast<int>(ordem.alvo));
+      break;
     case tui::Verbo::Sahir: sahir.store(true); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
@@ -222,6 +264,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::RetiraDoRol:
     case tui::Verbo::SobeNoRol:
     case tui::Verbo::DesceNoRol:
+    case tui::Verbo::AbreVideo:
       break;
   }
 }
@@ -273,6 +316,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   const std::filesystem::path banco = caminho_do_indice();
   nucleo::Biblioteca livraria(banco);
   nucleo::Roleiro roleiro(caminho_das_listas(banco));
+  // O PROJECTOR do video. Vive nesta pilha, e o destructor d'elle FECHA a janella:
+  // é isso que faz `pgrep` sahir vazio depois de a TUI fechar.
+  nucleo::Projector projector(raiz_do_soquete());
   tui::Navegador navegador(livraria, &roleiro);
   std::atomic<bool> varrida{false};
   // O PEDIDO de varredura e o AVISO de que o acervo mudou. Bandeiras, e não fio novo
@@ -408,7 +454,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       livraria.reabre();
       navegador.recarrega();
     }
-    const tui::Retracto retracto = retracto_do(tocador);
+    const tui::Retracto retracto = retracto_do(tocador, projector);
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
@@ -454,6 +500,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     if (navegador.rol_corrente() != 0 &&
         navegador.secao() != tui::Secao::NoRol)
       trilha += "   [\ue0b1 " + navegador.nome_corrente() + "]";
+    // A janella do video diz-se enquanto ella viver. Deixando de viver, a linha
+    // cala-se por si: é a pergunta ao processo que o diz, e não bandeira nossa que
+    // pudesse ficar a mentir.
+    if (projector.rodando())
+      trilha += "   [video: " + projector.faixa().filename().string() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
     if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
@@ -490,7 +541,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
                            " · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
-                           " · K/J move · R renomeia · D apaga · q sahe") |
+                           " · K/J move · R renomeia · D apaga · v video"
+                           " · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -563,7 +615,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
 
     const tui::Ordem ordem =
-        tui::ordem_da_tecla(tecla, retracto_do(tocador), false);
+        tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
       case tui::Verbo::Nada: return false;  // tecla alheia segue
       case tui::Verbo::Desce: navegador.desce(); return true;
@@ -582,6 +634,27 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       case tui::Verbo::TrocaLetra:
         mostra_letra.store(!mostra_letra.load());
         return true;
+      case tui::Verbo::AbreVideo: {
+        // O AUDIO CALA-SE PRIMEIRO, e sómente depois a janella abre. Nesta ordem,
+        // e não na contraria: abrindo primeiro, ha um instante com os dous a tocar,
+        // e é justamente o dobro que a tarefa proibe.
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty()) {
+          aviso_da_rede = "elege uma faixa primeiro";
+          return true;
+        }
+        if (!nucleo::tem_video(qual)) {
+          aviso_da_rede = std::string(nucleo::razao_da_fita(
+              nucleo::Fita::SemVideo));
+          return true;
+        }
+        tocador.pausar();
+        const nucleo::Fita fita = projector.abre(qual);
+        aviso_da_rede = fita == nucleo::Fita::Rodando
+                            ? std::string()
+                            : std::string(nucleo::razao_da_fita(fita));
+        return true;
+      }
       case tui::Verbo::AbreProcura:
         digita = Digita::Procura;
         termo_em_curso.clear();
@@ -671,7 +744,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         return true;
       }
       default:
-        cumprir(ordem, tocador, sahir);
+        cumprir(ordem, tocador, projector, sahir);
         if (sahir.load()) tela.Exit();
         return true;
     }
@@ -693,7 +766,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       // tela escreve zero: é a correcção da issue #48.
       const std::string agora = assignatura_do_visivel(
           tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
-          mostra_letra.load(), varrida.load(), correio.geracao());
+          mostra_letra.load(), varrida.load(), correio.geracao(),
+          projector.rodando());
       if (agora != ultima_assignatura) {
         ultima_assignatura = agora;
         tela.PostEvent(ftxui::Event::Custom);

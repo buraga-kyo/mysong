@@ -13,6 +13,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/varredura.hpp"
 
+#include "nucleo/video.hpp"
+
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
@@ -154,7 +156,7 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
       continue;
     }
     if (!entrada.is_regular_file(erro) || erro) { erro.clear(); continue; }
-    if (!extensao_de_audio(entrada.path().extension().string())) {
+    if (!extensao_que_interessa(entrada.path().extension().string())) {
       ++progresso->recusadas;
       continue;
     }
@@ -233,8 +235,15 @@ bool trata_arquivo(const Achado& achado, Biblioteca& antigo, Escriba& escriba,
   faixa.modificado = marca;
   faixa.tamanho = static_cast<std::int64_t>(tamanho);
   if (!le_etiqueta(caminho, &faixa)) {
-    ++progresso->recusadas;  // tem extensão de audio, mas não é audio
-    return true;
+    // Faixa de VIDEO entra ainda que a taglib a recuse, e o `.mkv` recusa-se
+    // sempre: a taglib não lê Matroska, e chamar-lhe «não é audio» seria mentir. O
+    // que entra é o que o CAMINHO diz, sem etiqueta que se lhe sobreponha, e a
+    // duração fica em zero. Fica declarado: a tabella mostra tempo vazio para
+    // video, e medi-lo pediria um processo por arquivo em cada varredura.
+    if (!extensao_com_video(caminho.extension().string())) {
+      ++progresso->recusadas;  // tem extensão de audio, mas não é audio
+      return true;
+    }
   }
   ++progresso->lidas;
   return escriba.grava(faixa);
@@ -244,6 +253,10 @@ bool extensao_de_audio(std::string_view extensao) {
   const std::string baixa = minuscula(extensao);
   return std::find(std::begin(kExtensoes), std::end(kExtensoes), baixa) !=
          std::end(kExtensoes);
+}
+
+bool extensao_que_interessa(std::string_view extensao) {
+  return extensao_de_audio(extensao) || extensao_com_video(extensao);
 }
 
 Varredura::Varredura(std::filesystem::path banco,

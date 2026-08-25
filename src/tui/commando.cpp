@@ -44,6 +44,11 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   // tela não guarda estado em duplicata, donde não ha como ella e o motor
   // discordarem sobre quem está a tocar.
   if (tecla == ftxui::Event::Character(' ')) {
+    // A JANELLA do video ganha do motor. Estando ella de pé, o motor está calado, e
+    // ler o estado d'elle daria Ordem::Nada com a janella a tocar: a tecla não
+    // pausava nada, e o operador teclava duas vezes a pensar que falhara.
+    if (retracto.video)
+      return {retracto.video_pausada ? Verbo::Retomar : Verbo::Pausar, 0.0};
     if (retracto.estado == nucleo::Estado::Tocando) return {Verbo::Pausar, 0.0};
     if (retracto.estado == nucleo::Estado::Pausado) return {Verbo::Retomar, 0.0};
     return {Verbo::Nada, 0.0};  // parado: não ha o que pausar nem retomar
@@ -56,12 +61,20 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   // menus com a seta esquerda e o que ella fazia era buscar no som; navegar por seta é o
   // que a mão espera n'uma arvore de tres degraus, e buscar acha-se em `,` e `.` sem
   // sahir da linha de casa.
-  if (tecla == ftxui::Event::Character('.'))
+  //
+  // Havendo janella de video, a busca sahe RELATIVA: d'ella não se sabe a posição
+  // sem lhe perguntar pelo soquete e esperar resposta, e o que a tecla quer dizer
+  // é «cinco segundos adeante». No motor, absoluta como sempre.
+  if (tecla == ftxui::Event::Character('.')) {
+    if (retracto.video) return {Verbo::Buscar, PASSO_DA_BUSCA, true};
     return {Verbo::Buscar,
             aparar_busca(retracto.posicao + PASSO_DA_BUSCA, retracto.duracao)};
-  if (tecla == ftxui::Event::Character(','))
+  }
+  if (tecla == ftxui::Event::Character(',')) {
+    if (retracto.video) return {Verbo::Buscar, -PASSO_DA_BUSCA, true};
     return {Verbo::Buscar,
             aparar_busca(retracto.posicao - PASSO_DA_BUSCA, retracto.duracao)};
+  }
 
   if (tecla == ftxui::Event::Character('+'))
     return {Verbo::Volume, static_cast<double>(
@@ -104,6 +117,10 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   if (tecla == ftxui::Event::Character('t')) return {Verbo::RetiraDoRol, 0.0};
   if (tecla == ftxui::Event::Character('K')) return {Verbo::SobeNoRol, 0.0};
   if (tecla == ftxui::Event::Character('J')) return {Verbo::DesceNoRol, 0.0};
+
+  // O `v` de video. Minuscula porque não estraga cousa gravada: abre janella, e
+  // fechá-la não perde nada.
+  if (tecla == ftxui::Event::Character('v')) return {Verbo::AbreVideo, 0.0};
 
   return {Verbo::Nada, 0.0};
 }

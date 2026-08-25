@@ -184,12 +184,29 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `a` | junta a faixa eleita a lista alvo |
 | `t` | retira o item eleito da lista |
 | `K` / `J` | move o item para cima, para baixo |
+| `v` | abre a faixa eleita em janella de video |
 | `q` | sahe |
 
 Duas buscas ha, e ellas nao sao a mesma: o `/` FILTRA o que esta a vista, sem
 tocar a rede; o `s` PERGUNTA ao YouTube. Na secção NET, Enter encommenda a baixa
 do achado eleito, e duas baixas correm ao mesmo tempo no maximo: as demais
 esperam, e a linha do titulo diz quantas correm e quantas esperam.
+
+### O video
+
+Faixa de video abre em janella PROPRIA do systema, e não dentro do terminal: a
+propria documentacao do mpv diz que a sahida grafica delle nao sincroniza com o
+resto do terminal. E a janella nasce com classe propria, `mysong-video`, nas duas
+formas (`--x11-name` e `--wayland-app-id`), para o RADICAL-OS a governar por regra.
+
+O audio NAO dobra: `v` cala o motor ANTES de a janella abrir. Enquanto ella viver,
+as teclas de transporte governam-na e nao o motor: espaco pausa a janella, `,` e
+`.` buscam nella. Fechando-a, o commando volta ao motor por si.
+
+A varredura passou a indexar as extensoes de video, e nao so as de audio: faixa que
+nao esta no indice nao se pode eleger. O `.mkv` entra pelo que o CAMINHO diz, sem
+etiqueta: a taglib nao le Matroska, e por isso a duracao delle fica em zero e a
+tabella mostra tempo vazio.
 
 ### As listas
 

@@ -272,3 +272,9 @@ target_sources(mysong_core PRIVATE src/tui/correio.cpp)
 # por temporario e rename, e taboa de lista lá dentro sahiria com a varredura.
 # Dependencia nova alguma: o sqlite3 já entrou com a bibliotheca na issue #8.
 target_sources(mysong_core PRIVATE src/nucleo/rol.cpp)
+
+# ─── O VÍDEO EM JANELLA PROPRIA (issue #17) ─────────────────────────────────
+# Segunda instancia de mpv, em processo proprio, governada por soquete de commando.
+# Dependencia de bibliotheca nova alguma: o soquete é POSIX, e o mpv corre por
+# fork e exec, como o yt-dlp da issue #11 e o chafa da #16.
+target_sources(mysong_core PRIVATE src/nucleo/video.cpp)

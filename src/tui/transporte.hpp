@@ -42,6 +42,12 @@ struct Retracto {
   std::string titulo;
   std::size_t indice = 0;
   std::size_t tamanho = 0;
+  // A JANELLA do video (issue #17). Estando ella de pé, as teclas de transporte
+  // governam-na, e não o motor de audio, que está calado. Sem estes dous campos, o
+  // espaço lia o estado do MOTOR: motor parado dava Ordem::Nada, e a tecla não
+  // pausava nada. Foi defeito medido n'um pty, e não suposto.
+  bool video = false;
+  bool video_pausada = false;
 };
 
 // mm_ss — segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não
