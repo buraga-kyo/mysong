@@ -43,5 +43,31 @@ constexpr char kEsquemaDoRol[] =
     "  ordem INTEGER NOT NULL, caminho TEXT NOT NULL,"
     "  PRIMARY KEY (rol, ordem));";
 
+// corre — a consulta com os inteiros amarrados primeiro e as cadeias depois. A
+// ordem é FIXA e a consulta acomoda-se a ella pelo indice explicito do SQLite,
+// `?1`, `?2`: assim a mesma amarração serve consulta que repita o mesmo valor em
+// tres logares, e não se conta ponto de interrogação á mão.
+bool corre(sqlite3* punho, const char* sql,
+           const std::vector<int>& numeros,
+           const std::vector<std::string>& cadeias,
+           const std::function<void(sqlite3_stmt*)>& cinzel = nullptr) {
+  if (punho == nullptr) return false;
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho, sql, -1, &passo, nullptr) != SQLITE_OK)
+    return false;
+  int alvo = 1;
+  for (const int numero : numeros) sqlite3_bind_int(passo, alvo++, numero);
+  for (const std::string& cadeia : cadeias)
+    sqlite3_bind_text(passo, alvo++, cadeia.c_str(),
+                      static_cast<int>(cadeia.size()), SQLITE_TRANSIENT);
+  int veredicto = sqlite3_step(passo);
+  while (veredicto == SQLITE_ROW) {
+    if (cinzel) cinzel(passo);
+    veredicto = sqlite3_step(passo);
+  }
+  sqlite3_finalize(passo);
+  return veredicto == SQLITE_DONE;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
