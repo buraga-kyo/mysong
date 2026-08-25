@@ -43,6 +43,35 @@ std::string apara(std::string_view crua) {
 
 }  // namespace
 
+std::string saneia_nome(std::string_view crua) {
+  std::string limpo;
+  limpo.reserve(crua.size());
+  for (const char letra : crua) {
+    // A BARRA e o NUL são os dous unicos octetos que o kernel proscreve n'um
+    // componente de caminho. Trocam-se, e não se apagam: apagar collaria
+    // «AC/DC» em «ACDC», e o operador não reconheceria o que pediu.
+    if (letra == '/') { limpo += '-'; continue; }
+    if (letra == '\0') continue;
+    limpo += letra;
+  }
+  limpo = apara(limpo);
+  // Ponto inicial faz arquivo occulto, e faixa que se esconde do operador é
+  // faixa perdida. `..` seria pior: subiria um degrau na hierarchia.
+  while (!limpo.empty() && limpo.front() == '.') limpo.erase(limpo.begin());
+  limpo = apara(limpo);
+  if (limpo.size() > kMaxComponente) {
+    limpo.resize(kMaxComponente);
+    // Cortar por octeto pode partir um caracter UTF-8 pelo meio. Recúa-se até ao
+    // byte lider, que é melhor que gravar um nome com meio caracter dentro.
+    while (!limpo.empty() &&
+           (static_cast<unsigned char>(limpo.back()) & 0xC0) == 0x80)
+      limpo.pop_back();
+    if (!limpo.empty()) limpo.pop_back();
+    limpo = apara(limpo);
+  }
+  return limpo.empty() ? std::string("sem titulo") : limpo;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
