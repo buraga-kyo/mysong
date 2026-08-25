@@ -106,6 +106,12 @@ class Biblioteca {
 
   bool aberta() const noexcept;
 
+  // Fecha e reabre o mesmo caminho. É NECESSARIO, e não commodidade: o Escriba
+  // substitue o índice por RENAME, donde o punho aberto continua a apontar para
+  // o inode antigo e a leitura devolveria para sempre o acervo de antes da
+  // varredura. Quem varre chama isto quando a varredura conclue.
+  void reabre();
+
   // A versão do esquema que está em disco. Zero quando não ha banco, ou quando
   // o que ha não tem taboa de versão que se possa ler.
   int versao() const noexcept;
