@@ -11,6 +11,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/letra.hpp"
 
+#include <curl/curl.h>
+
 #include <cctype>
 #include <cstdio>
 #include <fstream>
@@ -93,6 +95,50 @@ Letra le_resposta(std::string_view corpo) {
   if (plana != nullptr && plana->typo == api::Typo::Texto)
     letra.plana = plana->texto;
   return letra;
+}
+
+bool grava_lrc(const std::filesystem::path& audio, const Letra& letra) {
+  if (letra.sincronizada.empty()) return false;
+  const std::filesystem::path onde = caminho_do_lrc(audio);
+  std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
+  if (!sahida) return false;
+  sahida << letra.sincronizada;
+  if (letra.sincronizada.back() != '\n') sahida << '\n';
+  return sahida.good();
+}
+
+namespace {
+
+// recolhe — o que o libcurl entrega, pedaço a pedaço. Assignatura fixada por elle.
+std::size_t recolhe(char* pedaco, std::size_t largura, std::size_t quantos,
+                    void* alvo) {
+  const std::size_t medida = largura * quantos;
+  static_cast<std::string*>(alvo)->append(pedaco, medida);
+  return medida;
+}
+
+}  // namespace
+
+bool busca_letra(std::string_view artista, std::string_view titulo,
+                 Letra* letra) {
+  if (titulo.empty()) return false;
+  CURL* punho = curl_easy_init();
+  if (punho == nullptr) return false;
+  const std::string url = url_da_busca(artista, titulo);
+  std::string corpo;
+  curl_easy_setopt(punho, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(punho, CURLOPT_WRITEFUNCTION, recolhe);
+  curl_easy_setopt(punho, CURLOPT_WRITEDATA, &corpo);
+  curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
+  // Oito segundos, e não sem prazo: quem baixa uma faixa não ha de esperar por um
+  // serviço de letra mais do que isso, e serviço mudo pendura o download inteiro.
+  curl_easy_setopt(punho, CURLOPT_TIMEOUT, 8L);
+  curl_easy_setopt(punho, CURLOPT_USERAGENT, "mysong/0.1 (+github.com/bragaus/mysong)");
+  const CURLcode desfecho = curl_easy_perform(punho);
+  curl_easy_cleanup(punho);
+  if (desfecho != CURLE_OK) return false;
+  if (letra != nullptr) *letra = le_resposta(corpo);
+  return true;
 }
 
 }  // namespace mysong::nucleo
