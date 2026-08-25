@@ -67,6 +67,9 @@ target_sources(mysong_testes PRIVATE prova_transporte.cpp prova_commando.cpp)
 # ─── A PROVA DA VARREDURA (issue #34) ───────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_varredura.cpp)
 
+# ─── A PROVA DA NAVEGAÇÃO (issue #9) ────────────────────────────────────────
+target_sources(mysong_testes PRIVATE prova_navegador.cpp)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
