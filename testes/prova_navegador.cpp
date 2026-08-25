@@ -198,5 +198,23 @@ TEST_CASE("o eleito apara-se quando a vista encurta") {
   CHECK(navegador.vista()[navegador.eleito()].texto == "Bach");
 }
 
+// O termo NÃO se herda ao descer: filtrar por «ada» e entrar mostra os albuns
+// TODOS d'ella, e não sómente os que casassem com «ada».
+TEST_CASE("o termo não se herda ao descer nem ao subir") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.filtra("ada");
+  REQUIRE(navegador.vista().size() == 1u);
+  navegador.entra();
+  CHECK(navegador.termo().empty());
+  CHECK(textos(navegador) == std::vector<std::string>{"Máquina", "Notas"});
+  navegador.filtra("Notas");
+  navegador.volta();
+  CHECK(navegador.termo().empty());
+  CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace", "Bach"});
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
