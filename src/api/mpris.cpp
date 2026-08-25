@@ -167,6 +167,59 @@ bool escreve_propriedade(DBusMessageIter* pae, const std::string& interface,
   return false;
 }
 
+
+// cumpre_metodo — os oito metodos do MPRIS. Falso quando o nome não é d'esta Casa.
+//
+// As duas armadilhas que a issue nomeou: `Seek` é RELATIVO e `SetPosition` é
+// ABSOLUTO. Trocá-los faria a tecla de avanço saltar para o segundo cinco em vez de
+// avançar cinco segundos, e o defeito passaria por «funciona mal» em vez de «está
+// trocado».
+bool cumpre_metodo(const std::string& nome, DBusMessage* mensagem,
+                   nucleo::Tocador& tocador) {
+  if (nome == "Play") { tocador.retomar(); return true; }
+  if (nome == "Pause") { tocador.pausar(); return true; }
+  if (nome == "Stop") { tocador.pausar(); return true; }
+  if (nome == "PlayPause") {
+    if (tocador.estado() == nucleo::Estado::Tocando) tocador.pausar();
+    else tocador.retomar();
+    return true;
+  }
+  if (nome == "Next") { tocador.proxima(); return true; }
+  if (nome == "Previous") { tocador.anterior(); return true; }
+
+  if (nome == "Seek") {
+    dbus_int64_t delta = 0;
+    DBusMessageIter leitor;
+    if (dbus_message_iter_init(mensagem, &leitor) &&
+        dbus_message_iter_get_arg_type(&leitor) == DBUS_TYPE_INT64) {
+      dbus_message_iter_get_basic(&leitor, &delta);
+      // RELATIVO: soma-se á posição corrente. E o alvo apara-se aqui, que o delta
+      // pode ser negativo e maior que a posição.
+      double alvo = tocador.posicao() + micros_para_segundos(
+                        delta < 0 ? -delta : delta) * (delta < 0 ? -1.0 : 1.0);
+      if (alvo < 0.0) alvo = 0.0;
+      tocador.buscar(alvo);
+    }
+    return true;
+  }
+  if (nome == "SetPosition") {
+    DBusMessageIter leitor;
+    if (dbus_message_iter_init(mensagem, &leitor) &&
+        dbus_message_iter_get_arg_type(&leitor) == DBUS_TYPE_OBJECT_PATH) {
+      // O `trackid` ignora-se de proposito: esta Casa tem UMA faixa corrente, e
+      // recusar por trackid alheio faria o playerctl parecer roto sem razão.
+      dbus_message_iter_next(&leitor);
+      dbus_int64_t micros = 0;
+      if (dbus_message_iter_get_arg_type(&leitor) == DBUS_TYPE_INT64) {
+        dbus_message_iter_get_basic(&leitor, &micros);
+        tocador.buscar(micros_para_segundos(micros));  // ABSOLUTO
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 }  // namespace mysong::api
