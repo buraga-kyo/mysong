@@ -85,5 +85,35 @@ constexpr int kSentinella = -1;
 
 }  // namespace
 
+std::string saneia_nome_de_rol(std::string_view crua) {
+  std::size_t principio = 0, fim = crua.size();
+  const auto branco = [](char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+  };
+  while (principio < fim && branco(crua[principio])) ++principio;
+  while (fim > principio && branco(crua[fim - 1])) --fim;
+  std::string nome(crua.substr(principio, fim - principio));
+  // Cento e vinte octetos. Nome mais comprido não cabe na barra lateral, e cortar
+  // aqui é melhor que cortar na pintura: assim o que se grava é o que se vê.
+  //
+  // O corte anda para a FRENTE e guarda a ultima fronteira que caiba. Cortar em
+  // cento e vinte e RECUAR até ao byte lider não presta, e a bateria accusou-o: o
+  // byte que sobra na ponta pode ser elle MESMO um lider, e ahi o recuo pára logo
+  // e deixa o lider solto sem os seus continuadores. Foi o que succedeu com cento e
+  // dezenove letras mais um «á»: sahiam cento e vinte octetos, e o ultimo era meio
+  // caracter. É o mesmo engano que a issue #11 corrigiu, e por isso vae escripto.
+  if (nome.size() > kOctetosDoNome) {
+    std::size_t corte = 0;
+    for (std::size_t i = 0; i <= nome.size(); ++i) {
+      const bool fronteira =
+          i == nome.size() ||
+          (static_cast<unsigned char>(nome[i]) & 0xC0) != 0x80;
+      if (fronteira && i <= kOctetosDoNome) corte = i;
+    }
+    nome.resize(corte);
+  }
+  return nome;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
