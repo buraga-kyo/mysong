@@ -88,6 +88,9 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   if (tecla == ftxui::Event::Character('r')) return {Verbo::Varre, 0.0};
   if (tecla == ftxui::Event::Character('b')) return {Verbo::AbreBaixa, 0.0};
   if (tecla == ftxui::Event::Character('l')) return {Verbo::TrocaLetra, 0.0};
+  // O `s` de «search»: a busca na REDE, que é differente da busca no que ha. O `/`
+  // filtra a lista que está á vista; o `s` pergunta ao YouTube.
+  if (tecla == ftxui::Event::Character('s')) return {Verbo::AbreProcura, 0.0};
 
   return {Verbo::Nada, 0.0};
 }

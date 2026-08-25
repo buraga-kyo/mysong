@@ -70,7 +70,9 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('/'), ftxui::Event::Character('r'),
       ftxui::Event::Character('+'), ftxui::Event::Character('-'),
       ftxui::Event::Character(','), ftxui::Event::Character('.'),
-      ftxui::Event::ArrowUp,        ftxui::Event::ArrowDown,
+      ftxui::Event::Character('b'), ftxui::Event::Character('l'),
+      ftxui::Event::Character('s'), ftxui::Event::ArrowUp,
+      ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
       ftxui::Event::Return,         ftxui::Event::Escape,
       ftxui::Event::Home,           ftxui::Event::End,
@@ -104,6 +106,12 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   CHECK(verbo(ftxui::Event::ArrowLeft) == tui::Verbo::Volta);
   CHECK(verbo(ftxui::Event::Character('/')) == tui::Verbo::AbreBusca);
   CHECK(verbo(ftxui::Event::Character('r')) == tui::Verbo::Varre);
+  CHECK(verbo(ftxui::Event::Character('b')) == tui::Verbo::AbreBaixa);
+  CHECK(verbo(ftxui::Event::Character('l')) == tui::Verbo::TrocaLetra);
+  // O `s` pergunta á REDE, e não filtra o que ha: verbo proprio, e não o `/` com
+  // bandeira. Os dous a darem o mesmo verbo seria o defeito que este caso guarda.
+  CHECK(verbo(ftxui::Event::Character('s')) == tui::Verbo::AbreProcura);
+  CHECK(verbo(ftxui::Event::Character('/')) != tui::Verbo::AbreProcura);
 }
 
 // Os alvos aqui vão escriptos á mão em SEGUNDOS, e não em passos: dizer «posicao mais

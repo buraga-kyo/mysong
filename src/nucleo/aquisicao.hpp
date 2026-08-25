@@ -99,6 +99,27 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida);
 // é exhaustivo, e desfecho novo sem palavra não compila.
 std::string_view razao_da_colheita(Colheita colheita);
 
+// ── A BUSCA NO YOUTUBE (issue #12) ──────────────────────────────────────────
+
+// Um ACHADO da busca. É o que a tela mostra, e o que a baixa consome.
+struct Achado {
+  std::string titulo;
+  std::string canal;
+  int duracao = 0;  // em segundos; zero é «não disse»
+  std::string url;
+};
+
+// argumentos_da_busca — o que se corre. O `ytsearchN:` é o pseudo-endereço do yt-dlp
+// para busca, e o `--flat-playlist` impede que elle abra cada resultado para lhe ler os
+// fórmatos: sem elle, buscar dez faixas custa dez sondas de rede.
+std::vector<std::string> argumentos_da_busca(const std::string& termo,
+                                             int quantos);
+
+// le_achados — as linhas que a busca imprimiu, QUATRO por achado e nessa ordem. Lê-se
+// por linha, e não por separador dentro da linha: titulo de video tras barra vertical,
+// tabulação e tudo o mais, e um separador seria enganado pelo primeiro d'elles.
+std::vector<Achado> le_achados(const std::string& sahida);
+
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
 // aqui, e o olho vê a fronteira de um relance.
@@ -111,6 +132,11 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido);
 // sonda_url — pergunta á rede o que ella sabe da URL. Falso quando o yt-dlp não
 // respondeu; ahi a etiqueta fica como estava.
 bool sonda_url(const std::string& url, EtiquetaRemota* remota);
+
+// busca_no_youtube — pergunta ao yt-dlp. Vazio quando a rede não respondeu, ou quando
+// não ha achado: quem chama distingue-os pelo booleano.
+bool busca_no_youtube(const std::string& termo, int quantos,
+                      std::vector<Achado>* achados);
 
 // baixa — o acto inteiro: resolve, monta o caminho, cria o directorio, chama o
 // yt-dlp, e escreve a etiqueta com a taglib. `gravado` recebe o caminho do

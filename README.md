@@ -158,8 +158,8 @@ cmake --build build
 ./build/mysong --sonda                  # so o diagnostico, em texto
 ```
 
-Nao ha varredura de acervo ainda (issue #34): por ora a fila entra pela linha de
-commando.
+A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
+acervo da corrida anterior, e o `r` manda varrer outra vez.
 
 ### As teclas
 
@@ -172,11 +172,17 @@ commando.
 | `j` / `k` ou `↑` / `↓` | anda na lista |
 | Enter ou `→` | entra (artista, album, faixa) |
 | Escape, Backspace ou `←` | volta um degrau |
-| `/` | busca na lista |
+| `/` | filtra a lista que esta a vista |
+| `s` | busca na rede, pelo yt-dlp; Enter no achado baixa-o |
 | `b` | baixa por URL |
 | `l` | troca o espectro pela letra |
 | `r` | varre o acervo outra vez |
 | `q` | sahe |
+
+Duas buscas ha, e ellas nao sao a mesma: o `/` FILTRA o que esta a vista, sem
+tocar a rede; o `s` PERGUNTA ao YouTube. Na secção NET, Enter encommenda a baixa
+do achado eleito, e duas baixas correm ao mesmo tempo no maximo: as demais
+esperam, e a linha do titulo diz quantas correm e quantas esperam.
 
 ## Como se roda a bateria de testes
 

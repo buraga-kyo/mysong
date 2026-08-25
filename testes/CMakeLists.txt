@@ -90,3 +90,15 @@ target_sources(mysong_testes PRIVATE prova_unidades.cpp)
 # lavras acima: linha nova não collide onde linha alterada collidiria, e a
 # mysong-28 com a mysong-6 lavram neste arquivo agora.
 target_sources(mysong_testes PRIVATE prova_biblioteca.cpp)
+
+# ─── A PROVA DO ESTALEIRO (issue #12) ───────────────────────────────────────
+# Sem rede: a obra entra por parametro, e no logar d'ella vae uma que se SEGURA.
+target_sources(mysong_testes PRIVATE prova_estaleiro.cpp)
+
+# ─── A PROVA DA TABELLA (issue #12) ─────────────────────────────────────────
+# Pinta em écran de PAPEL, e lê-o CELLA A CELLA: é o unico modo de aferir
+# alinhamento de columna sem o olho de quem abriu o programa.
+target_sources(mysong_testes PRIVATE prova_tabella.cpp)
+
+# ─── A PROVA DO CORREIO (issue #12) ─────────────────────────────────────────
+target_sources(mysong_testes PRIVATE prova_correio.cpp)

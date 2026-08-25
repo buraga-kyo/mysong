@@ -43,6 +43,10 @@ enum class Verbo {
   AbreBaixa,
   // A letra (issue #15): troca o painel do espectro pelo da letra.
   TrocaLetra,
+  // A busca na REDE (issue #12). Verbo proprio, e não o AbreBusca com bandeira:
+  // duas cousas differentes acontecem, que uma filtra o que ha e a outra pergunta
+  // ao mundo, e verbo com bandeira é verbo que se lê errado n'um switch.
+  AbreProcura,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),
