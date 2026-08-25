@@ -150,5 +150,22 @@ TEST_CASE("trocar move para cima e para baixo, e recusa a ordem que não ha") {
   CHECK_FALSE(roleiro.troca(id, 0, 0));  // consigo mesma não é troca
 }
 
+TEST_CASE("apagar leva os itens consigo, e a lista some") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int id = roleiro.cria("Da manhã");
+  const int outra = roleiro.cria("Da noite");
+  REQUIRE(roleiro.junta(id, "/a/1.mp3"));
+  REQUIRE(roleiro.junta(outra, "/a/2.mp3"));
+
+  REQUIRE(roleiro.apaga(id));
+  REQUIRE(roleiro.rois().size() == 1);
+  CHECK(roleiro.rois()[0].nome == "Da noite");
+  CHECK(roleiro.faixas(id).empty());
+  // A OUTRA lista não se tocou: apagar uma não leva a vizinha.
+  CHECK(roleiro.faixas(outra) == std::vector<std::string>{"/a/2.mp3"});
+  CHECK_FALSE(roleiro.apaga(id));  // apagada duas vezes, a segunda é falsa
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
