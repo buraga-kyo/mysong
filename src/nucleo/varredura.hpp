@@ -64,6 +64,15 @@ Faixa deriva_do_caminho(const std::filesystem::path& caminho,
 // PNG e cada texto do acervo para nada.
 bool extensao_de_audio(std::string_view extensao);
 
+// extensao_que_interessa — audio OU video. A varredura entra pelas duas: faixa de
+// video que não esteja no índice não se pode eleger na tela, e sem se eleger a
+// janella da issue #17 não abre para cousa alguma.
+//
+// A lista do video NÃO se repete aqui: ella vive em nucleo/video.hpp, e esta
+// funcção pergunta-lhe. Duas listas dariam duas verdades, e o dia em que uma
+// ganhasse `.mkv` e a outra não, o acervo indexava o que a tela recusava abrir.
+bool extensao_que_interessa(std::string_view extensao);
+
 // A VARREDURA. Conduz-se por passos, e nasce com o Escriba já aberto sobre um
 // temporario: donde o destino não existe até se concluir, e o destructor desfaz
 // o temporario de quem a abandonou.
