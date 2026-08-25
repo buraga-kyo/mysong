@@ -40,7 +40,10 @@ class CasaDoMpris {
   // Uma batida: lê o que chegou e responde. NÃO bloqueia.
   void pulsa();
 
- private:
+ // O punho é PUBLICO de proposito. As funcções que respondem ás mensagens vivem no
+  // namespace anonymo do `.cpp`, que é onde devem viver, e por isso não podem ser
+  // amigas d'esta classe. Publicá-lo é mais honesto que declarar meia duzia de
+  // `friend`: o typo é incompleto aqui, donde de fóra d'este reino ninguem lhe toca.
   struct Punho;
   std::unique_ptr<Punho> punho_;
 };
