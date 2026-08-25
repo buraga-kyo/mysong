@@ -12,6 +12,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/tabella.hpp"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -68,6 +69,45 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
     linhas.push_back(std::move(linha));
+  }
+  return ftxui::vbox(std::move(linhas));
+}
+
+ftxui::Element elemento_da_tabella(const Navegador& navegador,
+                                   std::size_t primeira, std::size_t altura,
+                                   std::size_t largura) {
+  if (altura == 0 || largura == 0) return ftxui::text("");
+  const std::vector<Linha>& vista = navegador.vista();
+  if (vista.empty())
+    return pinta("  (nada aqui: varra o acervo, ou baixe uma faixa)",
+                 tokens::text_faint);
+
+  // As tres columnas fixas: numero, tempo, e o que sobra para o titulo. O tempo
+  // e o numero são de largura conhecida, e por isso o titulo é que cede.
+  const std::size_t larg_num = 4, larg_tempo = 7;
+  const std::size_t larg_titulo =
+      largura > larg_num + larg_tempo + 2 ? largura - larg_num - larg_tempo - 2 : 1;
+
+  std::vector<ftxui::Element> linhas;
+  const std::size_t fim = std::min(primeira + altura, vista.size());
+  for (std::size_t i = primeira; i < fim; ++i) {
+    const Linha& linha = vista[i];
+    const bool eleita = i == navegador.eleito();
+    const std::string numero =
+        linha.numero > 0 ? apara(std::to_string(linha.numero), larg_num)
+                         : apara("", larg_num);
+    const std::string tempo =
+        linha.duracao > 0 ? apara(" " + mm_ss(linha.duracao), larg_tempo)
+                          : apara("", larg_tempo);
+    ftxui::Element pintada =
+        pinta(numero + apara(linha.texto, larg_titulo) + tempo,
+              eleita ? tokens::text_bright : tokens::text_muted);
+    if (eleita) {
+      const tokens::Triade fundo = tokens::rgb(tokens::v900);
+      pintada = pintada | ftxui::bgcolor(
+                              ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+    }
+    linhas.push_back(std::move(pintada));
   }
   return ftxui::vbox(std::move(linhas));
 }
