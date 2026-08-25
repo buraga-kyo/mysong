@@ -78,5 +78,20 @@ TEST_CASE("o trackid é caminho de objecto, e a fila vazia dá NoTrack") {
   }
 }
 
+TEST_CASE("a URL escapa tudo menos a barra e o arco livre") {
+  CHECK(ap::url_do_arquivo("/a/b.mp3") == "file:///a/b.mp3");
+  // O espaço escapa-se; a barra NÃO, que ella é a estructura do caminho.
+  CHECK(ap::url_do_arquivo("/a/Ada Lovelace/x.mp3") ==
+        "file:///a/Ada%20Lovelace/x.mp3");
+  // Acento em dous grupos, que é UTF-8 por octeto.
+  CHECK(ap::url_do_arquivo("/a/Máquina/x.mp3") ==
+        "file:///a/M%C3%A1quina/x.mp3");
+  // Os que enganam n'um nome de arquivo.
+  CHECK(ap::url_do_arquivo("/a/A&B#1+2.mp3") ==
+        "file:///a/A%26B%231%2B2.mp3");
+  // O arco livre passa intacto.
+  CHECK(ap::url_do_arquivo("/a-b/c.d_e~f") == "file:///a-b/c.d_e~f");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
