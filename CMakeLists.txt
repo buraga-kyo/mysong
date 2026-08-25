@@ -266,3 +266,9 @@ target_link_libraries(mysong_core PUBLIC Threads::Threads)
 # ─── O CORREIO DOS ACHADOS (issue #12) ──────────────────────────────────────
 # O recado que o fio da rede deixa ao fio da tela. Dependencia nova alguma.
 target_sources(mysong_core PRIVATE src/tui/correio.cpp)
+
+# ─── AS LISTAS DO OPERADOR (issue #10) ──────────────────────────────────────
+# Banco PROPRIO, e não o da bibliotheca: aquelle é reconstruido a cada varredura
+# por temporario e rename, e taboa de lista lá dentro sahiria com a varredura.
+# Dependencia nova alguma: o sqlite3 já entrou com a bibliotheca na issue #8.
+target_sources(mysong_core PRIVATE src/nucleo/rol.cpp)
