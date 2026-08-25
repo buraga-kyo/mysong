@@ -196,5 +196,66 @@ std::filesystem::path Projector::faixa() const {
   return faixa_;
 }
 
+Fita Projector::abre(const std::filesystem::path& faixa) {
+  if (!tem_video(faixa)) return Fita::SemVideo;
+  std::lock_guard<std::mutex> chave(tranca_);
+  // A fita de antes FECHA-SE. Duas janellas ao mesmo tempo seria audio a dobrar,
+  // que é o que a tarefa proibe pelo nome.
+  fecha_travado();
+
+  std::error_code erro;
+  std::filesystem::create_directories(raiz_, erro);
+  const ::pid_t meu = ::getpid();
+  soquete_ = caminho_do_soquete(raiz_, static_cast<long>(meu));
+  std::filesystem::remove(soquete_, erro);
+
+  const std::vector<std::string> ditos = argumentos_do_projector(faixa, soquete_);
+  std::vector<char*> crús;
+  crús.reserve(ditos.size() + 1);
+  for (const std::string& dito : ditos)
+    crús.push_back(const_cast<char*>(dito.c_str()));
+  crús.push_back(nullptr);
+
+  const ::pid_t filho = ::fork();
+  if (filho < 0) return Fita::NaoAbriu;
+  if (filho == 0) {
+    // No filho: a sahida vae ao nada, que a nossa é a tela da TUI. E `execvp`
+    // recebe o vector tal e qual: shell algum se interpõe.
+    //
+    // Por `open` e `dup2`, e não por `freopen`. Duas razões: o `freopen` toca a
+    // machina de alocação da bibliotheca de C, que depois de um fork não se deve
+    // tocar; e elle é declarado com aviso de valor não usado, que sahe em Release e
+    // não em Debug. Este segundo apanhou-se ao conferir os dous, que é a lição que a
+    // issue #11 deixou escripta.
+    const int nada = ::open("/dev/null", O_WRONLY);
+    if (nada >= 0) {
+      ::dup2(nada, STDOUT_FILENO);
+      ::dup2(nada, STDERR_FILENO);
+      if (nada > STDERR_FILENO) ::close(nada);
+    }
+    ::execvp("mpv", crús.data());
+    // Chegando aqui, o exec falhou. Sahe-se com codigo proprio, para que o pae
+    // distinga «não ha mpv» de «o mpv sahiu com erro».
+    ::_exit(127);
+  }
+
+  filho_ = filho;
+  punho_ = abre_soquete(soquete_);
+  if (punho_ < 0) {
+    // O soquete não respondeu. Ou o mpv não existe, e o filho já morreu com o
+    // codigo cento e vinte e sete, ou elle está preso: nos dous casos fecha-se.
+    int estado = 0;
+    const bool morreu = ::waitpid(filho_, &estado, WNOHANG) == filho_;
+    const bool sem_mpv =
+        morreu && WIFEXITED(estado) && WEXITSTATUS(estado) == 127;
+    if (morreu) filho_ = -1;
+    fecha_travado();
+    return sem_mpv ? Fita::SemMpv : Fita::SemSoquete;
+  }
+  faixa_ = faixa;
+  pausada_ = false;  // fita nova nasce a tocar
+  return Fita::Rodando;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
