@@ -79,6 +79,38 @@ void Estaleiro::fecha() {
     if (fio.joinable()) fio.join();
   obreiros_.clear();
 }
+
+void Estaleiro::encommenda(Pedido pedido) {
+  {
+    std::lock_guard<std::mutex> chave(tranca_);
+    if (fechado_) return;  // estaleiro fechado não aceita obra nova
+    espera_.push_back(std::move(pedido));
+  }
+  sino_.notify_one();
+}
+
+Andamento Estaleiro::andamento() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  Andamento agora;
+  agora.em_curso = em_curso_;
+  agora.na_espera = espera_.size();
+  agora.colhidas = colhidas_;
+  agora.falhadas = falhadas_;
+  agora.ultima = ultima_;
+  return agora;
+}
+
+bool Estaleiro::colheu() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  const bool houve = colheu_;
+  colheu_ = false;  // CONSOME: a bandeira vale uma vez por colheita
+  return houve;
+}
+
+std::size_t Estaleiro::pico() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return pico_;
+}
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
