@@ -86,5 +86,24 @@ TEST_CASE("criar recusa nome vazio, e recusa nome repetido") {
   CHECK(roleiro.rois()[0].quantos == 0);
 }
 
+TEST_CASE("juntar põe no FIM, e a lista sahe na ordem gravada") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int id = roleiro.cria("Da manhã");
+  REQUIRE(roleiro.junta(id, "/a/1.mp3"));
+  REQUIRE(roleiro.junta(id, "/a/2.mp3"));
+  REQUIRE(roleiro.junta(id, "/a/3.mp3"));
+  CHECK(roleiro.faixas(id) ==
+        std::vector<std::string>{"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"});
+  CHECK(roleiro.rois()[0].quantos == 3);
+  // A MESMA faixa duas vezes é direito de quem a quer duas vezes.
+  REQUIRE(roleiro.junta(id, "/a/1.mp3"));
+  CHECK(roleiro.faixas(id).size() == 4);
+  // Lista que não existe não aceita faixa: quem o recusa é a chave estrangeira.
+  CHECK_FALSE(roleiro.junta(id + 999, "/a/4.mp3"));
+  CHECK(roleiro.faixas(id + 999).empty());
+  CHECK_FALSE(roleiro.junta(id, ""));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
