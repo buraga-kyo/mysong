@@ -48,6 +48,30 @@ std::string apara(const std::string& crua, std::size_t largura) {
 
 }  // namespace
 
+ftxui::Element elemento_da_barra(const Navegador& navegador) {
+  // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
+  // faz o dedo do operador errar o alvo que já sabia de memoria.
+  const std::pair<Secao, const char*> degraus[] = {
+      {Secao::Artistas, " ARTISTS "},
+      {Secao::Albuns, " ALBUMS  "},
+      {Secao::Faixas, " TRACKS  "},
+      {Secao::Busca, " SEARCH  "},
+  };
+  std::vector<ftxui::Element> linhas;
+  for (const auto& [degrau, rotulo] : degraus) {
+    const bool aqui = navegador.secao() == degrau;
+    ftxui::Element linha = pinta(rotulo, aqui ? tokens::text_bright
+                                              : tokens::text_muted);
+    if (aqui) {
+      const tokens::Triade fundo = tokens::rgb(tokens::v700);
+      linha = linha | ftxui::bgcolor(
+                          ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+    }
+    linhas.push_back(std::move(linha));
+  }
+  return ftxui::vbox(std::move(linhas));
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
