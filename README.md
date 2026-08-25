@@ -169,6 +169,13 @@ commando.
 | `n` / `p` | faixa seguinte, faixa anterior |
 | seta direita / esquerda | busca cinco segundos para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
+| `j` / `k` ou setas cima/baixo | anda na lista |
+| Enter | entra (artista, album, faixa) |
+| Escape | volta um degrau |
+| `/` | busca na lista |
+| `b` | baixa por URL |
+| `l` | troca o espectro pela letra |
+| `r` | varre o acervo outra vez |
 | `q` | sahe |
 
 ## Como se roda a bateria de testes

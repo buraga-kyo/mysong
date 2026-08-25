@@ -41,6 +41,8 @@ enum class Verbo {
   Desce, Sobe, AoPrincipio, AoFim, Entra, Volta, AbreBusca, Varre,
   // O da aquisição (issue #11).
   AbreBaixa,
+  // A letra (issue #15): troca o painel do espectro pelo da letra.
+  TrocaLetra,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

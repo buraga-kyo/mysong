@@ -43,6 +43,7 @@
 #include "nucleo/analisador.hpp"
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
+#include "nucleo/letra.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/tocador.hpp"
@@ -145,6 +146,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
     case tui::Verbo::AbreBusca:
     case tui::Verbo::Varre:
     case tui::Verbo::AbreBaixa:
+    case tui::Verbo::TrocaLetra:
       break;
   }
 }
@@ -201,6 +203,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::string termo_em_curso;
   std::string aviso_da_baixa;
   std::size_t primeira_linha = 0;
+  // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
+  // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
+  // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
+  std::vector<nucleo::LinhaDaLetra> letra;
+  std::string letra_de_qual;
+  bool mostra_letra = false;
 
   std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
                        std::cref(sahir), &varrida);
@@ -227,6 +235,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
     if (!aviso_da_baixa.empty()) trilha += "   " + aviso_da_baixa;
 
+    // A letra relê-se sómente quando a faixa muda.
+    if (retracto.titulo != letra_de_qual) {
+      letra_de_qual = retracto.titulo;
+      letra = retracto.titulo.empty()
+                  ? std::vector<nucleo::LinhaDaLetra>()
+                  : nucleo::le_lrc_do_disco(retracto.titulo);
+    }
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
@@ -238,10 +253,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                                             larg_tab),
                }),
                ftxui::text(""),
-               tui::elemento_do_espectro(quadro),
+               mostra_letra
+                   ? tui::elemento_da_letra(
+                         letra,
+                         nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
+                   : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
-                           " · b baixa · espaço pausa · n/p faixa · q sahe") |
+                           " · b baixa · l letra · espaço pausa · n/p faixa"
+                           " · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -313,6 +333,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       case tui::Verbo::AbreBaixa:
         digita = Digita::Url;
         termo_em_curso.clear();
+        return true;
+      case tui::Verbo::TrocaLetra:
+        mostra_letra = !mostra_letra;
         return true;
       case tui::Verbo::Varre:
         if (varrida.load()) {  // uma varredura por vez, e não vinte

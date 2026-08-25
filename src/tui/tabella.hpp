@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/letra.hpp"
 #include "tui/navegador.hpp"
 
 namespace mysong::tui {
@@ -32,6 +33,14 @@ ftxui::Element elemento_da_barra(const Navegador& navegador);
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura);
+
+// A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
+// vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.
+// `corrente` menos um quer dizer «antes do primeiro verso», e ahi mostram-se as
+// primeiras linhas apagadas, para que o operador veja que ha letra a chegar.
+ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                                 int corrente, std::size_t altura,
+                                 std::size_t largura);
 
 }  // namespace mysong::tui
 

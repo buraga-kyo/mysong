@@ -112,6 +112,37 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   return ftxui::vbox(std::move(linhas));
 }
 
+ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                                 int corrente, std::size_t altura,
+                                 std::size_t largura) {
+  if (altura == 0 || largura == 0) return ftxui::text("");
+  if (linhas.empty())
+    return pinta(apara("  (sem letra para esta faixa)", largura),
+                 tokens::text_faint);
+
+  // A corrente vae no MEIO da janella, e não no alto: o operador lê o que vem, e
+  // não sómente o que passou. Fica no alto sómente no principio da musica, e no
+  // fim quando já não ha o que vir.
+  const std::size_t meio = altura / 2;
+  const int alvo = corrente < 0 ? 0 : corrente;
+  std::size_t primeira = 0;
+  if (static_cast<std::size_t>(alvo) > meio) primeira = alvo - meio;
+  if (primeira + altura > linhas.size())
+    primeira = linhas.size() > altura ? linhas.size() - altura : 0;
+
+  std::vector<ftxui::Element> pintadas;
+  const std::size_t fim = std::min(primeira + altura, linhas.size());
+  for (std::size_t i = primeira; i < fim; ++i) {
+    const bool esta = static_cast<int>(i) == corrente;
+    ftxui::Element linha =
+        pinta(apara("  " + linhas[i].texto, largura),
+              esta ? tokens::text_bright : tokens::text_faint);
+    if (esta) linha = linha | ftxui::bold;
+    pintadas.push_back(std::move(linha));
+  }
+  return ftxui::vbox(std::move(pintadas));
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

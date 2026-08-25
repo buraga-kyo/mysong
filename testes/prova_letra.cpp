@@ -6,9 +6,16 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cctype>
+#include <limits>
 #include <string>
+#include <vector>
+
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 
 #include "nucleo/letra.hpp"
+#include "tui/tabella.hpp"
 
 namespace nu = mysong::nucleo;
 
@@ -88,6 +95,162 @@ TEST_CASE("o caminho do lrc é o do audio com outra extensão") {
         "/a/Vol. 2 - Tear.lrc");
   // Sem extensão alguma, acrescenta-se.
   CHECK(nu::caminho_do_lrc("/a/Tear").string() == "/a/Tear.lrc");
+}
+
+// A ANALYSE do lrc, sobre texto escripto á mão com as fórmas de verdade.
+TEST_CASE("o lrc analysa-se, com carimbo duplo e cabeçalho saltado") {
+  const std::string cru =
+      "[ar:Radiohead]\n"
+      "[ti:Creep]\n"
+      "[00:19.19] When you were here before\n"
+      "[00:28.94]You're just like an angel\n"   // sem espaço depois do carimbo
+      "[00:47.27]\n"                            // carimbo SEM texto: o silencio
+      "[01:00.00][02:30.50] So very special\n"  // carimbo DUPLO: repete-se
+      "linha sem carimbo, que se salta\n";
+  const std::vector<nu::LinhaDaLetra> linhas = nu::analysa_lrc(cru);
+  REQUIRE(linhas.size() == 5u);
+  CHECK(linhas[0].tempo == doctest::Approx(19.19));
+  CHECK(linhas[0].texto == "When you were here before");
+  CHECK(linhas[1].tempo == doctest::Approx(28.94));
+  CHECK(linhas[1].texto == "You're just like an angel");
+  // O carimbo sem texto CONSERVA-SE, com texto vazio: é elle que tira o verso
+  // anterior da tela na hora certa.
+  CHECK(linhas[2].tempo == doctest::Approx(47.27));
+  CHECK(linhas[2].texto.empty());
+  // O carimbo duplo deu DUAS linhas, com o mesmo texto e tempos differentes.
+  CHECK(linhas[3].tempo == doctest::Approx(60.0));
+  CHECK(linhas[3].texto == "So very special");
+  CHECK(linhas[4].tempo == doctest::Approx(150.5));
+  CHECK(linhas[4].texto == "So very special");
+}
+
+TEST_CASE("o lrc aceita os dous separadores dos centesimos") {
+  const std::vector<nu::LinhaDaLetra> ponto = nu::analysa_lrc("[01:02.50] a\n");
+  REQUIRE(ponto.size() == 1u);
+  CHECK(ponto[0].tempo == doctest::Approx(62.5));
+  // Dous pontos: ha gerador que o usa, e recusar faria a letra inteira sahir vazia.
+  const std::vector<nu::LinhaDaLetra> dous = nu::analysa_lrc("[01:02:50] a\n");
+  REQUIRE(dous.size() == 1u);
+  CHECK(dous[0].tempo == doctest::Approx(62.5));
+  // Sem centesimos.
+  const std::vector<nu::LinhaDaLetra> curto = nu::analysa_lrc("[01:02] a\n");
+  REQUIRE(curto.size() == 1u);
+  CHECK(curto[0].tempo == doctest::Approx(62.0));
+  // Lixo que se salta sem estourar.
+  CHECK(nu::analysa_lrc("").empty());
+  CHECK(nu::analysa_lrc("[").empty());
+  CHECK(nu::analysa_lrc("[00:").empty());
+  CHECK(nu::analysa_lrc("[abc] a").empty());
+  CHECK(nu::analysa_lrc("[00:11.00").empty());
+}
+
+// A LINHA CORRENTE, com os alvos escriptos. Os limites são o que importa: o
+// instante EXACTO de um carimbo pertence a esse carimbo, e não ao anterior.
+TEST_CASE("a linha corrente acha-se, e antes da primeira dá menos um") {
+  const std::vector<nu::LinhaDaLetra> linhas = {
+      {10.0, "um"}, {20.0, "dous"}, {30.0, ""}, {40.0, "quatro"}};
+  CHECK(nu::linha_corrente(linhas, 0.0) == -1);
+  CHECK(nu::linha_corrente(linhas, 9.999) == -1);
+  // O instante EXACTO pertence ao carimbo, e não ao anterior.
+  CHECK(nu::linha_corrente(linhas, 10.0) == 0);
+  CHECK(nu::linha_corrente(linhas, 19.999) == 0);
+  CHECK(nu::linha_corrente(linhas, 20.0) == 1);
+  CHECK(nu::linha_corrente(linhas, 29.999) == 1);
+  // O carimbo de texto vazio é linha, e vale: é elle que limpa a tela.
+  CHECK(nu::linha_corrente(linhas, 30.0) == 2);
+  CHECK(nu::linha_corrente(linhas, 39.999) == 2);
+  CHECK(nu::linha_corrente(linhas, 40.0) == 3);
+  // Depois da ultima, fica na ultima: a musica acabou e o verso final fica.
+  CHECK(nu::linha_corrente(linhas, 4000.0) == 3);
+  // Degenerescencias: lista vazia, e posição que não é numero.
+  CHECK(nu::linha_corrente({}, 10.0) == -1);
+  CHECK(nu::linha_corrente(linhas,
+                           std::numeric_limits<double>::quiet_NaN()) == -1);
+  // Lista de UMA linha, que é onde a busca binaria degenera.
+  const std::vector<nu::LinhaDaLetra> uma = {{5.0, "so"}};
+  CHECK(nu::linha_corrente(uma, 4.999) == -1);
+  CHECK(nu::linha_corrente(uma, 5.0) == 0);
+  CHECK(nu::linha_corrente(uma, 500.0) == 0);
+}
+
+namespace {
+
+// sem_escape — a linha despida do escape, que é o que ella MOSTRA.
+std::string sem_escape(const std::string& linha) {
+  std::string limpa;
+  for (std::size_t i = 0; i < linha.size(); ++i) {
+    const unsigned char oct = static_cast<unsigned char>(linha[i]);
+    if (oct == 0x1b) {
+      while (i < linha.size() &&
+             std::isalpha(static_cast<unsigned char>(linha[i])) == 0)
+        ++i;
+      continue;
+    }
+    if (oct == '\r') continue;
+    limpa += linha[i];
+  }
+  return limpa;
+}
+
+// as_linhas — o painel da letra pintado em écran de PAPEL, linha a linha.
+std::vector<std::string> as_linhas(
+    const std::vector<nu::LinhaDaLetra>& letra, double posicao,
+    std::size_t altura, std::size_t largura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(static_cast<int>(largura)),
+      ftxui::Dimension::Fixed(static_cast<int>(altura)));
+  ftxui::Render(ecran, mysong::tui::elemento_da_letra(
+                           letra, nu::linha_corrente(letra, posicao), altura,
+                           largura));
+  std::vector<std::string> fóra;
+  std::string corrente;
+  for (const char oct : ecran.ToString()) {
+    if (oct != '\n') { corrente += oct; continue; }
+    fóra.push_back(sem_escape(corrente));
+    corrente.clear();
+  }
+  if (!corrente.empty()) fóra.push_back(sem_escape(corrente));
+  return fóra;
+}
+
+}  // namespace
+
+// A LETRA na tela, a acompanhar o relogio. O `.lrc` vae escripto á mão, e o alvo de
+// cada instante tambem: é a prova de que o painel mostra o verso que se canta.
+TEST_CASE("o painel mostra o verso do instante, e as vizinhas em volta") {
+  const std::vector<nu::LinhaDaLetra> letra = nu::analysa_lrc(
+      "[00:02.00] verso um\n"
+      "[00:05.00] verso dous\n"
+      "[00:08.00] verso tres\n"
+      "[00:11.00] verso quatro\n"
+      "[00:14.00]\n"
+      "[00:17.00] verso cinco\n");
+  REQUIRE(letra.size() == 6u);
+
+  // Em cinco segundos e um decimo, o verso dous é o corrente. A janella de tres
+  // linhas põe-no no MEIO: sahe «um, dous, tres».
+  const std::vector<std::string> aos_cinco = as_linhas(letra, 5.1, 3, 20);
+  REQUIRE(aos_cinco.size() == 3u);
+  CHECK(aos_cinco[0].substr(0, 10) == "  verso um");
+  CHECK(aos_cinco[1].substr(0, 12) == "  verso dous");
+  CHECK(aos_cinco[2].substr(0, 12) == "  verso tres");
+
+  // Em onze segundos e um decimo, o corrente é «quatro»: sahe «tres, quatro, vazia».
+  const std::vector<std::string> aos_onze = as_linhas(letra, 11.1, 3, 20);
+  REQUIRE(aos_onze.size() == 3u);
+  CHECK(aos_onze[0].substr(0, 12) == "  verso tres");
+  CHECK(aos_onze[1].substr(0, 14) == "  verso quatro");
+  CHECK(aos_onze[2].find("verso") == std::string::npos);  // o carimbo vazio
+
+  // Antes do primeiro verso, mostram-se as primeiras apagadas, e não quadro vazio.
+  const std::vector<std::string> antes = as_linhas(letra, 0.5, 3, 20);
+  REQUIRE(antes.size() == 3u);
+  CHECK(antes[0].substr(0, 10) == "  verso um");
+
+  // Letra AUSENTE diz o que se passa, e não fica em branco.
+  const std::vector<std::string> sem = as_linhas({}, 5.0, 3, 40);
+  REQUIRE(!sem.empty());
+  CHECK(sem[0].find("sem letra") != std::string::npos);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

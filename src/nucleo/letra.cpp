@@ -13,7 +13,11 @@
 
 #include <curl/curl.h>
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <iterator>
+#include <cstdlib>
 #include <cstdio>
 #include <fstream>
 
@@ -139,6 +143,96 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
   if (desfecho != CURLE_OK) return false;
   if (letra != nullptr) *letra = le_resposta(corpo);
   return true;
+}
+
+namespace {
+
+// carimbo — lê `[mm:ss.cc]` ou `[mm:ss]` no principio do que resta. Devolve falso
+// quando não ha carimbo alli, e ahi `cursor` não se mexe.
+bool carimbo(std::string_view linha, std::size_t* cursor, double* tempo) {
+  std::size_t i = *cursor;
+  if (i >= linha.size() || linha[i] != '[') return false;
+  ++i;
+  const std::size_t principio_min = i;
+  while (i < linha.size() && std::isdigit(static_cast<unsigned char>(linha[i]))) ++i;
+  if (i == principio_min || i >= linha.size() || linha[i] != ':') return false;
+  const int minutos = std::atoi(std::string(linha.substr(principio_min, i - principio_min)).c_str());
+  ++i;
+  const std::size_t principio_seg = i;
+  while (i < linha.size() &&
+         (std::isdigit(static_cast<unsigned char>(linha[i])) || linha[i] == '.' ||
+          linha[i] == ':'))
+    ++i;
+  if (i == principio_seg || i >= linha.size() || linha[i] != ']') return false;
+  // O separador dos centesimos é ponto ou DOUS PONTOS: o fórmato admitte os dous,
+  // e ha gerador que usa o segundo. Troca-se antes de converter.
+  std::string segundos(linha.substr(principio_seg, i - principio_seg));
+  for (char& letra : segundos) if (letra == ':') letra = '.';
+  *tempo = minutos * 60.0 + std::atof(segundos.c_str());
+  *cursor = i + 1;
+  return true;
+}
+
+}  // namespace
+
+std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto) {
+  std::vector<LinhaDaLetra> linhas;
+  std::size_t principio = 0;
+  while (principio <= texto.size()) {
+    std::size_t fim = texto.find('\n', principio);
+    if (fim == std::string_view::npos) fim = texto.size();
+    std::string_view linha = texto.substr(principio, fim - principio);
+    if (!linha.empty() && linha.back() == '\r') linha.remove_suffix(1);
+    principio = fim + 1;
+
+    // Todos os carimbos da frente, e sómente depois o texto: o mesmo verso pode
+    // trazer varios tempos, e cada um d'elles gera a sua linha.
+    std::vector<double> tempos;
+    std::size_t cursor = 0;
+    double tempo = 0.0;
+    while (carimbo(linha, &cursor, &tempo)) tempos.push_back(tempo);
+    if (tempos.empty()) continue;  // linha sem carimbo: cabeçalho ou lixo
+
+    std::string corpo(linha.substr(cursor));
+    // Apara-se sómente o espaço da FRENTE: o do fim pode ser intencional em letra
+    // que se alinhe, e tirá-lo não melhora cousa alguma.
+    std::size_t desde = 0;
+    while (desde < corpo.size() &&
+           std::isspace(static_cast<unsigned char>(corpo[desde])) != 0)
+      ++desde;
+    corpo.erase(0, desde);
+    for (const double quando : tempos) linhas.push_back({quando, corpo});
+    if (fim == texto.size()) break;
+  }
+  std::stable_sort(linhas.begin(), linhas.end(),
+                   [](const LinhaDaLetra& a, const LinhaDaLetra& b) {
+                     return a.tempo < b.tempo;
+                   });
+  return linhas;
+}
+
+int linha_corrente(const std::vector<LinhaDaLetra>& linhas, double posicao) {
+  if (linhas.empty()) return -1;
+  if (!std::isfinite(posicao) || posicao < linhas.front().tempo) return -1;
+  // Busca binaria: a ultima linha cujo tempo não passa da posição. Linear serviria
+  // n'uma letra de cincoenta versos, mas isto corre vinte vezes por segundo, e
+  // n'uma letra longa somma.
+  std::size_t baixo = 0, alto = linhas.size();
+  while (baixo + 1 < alto) {
+    const std::size_t meio = baixo + (alto - baixo) / 2;
+    if (linhas[meio].tempo <= posicao) baixo = meio;
+    else alto = meio;
+  }
+  return static_cast<int>(baixo);
+}
+
+std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio) {
+  const std::filesystem::path onde = caminho_do_lrc(audio);
+  std::ifstream fonte(onde, std::ios::binary);
+  if (!fonte) return {};  // não ha letra: caso ordinario, e não erro
+  const std::string texto((std::istreambuf_iterator<char>(fonte)),
+                          std::istreambuf_iterator<char>());
+  return analysa_lrc(texto);
 }
 
 }  // namespace mysong::nucleo
