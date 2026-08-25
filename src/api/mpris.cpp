@@ -18,6 +18,7 @@
 #include <dbus/dbus.h>
 
 #include <cstring>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -79,6 +80,48 @@ void escreve_variante_bool(DBusMessageIter* pae, bool valor) {
   dbus_bool_t cru = valor ? TRUE : FALSE;
   dbus_message_iter_append_basic(&dentro, DBUS_TYPE_BOOLEAN, &cru);
   dbus_message_iter_close_container(pae, &dentro);
+}
+
+
+// escreve_metadados — o `a{sv}` do `Metadata`. Quatro chaves, e as quatro que o
+// `playerctl metadata` mostra por defeito.
+void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
+  DBusMessageIter variante, mapa;
+  dbus_message_iter_open_container(pae, DBUS_TYPE_VARIANT, "a{sv}", &variante);
+  dbus_message_iter_open_container(&variante, DBUS_TYPE_ARRAY, "{sv}", &mapa);
+
+  const nucleo::Fila& fila = tocador.fila();
+  const bool ha = !fila.vazia();
+  const std::string caminho(ha ? fila.corrente() : std::string_view());
+
+  const auto par = [&mapa](const char* chave, auto escriptor) {
+    DBusMessageIter entrada;
+    dbus_message_iter_open_container(&mapa, DBUS_TYPE_DICT_ENTRY, nullptr,
+                                     &entrada);
+    dbus_message_iter_append_basic(&entrada, DBUS_TYPE_STRING, &chave);
+    escriptor(&entrada);
+    dbus_message_iter_close_container(&mapa, &entrada);
+  };
+
+  par("mpris:trackid", [&](DBusMessageIter* onde) {
+    escreve_variante_caminho(onde, caminho_da_faixa(ha ? fila.indice() : 0, ha));
+  });
+  if (ha) {
+    par("xesam:url", [&](DBusMessageIter* onde) {
+      escreve_variante_texto(onde, url_do_arquivo(caminho));
+    });
+    par("xesam:title", [&](DBusMessageIter* onde) {
+      // O titulo é o NOME do arquivo, e não o caminho: é o que o operador lê no
+      // painel do systema, e o caminho inteiro alli não caberia.
+      escreve_variante_texto(onde,
+                             std::filesystem::path(caminho).filename().string());
+    });
+    par("mpris:length", [&](DBusMessageIter* onde) {
+      escreve_variante_int64(onde, segundos_para_micros(tocador.duracao()));
+    });
+  }
+  dbus_message_iter_close_container(&variante, &mapa);
+  dbus_message_iter_close_container(pae, &variante);
 }
 
 }  // namespace
