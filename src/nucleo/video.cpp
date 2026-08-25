@@ -145,5 +145,35 @@ std::string escapa_json(std::string_view crua) {
   return limpa;
 }
 
+std::string ordem_simples(std::string_view verbo) {
+  return "{\"command\":[\"" + escapa_json(verbo) + "\"]}\n";
+}
+
+std::string ordem_de_bandeira(std::string_view propriedade, bool ligada) {
+  return "{\"command\":[\"set_property\",\"" + escapa_json(propriedade) +
+         "\"," + (ligada ? "true" : "false") + "]}\n";
+}
+
+std::string ordem_de_numero(std::string_view propriedade, double valor) {
+  char molde[32] = {0};
+  std::snprintf(molde, sizeof(molde), "%.3f", valor);
+  return "{\"command\":[\"set_property\",\"" + escapa_json(propriedade) +
+         "\"," + molde + "]}\n";
+}
+
+std::string ordem_de_busca(double segundos) {
+  char molde[32] = {0};
+  std::snprintf(molde, sizeof(molde), "%.3f", segundos);
+  // ABSOLUTO, e não relativo: quem chama sabe onde quer estar, e relativo faria
+  // duas ordens seguidas somarem-se de modo que a tela não previa.
+  return std::string("{\"command\":[\"seek\",") + molde + ",\"absolute\"]}\n";
+}
+
+std::string ordem_de_busca_relativa(double deslocamento) {
+  char molde[32] = {0};
+  std::snprintf(molde, sizeof(molde), "%.3f", deslocamento);
+  return std::string("{\"command\":[\"seek\",") + molde + ",\"relative\"]}\n";
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
