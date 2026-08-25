@@ -361,9 +361,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
-                           " · b baixa · l letra · espaço pausa · n/p faixa"
-                           " · q sahe") |
+               ftxui::text("↑↓ anda · → entra · ← volta · / busca · r varre · b baixa"
+                           " · l letra · espaço pausa · n/p faixa · ,. busca no som"
+                           " · +- volume · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
