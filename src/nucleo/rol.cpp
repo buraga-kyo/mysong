@@ -115,5 +115,43 @@ std::string saneia_nome_de_rol(std::string_view crua) {
   return nome;
 }
 
+Roleiro::Roleiro(std::filesystem::path banco) : banco_(std::move(banco)) {
+  if (sqlite3_open_v2(banco_.c_str(), &punho_,
+                      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+                      nullptr) != SQLITE_OK) {
+    sqlite3_close(punho_);
+    punho_ = nullptr;
+    return;
+  }
+  if (sqlite3_exec(punho_, kEsquemaDoRol, nullptr, nullptr, nullptr) !=
+      SQLITE_OK) {
+    sqlite3_close(punho_);
+    punho_ = nullptr;
+    return;
+  }
+  // A versão assenta-se UMA vez. `IF NOT EXISTS` no esquema faz d'este
+  // constructor idempotente, e a conta abaixo impede a versão de se repetir.
+  int quantas = 0;
+  corre(punho_, "SELECT COUNT(*) FROM esquema_do_rol;", {}, {},
+        [&quantas](sqlite3_stmt* passo) {
+          quantas = sqlite3_column_int(passo, 0);
+        });
+  if (quantas == 0)
+    corre(punho_, "INSERT INTO esquema_do_rol VALUES (?);", {kVersaoDoRol}, {});
+}
+
+Roleiro::~Roleiro() {
+  if (punho_ != nullptr) sqlite3_close(punho_);
+}
+
+bool Roleiro::aberto() const noexcept { return punho_ != nullptr; }
+
+int Roleiro::versao() const noexcept {
+  int qual = 0;
+  corre(punho_, "SELECT versao FROM esquema_do_rol LIMIT 1;", {}, {},
+        [&qual](sqlite3_stmt* passo) { qual = sqlite3_column_int(passo, 0); });
+  return qual;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
