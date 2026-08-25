@@ -7,12 +7,49 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <unistd.h>
+
 #include <filesystem>
 #include <string>
 
 #include "nucleo/varredura.hpp"
 
 namespace nu = mysong::nucleo;
+
+namespace {
+
+// Uma COVA propria por caso, para que corrida alguma veja o lixo de outra. O
+// nome tras o pid, que a bateria pode correr em paralello.
+class Cova {
+ public:
+  Cova() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-varredura-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++semente_));
+    std::filesystem::create_directories(caminho_ / "acervo");
+  }
+  ~Cova() {
+    std::error_code erro;
+    std::filesystem::permissions(caminho_,
+                                 std::filesystem::perms::owner_all,
+                                 std::filesystem::perm_options::add, erro);
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+
+  std::filesystem::path acervo() const { return caminho_ / "acervo"; }
+  std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+  const std::filesystem::path& raiz() const { return caminho_; }
+
+ private:
+  std::filesystem::path caminho_;
+  static int semente_;
+};
+
+int Cova::semente_ = 0;
+
+}  // namespace
 
 TEST_CASE("a extensão de audio aceita-se em qualquer caixa") {
   CHECK(nu::extensao_de_audio(".mp3"));
