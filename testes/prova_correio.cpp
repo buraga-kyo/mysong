@@ -13,12 +13,38 @@
 
 namespace tui = mysong::tui;
 
+namespace {
+
+tui::Linha linha(const std::string& texto) { return {texto, texto, 0, 0, {}}; }
+
+}  // namespace
+
 TEST_CASE("correio vazio não tem o que colher") {
   tui::Correio correio;
   std::vector<tui::Linha> achados;
   std::string recado;
   CHECK_FALSE(correio.colhe(&achados, &recado));
   CHECK(correio.geracao() == 0);
+}
+
+TEST_CASE("a colheita CONSOME, e a segunda vem vazia") {
+  tui::Correio correio;
+  correio.poe({linha("Toccata")}, "um achado");
+  CHECK(correio.geracao() == 1);
+
+  std::vector<tui::Linha> achados;
+  std::string recado;
+  REQUIRE(correio.colhe(&achados, &recado));
+  CHECK(achados.size() == 1);
+  CHECK(achados[0].texto == "Toccata");
+  CHECK(recado == "um achado");
+
+  // A SEGUNDA é falsa. Sem o consumo, a tela poria a lista outra vez a cada quadro,
+  // e o operador não poderia andar n'ella: o eleito voltava ao alto vinte vezes por
+  // segundo.
+  CHECK_FALSE(correio.colhe(&achados, &recado));
+  // E a geração NÃO decresce ao colher: ella conta o que se pôz, não o que sobra.
+  CHECK(correio.geracao() == 1);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
