@@ -302,6 +302,18 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir, &varrida);
 
   auto pintor = ftxui::Renderer([&] {
+    // A varredura concluiu: o navegador recarrega UMA vez, e a bandeira impede que
+    // elle releia o banco vinte vezes por segundo para sempre.
+    //
+    // Isto corria no fio do RELOGIO, e mudou-se para cá. O navegador é mutado pelo
+    // tratador de teclas, que corre no fio da tela; recarregá-lo do relogio era
+    // mutá-lo de um fio e lê-lo de outro. O pintor corre no mesmo fio do tratador,
+    // donde a corrida sahe. Não é embelleçamento: é o defeito da corrida a fechar-se.
+    if (varrida.load() && !recarregado) {
+      recarregado = true;
+      livraria.reabre();
+      navegador.recarrega();
+    }
     const tui::Retracto retracto = retracto_do(tocador);
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
@@ -477,13 +489,6 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       tocador.pulsa();
       analisador.pulsa();
       mpris.pulsa();
-      // A varredura concluiu: o navegador recarrega UMA vez. A bandeira impede
-      // que elle releia o banco vinte vezes por segundo para sempre.
-      if (varrida.load() && !recarregado) {
-        recarregado = true;
-        livraria.reabre();
-        navegador.recarrega();
-      }
       // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
       // tela escreve zero: é a correcção da issue #48.
       const std::string agora = assignatura_do_visivel(
