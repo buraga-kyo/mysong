@@ -181,6 +181,17 @@ target_link_libraries(fita_espectro PRIVATE mysong_core)
 # target_sources, ACRESCENTANDO linha, como manda a regra d'esta Casa.
 target_sources(mysong_core PRIVATE src/tui/transporte.cpp src/tui/commando.cpp)
 
+# E o nucleo passa a ligar ftxui::component, que é onde `ftxui::Event` mora.
+# ACRESCENTA-SE em linha propria, e não se edita a linha 70, que é lavra alheia.
+#
+# A escolha é deliberada, e a alternativa foi pesada: podia-se inventar um tipo
+# de tecla proprio e mapear `ftxui::Event` para elle em janella.cpp. Mas então o
+# mapeamento moraria na UNICA camada que não se prova, e é justamente o
+# mapeamento que o criterio C6 quer aferir. Prova-se pois contra o evento REAL, e
+# o preço é esta linha. Vale notar que a issue #6 já pôs src/tui/ no nucleo com
+# ftxui::dom; esta linha segue o precedente, e não abre porta nova.
+target_link_libraries(mysong_core PUBLIC ftxui::component)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
