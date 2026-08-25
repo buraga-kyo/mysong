@@ -130,5 +130,20 @@ TEST_CASE("as ordens sahem em JSON de uma linha, com o valor na fórma certa") {
   }
 }
 
+TEST_CASE("todo desfecho da fita tem nome, e nenhum é o do vizinho") {
+  const nu::Fita todos[] = {nu::Fita::Rodando, nu::Fita::SemMpv,
+                            nu::Fita::SemVideo, nu::Fita::SemSoquete,
+                            nu::Fita::NaoAbriu};
+  std::vector<std::string> ditos;
+  for (const nu::Fita fita : todos) {
+    const std::string razao(nu::razao_da_fita(fita));
+    CHECK_FALSE(razao.empty());
+    CHECK(razao != "desfecho sem nome");
+    ditos.push_back(razao);
+  }
+  std::sort(ditos.begin(), ditos.end());
+  CHECK(std::unique(ditos.begin(), ditos.end()) == ditos.end());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
