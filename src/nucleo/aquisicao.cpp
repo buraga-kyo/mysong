@@ -330,6 +330,51 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                                         : Colheita::FalhouAEtiqueta;
 }
 
+std::vector<std::string> argumentos_da_busca(const std::string& termo,
+                                             int quantos) {
+  // Apara-se em vinte: busca maior gasta rede e não cabe na tabella. E em um pelo
+  // baixo, que buscar zero é pedido sem sentido.
+  const int quantas = quantos < 1 ? 1 : (quantos > 20 ? 20 : quantos);
+  return {"yt-dlp",
+          "--no-warnings",
+          "--flat-playlist",
+          "--print", "%(title)s",
+          "--print", "%(uploader)s",
+          "--print", "%(duration)s",
+          "--print", "%(webpage_url)s",
+          "--",
+          "ytsearch" + std::to_string(quantas) + ":" + termo};
+}
+
+std::vector<Achado> le_achados(const std::string& sahida) {
+  std::vector<std::string> linhas;
+  std::istringstream fonte(sahida);
+  std::string linha;
+  while (std::getline(fonte, linha)) {
+    if (!linha.empty() && linha.back() == '\r') linha.pop_back();
+    linhas.push_back(linha == "NA" ? std::string() : apara(linha));
+  }
+  std::vector<Achado> achados;
+  // Quatro linhas por achado. Sobrando linhas que não completem um grupo de quatro,
+  // descartam-se: achado meio não se mostra, que o operador o escolheria e a baixa
+  // falharia sem URL.
+  for (std::size_t i = 0; i + 3 < linhas.size(); i += 4) {
+    Achado achado;
+    achado.titulo = linhas[i];
+    achado.canal = linhas[i + 1];
+    achado.duracao = 0;
+    for (const unsigned char c : linhas[i + 2])
+      if (std::isdigit(c) == 0) { achado.duracao = -1; break; }
+    if (achado.duracao == 0 && !linhas[i + 2].empty())
+      achado.duracao = std::atoi(linhas[i + 2].c_str());
+    if (achado.duracao < 0) achado.duracao = 0;
+    achado.url = linhas[i + 3];
+    if (achado.url.empty()) continue;  // sem URL não ha o que baixar
+    achados.push_back(achado);
+  }
+  return achados;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
