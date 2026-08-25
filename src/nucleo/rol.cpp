@@ -171,5 +171,21 @@ std::vector<Rol> Roleiro::rois() const {
   return lista;
 }
 
+int Roleiro::cria(std::string_view nome) {
+  const std::string limpo = saneia_nome_de_rol(nome);
+  if (limpo.empty()) return 0;
+  if (!corre(punho_, "INSERT INTO rol (nome) VALUES (?);", {}, {limpo}))
+    return 0;  // nome repetido cahe aqui, pelo UNIQUE
+  return static_cast<int>(sqlite3_last_insert_rowid(punho_));
+}
+
+bool Roleiro::renomeia(int id, std::string_view nome) {
+  const std::string limpo = saneia_nome_de_rol(nome);
+  if (limpo.empty()) return false;
+  if (!corre(punho_, "UPDATE rol SET nome = ?2 WHERE id = ?1;", {id}, {limpo}))
+    return false;  // nome repetido cahe aqui tambem, pelo UNIQUE
+  return sqlite3_changes(punho_) > 0;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
