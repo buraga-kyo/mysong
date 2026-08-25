@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cctype>
 #include <system_error>
+#include <vector>
 
 namespace mysong::nucleo {
 
@@ -61,6 +62,37 @@ void numero_e_titulo(const std::string& talo, int* numero, std::string* titulo) 
 }
 
 }  // namespace
+
+Faixa deriva_do_caminho(const std::filesystem::path& caminho,
+                        const std::filesystem::path& raiz) {
+  Faixa faixa;
+  faixa.caminho = caminho.string();
+  faixa.raiz = raiz.string();
+  // Os quatro bits acendem-se TODOS: a dedução é o piso, e quem lê a etiqueta
+  // apaga o bit do que a etiqueta disser. Assim nenhum campo fica a dizer que
+  // veio da etiqueta quando veio do caminho.
+  faixa.deduzido = kDeduziuArtista | kDeduziuAlbum | kDeduziuTitulo |
+                   kDeduziuNumero;
+
+  numero_e_titulo(caminho.stem().string(), &faixa.numero, &faixa.titulo);
+
+  // Os componentes ENTRE a raiz e o arquivo. Vazio quer dizer arquivo posto
+  // directamente na raiz, e ahi artista e album ficam vazios de proposito.
+  std::vector<std::string> degraus;
+  const std::filesystem::path relativo =
+      std::filesystem::relative(caminho.parent_path(), raiz);
+  for (const std::filesystem::path& parte : relativo)
+    if (parte != "." && parte != "..") degraus.push_back(parte.string());
+
+  if (!degraus.empty()) {
+    faixa.artista = degraus.front();  // o componente logo sob a raiz
+    faixa.album = degraus.back();     // o directorio que contem o arquivo
+    // Hierarchia de UM degrau: o mesmo directorio seria artista e album, e
+    // dizer que o album se chama como o artista é affirmar o que não se sabe.
+    if (degraus.size() == 1) faixa.album.clear();
+  }
+  return faixa;
+}
 
 bool extensao_de_audio(std::string_view extensao) {
   const std::string baixa = minuscula(extensao);
