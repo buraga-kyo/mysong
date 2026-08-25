@@ -98,7 +98,10 @@ ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
 // lavraria o losango que a regra proscreve, e a Fita já o torna inexprimivel.
 // Os fundos descem pela rampa, do acento cardeal ao fundo do painel, que é a
 // leitura da esquerda para a direita.
-ftxui::Element fita_dos_botoes(const Retracto& retracto) {
+//
+// Devolve a FITA, e não o elemento: quem compõe precisa da largura que ella pede
+// ANTES de repartir o que sobra, e a fita é quem a sabe dizer.
+Fita fita_dos_botoes(const Retracto& retracto) {
   const bool tocando = retracto.estado == nucleo::Estado::Tocando;
   Fita fita(Sentido::Dextra);
   fita.junta({" " + std::string(tocando ? "\u23f8" : "\u25b6") + " ",
@@ -106,7 +109,7 @@ ftxui::Element fita_dos_botoes(const Retracto& retracto) {
   fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
   fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
               tokens::v900, tokens::text_bright});
-  return fita_em_elemento(fita.compor());
+  return fita;
 }
 
 std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
@@ -129,13 +132,19 @@ ftxui::Element elemento_do_transporte(const Retracto& retracto,
   // A barra toma o que sobra, e nunca menos que uma collunha. A subtracção é
   // GUARDADA: em std::size_t, tirar mais do que ha dá numero enorme, e a barra
   // tentaria pintar bilhões de collunhas em vez de encolher.
-  const std::size_t reservado = relogio.size() + som.size() + 14;
+  // A largura da fita PERGUNTA-SE Á FITA. Estava chumbada em quatorze, e a fita
+  // pede vinte e uma: a linha transbordava, o FTXUI aparava o fim, e o que se
+  // perdia era o espaço entre o relogio e o volume. Numero chumbado alli é o
+  // defeito, e não a sua magnitude; quem sabe a largura é quem a compõe.
+  const Fita fita = fita_dos_botoes(retracto);
+  const std::size_t reservado =
+      fita.largura_exigida() + 1 + relogio.size() + som.size();
   const std::size_t larg_barra = largura > reservado ? largura - reservado : 1;
   const std::size_t cheias =
       enchimento(retracto.posicao, retracto.duracao, larg_barra);
 
   return ftxui::hbox({
-      fita_dos_botoes(retracto),
+      fita_em_elemento(fita.compor()),
       ftxui::text(" "),
       pinta(repete(kBarraCheia, cheias), tokens::v500),
       pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset),
