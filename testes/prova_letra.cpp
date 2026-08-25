@@ -6,11 +6,16 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cctype>
 #include <limits>
 #include <string>
 #include <vector>
 
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
+
 #include "nucleo/letra.hpp"
+#include "tui/tabella.hpp"
 
 namespace nu = mysong::nucleo;
 
@@ -167,6 +172,48 @@ TEST_CASE("a linha corrente acha-se, e antes da primeira dá menos um") {
   CHECK(nu::linha_corrente(uma, 5.0) == 0);
   CHECK(nu::linha_corrente(uma, 500.0) == 0);
 }
+
+namespace {
+
+// sem_escape — a linha despida do escape, que é o que ella MOSTRA.
+std::string sem_escape(const std::string& linha) {
+  std::string limpa;
+  for (std::size_t i = 0; i < linha.size(); ++i) {
+    const unsigned char oct = static_cast<unsigned char>(linha[i]);
+    if (oct == 0x1b) {
+      while (i < linha.size() &&
+             std::isalpha(static_cast<unsigned char>(linha[i])) == 0)
+        ++i;
+      continue;
+    }
+    if (oct == '\r') continue;
+    limpa += linha[i];
+  }
+  return limpa;
+}
+
+// as_linhas — o painel da letra pintado em écran de PAPEL, linha a linha.
+std::vector<std::string> as_linhas(
+    const std::vector<nu::LinhaDaLetra>& letra, double posicao,
+    std::size_t altura, std::size_t largura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(static_cast<int>(largura)),
+      ftxui::Dimension::Fixed(static_cast<int>(altura)));
+  ftxui::Render(ecran, mysong::tui::elemento_da_letra(
+                           letra, nu::linha_corrente(letra, posicao), altura,
+                           largura));
+  std::vector<std::string> fóra;
+  std::string corrente;
+  for (const char oct : ecran.ToString()) {
+    if (oct != '\n') { corrente += oct; continue; }
+    fóra.push_back(sem_escape(corrente));
+    corrente.clear();
+  }
+  if (!corrente.empty()) fóra.push_back(sem_escape(corrente));
+  return fóra;
+}
+
+}  // namespace
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
