@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace mysong::nucleo {
@@ -47,11 +48,29 @@ std::vector<std::string> argumentos_do_chafa(const std::filesystem::path& imagem
                                              std::size_t collunas,
                                              std::size_t linhas);
 
-// A CAPA renderizada: as linhas prontas a pintar, com os escapes dentro.
+// Uma CORRIDA de célullas da mesma tinta: o texto, e as duas côres. Menos um em
+// qualquer componente quer dizer «sem côr», que é o que o `ESC[39m` e o `ESC[49m` do
+// chafa dizem.
+//
+// Guarda-se em corridas, e NÃO em cadeia com os escapes dentro. A razão foi medida:
+// pondo-se a cadeia crua n'um `ftxui::text`, o FTXUI conta os octetos do escape como
+// LARGURA, donde a capa reclamava oitenta collunhas onde pintava quinze e esmagava a
+// barra lateral e a tabella. Lê-se «ARTISTS» como « A».
+struct Corrida {
+  std::string texto;
+  int r_frente = -1, g_frente = -1, b_frente = -1;
+  int r_fundo = -1, g_fundo = -1, b_fundo = -1;
+};
+
+// A CAPA renderizada: as linhas, cada uma em corridas de côr.
 struct CapaPintada {
-  std::vector<std::string> linhas;
+  std::vector<std::vector<Corrida>> linhas;
   bool achada = false;
 };
+
+// analysa_sgr — parte uma linha de sahida do chafa em corridas. Funcção PURA, e por
+// isso aferivel contra linhas escriptas á mão sem chamar o chafa.
+std::vector<Corrida> analysa_sgr(std::string_view linha);
 
 // ── E AGORA O QUE TOCA O MUNDO.
 
