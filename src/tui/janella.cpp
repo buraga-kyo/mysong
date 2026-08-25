@@ -117,9 +117,12 @@ constexpr int ACHADOS_POR_BUSCA = 15;
 //
 // A posição entra em SEGUNDOS inteiros, e não em decimos: a barra e o relogio mostram
 // segundos, e a fracção mudaria a assignatura sem mudar um pixel.
+// O que ella NÃO olha, e por que. A secção, o eleito, a trilha, o termo, o modo de
+// digitar e o recado da rede mudam SÓMENTE em resposta a tecla, e o FTXUI repinta
+// depois de toda tecla tratada, por construcção: o `RunOnce` d'elle chama `Draw`
+// sempre que executou tarefa. Postos aqui, esse estado seria LIDO d'este fio e MUTADO
+// no fio da tela, e cadeia lida enquanto outro fio a muta não é engano benigno.
 std::string assignatura_do_visivel(nucleo::Tocador& tocador,
-                                   const tui::Navegador& navegador,
-                                   int digita, const std::string& termo_em_curso,
                                    const std::string& recado, bool mostra_letra,
                                    bool varrida, unsigned long geracao) {
   std::string marca;
@@ -146,9 +149,6 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
           static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
                            99.0f) + 32);
   marca += ':';
-  marca += std::to_string(digita);
-  marca += termo_em_curso;
-  marca += ':';
   marca += recado;
   marca += mostra_letra ? 'L' : 'e';
   marca += varrida ? 'v' : '.';
@@ -157,15 +157,6 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   // nada apparecia até o operador carregar n'uma tecla por acaso.
   marca += ':';
   marca += std::to_string(geracao);
-  marca += ':';
-  marca += std::to_string(static_cast<int>(navegador.secao()));
-  marca += ':';
-  marca += std::to_string(navegador.eleito());
-  marca += ':';
-  marca += std::to_string(navegador.vista().size());
-  marca += ':';
-  marca += navegador.termo();
-  for (const std::string& degrau : navegador.trilha()) marca += degrau;
   return marca;
 }
 
@@ -314,7 +305,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
   std::vector<nucleo::LinhaDaLetra> letra;
   std::string letra_de_qual;
-  bool mostra_letra = false;
+  // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
+  // assignatura, e o fio da tela troca-o na tecla `l`.
+  std::atomic<bool> mostra_letra{false};
   nucleo::Galeria galeria;  // a capa converte-se uma vez por album e por tamanho
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
@@ -451,7 +444,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                        larg_capa, alt_capa),
                }),
                ftxui::text(""),
-               mostra_letra
+               mostra_letra.load()
                    ? tui::elemento_da_letra(
                          letra,
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
@@ -527,7 +520,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         termo_em_curso.clear();
         return true;
       case tui::Verbo::TrocaLetra:
-        mostra_letra = !mostra_letra;
+        mostra_letra.store(!mostra_letra.load());
         return true;
       case tui::Verbo::AbreProcura:
         digita = Digita::Procura;
@@ -584,9 +577,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
       // tela escreve zero: é a correcção da issue #48.
       const std::string agora = assignatura_do_visivel(
-          tocador, navegador, static_cast<int>(digita), termo_em_curso,
-          nucleo::texto_do_andamento(estaleiro.andamento()), mostra_letra,
-          varrida.load(), correio.geracao());
+          tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
+          mostra_letra.load(), varrida.load(), correio.geracao());
       if (agora != ultima_assignatura) {
         ultima_assignatura = agora;
         tela.PostEvent(ftxui::Event::Custom);
