@@ -249,5 +249,25 @@ TEST_CASE("recarregar conserva a trilha que sobreviveu, e cede a que não") {
   CHECK(navegador.secao() == tui::Secao::Faixas);
 }
 
+TEST_CASE("acervo vazio dá vista vazia, e ordem alguma estoura") {
+  const Cova cova;  // banco algum se escreve
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  CHECK(navegador.vista().empty());
+  CHECK(navegador.eleito() == 0u);
+  navegador.desce();
+  navegador.sobe();
+  navegador.ao_fim();
+  navegador.ao_principio();
+  CHECK(navegador.eleito() == 0u);
+  CHECK_FALSE(navegador.entra());
+  CHECK_FALSE(navegador.volta());
+  CHECK(navegador.caminho_eleito().empty());
+  navegador.filtra("qualquer");
+  CHECK(navegador.vista().empty());
+  navegador.recarrega();
+  CHECK(navegador.vista().empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
