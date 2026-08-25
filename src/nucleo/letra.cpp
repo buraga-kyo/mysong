@@ -57,24 +57,11 @@ std::string url_da_busca(std::string_view artista, std::string_view titulo) {
 }
 
 std::string primeiro_objecto(std::string_view arranjo) {
-  std::size_t principio = arranjo.find('{');
-  if (principio == std::string_view::npos) return {};
-  int fundo = 0;
-  bool dentro_de_aspas = false, escapado = false;
-  for (std::size_t i = principio; i < arranjo.size(); ++i) {
-    const char octeto = arranjo[i];
-    // A ordem d'estas tres guardas é load-bearing. O escapado consome-se antes de
-    // tudo; as aspas mudam o modo; e sómente FÓRA das aspas as chaves contam. Sem
-    // isto, uma letra de musica que traga `}` fecharia o objecto a meio.
-    if (escapado) { escapado = false; continue; }
-    if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
-    if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
-    if (dentro_de_aspas) continue;
-    if (octeto == '{') ++fundo;
-    else if (octeto == '}' && --fundo == 0)
-      return std::string(arranjo.substr(principio, i - principio + 1));
-  }
-  return {};  // arranjo truncado: não se devolve objecto meio, devolve-se nada
+  // O RECORTE mudou de casa na issue #13: vive em api/jsonzinho.hpp, que é onde o
+  // JSON mora. Tinha-o aqui, e o catalogo precisaria de outro egual; duas cópias da
+  // mesma conta dão duas verdades, e a que se corrigisse deixava a outra a errar.
+  const std::vector<std::string> todos = api::objectos_do_arranjo(arranjo);
+  return todos.empty() ? std::string() : todos.front();
 }
 
 std::filesystem::path caminho_do_lrc(const std::filesystem::path& audio) {

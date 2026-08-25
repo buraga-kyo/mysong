@@ -194,6 +194,7 @@ std::string_view razao_da_colheita(Colheita colheita) {
     case Colheita::JaExiste: return "essa faixa já está no acervo";
     case Colheita::FalhouAoBaixar: return "o download falhou";
     case Colheita::FalhouAEtiqueta: return "baixou, mas a etiqueta não se escreveu";
+    case Colheita::Duvidosa: return "achado algum casou: fica duvidosa";
   }
   return "desfecho sem nome";
 }
@@ -271,6 +272,17 @@ bool escreve_etiqueta(const std::filesystem::path& arquivo,
 
 // acha_o_que_ficou — o yt-dlp põe a extensão, e nós não a sabemos de antemão.
 // Procura-se o irmão que principie pelo molde. Vazio quer dizer que nada ficou.
+// minuscula_ascii — a cadeia em caixa baixa, para as letras da taboa de ASCII. Não
+// dobra acento, e é de proposito: dobrar acento em UTF-8 pede taboa que esta Casa
+// não tem, e prometter menos é melhor que prometter e falhar no «á» contra o «a».
+std::string minuscula_ascii(std::string_view crua) {
+  std::string baixa;
+  baixa.reserve(crua.size());
+  for (const unsigned char letra : crua)
+    baixa += static_cast<char>(letra >= 'A' && letra <= 'Z' ? letra + 32 : letra);
+  return baixa;
+}
+
 std::filesystem::path acha_o_que_ficou(const std::filesystem::path& molde) {
   std::error_code erro;
   const std::string folha = molde.filename().string();
@@ -287,6 +299,42 @@ std::filesystem::path acha_o_que_ficou(const std::filesystem::path& molde) {
 
 }  // namespace
 
+int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
+                  int tolerancia) {
+  // Pedido sem duração não casa. Sem ella não ha crivo algum, e a tarefa manda
+  // marcar por duvidosa em vez de baixar cousa errada calada.
+  if (pedido.duracao <= 0) return -1;
+  const std::string alvo = minuscula_ascii(pedido.titulo);
+  int eleito = -1, eleito_com_titulo = -1;
+  int distancia_do_eleito = 0, distancia_com_titulo = 0;
+  for (std::size_t i = 0; i < achados.size(); ++i) {
+    const Achado& achado = achados[i];
+    if (achado.duracao <= 0) continue;  // achado sem duração não se pode crivar
+    const int distancia = achado.duracao > pedido.duracao
+                              ? achado.duracao - pedido.duracao
+                              : pedido.duracao - achado.duracao;
+    // O CRIVO da duração, e é o UNICO logar onde elle se applica. Não se repete no
+    // valor inicial dos melhores, e é de proposito: repetido, tirar este `continue`
+    // não mudava nada, e a mutação que o tirasse sobreviveria á bateria. Uma guarda
+    // que ninguem pode matar é guarda que ninguem sabe se presta.
+    if (distancia > tolerancia) continue;
+    if (eleito < 0 || distancia < distancia_do_eleito) {
+      distancia_do_eleito = distancia;
+      eleito = static_cast<int>(i);
+    }
+    // O segundo crivo: o titulo do pedido dentro do titulo do achado. Entre os que
+    // passam a duração, este separa a faixa certa da vizinha de egual comprimento.
+    if (alvo.empty() ||
+        minuscula_ascii(achado.titulo).find(alvo) == std::string::npos)
+      continue;
+    if (eleito_com_titulo < 0 || distancia < distancia_com_titulo) {
+      distancia_com_titulo = distancia;
+      eleito_com_titulo = static_cast<int>(i);
+    }
+  }
+  return eleito_com_titulo >= 0 ? eleito_com_titulo : eleito;
+}
+
 bool busca_no_youtube(const std::string& termo, int quantos,
                       std::vector<Achado>* achados) {
   if (termo.empty()) return false;
@@ -298,6 +346,23 @@ bool busca_no_youtube(const std::string& termo, int quantos,
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
+  // SEM URL, mas com titulo: busca-se o audio por si, e casa-se pela duração. É o
+  // caminho da issue #13, e é o mesmo `baixa` de sempre depois de achado o endereço:
+  // as etiquetas continuam a ser as que o operador disse, que aqui vêm do catalogo.
+  if (pedido.url.empty()) {
+    if (pedido.titulo.empty()) return Colheita::UrlRecusada;
+    std::vector<Achado> achados;
+    const std::string termo = pedido.artista.empty()
+                                  ? pedido.titulo
+                                  : pedido.artista + " " + pedido.titulo;
+    if (!busca_no_youtube(termo, 10, &achados)) return Colheita::SemFerramenta;
+    const int qual = melhor_achado(achados, pedido, TOLERANCIA_DO_CASAMENTO);
+    if (qual < 0) return Colheita::Duvidosa;
+    Pedido com_url = pedido;
+    com_url.url = achados[static_cast<std::size_t>(qual)].url;
+    return baixa(raiz, com_url, gravado);
+  }
+
   EtiquetaRemota remota;
   if (!sonda_url(pedido.url, &remota)) {
     // Não se distingue aqui «yt-dlp ausente» de «URL recusada» pelo codigo, que

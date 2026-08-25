@@ -45,6 +45,10 @@ struct Andamento {
   std::size_t na_espera = 0;
   std::size_t colhidas = 0;
   std::size_t falhadas = 0;
+  // As DUVIDOSAS contam-se á parte das falhadas (issue #13). Não é enfeite: faixa
+  // duvidosa não falhou, e dizer «falhou» faria o operador tentar outra vez a mesma
+  // cousa. O que ella pede é olho humano, e é o que a conta propria diz.
+  std::size_t duvidosas = 0;
   std::string ultima;  // a razão do ultimo desfecho; vazia quando nada acabou
 };
 
@@ -102,6 +106,7 @@ class Estaleiro {
   std::size_t pico_ = 0;
   std::size_t colhidas_ = 0;
   std::size_t falhadas_ = 0;
+  std::size_t duvidosas_ = 0;
   std::string ultima_;
   bool colheu_ = false;
   bool fechado_ = false;

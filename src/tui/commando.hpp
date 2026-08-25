@@ -54,6 +54,9 @@ enum class Verbo {
   SobeNoRol, DesceNoRol,
   // O VÍDEO (issue #17): abre a faixa eleita em janella propria do systema.
   AbreVideo,
+  // O CATALOGO DO SPOTIFY (issue #13). Dous: ler a lista, e baixá-la toda. Baixar a
+  // eleita é o Entra, que na secção do catalogo quer dizer baixar.
+  AbreCatalogo, BaixaTudo,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

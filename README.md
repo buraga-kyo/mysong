@@ -185,6 +185,8 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `t` | retira o item eleito da lista |
 | `K` / `J` | move o item para cima, para baixo |
 | `v` | abre a faixa eleita em janella de video |
+| `I` | le uma playlist publica do Spotify por catalogo |
+| `T` | baixa TODAS as faixas da lista lida |
 | `q` | sahe |
 
 Duas buscas ha, e ellas nao sao a mesma: o `/` FILTRA o que esta a vista, sem
@@ -207,6 +209,26 @@ A varredura passou a indexar as extensoes de video, e nao so as de audio: faixa 
 nao esta no indice nao se pode eleger. O `.mkv` entra pelo que o CAMINHO diz, sem
 etiqueta: a taglib nao le Matroska, e por isso a duracao delle fica em zero e a
 tabella mostra tempo vazio.
+
+### O catalogo do Spotify
+
+Colla-se a URL de uma playlist publica com `I`. A lista APPARECE antes de se baixar
+cousa alguma, com titulo, artista e duracao; Enter baixa a eleita, `T` baixa todas.
+
+A fronteira e declarada, e nao e technica: decifrar ou ripar o stream do Spotify e
+quebrar proteccao technica de um servico, e esta obra nao o faz. O que se le e a
+pagina publica de embutir, que o proprio Spotify serve a quem a peca sem chave nem
+conta, e o que se tira della e METADADO. O audio vem do YouTube, pelo yt-dlp. E o
+methodo do spotdl.
+
+O casamento e pela DURACAO, com tolerancia de doze segundos, e depois pelo titulo.
+Faixa que nao casa com confianca fica DUVIDOSA e nao se baixa: a linha do titulo
+conta as colhidas, as falhadas e as duvidosas a parte, que duvidosa nao e falha e
+dizer «falhou» faria o operador tentar outra vez a mesma cousa.
+
+O ALBUM que se grava e o nome da LISTA. Fica declarado por que: a pagina publica de
+embutir nao publica album algum, e o disco de onde a faixa sahiu o Spotify nao da sem
+chave nem conta.
 
 ### As listas
 

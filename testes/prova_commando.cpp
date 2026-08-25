@@ -78,6 +78,7 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('D'), ftxui::Event::Character('a'),
       ftxui::Event::Character('t'), ftxui::Event::Character('K'),
       ftxui::Event::Character('J'), ftxui::Event::Character('v'),
+      ftxui::Event::Character('I'), ftxui::Event::Character('T'),
       ftxui::Event::ArrowUp,
       ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
@@ -133,6 +134,10 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   // O `v` do video é MINUSCULA porque não estraga cousa gravada: abre janella, e
   // fechá-la não perde nada. As maiusculas ficam para o que muta o disco.
   CHECK(verbo(ftxui::Event::Character('v')) == tui::Verbo::AbreVideo);
+  // As duas do catalogo. MAIUSCULAS: a primeira abre porta de rede, e a segunda
+  // encommenda cincoenta baixas de uma vez.
+  CHECK(verbo(ftxui::Event::Character('I')) == tui::Verbo::AbreCatalogo);
+  CHECK(verbo(ftxui::Event::Character('T')) == tui::Verbo::BaixaTudo);
   // E a minuscula d'ellas continua a ser a do vi: `k` e `j` andam, e não movem.
   CHECK(verbo(ftxui::Event::Character('k')) == tui::Verbo::Sobe);
   CHECK(verbo(ftxui::Event::Character('j')) == tui::Verbo::Desce);

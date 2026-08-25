@@ -122,6 +122,13 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   // fechá-la não perde nada.
   if (tecla == ftxui::Event::Character('v')) return {Verbo::AbreVideo, 0.0};
 
+  // ── As duas do catalogo do Spotify (issue #13) ───────────────────────────
+  // O `I` de importar, e o `T` de todas. MAIUSCULAS as duas: a primeira abre porta
+  // de rede, e a segunda encommenda cincoenta baixas de uma vez. Tecla que gasta
+  // rede em quantidade não ha de ficar debaixo do dedo de quem anda na lista.
+  if (tecla == ftxui::Event::Character('I')) return {Verbo::AbreCatalogo, 0.0};
+  if (tecla == ftxui::Event::Character('T')) return {Verbo::BaixaTudo, 0.0};
+
   return {Verbo::Nada, 0.0};
 }
 
