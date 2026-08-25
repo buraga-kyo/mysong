@@ -22,6 +22,8 @@
 //                   só, ha_impedimento(), que a bateria prova por dublê.
 // ══════════════════════════════════════════════════════════════════════════
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -52,6 +54,37 @@ namespace nucleo = mysong::nucleo;
 namespace tui = mysong::tui;
 
 namespace {
+
+// caminho_do_indice — `$XDG_DATA_HOME/mysong/indice.sqlite3`, e sem elle
+// `~/.local/share/...`. Cria-se o directorio com modo 0700, como no precedente
+// do agenda_index.py: o que o operador escuta é dado d'elle, e não do mundo.
+std::filesystem::path caminho_do_indice() {
+  const char* dados = std::getenv("XDG_DATA_HOME");
+  std::filesystem::path raiz;
+  if (dados != nullptr && dados[0] != '\0') {
+    raiz = std::filesystem::path(dados);
+  } else {
+    const char* casa = std::getenv("HOME");
+    if (casa == nullptr) return {};
+    raiz = std::filesystem::path(casa) / ".local" / "share";
+  }
+  const std::filesystem::path pasta = raiz / "mysong";
+  std::error_code erro;
+  std::filesystem::create_directories(pasta, erro);
+  std::filesystem::permissions(pasta, std::filesystem::perms::owner_all,
+                               std::filesystem::perm_options::replace, erro);
+  return pasta / "indice.sqlite3";
+}
+
+// raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
+// que o operador com monte de rede não tenha de mover o acervo para casa.
+std::filesystem::path raiz_do_acervo() {
+  const char* posto = std::getenv("MYSONG_ACERVO");
+  if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
+  const char* casa = std::getenv("HOME");
+  if (casa == nullptr) return {};
+  return std::filesystem::path(casa) / "Música";
+}
 
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
 // pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
