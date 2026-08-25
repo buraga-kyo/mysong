@@ -102,10 +102,11 @@ std::filesystem::path raiz_do_acervo() {
 // conducção por passos da issue #34 existe justamente para isto: o fio pode
 // parar entre dous passos, e a bandeira `sahir` é onde elle olha.
 void varre_em_fio(const std::filesystem::path& banco,
-                  const std::filesystem::path& acervo, const bool& sahir,
+                  const std::filesystem::path& acervo,
+                  const std::atomic<bool>* sahir,
                   std::atomic<bool>* concluida) {
   nucleo::Varredura varredura(banco, {acervo});
-  while (!sahir && varredura.passo()) {
+  while (!sahir->load() && varredura.passo()) {
   }
   concluida->store(true);
 }
@@ -130,7 +131,8 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador) {
 
 // cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
 // na taboada acende aviso do compilador aqui, e não passa calado.
-void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
+void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
+             std::atomic<bool>& sahir) {
   switch (ordem.verbo) {
     case tui::Verbo::Nada: break;
     case tui::Verbo::Pausar: tocador.pausar(); break;
@@ -139,7 +141,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
     case tui::Verbo::Anterior: tocador.anterior(); break;
     case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
     case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
-    case tui::Verbo::Sahir: sahir = true; break;
+    case tui::Verbo::Sahir: sahir.store(true); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
     // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
@@ -208,7 +210,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   bool recarregado = false;
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
-  bool sahir = false;
+  // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
+  // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
+  // ainda que ninguem carregue em botão algum. Dentro de tmux essas sequencias vazam, e
+  // o que o operador vê é o teclado a cuspir lixo e a comer teclas.
+  //
+  // E esta Casa não usa rato: tratador de rato algum se ligou em issue alguma. Pagar o
+  // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
+  tela.TrackMouse(false);
+  std::atomic<bool> sahir{false};
   // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
   enum class Digita { Nada, Busca, Url } digita = Digita::Nada;
@@ -223,8 +233,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   bool mostra_letra = false;
   nucleo::Galeria galeria;  // a capa converte-se uma vez por album e por tamanho
 
-  std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
-                       std::cref(sahir), &varrida);
+  // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
+  // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
+  // sahindo o programma primeiro, liam memoria morta. Fio solto que aponta para pilha
+  // alheia não se justifica, e agora não ha nenhum.
+  std::vector<std::thread> ao_fundo;
+  ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir, &varrida);
 
   auto pintor = ftxui::Renderer([&] {
     const tui::Retracto retracto = retracto_do(tocador);
@@ -315,7 +329,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           // tela; deixa recado no aviso, e a tela lê-o.
           const std::string url = termo_em_curso;
           aviso_da_baixa = "a baixar...";
-          std::thread([&aviso_da_baixa, &varrida, &recarregado, url, banco] {
+          ao_fundo.emplace_back([&aviso_da_baixa, &varrida, &recarregado, url,
+                                 banco, &sahir] {
             std::filesystem::path ficou;
             nucleo::Pedido pedido;
             pedido.url = url;  // e o resto vem da rede, que o operador não disse
@@ -326,11 +341,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
               varrida.store(false);  // ha faixa nova: varre-se outra vez
               recarregado = false;
               nucleo::Varredura outra(banco, {raiz_do_acervo()});
-              while (outra.passo()) {
+              while (!sahir.load() && outra.passo()) {
               }
               varrida.store(true);
             }
-          }).detach();
+          });
         }
         return true;
       }
@@ -369,8 +384,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (varrida.load()) {  // uma varredura por vez, e não vinte
           varrida.store(false);
           recarregado = false;
-          std::thread(varre_em_fio, banco, raiz_do_acervo(), std::cref(sahir),
-                      &varrida).detach();
+          ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir,
+                                &varrida);
         }
         return true;
       case tui::Verbo::Entra:
@@ -387,7 +402,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         return true;
       default:
         cumprir(ordem, tocador, sahir);
-        if (sahir) tela.Exit();
+        if (sahir.load()) tela.Exit();
         return true;
     }
   });
@@ -397,7 +412,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
-    while (!sahir) {
+    while (!sahir.load()) {
       tocador.pulsa();
       analisador.pulsa();
       mpris.pulsa();
@@ -414,12 +429,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   });
 
   tela.Loop(janella);
-  sahir = true;  // a sahida pela tela tambem para o relogio
+  sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
-  // O varredor espera-se tambem: elle tem referencia para a bandeira e para o
-  // banco, que vivem nesta pilha. Deixá-lo solto seria fio a ler memoria de
-  // quadro já desfeito, e isso não perdoa.
-  if (varredor.joinable()) varredor.join();
+  // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
+  // banco, que vivem nesta pilha. Deixar um solto é fio a ler memoria de quadro já
+  // desfeito, e isso não perdoa.
+  for (std::thread& fio : ao_fundo)
+    if (fio.joinable()) fio.join();
   return 0;
 }
 
@@ -435,6 +451,7 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
   // limite perdia as ultimas linhas, que é justamente o que ella existe para
   // dizer. Tomando-se a tela toda, cabe tudo, e o pé deixa de ser sorte.
   auto tela = ftxui::ScreenInteractive::Fullscreen();
+  tela.TrackMouse(false);  // idem: esta tela é a primeira que o operador vê
   auto pintor = ftxui::Renderer(
       [&relatorio] { return tui::elemento_dos_requisitos(relatorio); });
   auto quadro = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
