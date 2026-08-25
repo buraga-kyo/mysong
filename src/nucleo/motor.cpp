@@ -5,8 +5,16 @@
 // do nucleo fala com o Motor abstracto, e por isso todo o resto se prova sem
 // placa de som.
 //
+// E inclue o cabeçalho SEM ligar a bibliotheca: as funcções chamam-se pela taboa
+// de libmpv.hpp, aberta por dlopen. Ligada, o carregador dynamico mataria o
+// processo antes do main na machina sem libmpv, e a sonda dos requisitos nunca
+// correria para nomear a falta. Vêde a issue #28.
+//
 // DOMÍNIO ......... um punho da libmpv, e ordens já aparadas ou por aparar.
 // CONTRA-DOMÍNIO .. som na saída do PipeWire, e as grandezas do relogio.
+// INVARIANTE 0 .... nenhum symbolo da libmpv se referencia aqui: nm -uC sobre
+//                   este objecto não acha mpv_ algum, e é d'ahi que binario
+//                   nenhum d'esta obra a traz por DT_NEEDED.
 // INVARIANTE ...... o punho pertence a UM objecto só. A cópia esta supprimida,
 //                   o move deixa o cedente com punho nullo, e o destructor
 //                   chama mpv_terminate_destroy uma vez e uma só. Não ha
@@ -21,21 +29,26 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/motor.hpp"
 
-#include <mpv/client.h>
+#include "nucleo/libmpv.hpp"
 
 #include <string_view>
 
 namespace mysong::nucleo {
 namespace {
 
+// A taboa, já atada. Nunca é nulla aqui: abrir() é a UNICA porta para um
+// MotorMpv existir, e recusa antes de tudo quando a taboa não abre; donde toda
+// linha d'este arquivo que chame por aqui corre depois d'aquella recusa.
+const TaboaDaLibmpv& mpv() { return *libmpv(); }
+
 // Assenta uma opção ANTES de mpv_initialize, e diz porque falhou se falhar.
 bool assenta(::mpv_handle* punho, const char* nome, const char* valor,
              std::string* razao) {
-  const int codigo = mpv_set_option_string(punho, nome, valor);
+  const int codigo = mpv().mpv_set_option_string(punho, nome, valor);
   if (codigo >= 0) return true;
   if (razao) {
     *razao = std::string("não pude assentar ") + nome + '=' + valor + ": " +
-             mpv_error_string(codigo);
+             mpv().mpv_error_string(codigo);
   }
   return false;
 }
@@ -44,7 +57,8 @@ bool assenta(::mpv_handle* punho, const char* nome, const char* valor,
 // erro: quem nada toca não tem posição, e zero é o retracto d'esse nada.
 double le_dobro(::mpv_handle* punho, const char* nome) {
   double valor = 0.0;
-  if (mpv_get_property(punho, nome, MPV_FORMAT_DOUBLE, &valor) < 0) return 0.0;
+  if (mpv().mpv_get_property(punho, nome, MPV_FORMAT_DOUBLE, &valor) < 0)
+    return 0.0;
   return valor;
 }
 
@@ -57,7 +71,7 @@ class Cama {
  public:
   explicit Cama(::mpv_handle* punho) noexcept : punho_(punho) {}
   ~Cama() {
-    if (punho_ != nullptr) mpv_terminate_destroy(punho_);
+    if (punho_ != nullptr) mpv().mpv_terminate_destroy(punho_);
   }
   Cama(const Cama&) = delete;
   Cama& operator=(const Cama&) = delete;
@@ -80,9 +94,9 @@ class Cama {
 // falhar que esta Casa não aceita.
 int observa_relogio(::mpv_handle* punho) {
   const int pela_posicao =
-      mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
+      mpv().mpv_observe_property(punho, 0, "time-pos", MPV_FORMAT_DOUBLE);
   if (pela_posicao < 0) return pela_posicao;
-  return mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
+  return mpv().mpv_observe_property(punho, 0, "duration", MPV_FORMAT_DOUBLE);
 }
 
 }  // namespace
@@ -101,15 +115,20 @@ MotorMpv::MotorMpv(MotorMpv&& outro) noexcept
 }
 
 MotorMpv::~MotorMpv() {
-  if (punho_ != nullptr) mpv_terminate_destroy(punho_);
+  if (punho_ != nullptr) mpv().mpv_terminate_destroy(punho_);
 }
 
 // A FABRICA. Unico caminho para um MotorMpv existir; quem falha não tem
 // objecto, e não um objecto a que se deva perguntar se serve.
 std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
+  // A taboa ANTES de tudo: sem ella não ha funcção que se chame, e a razão que
+  // ella devolve é a que o operador ha de ler. É por aqui que a falta da
+  // libmpv chega como recusa nomeada, e não como morte no carregador.
+  if (libmpv(razao) == nullptr) return std::nullopt;
+
   // Da cama ao MotorMpv, o punho tem dono a todo instante: nenhum caminho de
   // sahida d'esta funcção o deixa aberto, e nenhum d'elles o desfaz duas vezes.
-  Cama cama(mpv_create());
+  Cama cama(mpv().mpv_create());
   if (cama.punho() == nullptr) {
     if (razao) *razao = "mpv_create não deu punho algum";
     return std::nullopt;
@@ -123,10 +142,11 @@ std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
     return std::nullopt;
   }
 
-  const int codigo = mpv_initialize(cama.punho());
+  const int codigo = mpv().mpv_initialize(cama.punho());
   if (codigo < 0) {
     if (razao) {
-      *razao = std::string("mpv_initialize: ") + mpv_error_string(codigo);
+      *razao = std::string("mpv_initialize: ") +
+               mpv().mpv_error_string(codigo);
     }
     return std::nullopt;
   }
@@ -134,7 +154,8 @@ std::optional<MotorMpv> MotorMpv::abrir(std::string* razao) {
   const int visto = observa_relogio(cama.punho());
   if (visto < 0) {
     if (razao) {
-      *razao = std::string("mpv_observe_property: ") + mpv_error_string(visto);
+      *razao = std::string("mpv_observe_property: ") +
+               mpv().mpv_error_string(visto);
     }
     return std::nullopt;
   }
@@ -154,7 +175,7 @@ namespace {
 bool aguarda_carga(::mpv_handle* punho, double prazo) {
   bool comecou = false;
   for (;;) {
-    ::mpv_event* evento = mpv_wait_event(punho, prazo);
+    ::mpv_event* evento = mpv().mpv_wait_event(punho, prazo);
     switch (evento->event_id) {
       case MPV_EVENT_START_FILE:
         comecou = true;
@@ -179,7 +200,7 @@ bool aguarda_carga(::mpv_handle* punho, double prazo) {
 // faixas é NOSSA, e não d'elle.
 bool MotorMpv::tocar(const std::string& caminho) {
   const char* ordem[] = {"loadfile", caminho.c_str(), "replace", nullptr};
-  if (punho_ == nullptr || mpv_command(punho_, ordem) < 0) return false;
+  if (punho_ == nullptr || mpv().mpv_command(punho_, ordem) < 0) return false;
 
   if (!aguarda_carga(punho_, 5.0)) {
     estado_ = Estado::Parado;
@@ -194,15 +215,18 @@ bool MotorMpv::tocar(const std::string& caminho) {
   return true;
 }
 
+// A versão da interface, ou ZERO quando a libmpv não está presente: é o UNICO
+// logar d'este arquivo que se chama sem motor algum, e por isso confere a taboa.
 unsigned long MotorMpv::versao_da_interface() noexcept {
-  return mpv_client_api_version();
+  const TaboaDaLibmpv* const taboa = libmpv();
+  return taboa != nullptr ? taboa->mpv_client_api_version() : 0UL;
 }
 
 // Pausar e retomar são a MESMA propriedade do mpv, com bandeira contraria.
 bool MotorMpv::pausar() {
   int sim = 1;
   if (punho_ == nullptr ||
-      mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &sim) < 0) {
+      mpv().mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &sim) < 0) {
     return false;
   }
   estado_ = Estado::Pausado;
@@ -212,7 +236,7 @@ bool MotorMpv::pausar() {
 bool MotorMpv::retomar() {
   int nao = 0;
   if (punho_ == nullptr ||
-      mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &nao) < 0) {
+      mpv().mpv_set_property(punho_, "pause", MPV_FORMAT_FLAG, &nao) < 0) {
     return false;
   }
   estado_ = Estado::Tocando;
@@ -225,7 +249,7 @@ bool MotorMpv::buscar(double segundos) {
   if (punho_ == nullptr) return false;
   const std::string alvo = std::to_string(aparar_busca(segundos, duracao_));
   const char* ordem[] = {"seek", alvo.c_str(), "absolute", nullptr};
-  return mpv_command(punho_, ordem) >= 0;
+  return mpv().mpv_command(punho_, ordem) >= 0;
 }
 
 // O volume do MOTOR, jamais o do systema: o do systema pertence ao vol.sh, e
@@ -233,7 +257,8 @@ bool MotorMpv::buscar(double segundos) {
 bool MotorMpv::volume(int porcento) {
   if (punho_ == nullptr) return false;
   double valor = static_cast<double>(aparar_volume(porcento));
-  return mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >= 0;
+  return mpv().mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >=
+         0;
 }
 
 double MotorMpv::posicao() const { return posicao_; }
@@ -242,10 +267,10 @@ Estado MotorMpv::estado() const { return estado_; }
 
 std::string MotorMpv::propriedade(const char* nome) const {
   if (punho_ == nullptr) return {};
-  char* texto = mpv_get_property_string(punho_, nome);
+  char* texto = mpv().mpv_get_property_string(punho_, nome);
   if (texto == nullptr) return {};
   std::string colhido(texto);
-  mpv_free(texto);
+  mpv().mpv_free(texto);
   return colhido;
 }
 
@@ -255,7 +280,7 @@ std::string MotorMpv::propriedade(const char* nome) const {
 void MotorMpv::bombear() {
   if (punho_ == nullptr) return;
   for (;;) {
-    ::mpv_event* evento = mpv_wait_event(punho_, 0.0);
+    ::mpv_event* evento = mpv().mpv_wait_event(punho_, 0.0);
     if (evento->event_id == MPV_EVENT_NONE) return;
 
     if (evento->event_id == MPV_EVENT_PROPERTY_CHANGE) {

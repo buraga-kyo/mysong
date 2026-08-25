@@ -87,12 +87,18 @@ target_sources(mysong_core PRIVATE src/nucleo/fila.cpp src/nucleo/tocador.cpp)
 
 # A libmpv vem do systema, achada por pkg-config e NUNCA por caminho chumbado.
 # Entra como SYSTEM para que os seus cabecalhos se calem sob -Wall -Wextra, do
-# mesmo modo que a FTXUI e o doctest. PRIVATE porque só motor.cpp a inclue: o
-# cabecalho do motor declara o punho adiante, e não o inclue.
+# mesmo modo que a FTXUI e o doctest.
+#
+# E entra SÓ POR CABEÇALHO. A ligação sahiu na issue #28: binario que LIGA a
+# libmpv morre no carregador dynamico antes do main quando ella falta, e a sonda
+# dos requisitos nunca corre para dizer o que falta. Quem a chama é a taboa de
+# src/nucleo/libmpv.cpp, por dlopen. A linha da ligação foi EDITADA, e não
+# neutralizada por linha nova em outro logar: duas linhas em briga fariam este
+# arquivo mentir sobre a ligação, que é o defeito que a #28 veio corrigir.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 target_sources(mysong_core PRIVATE src/nucleo/motor.cpp)
-target_link_libraries(mysong_core PRIVATE PkgConfig::MPV)
+target_include_directories(mysong_core SYSTEM PUBLIC ${MPV_INCLUDE_DIRS})
 
 # A prova de som: linha de commando, e SEM FTXUI. Que não linke a janella é
 # parte do aceite, e por isso se lê aqui e se confirma com ldd.
@@ -136,6 +142,18 @@ target_link_libraries(mysong_core PRIVATE PkgConfig::PIPEWIRE PkgConfig::FFTW3F)
 add_executable(espia_bandas exemplos/espia_bandas.cpp)
 target_compile_options(espia_bandas PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_bandas PRIVATE mysong_core)
+
+# ─── A TABOA DA LIBMPV (issue #28) ──────────────────────────────────────────
+# Entra por target_sources, ACRESCENTANDO linha: é a regra d'esta Casa. Pede
+# directorio de inclusão algum, que o mpv/client.h mora em /usr/include.
+target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
+
+# ─── A ÂNCORA DO MOTOR (issue #28) ──────────────────────────────────────────
+# Põe o motor DENTRO do binario da tela hoje, que é a configuração que a issue #7
+# ha de criar. Sem ella, a prova da ligação passaria por ausencia de motor, e não
+# por acerto. Vae por target_sources, ACRESCENTANDO linha, e sem tocar
+# src/tui/janella.cpp, que é da #7. Some quando a #7 chamar o motor de verdade.
+target_sources(mysong PRIVATE src/tui/ancora_do_motor.cpp)
 
 # ─── O DESENHO DO ESPECTRO (issue #6) ───────────────────────────────────────
 # Por target_sources, e NÃO na lista do add_library nem em linha alheia: regra

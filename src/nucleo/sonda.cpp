@@ -165,13 +165,28 @@ bool ha_familia_de_fonte(std::string_view agulha) {
 }
 
 // ha_bibliotheca — tenta CARREGAR a bibliotheca pelo seu soname, e logo a
-// solta. Não se liga a libmpv em tempo de ligação, e é escolha de proposito: o
-// carregador dinamico mataria o processo antes do main na machina crua, que é
-// exactamente o mal que esta sonda combate. Perguntar por dlopen devolve a
-// ausencia como RESPOSTA, e não como morte antes da primeira linha.
+// solta. Perguntar por dlopen devolve a ausencia como RESPOSTA, e não como morte
+// antes da primeira linha.
+//
+// E isto descreve o binario que EXISTE, e não uma intenção: desde a issue #28,
+// binario algum d'esta obra liga a libmpv em tempo de ligação. Nem o mysong, nem
+// o toca_tom, nem os demais exemplos. O motor chama-a pela taboa de
+// nucleo/libmpv.hpp, aberta tambem por dlopen, e o CMakeLists pede d'ella
+// sómente os cabeçalhos.
+//
+// Antes d'aquella issue a garantia era ACCIDENTAL, e vale registrar o mal: o
+// mysong não ligava a libmpv sómente porque a tela ainda não chamava o motor, e
+// o ligador não puxa de bibliotheca estatica o objecto que ninguem usa. No dia
+// em que a tela o chamasse, o processo morreria no carregador dynamico antes do
+// main, e esta sonda nunca correria para nomear a falta. Quem guarda a promessa
+// hoje é a prova da ligação, em testes/prova_libmpv.cpp: ella lê o binario
+// produzido e falha se a libmpv voltar a ser dependencia de ligação.
 //
 // Acha-se a runtime, e não os cabeçalhos de compilação: para um binario já
 // compilado, que é o caso, a runtime é o que importa.
+//
+// Solta-se aqui, e a taboa do motor NÃO solta: esta nada guarda da bibliotheca,
+// e aquella guarda punho vivo, que dlclose derrubaria.
 bool ha_bibliotheca(std::string_view soname) {
   const std::string nome(soname);
   void* punho = dlopen(nome.c_str(), RTLD_LAZY | RTLD_LOCAL);
@@ -217,6 +232,12 @@ bool ha_executavel(std::string_view nome) {
 // É o UNICO logar d'esta obra que lê variavel de ambiente, e fica de proposito
 // fóra de sondar(), que se conserva pura. Chave desconhecida ignora-se em
 // silencio: erro de dedo na forçagem não ha de derrubar o programa.
+//
+// Sahe do namespace anonymo por ser DECLARADA em sonda.hpp: a taboa da libmpv
+// consulta-a antes de carregar, para que a recusa do motor e a tela das faltas
+// nunca discordem sobre o que está presente. Uma porta de fingimento, e não duas.
+}  // namespace
+
 bool nomeado_na_forcagem(std::string_view chave) {
   const char* const forcagem = std::getenv("MYSONG_SONDA_FORCA");
   if (forcagem == nullptr) return false;
@@ -231,6 +252,8 @@ bool nomeado_na_forcagem(std::string_view chave) {
   }
   return false;
 }
+
+namespace {
 
 // forcado — traduz especie e alvo na chave da taboa, e pergunta pela forçagem.
 // A consulta recebe o ALVO, e a forçagem nomeia a CHAVE, que é a que o operador
