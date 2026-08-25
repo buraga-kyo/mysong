@@ -136,5 +136,27 @@ TEST_CASE("corpo sem lista dá catalogo vazio, e não erro") {
   CHECK(nu::nome_da_lista("<html>sem lista</html>").empty());
 }
 
+TEST_CASE("o casamento recusa quem está fóra da tolerancia") {
+  nu::Pedido pedido;
+  pedido.titulo = "Loser";
+  pedido.artista = "Tame Impala";
+  pedido.duracao = 223;
+
+  // Tres achados: um dentro da tolerancia, um de dez minutos, e um de um minuto.
+  const std::vector<nu::Achado> achados = {
+      faz("Tame Impala - Loser (Official Audio)", 225),
+      faz("Loser - EXTENDED MIX 10 HOURS", 600),
+      faz("Loser (snippet)", 61),
+  };
+  CHECK(nu::melhor_achado(achados, pedido, nu::TOLERANCIA_DO_CASAMENTO) == 0);
+
+  // Sómente os de fóra: NENHUM casa, e a faixa sahe duvidosa. É o crivo que impede
+  // baixar mistura de dez minutos por faixa de tres.
+  const std::vector<nu::Achado> longe = {faz("Loser 10 HOURS", 600),
+                                         faz("Loser (snippet)", 61)};
+  CHECK(nu::melhor_achado(longe, pedido, nu::TOLERANCIA_DO_CASAMENTO) == -1);
+  CHECK(nu::melhor_achado({}, pedido, nu::TOLERANCIA_DO_CASAMENTO) == -1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
