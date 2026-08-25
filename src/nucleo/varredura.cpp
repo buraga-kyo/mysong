@@ -126,6 +126,46 @@ bool extensao_de_audio(std::string_view extensao) {
          std::end(kExtensoes);
 }
 
+Varredura::Varredura(std::filesystem::path banco,
+                     std::vector<std::filesystem::path> raizes)
+    : punho_(std::make_unique<Punho>()) {
+  punho_->banco = std::move(banco);
+  punho_->raizes = std::move(raizes);
+
+  // O banco antigo abre-se PRIMEIRO, para duas cousas: ver a versão do esquema,
+  // e servir de fonte ao reaproveitamento. Ausente não é erro.
+  punho_->antigo = std::make_unique<Biblioteca>(punho_->banco);
+  if (punho_->antigo->aberta() &&
+      punho_->antigo->versao() > kVersaoDoEsquema) {
+    // Banco lavrado por um mysong mais novo. NADA se toca: nem se abre escriba,
+    // donde temporario algum chega a existir, e o arquivo fica byte a byte.
+    punho_->desfecho = Desfecho::EsquemaMaisNovo;
+    punho_->fase = Punho::Fase::Fim;
+    return;
+  }
+
+  punho_->escriba = std::make_unique<Escriba>(punho_->banco);
+  if (!punho_->escriba->aberto()) {
+    punho_->desfecho = Desfecho::ErroDeEscripta;
+    punho_->fase = Punho::Fase::Fim;
+  }
+}
+
+Varredura::~Varredura() = default;
+
+Desfecho Varredura::desfecho() const noexcept { return punho_->desfecho; }
+
+const Progresso& Varredura::progresso() const noexcept {
+  return punho_->progresso;
+}
+
+void Varredura::abandona() {
+  punho_->escriba.reset();  // o destructor do Escriba desfaz o temporario
+  punho_->fase = Punho::Fase::Fim;
+  if (punho_->desfecho == Desfecho::NaoComecou)
+    punho_->desfecho = Desfecho::Abandonado;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
