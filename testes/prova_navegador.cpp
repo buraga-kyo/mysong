@@ -426,5 +426,43 @@ TEST_CASE("sem roleiro, as secções das listas ficam vazias e nada estoura") {
   CHECK(navegador.nome_corrente().empty());
 }
 
+TEST_CASE("criar mostra a lista, e entrar n'ella abre o dentro") {
+  Cova cova;
+  CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+
+  REQUIRE(navegador.cria_rol("Da manhã"));
+  // Criar LEVA á secção das listas: quem cria quer ver que ella nasceu.
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Da manhã");
+  CHECK(navegador.vista()[0].numero == 0);  // vazia, e a columna do numero conta
+  CHECK(navegador.nome_do_rol_eleito() == "Da manhã");
+  // Nome repetido não cria segunda, e a tela fica como estava.
+  CHECK_FALSE(navegador.cria_rol("  Da manhã  "));
+  CHECK(navegador.vista().size() == 1);
+
+  CHECK_FALSE(navegador.entra());  // lista não é faixa: nada se toca
+  CHECK(navegador.secao() == tui::Secao::NoRol);
+  CHECK(navegador.rol_corrente() > 0);
+  CHECK(navegador.trilha() == std::vector<std::string>{"Da manhã"});
+  CHECK(navegador.vista().empty());
+  // Voltar de dentro vae á lista das listas, e não ao acervo: é o degrau de que
+  // se veio.
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Rois);
+  // E o ALVO fica. É d'isto que depende o `a` do acervo: para juntar uma faixa é
+  // preciso estar onde a faixa está, e a faixa não está dentro da lista. Se o alvo
+  // se perdesse ao sahir, juntar do acervo nunca poderia funccionar.
+  CHECK(navegador.rol_corrente() > 0);
+  CHECK(navegador.nome_corrente() == "Da manhã");
+  CHECK(navegador.volta());
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(navegador.rol_corrente() > 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
