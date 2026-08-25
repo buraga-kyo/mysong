@@ -49,6 +49,17 @@ std::vector<std::string> pintar(const tui::Navegador& navegador,
   return linhas;
 }
 
+// aparadas — as collunhas de uma linha sem o enchimento de espaços da direita. É o
+// que diz onde a tabella deixou de escrever, e é isso que se compara entre linhas.
+std::size_t escriptas(const std::string& linha) {
+  std::size_t fim = linha.size();
+  while (fim > 0 && linha[fim - 1] == ' ') --fim;
+  std::size_t conta = 0;
+  for (std::size_t i = 0; i < fim; ++i)
+    if ((static_cast<unsigned char>(linha[i]) & 0xC0) != 0x80) ++conta;
+  return conta;
+}
+
 tui::Linha achado(const std::string& titulo, const std::string& canal,
                   int duracao) {
   return {titulo, "https://y/" + titulo, 0, duracao, canal};
@@ -92,6 +103,24 @@ TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita"
   CHECK(linhas[0].find("Canal do Orgao") != std::string::npos);
   CHECK(linhas[0].find("09:02") != std::string::npos);
   CHECK(linhas[1].find("01:05") != std::string::npos);
+}
+
+TEST_CASE("as duas linhas sahem com o MESMO comprimento, e não transbordam") {
+  Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  // Titulo comprido e canal comprido na primeira, curtos na segunda: é o par que
+  // desalinha as columnas quando a largura da columna se decide por LINHA.
+  navegador.mostra_rede(
+      {achado("Toccata e Fuga em Re menor BWV 565 completa ao vivo",
+              "Canal do Orgao de Tubos de Freiberg", 542),
+       achado("Fuga", "A", 65)});
+  const std::vector<std::string> linhas = pintar(navegador, 2, 60);
+  REQUIRE(linhas.size() == 2);
+  // O TEMPO acaba as duas linhas, e por isso a ultima collunha escripta é a mesma.
+  // Sem isto, a columna do tempo da linha comprida cahia depois da da linha curta.
+  CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
+  CHECK(escriptas(linhas[0]) <= 60);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
