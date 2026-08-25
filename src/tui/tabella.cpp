@@ -57,6 +57,7 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
       {Secao::Albuns, " ALBUMS  "},
       {Secao::Faixas, " TRACKS  "},
       {Secao::Busca, " SEARCH  "},
+      {Secao::Rede, " NET     "},
   };
   std::vector<ftxui::Element> linhas;
   for (const auto& [degrau, rotulo] : degraus) {
@@ -82,15 +83,25 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     return pinta("  (nada aqui: varra o acervo, ou baixe uma faixa)",
                  tokens::text_faint);
 
-  // As tres columnas fixas: numero, tempo, e o que sobra para o titulo. O tempo
-  // e o numero são de largura conhecida, e por isso o titulo é que cede.
+  // As columnas fixas: numero, tempo, o AUTOR quando ha, e o que sobra para o
+  // titulo. O tempo e o numero são de largura conhecida, e por isso o titulo cede.
+  //
+  // A columna do autor apparece pelo DADO, e não pela secção: havendo linha com
+  // autor na fatia á vista, ella abre-se para todas as linhas d'essa fatia. Por
+  // linha, e não por fatia, ella desalinharia as columnas de baixo com as de cima,
+  // que é o defeito que faz a tabella parecer quebrada.
+  const std::size_t fim_da_fatia = std::min(primeira + altura, vista.size());
+  bool ha_autor = false;
+  for (std::size_t i = primeira; i < fim_da_fatia; ++i)
+    if (!vista[i].autor.empty()) ha_autor = true;
   const std::size_t larg_num = 4, larg_tempo = 7;
-  const std::size_t larg_titulo =
-      largura > larg_num + larg_tempo + 2 ? largura - larg_num - larg_tempo - 2 : 1;
+  const std::size_t larg_autor =
+      ha_autor && largura >= 40 ? std::min<std::size_t>(24, largura / 4) : 0;
+  const std::size_t fixas = larg_num + larg_tempo + larg_autor + 2;
+  const std::size_t larg_titulo = largura > fixas ? largura - fixas : 1;
 
   std::vector<ftxui::Element> linhas;
-  const std::size_t fim = std::min(primeira + altura, vista.size());
-  for (std::size_t i = primeira; i < fim; ++i) {
+  for (std::size_t i = primeira; i < fim_da_fatia; ++i) {
     const Linha& linha = vista[i];
     const bool eleita = i == navegador.eleito();
     const std::string numero =
@@ -99,8 +110,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     const std::string tempo =
         linha.duracao > 0 ? apara(" " + mm_ss(linha.duracao), larg_tempo)
                           : apara("", larg_tempo);
+    const std::string autor =
+        larg_autor == 0 ? std::string() : apara(" " + linha.autor, larg_autor);
     ftxui::Element pintada =
-        pinta(numero + apara(linha.texto, larg_titulo) + tempo,
+        pinta(numero + apara(linha.texto, larg_titulo) + autor + tempo,
               eleita ? tokens::text_bright : tokens::text_muted);
     if (eleita) {
       const tokens::Triade fundo = tokens::rgb(tokens::v900);
