@@ -33,5 +33,29 @@ TEST_CASE("o saneamento tira o que o kernel proscreve, e mais o que engana") {
   CHECK(nu::saneia_nome("Máquina Analítica") == "Máquina Analítica");
 }
 
+TEST_CASE("o corte pelo comprimento recúa até ao byte lider") {
+  // Duzentos e quarenta «á», que são quatrocentos e oitenta octetos. O corte ha de
+  // deixar cadeia de comprimento valido E de UTF-8 valido: contando-se octetos sem
+  // recuar, o ultimo caracter sahiria partido pelo meio.
+  const std::string longo(240, 'x');
+  CHECK(nu::saneia_nome(longo).size() == 240u);
+  const std::string maior(300, 'x');
+  CHECK(nu::saneia_nome(maior).size() <= 240u);
+  std::string acentuado;
+  for (int i = 0; i < 240; ++i) acentuado += "á";  // dous octetos cada
+  const std::string cortado = nu::saneia_nome(acentuado);
+  CHECK(cortado.size() <= 240u);
+  // O corte não parte caracter: sendo cada «á» de dous octetos, o comprimento é
+  // PAR, e todo lider tras a sua continuação. (Affirmar que o ULTIMO octeto não é
+  // de continuação seria errado, e escrevi-o errado da primeira vez: cadeia UTF-8
+  // valida acaba em continuação sempre que o ultimo caracter é multibyte.)
+  CHECK(cortado.size() % 2u == 0u);
+  CHECK(cortado.size() == 240u);  // cabendo cento e vinte «á», cabem todos
+  for (std::size_t i = 0; i < cortado.size(); i += 2) {
+    CHECK((static_cast<unsigned char>(cortado[i]) & 0xC0) == 0xC0);
+    CHECK((static_cast<unsigned char>(cortado[i + 1]) & 0xC0) == 0x80);
+  }
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
