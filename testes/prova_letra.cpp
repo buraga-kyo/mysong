@@ -26,5 +26,26 @@ TEST_CASE("o escape da URL cobre o que parte a consulta") {
   CHECK(nu::escapa_para_url("") == "");
 }
 
+// O RECORTE do primeiro objecto. Os casos que importam são os que trazem chave
+// DENTRO de aspas: letra de musica tem-nas, e recorte que conte chaves á cega
+// pararia na primeira.
+TEST_CASE("o recorte do primeiro objecto respeita aspas e contra-barra") {
+  CHECK(nu::primeiro_objecto("[{\"a\":1},{\"b\":2}]") == "{\"a\":1}");
+  CHECK(nu::primeiro_objecto("[]").empty());
+  CHECK(nu::primeiro_objecto("").empty());
+  CHECK(nu::primeiro_objecto("nada de json").empty());
+  // Chave DENTRO de aspas não fecha o objecto.
+  CHECK(nu::primeiro_objecto("[{\"a\":\"}\"},{\"b\":2}]") ==
+        "{\"a\":\"}\"}");
+  // Aspa escapada não fecha a cadeia, donde a chave que a segue continua dentro.
+  CHECK(nu::primeiro_objecto("[{\"a\":\"x\\\"}\"},{\"b\":2}]") ==
+        "{\"a\":\"x\\\"}\"}");
+  // Arranjo truncado devolve NADA, e não objecto meio.
+  CHECK(nu::primeiro_objecto("[{\"a\":1").empty());
+  CHECK(nu::primeiro_objecto("[{\"a\":\"sem fecho").empty());
+  // Objecto sozinho, sem arranjo, tambem se recorta.
+  CHECK(nu::primeiro_objecto("{\"a\":1}") == "{\"a\":1}");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
