@@ -164,5 +164,24 @@ TEST_CASE("voltar sobe um degrau, e no alto devolve falso") {
   CHECK(navegador.secao() == tui::Secao::Artistas);
 }
 
+TEST_CASE("o filtro corta a vista, sem caixa, e limpa-se com cadeia vazia") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+
+  navegador.filtra("bach");  // minusculas contra «Bach»
+  CHECK(textos(navegador) == std::vector<std::string>{"Bach"});
+  CHECK(navegador.termo() == "bach");
+  navegador.filtra("ADA");   // maiusculas contra «Ada Lovelace»
+  CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace"});
+  navegador.filtra("zzz");
+  CHECK(navegador.vista().empty());
+  CHECK(navegador.eleito() == 0u);          // vista vazia, eleito em zero
+  CHECK(navegador.caminho_eleito().empty()); // e nada se manda tocar
+  navegador.filtra("");
+  CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace", "Bach"});
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
