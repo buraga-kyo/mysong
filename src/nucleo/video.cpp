@@ -100,5 +100,29 @@ std::filesystem::path caminho_do_soquete(const std::filesystem::path& raiz,
   return raiz / ("mysong-video-" + std::to_string(pid) + ".sock");
 }
 
+std::vector<std::string> argumentos_do_projector(
+    const std::filesystem::path& faixa, const std::filesystem::path& soquete) {
+  return {
+      "mpv",
+      // A CLASSE, nas duas fórmas: o X11 lê uma e o Wayland lê a outra, e quem
+      // corre não sabe qual das duas o systema d'elle usa. Postas as duas, a
+      // regra do RADICAL-OS acha a janella em qualquer d'ellas.
+      std::string("--x11-name=") + kClasseDoVideo,
+      std::string("--wayland-app-id=") + kClasseDoVideo,
+      "--title=mysong \xe2\x96\xb8 " + faixa.filename().string(),
+      "--input-ipc-server=" + soquete.string(),
+      // SEM terminal: elle é nosso, e a TUI está a pintar n'elle. Sem esta
+      // bandeira o mpv escreve a barra de estado por cima do quadro.
+      "--no-terminal",
+      // A janella nasce ainda que a faixa demore a abrir: sem isto, o operador
+      // carrega na tecla e não vê nada acontecer.
+      "--force-window=yes",
+      // Sahe quando a faixa acaba, em vez de ficar de pé vazia.
+      "--keep-open=no",
+      "--",
+      faixa.string(),
+  };
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
