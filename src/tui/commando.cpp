@@ -52,10 +52,14 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   if (tecla == ftxui::Event::Character('p')) return {Verbo::Anterior, 0.0};
   if (tecla == ftxui::Event::Character('q')) return {Verbo::Sahir, 0.0};
 
-  if (tecla == ftxui::Event::ArrowRight)
+  // A BUSCA passou de `←`/`→` para `,`/`.` (issue #48). O operador tentou voltar nos
+  // menus com a seta esquerda e o que ella fazia era buscar no som; navegar por seta é o
+  // que a mão espera n'uma arvore de tres degraus, e buscar acha-se em `,` e `.` sem
+  // sahir da linha de casa.
+  if (tecla == ftxui::Event::Character('.'))
     return {Verbo::Buscar,
             aparar_busca(retracto.posicao + PASSO_DA_BUSCA, retracto.duracao)};
-  if (tecla == ftxui::Event::ArrowLeft)
+  if (tecla == ftxui::Event::Character(','))
     return {Verbo::Buscar,
             aparar_busca(retracto.posicao - PASSO_DA_BUSCA, retracto.duracao)};
 
@@ -75,8 +79,10 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
     return {Verbo::AoPrincipio, 0.0};
   if (tecla == ftxui::Event::End || tecla == ftxui::Event::Character('G'))
     return {Verbo::AoFim, 0.0};
-  if (tecla == ftxui::Event::Return) return {Verbo::Entra, 0.0};
-  if (tecla == ftxui::Event::Escape || tecla == ftxui::Event::Backspace)
+  if (tecla == ftxui::Event::Return || tecla == ftxui::Event::ArrowRight)
+    return {Verbo::Entra, 0.0};
+  if (tecla == ftxui::Event::Escape || tecla == ftxui::Event::Backspace ||
+      tecla == ftxui::Event::ArrowLeft)
     return {Verbo::Volta, 0.0};
   if (tecla == ftxui::Event::Character('/')) return {Verbo::AbreBusca, 0.0};
   if (tecla == ftxui::Event::Character('r')) return {Verbo::Varre, 0.0};

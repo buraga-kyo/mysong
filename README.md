@@ -167,11 +167,11 @@ commando.
 |---|---|
 | espaco | pausa tocando, retoma pausado |
 | `n` / `p` | faixa seguinte, faixa anterior |
-| seta direita / esquerda | busca cinco segundos para deante ou para tras |
+| `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
-| `j` / `k` ou setas cima/baixo | anda na lista |
-| Enter | entra (artista, album, faixa) |
-| Escape | volta um degrau |
+| `j` / `k` ou `↑` / `↓` | anda na lista |
+| Enter ou `→` | entra (artista, album, faixa) |
+| Escape, Backspace ou `←` | volta um degrau |
 | `/` | busca na lista |
 | `b` | baixa por URL |
 | `l` | troca o espectro pela letra |

@@ -102,12 +102,71 @@ std::filesystem::path raiz_do_acervo() {
 // conducção por passos da issue #34 existe justamente para isto: o fio pode
 // parar entre dous passos, e a bandeira `sahir` é onde elle olha.
 void varre_em_fio(const std::filesystem::path& banco,
-                  const std::filesystem::path& acervo, const bool& sahir,
+                  const std::filesystem::path& acervo,
+                  const std::atomic<bool>* sahir,
                   std::atomic<bool>* concluida) {
   nucleo::Varredura varredura(banco, {acervo});
-  while (!sahir && varredura.passo()) {
+  while (!sahir->load() && varredura.passo()) {
   }
   concluida->store(true);
+}
+
+// assignatura_do_visivel — uma cadeia barata que resume TUDO o que a tela mostra. O fio do
+// relogio sómente pede repintura quando ella muda.
+//
+// Sem isto, medido n'um pty de quarenta por cento e vinte: cento e trinta e oito KiB por
+// segundo com a fila VAZIA e nada a tocar. São sete KiB por quadro a vinte quadros por
+// segundo, a tela inteira, repintada porque o relogio bateu. Dentro de tmux é o cursor do
+// operador a piscar, porque o tmux ha de reparsear e reposicionar vinte vezes por segundo
+// para sempre.
+//
+// A posição entra em SEGUNDOS inteiros, e não em decimos: a barra e o relogio mostram
+// segundos, e a fracção mudaria a assignatura sem mudar um pixel.
+std::string assignatura_do_visivel(nucleo::Tocador& tocador,
+                                   const tui::Navegador& navegador,
+                                   int digita, const std::string& termo_em_curso,
+                                   const std::string& aviso, bool mostra_letra,
+                                   bool varrida) {
+  std::string marca;
+  marca.reserve(128);
+  marca += std::to_string(static_cast<int>(tocador.estado()));
+  marca += ':';
+  marca += std::to_string(static_cast<long>(tocador.posicao()));
+  marca += ':';
+  marca += std::to_string(static_cast<long>(tocador.duracao()));
+  marca += ':';
+  marca += std::to_string(tocador.volume());
+  marca += ':';
+  const nucleo::Fila& fila = tocador.fila();
+  marca += std::to_string(fila.tamanho());
+  marca += ':';
+  marca += fila.vazia() ? std::string() : std::string(fila.corrente());
+  marca += ':';
+  // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
+  // pagava a animação que não mostrava: medido em cento e trinta e dous KiB por segundo,
+  // contra dous e sete pausado. Assignatura ha de resumir o que se VÊ, e não o que ha.
+  if (!mostra_letra)
+    for (const float banda : tocador.bandas())
+      marca += static_cast<char>(
+          static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
+                           99.0f) + 32);
+  marca += ':';
+  marca += std::to_string(digita);
+  marca += termo_em_curso;
+  marca += ':';
+  marca += aviso;
+  marca += mostra_letra ? 'L' : 'e';
+  marca += varrida ? 'v' : '.';
+  marca += ':';
+  marca += std::to_string(static_cast<int>(navegador.secao()));
+  marca += ':';
+  marca += std::to_string(navegador.eleito());
+  marca += ':';
+  marca += std::to_string(navegador.vista().size());
+  marca += ':';
+  marca += navegador.termo();
+  for (const std::string& degrau : navegador.trilha()) marca += degrau;
+  return marca;
 }
 
 // retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
@@ -130,7 +189,8 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador) {
 
 // cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
 // na taboada acende aviso do compilador aqui, e não passa calado.
-void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
+void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
+             std::atomic<bool>& sahir) {
   switch (ordem.verbo) {
     case tui::Verbo::Nada: break;
     case tui::Verbo::Pausar: tocador.pausar(); break;
@@ -139,7 +199,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador, bool& sahir) {
     case tui::Verbo::Anterior: tocador.anterior(); break;
     case tui::Verbo::Buscar: tocador.buscar(ordem.alvo); break;
     case tui::Verbo::Volume: tocador.volume(static_cast<int>(ordem.alvo)); break;
-    case tui::Verbo::Sahir: sahir = true; break;
+    case tui::Verbo::Sahir: sahir.store(true); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
     // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
@@ -208,7 +268,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   bool recarregado = false;
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
-  bool sahir = false;
+  // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
+  // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
+  // ainda que ninguem carregue em botão algum. Dentro de tmux essas sequencias vazam, e
+  // o que o operador vê é o teclado a cuspir lixo e a comer teclas.
+  //
+  // E esta Casa não usa rato: tratador de rato algum se ligou em issue alguma. Pagar o
+  // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
+  tela.TrackMouse(false);
+  std::atomic<bool> sahir{false};
   // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
   enum class Digita { Nada, Busca, Url } digita = Digita::Nada;
@@ -223,8 +291,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   bool mostra_letra = false;
   nucleo::Galeria galeria;  // a capa converte-se uma vez por album e por tamanho
 
-  std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
-                       std::cref(sahir), &varrida);
+  // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
+  // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
+  // sahindo o programma primeiro, liam memoria morta. Fio solto que aponta para pilha
+  // alheia não se justifica, e agora não ha nenhum.
+  // A ultima assignatura do que se vê. Vazia de saida, para que o primeiro quadro sahia.
+  std::string ultima_assignatura;
+  std::vector<std::thread> ao_fundo;
+  ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir, &varrida);
 
   auto pintor = ftxui::Renderer([&] {
     const tui::Retracto retracto = retracto_do(tocador);
@@ -287,9 +361,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
-                           " · b baixa · l letra · espaço pausa · n/p faixa"
-                           " · q sahe") |
+               ftxui::text("↑↓ anda · → entra · ← volta · / busca · r varre · b baixa"
+                           " · l letra · espaço pausa · n/p faixa · ,. busca no som"
+                           " · +- volume · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
@@ -315,7 +389,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           // tela; deixa recado no aviso, e a tela lê-o.
           const std::string url = termo_em_curso;
           aviso_da_baixa = "a baixar...";
-          std::thread([&aviso_da_baixa, &varrida, &recarregado, url, banco] {
+          ao_fundo.emplace_back([&aviso_da_baixa, &varrida, &recarregado, url,
+                                 banco, &sahir] {
             std::filesystem::path ficou;
             nucleo::Pedido pedido;
             pedido.url = url;  // e o resto vem da rede, que o operador não disse
@@ -326,11 +401,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
               varrida.store(false);  // ha faixa nova: varre-se outra vez
               recarregado = false;
               nucleo::Varredura outra(banco, {raiz_do_acervo()});
-              while (outra.passo()) {
+              while (!sahir.load() && outra.passo()) {
               }
               varrida.store(true);
             }
-          }).detach();
+          });
         }
         return true;
       }
@@ -369,8 +444,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (varrida.load()) {  // uma varredura por vez, e não vinte
           varrida.store(false);
           recarregado = false;
-          std::thread(varre_em_fio, banco, raiz_do_acervo(), std::cref(sahir),
-                      &varrida).detach();
+          ao_fundo.emplace_back(varre_em_fio, banco, raiz_do_acervo(), &sahir,
+                                &varrida);
         }
         return true;
       case tui::Verbo::Entra:
@@ -387,7 +462,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         return true;
       default:
         cumprir(ordem, tocador, sahir);
-        if (sahir) tela.Exit();
+        if (sahir.load()) tela.Exit();
         return true;
     }
   });
@@ -397,7 +472,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
-    while (!sahir) {
+    while (!sahir.load()) {
       tocador.pulsa();
       analisador.pulsa();
       mpris.pulsa();
@@ -408,18 +483,27 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         livraria.reabre();
         navegador.recarrega();
       }
-      tela.PostEvent(ftxui::Event::Custom);
+      // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
+      // tela escreve zero: é a correcção da issue #48.
+      const std::string agora = assignatura_do_visivel(
+          tocador, navegador, static_cast<int>(digita), termo_em_curso,
+          aviso_da_baixa, mostra_letra, varrida.load());
+      if (agora != ultima_assignatura) {
+        ultima_assignatura = agora;
+        tela.PostEvent(ftxui::Event::Custom);
+      }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
   });
 
   tela.Loop(janella);
-  sahir = true;  // a sahida pela tela tambem para o relogio
+  sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
-  // O varredor espera-se tambem: elle tem referencia para a bandeira e para o
-  // banco, que vivem nesta pilha. Deixá-lo solto seria fio a ler memoria de
-  // quadro já desfeito, e isso não perdoa.
-  if (varredor.joinable()) varredor.join();
+  // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
+  // banco, que vivem nesta pilha. Deixar um solto é fio a ler memoria de quadro já
+  // desfeito, e isso não perdoa.
+  for (std::thread& fio : ao_fundo)
+    if (fio.joinable()) fio.join();
   return 0;
 }
 
@@ -435,6 +519,7 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
   // limite perdia as ultimas linhas, que é justamente o que ella existe para
   // dizer. Tomando-se a tela toda, cabe tudo, e o pé deixa de ser sorte.
   auto tela = ftxui::ScreenInteractive::Fullscreen();
+  tela.TrackMouse(false);  // idem: esta tela é a primeira que o operador vê
   auto pintor = ftxui::Renderer(
       [&relatorio] { return tui::elemento_dos_requisitos(relatorio); });
   auto quadro = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {

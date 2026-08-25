@@ -69,6 +69,7 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('g'), ftxui::Event::Character('G'),
       ftxui::Event::Character('/'), ftxui::Event::Character('r'),
       ftxui::Event::Character('+'), ftxui::Event::Character('-'),
+      ftxui::Event::Character(','), ftxui::Event::Character('.'),
       ftxui::Event::ArrowUp,        ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
       ftxui::Event::Return,         ftxui::Event::Escape,
@@ -97,34 +98,50 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   CHECK(verbo(ftxui::Event::End) == tui::Verbo::AoFim);
   CHECK(verbo(ftxui::Event::Character('G')) == tui::Verbo::AoFim);
   CHECK(verbo(ftxui::Event::Return) == tui::Verbo::Entra);
+  CHECK(verbo(ftxui::Event::ArrowRight) == tui::Verbo::Entra);
   CHECK(verbo(ftxui::Event::Escape) == tui::Verbo::Volta);
   CHECK(verbo(ftxui::Event::Backspace) == tui::Verbo::Volta);
+  CHECK(verbo(ftxui::Event::ArrowLeft) == tui::Verbo::Volta);
   CHECK(verbo(ftxui::Event::Character('/')) == tui::Verbo::AbreBusca);
   CHECK(verbo(ftxui::Event::Character('r')) == tui::Verbo::Varre);
 }
 
-TEST_CASE("as setas buscam pelo passo, e aparam-se nas duas bordas") {
+// Os alvos aqui vão escriptos á mão em SEGUNDOS, e não em passos: dizer «posicao mais
+// PASSO_DA_BUSCA» seria perguntar á obra qual o passo para depois conferir que ella o
+// usou, e a assertiva não poderia falhar.
+//
+// A busca é por `,` e `.` desde a issue #48. Era por seta, e a seta passou a NAVEGAR: o
+// operador tentou voltar nos menus com a seta esquerda e o que ella fazia era buscar no
+// som.
+TEST_CASE("a virgula e o ponto buscam pelo passo, e aparam-se nas bordas") {
   const tui::Ordem deante =
-      tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando(30.0, 100.0));
+      tui::ordem_da_tecla(ftxui::Event::Character('.'), tocando(30.0, 100.0));
   CHECK(deante.verbo == tui::Verbo::Buscar);
   CHECK(deante.alvo == doctest::Approx(35.0));
 
   const tui::Ordem atras =
-      tui::ordem_da_tecla(ftxui::Event::ArrowLeft, tocando(30.0, 100.0));
+      tui::ordem_da_tecla(ftxui::Event::Character(','), tocando(30.0, 100.0));
   CHECK(atras.verbo == tui::Verbo::Buscar);
   CHECK(atras.alvo == doctest::Approx(25.0));
 
   // Antes do zero pede zero, e não numero negativo.
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowLeft, tocando(2.0, 100.0)).alvo ==
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character(','), tocando(2.0, 100.0)).alvo ==
         doctest::Approx(0.0));
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowLeft, tocando(0.0, 100.0)).alvo ==
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character(','), tocando(0.0, 100.0)).alvo ==
         doctest::Approx(0.0));
   // Depois do fim pede a duração, e não numero maior que ella.
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando(98.0, 100.0)).alvo ==
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('.'), tocando(98.0, 100.0)).alvo ==
         doctest::Approx(100.0));
   // Duração que não presta pede o principio.
-  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando(30.0, 0.0)).alvo ==
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('.'), tocando(30.0, 0.0)).alvo ==
         doctest::Approx(0.0));
+
+  // E as setas JÁ NÃO buscam: navegam. É a negativa que fecha a mudança, e sem ella uma
+  // taboada que respondesse ás duas cousas passaria calada.
+  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando()).verbo ==
+        tui::Verbo::Entra);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowLeft, tocando()).verbo ==
+        tui::Verbo::Volta);
 }
 
 TEST_CASE("o volume anda por degrau, e apara-se em zero e cem") {
