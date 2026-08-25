@@ -187,5 +187,32 @@ std::size_t corre_ate_o_fim(nu::Varredura& varredura) {
 
 }  // namespace
 
+// Etiqueta COMPLETA: tudo entra pela etiqueta, e a máscara sahe em ZERO. O
+// caminho diz outra cousa de proposito, para que a prova distinga as duas fontes.
+TEST_CASE("etiqueta completa entra pela etiqueta, e deduzido sahe em zero") {
+  const Cova cova;
+  const std::filesystem::path faixa =
+      cova.acervo() / "Caminho Diz Isto" / "E Isto" / "99 - Nome Do Caminho.wav";
+  faz_wav(faixa, 3);
+  poe_etiqueta(faixa, "Ada Lovelace", "Máquina Analítica", "Tear", 3);
+
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  corre_ate_o_fim(varredura);
+  CHECK(varredura.desfecho() == nu::Desfecho::Concluido);
+  CHECK(varredura.progresso().lidas == 1u);
+  CHECK(varredura.progresso().reaproveitadas == 0u);
+
+  const nu::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.total() == 1u);
+  nu::Faixa achada;
+  REQUIRE(livraria.acha_por_caminho(faixa.string(), achada));
+  CHECK(achada.artista == "Ada Lovelace");
+  CHECK(achada.album == "Máquina Analítica");
+  CHECK(achada.titulo == "Tear");
+  CHECK(achada.numero == 3);
+  CHECK(achada.duracao == 3);
+  CHECK(achada.deduzido == nu::kDeduziuNada);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
