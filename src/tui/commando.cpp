@@ -92,6 +92,19 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   // filtra a lista que está á vista; o `s` pergunta ao YouTube.
   if (tecla == ftxui::Event::Character('s')) return {Verbo::AbreProcura, 0.0};
 
+  // ── As teclas das listas (issue #10) ────────────────────────────────────
+  // As MAIUSCULAS são de proposito para as tres que estragam cousa: renomear,
+  // apagar e mover. Tecla que muda o que está gravado não ha de ficar debaixo do
+  // dedo de quem anda na lista com as minusculas do vi.
+  if (tecla == ftxui::Event::Character('P')) return {Verbo::AbreRois, 0.0};
+  if (tecla == ftxui::Event::Character('c')) return {Verbo::CriaRol, 0.0};
+  if (tecla == ftxui::Event::Character('R')) return {Verbo::RenomeiaRol, 0.0};
+  if (tecla == ftxui::Event::Character('D')) return {Verbo::ApagaRol, 0.0};
+  if (tecla == ftxui::Event::Character('a')) return {Verbo::JuntaAoRol, 0.0};
+  if (tecla == ftxui::Event::Character('t')) return {Verbo::RetiraDoRol, 0.0};
+  if (tecla == ftxui::Event::Character('K')) return {Verbo::SobeNoRol, 0.0};
+  if (tecla == ftxui::Event::Character('J')) return {Verbo::DesceNoRol, 0.0};
+
   return {Verbo::Nada, 0.0};
 }
 

@@ -50,7 +50,9 @@ TEST_CASE("as tres teclas de verbo simples chegam por si") {
 // verbo para tudo não passasse calada.
 TEST_CASE("tecla sem officio dá ordem nenhuma") {
   const tui::Retracto retracto = tocando();
-  for (const char letra : {'a', 'z', 'N', 'P', 'Q', '1', '*'})
+  // O `a` e o `P` sahiram d'esta lista na issue #10, que lhes deu officio: o `a`
+  // junta á lista, e o `P` abre as listas. Ficam as que ainda não têm nenhum.
+  for (const char letra : {'z', 'w', 'y', 'N', 'Q', '1', '*'})
     CHECK(tui::ordem_da_tecla(ftxui::Event::Character(letra), retracto).verbo ==
           tui::Verbo::Nada);
   CHECK(tui::ordem_da_tecla(ftxui::Event::Tab, retracto).verbo ==
@@ -71,7 +73,11 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('+'), ftxui::Event::Character('-'),
       ftxui::Event::Character(','), ftxui::Event::Character('.'),
       ftxui::Event::Character('b'), ftxui::Event::Character('l'),
-      ftxui::Event::Character('s'), ftxui::Event::ArrowUp,
+      ftxui::Event::Character('s'), ftxui::Event::Character('P'),
+      ftxui::Event::Character('c'), ftxui::Event::Character('R'),
+      ftxui::Event::Character('D'), ftxui::Event::Character('a'),
+      ftxui::Event::Character('t'), ftxui::Event::Character('K'),
+      ftxui::Event::Character('J'), ftxui::Event::ArrowUp,
       ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
       ftxui::Event::Return,         ftxui::Event::Escape,
@@ -112,6 +118,20 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   // bandeira. Os dous a darem o mesmo verbo seria o defeito que este caso guarda.
   CHECK(verbo(ftxui::Event::Character('s')) == tui::Verbo::AbreProcura);
   CHECK(verbo(ftxui::Event::Character('/')) != tui::Verbo::AbreProcura);
+  // As oito das listas. As tres que estragam cousa gravada são MAIUSCULAS: tecla
+  // que muda o que está no disco não ha de ficar debaixo do dedo de quem anda na
+  // lista com as minusculas do vi.
+  CHECK(verbo(ftxui::Event::Character('P')) == tui::Verbo::AbreRois);
+  CHECK(verbo(ftxui::Event::Character('c')) == tui::Verbo::CriaRol);
+  CHECK(verbo(ftxui::Event::Character('R')) == tui::Verbo::RenomeiaRol);
+  CHECK(verbo(ftxui::Event::Character('D')) == tui::Verbo::ApagaRol);
+  CHECK(verbo(ftxui::Event::Character('a')) == tui::Verbo::JuntaAoRol);
+  CHECK(verbo(ftxui::Event::Character('t')) == tui::Verbo::RetiraDoRol);
+  CHECK(verbo(ftxui::Event::Character('K')) == tui::Verbo::SobeNoRol);
+  CHECK(verbo(ftxui::Event::Character('J')) == tui::Verbo::DesceNoRol);
+  // E a minuscula d'ellas continua a ser a do vi: `k` e `j` andam, e não movem.
+  CHECK(verbo(ftxui::Event::Character('k')) == tui::Verbo::Sobe);
+  CHECK(verbo(ftxui::Event::Character('j')) == tui::Verbo::Desce);
 }
 
 // Os alvos aqui vão escriptos á mão em SEGUNDOS, e não em passos: dizer «posicao mais
