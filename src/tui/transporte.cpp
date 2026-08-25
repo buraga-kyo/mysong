@@ -88,6 +88,21 @@ std::string_view nome_do_estado(nucleo::Estado estado) {
   return "Parado";  // o compilador não o sabe, mas o enum é fechado
 }
 
+// A fita dos botões e do estado. Sentido DEXTRA sómente: misturar os dous
+// lavraria o losango que a regra proscreve, e a Fita já o torna inexprimivel.
+// Os fundos descem pela rampa, do acento cardeal ao fundo do painel, que é a
+// leitura da esquerda para a direita.
+ftxui::Element fita_dos_botoes(const Retracto& retracto) {
+  const bool tocando = retracto.estado == nucleo::Estado::Tocando;
+  Fita fita(Sentido::Dextra);
+  fita.junta({" " + std::string(tocando ? "\u23f8" : "\u25b6") + " ",
+              tokens::v500, tokens::base});
+  fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
+  fita.junta({" " + std::string(nome_do_estado(retracto.estado)) + " ",
+              tokens::v900, tokens::text_bright});
+  return fita_em_elemento(fita.compor());
+}
+
 std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
   const std::size_t cheias = enchimento(retracto.posicao, retracto.duracao, largura);
   std::string linha;
