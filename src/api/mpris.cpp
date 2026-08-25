@@ -222,6 +222,55 @@ bool cumpre_metodo(const std::string& nome, DBusMessage* mensagem,
 
 }  // namespace
 
+namespace {
+
+// A INTROSPECÇÃO. Cadeia fixa, porque o que se publica é fixo. Quem acrescentar
+// metodo ha de acrescentá-lo aqui tambem, e é de proposito que estão juntos: o
+// `playerctl` lê isto para saber o que pedir, e metodo que responde mas não se
+// annuncia é metodo que ninguem chama.
+constexpr const char* kIntrospecção =
+    "<node>"
+    "<interface name='org.freedesktop.DBus.Introspectable'>"
+    "<method name='Introspect'><arg name='xml' type='s' direction='out'/></method>"
+    "</interface>"
+    "<interface name='org.freedesktop.DBus.Properties'>"
+    "<method name='Get'><arg type='s' direction='in'/><arg type='s' direction='in'/>"
+    "<arg type='v' direction='out'/></method>"
+    "<method name='GetAll'><arg type='s' direction='in'/>"
+    "<arg type='a{sv}' direction='out'/></method>"
+    "<method name='Set'><arg type='s' direction='in'/><arg type='s' direction='in'/>"
+    "<arg type='v' direction='in'/></method>"
+    "<signal name='PropertiesChanged'><arg type='s'/><arg type='a{sv}'/>"
+    "<arg type='as'/></signal>"
+    "</interface>"
+    "<interface name='org.mpris.MediaPlayer2'>"
+    "<property name='Identity' type='s' access='read'/>"
+    "<property name='DesktopEntry' type='s' access='read'/>"
+    "<property name='CanQuit' type='b' access='read'/>"
+    "<property name='CanRaise' type='b' access='read'/>"
+    "<property name='HasTrackList' type='b' access='read'/>"
+    "</interface>"
+    "<interface name='org.mpris.MediaPlayer2.Player'>"
+    "<method name='Play'/><method name='Pause'/><method name='PlayPause'/>"
+    "<method name='Stop'/><method name='Next'/><method name='Previous'/>"
+    "<method name='Seek'><arg name='Offset' type='x' direction='in'/></method>"
+    "<method name='SetPosition'><arg name='TrackId' type='o' direction='in'/>"
+    "<arg name='Position' type='x' direction='in'/></method>"
+    "<property name='PlaybackStatus' type='s' access='read'/>"
+    "<property name='Metadata' type='a{sv}' access='read'/>"
+    "<property name='Position' type='x' access='read'/>"
+    "<property name='Volume' type='d' access='readwrite'/>"
+    "<property name='CanGoNext' type='b' access='read'/>"
+    "<property name='CanGoPrevious' type='b' access='read'/>"
+    "<property name='CanPlay' type='b' access='read'/>"
+    "<property name='CanPause' type='b' access='read'/>"
+    "<property name='CanSeek' type='b' access='read'/>"
+    "<property name='CanControl' type='b' access='read'/>"
+    "</interface>"
+    "</node>";
+
+}  // namespace
+
 struct CasaDoMpris::Punho {
   nucleo::Tocador& tocador;
   DBusConnection* ligacao = nullptr;
