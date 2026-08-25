@@ -57,5 +57,21 @@ std::string id_da_playlist(std::string_view crua) {
   return std::string(crua.substr(principio, i - principio));
 }
 
+std::string nome_da_lista(std::string_view corpo) {
+  // O nome vem de FÓRA do arranjo, no mesmo objecto que o tras. Procura-se pois o
+  // ULTIMO `"name"` ANTES do `"trackList"`: é o mais proximo, e é o d'ella. Contar
+  // niveis de embrulho seria escolher uma versão da pagina d'elles para sempre.
+  const std::size_t lista = corpo.find("\"trackList\"");
+  if (lista == std::string_view::npos) return {};
+  const std::string_view antes = corpo.substr(0, lista);
+  const std::size_t onde = antes.rfind("\"name\"");
+  if (onde == std::string_view::npos) return {};
+  // Embrulha-se n'um objecto de mentira, que é a fórma que o leitor de fundo um
+  // espera; e apara-se em meio kilo-octeto, que nome de lista não é maior que isso e
+  // embrulhar a pagina inteira seria copiar cento e cincoenta kilo-octetos por nada.
+  const std::string_view pedaco = antes.substr(onde, 512);
+  return api::texto_de_chave("{" + std::string(pedaco) + "}", "name");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
