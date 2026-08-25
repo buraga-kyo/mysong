@@ -54,5 +54,15 @@ bool tem_video(const std::filesystem::path& faixa);
 // o que a tela recusava abrir. A lista tem UM logar, e é este.
 bool extensao_com_video(std::string_view extensao);
 
+// caminho_do_soquete — `<raiz>/mysong-video-<pid>.sock`. O pid entra no nome para
+// que duas corridas do mysong não disputem o mesmo soquete.
+std::filesystem::path caminho_do_soquete(const std::filesystem::path& raiz,
+                                         long pid);
+
+// argumentos_do_projector — o que se corre. A classe e o titulo vão declarados, e o
+// `--` fecha as opções para que faixa chamada `--algo` não vire opção.
+std::vector<std::string> argumentos_do_projector(
+    const std::filesystem::path& faixa, const std::filesystem::path& soquete);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
