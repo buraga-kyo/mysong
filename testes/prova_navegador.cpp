@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
 
 namespace nu = mysong::nucleo;
@@ -373,6 +374,35 @@ TEST_CASE("recarregar na rede não mexe na vista, e voltar sahe da secção") {
   CHECK(navegador.vista()[0].texto == "Ada Lovelace");
   CHECK(navegador.url_eleita().empty());
 }
+
+// ── AS LISTAS (issue #10) ───────────────────────────────────────────────────
+// A navegação das listas prova-se contra um Roleiro de verdade, n'uma cova propria:
+// o banco d'ellas entra por parâmetro, como o do índice.
+
+// CovaDoRol — o banco das listas, á parte do índice. São dous arquivos porque são
+// dous bancos, e a razão está no tractado do rol.
+class CovaDoRol {
+ public:
+  CovaDoRol() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-navrol-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++semente_));
+    std::filesystem::create_directories(caminho_);
+  }
+  ~CovaDoRol() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  CovaDoRol(const CovaDoRol&) = delete;
+  CovaDoRol& operator=(const CovaDoRol&) = delete;
+  std::filesystem::path banco() const { return caminho_ / "rol.sqlite3"; }
+
+ private:
+  std::filesystem::path caminho_;
+  static int semente_;
+};
+
+int CovaDoRol::semente_ = 0;
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
