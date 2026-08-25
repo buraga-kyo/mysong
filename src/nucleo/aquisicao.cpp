@@ -251,6 +251,41 @@ std::filesystem::path acha_o_que_ficou(const std::filesystem::path& molde) {
 
 }  // namespace
 
+Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
+               std::filesystem::path* gravado) {
+  EtiquetaRemota remota;
+  if (!sonda_url(pedido.url, &remota)) {
+    // Não se distingue aqui «yt-dlp ausente» de «URL recusada» pelo codigo, que
+    // o `corre` devolve o mesmo menos um nos dous. Pergunta-se pois ao caminho.
+    std::string nada;
+    return corre({"yt-dlp", "--version"}, &nada) == 0 ? Colheita::UrlRecusada
+                                                      : Colheita::SemFerramenta;
+  }
+
+  const Pedido feito = resolve(pedido, remota);
+  const std::filesystem::path molde = destino(raiz, feito);
+  std::error_code erro;
+  std::filesystem::create_directories(molde.parent_path(), erro);
+  if (erro) return Colheita::FalhouAoBaixar;
+
+  // A PRIMEIRA guarda contra perder arquivo: havendo já irmão com este molde,
+  // nada se corre. A segunda é o `--no-overwrites` na lista de argumentos.
+  if (!acha_o_que_ficou(molde).empty()) {
+    if (gravado != nullptr) *gravado = acha_o_que_ficou(molde);
+    return Colheita::JaExiste;
+  }
+
+  std::string colhido;
+  if (corre(argumentos_do_download(pedido.url, molde), &colhido) != 0)
+    return Colheita::FalhouAoBaixar;
+
+  const std::filesystem::path ficou = acha_o_que_ficou(molde);
+  if (ficou.empty()) return Colheita::FalhouAoBaixar;
+  if (gravado != nullptr) *gravado = ficou;
+  return escreve_etiqueta(ficou, feito) ? Colheita::Colhido
+                                        : Colheita::FalhouAEtiqueta;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
