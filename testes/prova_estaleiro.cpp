@@ -58,5 +58,31 @@ class Cancella {
 };
 
 }  // namespace
+
+TEST_CASE("o estaleiro não corre mais obras ao mesmo tempo que o limite") {
+  Cancella cancella;
+  // Cinco encommendas, dous obreiros. As duas primeiras chegam á cancella e param
+  // lá; as tres outras ficam na espera. É nesse instante que se olha.
+  nu::Estaleiro estaleiro(2, [&cancella](const nu::Pedido&,
+                                         std::filesystem::path*) {
+    cancella.chego();
+    cancella.espera();
+    return nu::Colheita::Colhido;
+  });
+  for (int i = 0; i < 5; ++i) {
+    nu::Pedido pedido;
+    pedido.url = "https://exemplo/" + std::to_string(i);
+    estaleiro.encommenda(pedido);
+  }
+  cancella.chegaram(2);
+  const nu::Andamento parado = estaleiro.andamento();
+  CHECK(parado.em_curso == 2);
+  CHECK(parado.na_espera == 3);
+  CHECK(parado.colhidas == 0);
+  cancella.abre();
+  estaleiro.fecha();
+  // O PICO é a prova do limite: em toda a vida do estaleiro, dous foi o maximo.
+  CHECK(estaleiro.pico() == 2);
+}
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
