@@ -181,5 +181,24 @@ TEST_CASE("renomear conserva os itens, e recusa o nome vazio") {
   CHECK(roleiro.rois()[0].nome == "Da tarde");
 }
 
+TEST_CASE("a lista sobrevive a fechar e reabrir o banco") {
+  Cova cova;
+  int id = 0;
+  {
+    nu::Roleiro roleiro(cova.banco());
+    id = roleiro.cria("Da manhã");
+    for (const char* qual : {"/a/1.mp3", "/a/2.mp3", "/a/3.mp3"})
+      REQUIRE(roleiro.junta(id, qual));
+    REQUIRE(roleiro.troca(id, 0, 2));
+  }
+  // O aceite da tarefa em uma linha: fechar e reabrir, e a ordem é a que se
+  // deixou. O banco fecha-se pelo destructor, e não por punho que se chame.
+  nu::Roleiro outra_vez(cova.banco());
+  REQUIRE(outra_vez.rois().size() == 1);
+  CHECK(outra_vez.rois()[0].quantos == 3);
+  CHECK(outra_vez.faixas(id) ==
+        std::vector<std::string>{"/a/3.mp3", "/a/2.mp3", "/a/1.mp3"});
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
