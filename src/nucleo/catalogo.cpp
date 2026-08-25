@@ -78,5 +78,36 @@ std::string url_do_embed(std::string_view id) {
   return "https://open.spotify.com/embed/playlist/" + std::string(id);
 }
 
+Catalogo le_catalogo(std::string_view corpo) {
+  Catalogo catalogo;
+  // O arranjo das faixas acha-se pelo NOME da chave, em qualquer fundo: o Spotify
+  // muda de quantos niveis de embrulho a rodeia, e contá-los seria escolher uma
+  // versão da pagina d'elles para sempre.
+  const std::string arranjo = api::recorta_arranjo(corpo, "trackList");
+  if (arranjo.empty()) return catalogo;
+  int ordem = 0;
+  for (const std::string& objecto : api::objectos_do_arranjo(arranjo)) {
+    ++ordem;  // conta-se a ORDEM DA LISTA, e não a das que sobreviveram
+    FaixaDoCatalogo faixa;
+    faixa.titulo = api::texto_de_chave(objecto, "title");
+    // O `subtitle` é o que a pagina põe por artista, e ella junta os artistas com
+    // virgula quando ha mais de um. Fica como veio: quem busca no YouTube busca
+    // melhor com os dous nomes que com um só.
+    faixa.artista = api::texto_de_chave(objecto, "subtitle");
+    double milesimos = 0.0;
+    if (api::numero_de_chave(objecto, "duration", &milesimos))
+      faixa.duracao_ms = static_cast<int>(milesimos);
+    faixa.numero = ordem;
+    // Faixa sem TITULO não sahe: ella seria linha que o operador elege e que não se
+    // pode buscar, que é buscar por cadeia vazia.
+    if (faixa.titulo.empty()) continue;
+    catalogo.faixas.push_back(std::move(faixa));
+  }
+  catalogo.nome = nome_da_lista(corpo);
+  return catalogo;
+}
+
+}  // namespace mysong::nucleo
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
