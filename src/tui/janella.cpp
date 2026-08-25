@@ -49,6 +49,8 @@
 #include "nucleo/sonda.hpp"
 #include "tui/commando.hpp"
 #include "tui/espectro.hpp"
+#include "tui/navegador.hpp"
+#include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
 
@@ -180,32 +182,63 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
   if (!tocador.fila().vazia()) tocador.tocar_corrente();
 
+  // O ÍNDICE e a VARREDURA. A varredura corre em fio proprio e o navegador
+  // recarrega quando ella concluir: assim a tela abre de pronto, com o acervo da
+  // corrida anterior, em vez de esperar pelo disco.
+  const std::filesystem::path banco = caminho_do_indice();
+  nucleo::Biblioteca livraria(banco);
+  tui::Navegador navegador(livraria);
+  std::atomic<bool> varrida{false};
+  bool recarregado = false;
+
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   bool sahir = false;
+  bool digitando = false;
+  std::string termo_em_curso;
+  std::size_t primeira_linha = 0;
+
+  std::thread varredor(varre_em_fio, banco, raiz_do_acervo(),
+                       std::cref(sahir), &varrida);
 
   auto pintor = ftxui::Renderer([&] {
     const tui::Retracto retracto = retracto_do(tocador);
-    const int largura = ftxui::Terminal::Size().dimx;
-    const std::size_t larg = largura > 2 ? static_cast<std::size_t>(largura - 2) : 1;
+    const int col = ftxui::Terminal::Size().dimx;
+    const int lin = ftxui::Terminal::Size().dimy;
+    const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
+    // A tabella toma o que sobra em altura: cinco linhas de guarnição (marca,
+    // trilha, espectro de oito, transporte, rodapé) mais a orla.
+    const std::size_t alt_tab = lin > 16 ? static_cast<std::size_t>(lin - 16) : 1;
+    primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
+                                             navegador.vista().size(), alt_tab,
+                                             primeira_linha);
+    const std::size_t larg_tab = larg > 11 ? larg - 11 : 1;
+
+    std::string trilha = "ARTISTS";
+    for (const std::string& degrau : navegador.trilha())
+      trilha += "  \ue0b1  " + degrau;
+    if (digitando) trilha = "/" + termo_em_curso;
+    else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    if (!varrida.load()) trilha += "   (a varrer o acervo...)";
+
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
-    // O NOME do arquivo, e não o caminho. O retracto guarda o caminho inteiro
-    // de proposito, que é o que o socket e o MPRIS haverão de querer; a TELA
-    // mostra o nome, que é o que cabe na largura e o que o olho procura.
-    const std::string cabeca =
-        retracto.tamanho == 0
-            ? std::string("fila vazia")
-            : std::filesystem::path(retracto.titulo).filename().string();
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
-               ftxui::text(cabeca) | ftxui::dim,
+               ftxui::text(trilha) | ftxui::dim,
+               ftxui::hbox({
+                   tui::elemento_da_barra(navegador),
+                   ftxui::text("  "),
+                   tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
+                                            larg_tab),
+               }),
+               ftxui::text(""),
                tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("espaço pausa · n/p faixa · setas buscam · +/- volume · q sahe") |
+               ftxui::text("j/k anda · enter entra · esc volta · / busca · r varre"
+                           " · espaço pausa · n/p faixa · q sahe") |
                    ftxui::dim,
            }) |
            ftxui::border;
   });
-
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     const tui::Ordem ordem = tui::ordem_da_tecla(tecla, retracto_do(tocador));
@@ -223,6 +256,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     while (!sahir) {
       tocador.pulsa();
       analisador.pulsa();
+      // A varredura concluiu: o navegador recarrega UMA vez. A bandeira impede
+      // que elle releia o banco vinte vezes por segundo para sempre.
+      if (varrida.load() && !recarregado) {
+        recarregado = true;
+        livraria.reabre();
+        navegador.recarrega();
+      }
       tela.PostEvent(ftxui::Event::Custom);
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
@@ -231,6 +271,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   tela.Loop(janella);
   sahir = true;  // a sahida pela tela tambem para o relogio
   relogio.join();
+  // O varredor espera-se tambem: elle tem referencia para a bandeira e para o
+  // banco, que vivem nesta pilha. Deixá-lo solto seria fio a ler memoria de
+  // quadro já desfeito, e isso não perdoa.
+  if (varredor.joinable()) varredor.join();
   return 0;
 }
 
