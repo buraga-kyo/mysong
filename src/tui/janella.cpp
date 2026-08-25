@@ -222,6 +222,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::RetiraDoRol:
     case tui::Verbo::SobeNoRol:
     case tui::Verbo::DesceNoRol:
+    case tui::Verbo::AbreVideo:
       break;
   }
 }

@@ -52,6 +52,8 @@ enum class Verbo {
   // qual d'ellas se pediu.
   AbreRois, CriaRol, RenomeiaRol, ApagaRol, JuntaAoRol, RetiraDoRol,
   SobeNoRol, DesceNoRol,
+  // O VÍDEO (issue #17): abre a faixa eleita em janella propria do systema.
+  AbreVideo,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),
@@ -60,6 +62,12 @@ enum class Verbo {
 struct Ordem {
   Verbo verbo = Verbo::Nada;
   double alvo = 0.0;
+  // RELATIVO diz que o alvo é um DESLOCAMENTO, e não uma posição. Existe por causa
+  // da janella do video: d'ella não se sabe a posição sem lhe perguntar pelo
+  // soquete e esperar resposta, e o que a tecla quer dizer é «cinco segundos
+  // adeante», que não pede posição alguma. No motor de audio continua absoluto,
+  // que d'esse a posição se lê de graça.
+  bool relativo = false;
 };
 
 // ordem_da_tecla — a taboada. Não toca no tocador: devolve o que se HA DE fazer.
