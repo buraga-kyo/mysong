@@ -261,6 +261,27 @@ bool Navegador::retira_do_rol() {
   return true;
 }
 
+bool Navegador::sobe_no_rol() {
+  if (roleiro_ == nullptr || secao_ != Secao::NoRol || vista_.empty())
+    return false;
+  const int ordem = vista_[eleito_].numero - 1;
+  if (ordem <= 0) return false;  // o primeiro não sobe
+  if (!roleiro_->troca(rol_corrente_, ordem, ordem - 1)) return false;
+  if (eleito_ > 0) --eleito_;  // o olho segue a faixa que se moveu
+  refaz_vista();
+  return true;
+}
+
+bool Navegador::desce_no_rol() {
+  if (roleiro_ == nullptr || secao_ != Secao::NoRol || vista_.empty())
+    return false;
+  const int ordem = vista_[eleito_].numero - 1;
+  if (!roleiro_->troca(rol_corrente_, ordem, ordem + 1)) return false;
+  if (eleito_ + 1 < vista_.size()) ++eleito_;
+  refaz_vista();
+  return true;
+}
+
 void Navegador::mostra_rede(std::vector<Linha> achados) {
   rede_ = std::move(achados);
   secao_ = Secao::Rede;
