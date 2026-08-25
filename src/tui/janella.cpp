@@ -121,7 +121,7 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
                                    const tui::Navegador& navegador,
                                    int digita, const std::string& termo_em_curso,
                                    const std::string& recado, bool mostra_letra,
-                                   bool varrida) {
+                                   bool varrida, unsigned long geracao) {
   std::string marca;
   marca.reserve(128);
   marca += std::to_string(static_cast<int>(tocador.estado()));
@@ -152,6 +152,11 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += recado;
   marca += mostra_letra ? 'L' : 'e';
   marca += varrida ? 'v' : '.';
+  // A GERAÇÃO do correio. Sem ella, achado que chegasse com a tela quieta não pediria
+  // repintura alguma, e o fio da tela nunca colheria o recado: a busca respondia, e
+  // nada apparecia até o operador carregar n'uma tecla por acaso.
+  marca += ':';
+  marca += std::to_string(geracao);
   marca += ':';
   marca += std::to_string(static_cast<int>(navegador.secao()));
   marca += ':';
@@ -295,8 +300,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::atomic<bool> sahir{false};
   // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
-  enum class Digita { Nada, Busca, Url } digita = Digita::Nada;
+  // A PROCURA entra no mesmo enum, pela mesma razão: tres destinos, e não tres
+  // booleanos, que tres booleanos admittem o estado «os tres», que não existe.
+  enum class Digita { Nada, Busca, Url, Procura } digita = Digita::Nada;
   std::string termo_em_curso;
+  // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
+  // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
+  // toca, e por isso elle não pede tranca.
+  std::string aviso_da_rede;
   std::size_t primeira_linha = 0;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
@@ -361,6 +372,16 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   });
 
   auto pintor = ftxui::Renderer([&] {
+    // Os achados da rede chegam AQUI, no fio da tela, que é o unico que pode tocar o
+    // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
+    // na colheita, donde a lista se assenta UMA vez e o eleito não volta ao alto a
+    // cada quadro.
+    std::vector<tui::Linha> achados;
+    std::string recado;
+    if (correio.colhe(&achados, &recado)) {
+      navegador.mostra_rede(std::move(achados));
+      aviso_da_rede = recado;
+    }
     // A varredura concluiu: o navegador recarrega UMA vez. A bandeira do acervo novo
     // CONSOME-SE na leitura, donde isto corre uma vez por varredura.
     //
@@ -398,10 +419,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
+    if (navegador.secao() == tui::Secao::Rede) trilha = "NET";
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
+    else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
     if (!varrida.load()) trilha += "   (a varrer o acervo...)";
+    if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
     if (!andamento.empty()) trilha += "   " + andamento;
 
@@ -455,6 +479,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Nada;
         if (era == Digita::Busca) {
           navegador.filtra(termo_em_curso);
+        } else if (era == Digita::Procura) {
+          if (!termo_em_curso.empty()) {
+            {
+              std::lock_guard<std::mutex> chave(tranca_do_termo);
+              termo_da_rede = termo_em_curso;
+            }
+            pede_buscar.store(true);
+            aviso_da_rede = "a perguntar á rede...";
+          }
         } else if (!termo_em_curso.empty()) {
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
           // declarado, conta o andamento, e a tela lê-o: duas encommendas seguidas
@@ -495,6 +528,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         return true;
       case tui::Verbo::TrocaLetra:
         mostra_letra = !mostra_letra;
+        return true;
+      case tui::Verbo::AbreProcura:
+        digita = Digita::Procura;
+        termo_em_curso.clear();
         return true;
       case tui::Verbo::Varre:
         // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
@@ -538,7 +575,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       const std::string agora = assignatura_do_visivel(
           tocador, navegador, static_cast<int>(digita), termo_em_curso,
           nucleo::texto_do_andamento(estaleiro.andamento()), mostra_letra,
-          varrida.load());
+          varrida.load(), correio.geracao());
       if (agora != ultima_assignatura) {
         ultima_assignatura = agora;
         tela.PostEvent(ftxui::Event::Custom);
