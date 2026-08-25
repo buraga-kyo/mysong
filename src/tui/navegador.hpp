@@ -115,6 +115,17 @@ class Navegador {
   int rol_corrente() const noexcept;
   const std::string& nome_corrente() const noexcept;
 
+  // As sete operações. Todas relêem a vista depois de mutar, e todas devolvem
+  // falso quando não ha roleiro, quando não ha lista eleita, ou quando a camada de
+  // baixo recusou. A tela não ha de adivinhar qual dos tres foi.
+  bool cria_rol(const std::string& nome);
+  bool renomeia_rol(const std::string& nome);
+  bool apaga_rol();
+  bool junta_ao_rol(const std::string& caminho);
+  bool retira_do_rol();
+  bool sobe_no_rol();
+  bool desce_no_rol();
+
   // O nome da lista eleita, para a tela poder perguntar «apagar «tal»?». Vazio
   // fóra da secção das listas.
   std::string nome_do_rol_eleito() const;

@@ -203,6 +203,42 @@ std::string Navegador::nome_do_rol_eleito() const {
   return {};
 }
 
+bool Navegador::cria_rol(const std::string& nome) {
+  if (roleiro_ == nullptr) return false;
+  if (roleiro_->cria(nome) == 0) return false;
+  // Passa-se á secção das listas, e não se fica onde se estava: quem cria uma
+  // lista quer vê-la, e vê-la é o unico modo de conferir que ella nasceu.
+  mostra_rois();
+  return true;
+}
+
+bool Navegador::renomeia_rol(const std::string& nome) {
+  const int qual = secao_ == Secao::NoRol ? rol_corrente_ : id_do_eleito();
+  if (roleiro_ == nullptr || qual == 0) return false;
+  if (!roleiro_->renomeia(qual, nome)) return false;
+  const std::string limpo = nucleo::saneia_nome_de_rol(nome);
+  if (secao_ == Secao::NoRol && !trilha_.empty()) trilha_.front() = limpo;
+  if (qual == rol_corrente_) nome_corrente_ = limpo;
+  refaz_vista();
+  return true;
+}
+
+bool Navegador::apaga_rol() {
+  const int qual = secao_ == Secao::NoRol ? rol_corrente_ : id_do_eleito();
+  if (roleiro_ == nullptr || qual == 0) return false;
+  if (!roleiro_->apaga(qual)) return false;
+  // Apagado o ALVO, elle vae-se: apontar para lista que já não existe faria `a`
+  // falhar sem dizer porque.
+  if (qual == rol_corrente_) {
+    rol_corrente_ = 0;
+    nome_corrente_.clear();
+  }
+  // E não ha dentro onde ficar: sahe-se para a lista das listas. Ficar dentro
+  // mostraria vista vazia sem dizer porque.
+  mostra_rois();
+  return true;
+}
+
 void Navegador::mostra_rede(std::vector<Linha> achados) {
   rede_ = std::move(achados);
   secao_ = Secao::Rede;
