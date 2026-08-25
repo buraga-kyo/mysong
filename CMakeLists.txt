@@ -206,6 +206,14 @@ target_sources(mysong_core PRIVATE src/tui/navegador.cpp src/tui/tabella.cpp)
 # fork e exec, e escreve a etiqueta com a taglib, que já entrou na issue #8.
 target_sources(mysong_core PRIVATE src/nucleo/aquisicao.cpp)
 
+# ─── A LETRA DO LRCLIB (issue #14) ──────────────────────────────────────────
+# Pede o libcurl, que é a segunda e ultima porta de rede d'esta obra: a primeira é
+# o yt-dlp, que corre por fork. Entra como SYSTEM, como as demais alheias.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CURL REQUIRED IMPORTED_TARGET libcurl)
+target_sources(mysong_core PRIVATE src/nucleo/letra.cpp)
+target_link_libraries(mysong_core PRIVATE PkgConfig::CURL)
+
 #   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 

@@ -16,6 +16,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/aquisicao.hpp"
 
+#include "nucleo/letra.hpp"
+
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -316,6 +318,14 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   const std::filesystem::path ficou = acha_o_que_ficou(molde);
   if (ficou.empty()) return Colheita::FalhouAoBaixar;
   if (gravado != nullptr) *gravado = ficou;
+
+  // A LETRA busca-se AQUI, no momento do download, e nunca ao escutar (issue #14).
+  // Falhar não custa a faixa: a letra é ornamento, e o desfecho não muda por ella.
+  // Corre DEPOIS de o audio estar no logar, para que uma rede lenta não atrase o
+  // que o operador de facto pediu.
+  Letra letra;
+  if (busca_letra(feito.artista, feito.titulo, &letra)) grava_lrc(ficou, letra);
+
   return escreve_etiqueta(ficou, feito) ? Colheita::Colhido
                                         : Colheita::FalhouAEtiqueta;
 }
