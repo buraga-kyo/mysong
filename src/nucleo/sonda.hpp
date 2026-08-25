@@ -55,10 +55,10 @@ struct Requisito {
   std::string_view remedio;
 };
 
-// O ESTADO colhido de um requisito. Guarda-se o requisito INTEIRO junto do
+// O VEREDICTO sobre um requisito. Guarda-se o requisito INTEIRO junto do
 // veredicto, de sorte que quem receba o relatorio não precise consultar taboa
 // alguma para saber o nome, a gravidade e o remedio d'aquillo que falta.
-struct Estado {
+struct Veredicto {
   Requisito requisito;
   bool presente;
 };
@@ -67,11 +67,11 @@ struct Estado {
 // pede faltas(); quem quer o diagnostico completo, que é o caso do modo
 // --sonda, tem os estados todos, presentes inclusos.
 struct Relatorio {
-  std::vector<Estado> estados;
+  std::vector<Veredicto> estados;
 
   bool ha_falta() const;
   bool ha_impedimento() const;
-  std::vector<Estado> faltas() const;  // impedimentos primeiro, ordem estavel
+  std::vector<Veredicto> faltas() const;  // impedimentos primeiro, ordem estavel
 };
 
 // O INQUERITO: as tres consultas que a sonda faz ao mundo, embrulhadas de sorte

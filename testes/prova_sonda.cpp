@@ -67,7 +67,7 @@ TEST_CASE("com tudo presente, nada falta e nada impede") {
   CHECK_FALSE(relatorio.ha_falta());
   CHECK_FALSE(relatorio.ha_impedimento());
   CHECK(relatorio.faltas().empty());
-  for (const nu::Estado& estado : relatorio.estados) CHECK(estado.presente);
+  for (const nu::Veredicto& estado : relatorio.estados) CHECK(estado.presente);
 }
 
 TEST_CASE("a taboa traz os quatro requisitos, de chave unica e remedio dado") {
@@ -93,7 +93,7 @@ TEST_CASE("inquerito sem consulta alguma accusa falta, e não dá por bom") {
 
 TEST_CASE("faltando a fonte, ha impedimento e o remedio vem nomeado") {
   const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"fonte"}));
-  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  const std::vector<nu::Veredicto> faltas = relatorio.faltas();
   REQUIRE(faltas.size() == 1);
   CHECK(faltas.front().requisito.chave == "fonte");
   CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Impedimento);
@@ -107,7 +107,7 @@ TEST_CASE("faltando a fonte, ha impedimento e o remedio vem nomeado") {
 // elle que a prova por mutação passa.
 TEST_CASE("a libmpv é impedimento, e nunca aviso") {
   const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"libmpv"}));
-  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  const std::vector<nu::Veredicto> faltas = relatorio.faltas();
   REQUIRE(faltas.size() == 1);
   CHECK(faltas.front().requisito.chave == "libmpv");
   CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Impedimento);
@@ -119,7 +119,7 @@ TEST_CASE("a libmpv é impedimento, e nunca aviso") {
 // a negar musica a quem sómente ficaria sem ver capa.
 TEST_CASE("faltando o yt-dlp, ha aviso, e a porta não se tranca") {
   const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"yt-dlp"}));
-  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  const std::vector<nu::Veredicto> faltas = relatorio.faltas();
   REQUIRE(faltas.size() == 1);
   CHECK(faltas.front().requisito.chave == "yt-dlp");
   CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Aviso);
@@ -129,7 +129,7 @@ TEST_CASE("faltando o yt-dlp, ha aviso, e a porta não se tranca") {
 
 TEST_CASE("faltando o chafa, ha aviso, e a porta não se tranca") {
   const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"chafa"}));
-  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  const std::vector<nu::Veredicto> faltas = relatorio.faltas();
   REQUIRE(faltas.size() == 1);
   CHECK(faltas.front().requisito.chave == "chafa");
   CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Aviso);
@@ -142,7 +142,7 @@ TEST_CASE("faltando o chafa, ha aviso, e a porta não se tranca") {
 TEST_CASE("faltando os quatro, os impedimentos vêm adeante dos avisos") {
   const nu::Relatorio relatorio =
       nu::sondar(inquerito_faltando({"chafa", "libmpv", "fonte", "yt-dlp"}));
-  const std::vector<nu::Estado> faltas = relatorio.faltas();
+  const std::vector<nu::Veredicto> faltas = relatorio.faltas();
   REQUIRE(faltas.size() == 4);
   CHECK(faltas[0].requisito.gravidade == nu::Gravidade::Impedimento);
   CHECK(faltas[1].requisito.gravidade == nu::Gravidade::Impedimento);
@@ -156,8 +156,8 @@ TEST_CASE("faltando os quatro, os impedimentos vêm adeante dos avisos") {
 TEST_CASE("a ordem das faltas repete-se identica em duas colheitas") {
   const nu::Relatorio relatorio =
       nu::sondar(inquerito_faltando({"yt-dlp", "fonte", "chafa"}));
-  const std::vector<nu::Estado> primeira = relatorio.faltas();
-  const std::vector<nu::Estado> segunda = relatorio.faltas();
+  const std::vector<nu::Veredicto> primeira = relatorio.faltas();
+  const std::vector<nu::Veredicto> segunda = relatorio.faltas();
   REQUIRE(primeira.size() == segunda.size());
   for (std::size_t passo = 0; passo < primeira.size(); ++passo)
     CHECK(primeira[passo].requisito.chave == segunda[passo].requisito.chave);
