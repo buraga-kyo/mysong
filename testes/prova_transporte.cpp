@@ -7,14 +7,57 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cctype>
 #include <cmath>
 #include <limits>
 #include <string>
+
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 
 #include "tui/transporte.hpp"
 
 namespace tui = mysong::tui;
 namespace nu = mysong::nucleo;
+
+namespace {
+
+// sem_escape — a linha despida do escape e do retorno de carro, que é o que ella
+// MOSTRA. Mesma technica da prova do espectro, e escripta aqui por não ser peça
+// da obra: prova não exporta ajuda para prova.
+std::string sem_escape(const std::string& linha) {
+  std::string limpa;
+  for (std::size_t i = 0; i < linha.size(); ++i) {
+    const unsigned char oct = static_cast<unsigned char>(linha[i]);
+    if (oct == 0x1b) {
+      while (i < linha.size() &&
+             !std::isalpha(static_cast<unsigned char>(linha[i])))
+        ++i;
+      continue;
+    }
+    if (oct == '\r') continue;
+    limpa += linha[i];
+  }
+  return limpa;
+}
+
+std::size_t codepoints(const std::string& cadeia) {
+  std::size_t conta = 0;
+  for (const unsigned char oct : cadeia)
+    if ((oct & 0xC0) != 0x80) ++conta;
+  return conta;
+}
+
+// a_linha_pintada — o transporte pintado em écran de PAPEL, de uma linha só.
+std::string a_linha_pintada(const tui::Retracto& retracto, std::size_t largura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(static_cast<int>(largura)),
+      ftxui::Dimension::Fixed(1));
+  ftxui::Render(ecran, tui::elemento_do_transporte(retracto, largura));
+  return sem_escape(ecran.ToString());
+}
+
+}  // namespace
 
 TEST_CASE("o tempo sahe em MM:SS, e o que não é tempo sahe em traço") {
   CHECK(tui::mm_ss(0.0) == "00:00");
