@@ -67,5 +67,12 @@ class Roleiro {
   bool aberto() const noexcept;
   int versao() const noexcept;
 
+  std::vector<Rol> rois() const;
+
+  // cria — o id da lista nova, e ZERO quando o nome é vazio depois de saneado ou
+  // quando já existe lista com esse nome. Nome repetido não se aceita: duas listas
+  // do mesmo nome na tela não se distinguem.
+  int cria(std::string_view nome);
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
