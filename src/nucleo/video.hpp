@@ -96,5 +96,33 @@ enum class Fita {
 
 std::string_view razao_da_fita(Fita fita);
 
+// O PROJECTOR. Um por corrida do mysong, e uma fita por vez: abrir a segunda
+// fecha a primeira. Duas janellas ao mesmo tempo seria audio a dobrar, que é o
+// que a tarefa proibe pelo nome.
+class Projector {
+ public:
+  // A raiz do soquete entra por parametro, e por isso a bateria corre em
+  // directorio temporario, sem tocar o `$XDG_RUNTIME_DIR` de quem nos usa.
+  explicit Projector(std::filesystem::path raiz_do_soquete);
+  ~Projector();  // fecha: fita alguma sobrevive ao projector
+
+  Projector(const Projector&) = delete;
+  Projector& operator=(const Projector&) = delete;
+
+  Fita abre(const std::filesystem::path& faixa);
+
+  // rodando — verdadeiro enquanto o processo da janella viver. Colhe o filho morto
+  // quando elle morreu, e é por aqui que fechar a janella á mão devolve o commando
+  // á TUI sem deixar zombie: quem pergunta é quem enterra.
+  //
+  // NÃO é const, e é de proposito: perguntar ENTERRA, e enterrar muta.
+  bool rodando();
+
+  // pausada — o que se MANDOU por ultimo, e não o que a janella diz. Guardar o que
+  // se mandou é o que permitte ao espaço alternar sem se perguntar á janella e
+  // esperar resposta; o preço é que o rato do operador na janella pode discordar
+  // d'aqui, e isso vae declarado.
+  bool pausada() const;
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
