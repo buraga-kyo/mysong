@@ -78,5 +78,17 @@ TEST_CASE("a resposta lê-se, e a instrumental dá letra vazia sem erro") {
   CHECK(erro.plana.empty());
 }
 
+TEST_CASE("o caminho do lrc é o do audio com outra extensão") {
+  CHECK(nu::caminho_do_lrc("/acervo/A/B/01 - Tear.mp3").string() ==
+        "/acervo/A/B/01 - Tear.lrc");
+  CHECK(nu::caminho_do_lrc("/acervo/A/B/01 - Tear.flac").string() ==
+        "/acervo/A/B/01 - Tear.lrc");
+  // Nome com ponto no meio: sómente a ULTIMA extensão se troca.
+  CHECK(nu::caminho_do_lrc("/a/Vol. 2 - Tear.opus").string() ==
+        "/a/Vol. 2 - Tear.lrc");
+  // Sem extensão alguma, acrescenta-se.
+  CHECK(nu::caminho_do_lrc("/a/Tear").string() == "/a/Tear.lrc");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
