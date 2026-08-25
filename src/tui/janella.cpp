@@ -311,7 +311,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // booleanos: dous booleanos admittem o estado «ambos», que não existe.
   // A PROCURA entra no mesmo enum, pela mesma razão: tres destinos, e não tres
   // booleanos, que tres booleanos admittem o estado «os tres», que não existe.
-  enum class Digita { Nada, Busca, Url, Procura } digita = Digita::Nada;
+  enum class Digita {
+    Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma
+  } digita = Digita::Nada;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -440,6 +442,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
     else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
+    else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
+    else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
+    else if (digita == Digita::Confirma)
+      trilha = "apagar «" + navegador.nome_do_rol_eleito() + "»? s/n";
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
     // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
     // `a` manda a faixa, e o operador não ha de o adivinhar.
@@ -490,6 +496,22 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
+    // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
+    // antes do resto para que a letra «s» não vá parar ao termo em curso.
+    if (digita == Digita::Confirma) {
+      if (tecla == ftxui::Event::Character('s') ||
+          tecla == ftxui::Event::Character('S')) {
+        digita = Digita::Nada;
+        if (!navegador.apaga_rol()) aviso_da_rede = "não se pôde apagar";
+        return true;
+      }
+      if (tecla.is_character() || tecla == ftxui::Event::Escape ||
+          tecla == ftxui::Event::Return) {
+        digita = Digita::Nada;  // qualquer outra tecla é «não»
+        return true;
+      }
+      return true;
+    }
     if (digita != Digita::Nada) {
       if (tecla == ftxui::Event::Escape) {
         digita = Digita::Nada;
@@ -501,6 +523,12 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Nada;
         if (era == Digita::Busca) {
           navegador.filtra(termo_em_curso);
+        } else if (era == Digita::NomeNovo) {
+          if (!navegador.cria_rol(termo_em_curso))
+            aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::NomeOutro) {
+          if (!navegador.renomeia_rol(termo_em_curso))
+            aviso_da_rede = "esse nome já existe, ou é vazio";
         } else if (era == Digita::Procura) {
           if (!termo_em_curso.empty()) {
             {
