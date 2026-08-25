@@ -153,5 +153,23 @@ int Roleiro::versao() const noexcept {
   return qual;
 }
 
+std::vector<Rol> Roleiro::rois() const {
+  std::vector<Rol> lista;
+  // A conta dos itens vem por subconsulta, e não de columna guardada: columna
+  // guardada desencontra-se do que ha no dia em que alguem apague item sem a
+  // decrementar. Ordem de nome, que é a que o operador procura com o olho.
+  corre(punho_,
+        "SELECT id, nome, (SELECT COUNT(*) FROM item WHERE item.rol = rol.id)"
+        " FROM rol ORDER BY nome;",
+        {}, {}, [&lista](sqlite3_stmt* passo) {
+          Rol rol;
+          rol.id = sqlite3_column_int(passo, 0);
+          rol.nome = texto(passo, 1);
+          rol.quantos = sqlite3_column_int(passo, 2);
+          lista.push_back(std::move(rol));
+        });
+  return lista;
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
