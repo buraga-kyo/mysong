@@ -69,8 +69,13 @@ bool extensao_de_audio(std::string_view extensao);
 // o temporario de quem a abandonou.
 class Varredura {
  public:
+  // O `limite_de_paginas` é a PORTA DE INJECÇÃO da falta, e a unica d'esta peça.
+  // Zero quer dizer sem limite, que é o uso de verdade. Baixo, faz o SQLite
+  // devolver SQLITE_FULL pelo MESMO caminho de codigo do disco cheio de verdade,
+  // que é como a prova o exercita sem encher um disco.
   Varredura(std::filesystem::path banco,
-            std::vector<std::filesystem::path> raizes);
+            std::vector<std::filesystem::path> raizes,
+            long limite_de_paginas = 0);
   ~Varredura();
 
   Varredura(const Varredura&) = delete;

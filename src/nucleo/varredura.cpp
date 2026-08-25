@@ -247,7 +247,8 @@ bool extensao_de_audio(std::string_view extensao) {
 }
 
 Varredura::Varredura(std::filesystem::path banco,
-                     std::vector<std::filesystem::path> raizes)
+                     std::vector<std::filesystem::path> raizes,
+                     long limite_de_paginas)
     : punho_(std::make_unique<Punho>()) {
   punho_->banco = std::move(banco);
   punho_->raizes = std::move(raizes);
@@ -264,7 +265,8 @@ Varredura::Varredura(std::filesystem::path banco,
     return;
   }
 
-  punho_->escriba = std::make_unique<Escriba>(punho_->banco);
+  punho_->escriba =
+      std::make_unique<Escriba>(punho_->banco, limite_de_paginas);
   if (!punho_->escriba->aberto()) {
     punho_->desfecho = Desfecho::ErroDeEscripta;
     punho_->fase = Punho::Fase::Fim;
