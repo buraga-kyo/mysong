@@ -28,7 +28,10 @@ namespace mysong::tui {
 
 // As secções da barra lateral. A ordem é a do mockup, e é ella que a barra
 // mostra de alto a baixo.
-enum class Secao { Artistas, Albuns, Faixas, Busca };
+// A secção REDE (issue #12) é a unica cujas linhas NÃO vêm da bibliotheca: ellas
+// vêm de fóra, por mostra_rede. Entra no mesmo enum porque a barra lateral é uma, e
+// duas listas de secções fariam a barra depender de qual d'ellas se lesse primeiro.
+enum class Secao { Artistas, Albuns, Faixas, Busca, Rede };
 
 // Uma LINHA do que está á vista. O texto é o que se mostra; a `chave` é o que a
 // ordem `entra` consome, e nem sempre são a mesma cousa: o album mostra-se pelo
@@ -99,6 +102,7 @@ class Navegador {
   const nucleo::Biblioteca& livraria_;
   Secao secao_ = Secao::Artistas;
   std::vector<Linha> vista_;
+  std::vector<Linha> rede_;  // a fonte da vista na secção Rede, e sómente n'ella
   std::vector<std::string> trilha_;
   std::string termo_;
   std::size_t eleito_ = 0;

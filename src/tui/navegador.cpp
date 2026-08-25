@@ -70,6 +70,17 @@ void Navegador::refaz_vista() {
         vista_.push_back({faixa.titulo, faixa.caminho, faixa.numero,
                           faixa.duracao, faixa.artista});
       break;
+
+    case Secao::Rede:
+      // A UNICA secção que não pergunta á bibliotheca. A fonte é a lista que veio
+      // de fóra, e o filtro applica-se sobre ella como sobre as outras.
+      //
+      // É d'aqui que vem a innocuidade de recarrega() n'esta secção: não havendo
+      // consulta ao acervo n'este ramo, a varredura que conclua no meio de o
+      // operador escolher um achado refaz a vista IDENTICA, e não lhe apaga a lista.
+      for (const Linha& achado : rede_)
+        if (contem_sem_caixa(achado.texto, termo_)) vista_.push_back(achado);
+      break;
   }
   if (vista_.empty()) eleito_ = 0;
   else if (eleito_ >= vista_.size()) eleito_ = vista_.size() - 1;
@@ -144,6 +155,10 @@ bool Navegador::entra() {
     case Secao::Faixas:
     case Secao::Busca:
       return true;  // já é faixa: quem chama manda tocar
+    case Secao::Rede:
+      // Achado da rede não é faixa, e entrar n'elle não é descer degrau algum:
+      // quem chama pergunta pela url_eleita e manda baixar. Nada muda aqui.
+      return false;
   }
   // O termo NÃO se herda ao descer: elle filtrava a lista de cima, e applicá-lo
   // á de baixo esconderia faixas por causa de uma busca que já se cumpriu.
@@ -161,6 +176,7 @@ bool Navegador::volta() {
       break;
     case Secao::Albuns:
     case Secao::Busca:
+    case Secao::Rede:
       trilha_.clear();
       secao_ = Secao::Artistas;
       break;
