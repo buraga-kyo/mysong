@@ -18,6 +18,7 @@
 #include <taglib/tpropertymap.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cctype>
 #include <set>
 #include <system_error>
@@ -195,6 +196,40 @@ bool le_etiqueta(const std::filesystem::path& caminho, Faixa* faixa) {
   }
   faixa->duracao = arquivo.audioProperties()->lengthInSeconds();
   return true;
+}
+
+// trata_arquivo — um arquivo, um passo. Aqui vive o INCREMENTAL: hora e tamanho
+// eguaes aos do índice antigo copiam a linha em vez de a reler, e é onde o
+// primeiro scan gasta o seu tempo.
+bool trata_arquivo(const Achado& achado, Biblioteca& antigo, Escriba& escriba,
+                   Progresso* progresso) {
+  std::error_code erro;
+  const std::filesystem::path& caminho = achado.first;
+  const std::uintmax_t tamanho = std::filesystem::file_size(caminho, erro);
+  if (erro) { ++progresso->desaparecidas; return true; }
+  const auto hora = std::filesystem::last_write_time(caminho, erro);
+  if (erro) { ++progresso->desaparecidas; return true; }
+  ++progresso->vistas;
+
+  Faixa velha;
+  const std::int64_t marca =
+      static_cast<std::int64_t>(hora.time_since_epoch().count());
+  if (antigo.acha_por_caminho(caminho.string(), velha) &&
+      velha.modificado == marca &&
+      velha.tamanho == static_cast<std::int64_t>(tamanho)) {
+    ++progresso->reaproveitadas;
+    return escriba.grava(velha);
+  }
+
+  Faixa faixa = deriva_do_caminho(caminho, achado.second);
+  faixa.modificado = marca;
+  faixa.tamanho = static_cast<std::int64_t>(tamanho);
+  if (!le_etiqueta(caminho, &faixa)) {
+    ++progresso->recusadas;  // tem extensão de audio, mas não é audio
+    return true;
+  }
+  ++progresso->lidas;
+  return escriba.grava(faixa);
 }
 
 bool extensao_de_audio(std::string_view extensao) {
