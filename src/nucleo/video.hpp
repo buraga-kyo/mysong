@@ -124,5 +124,13 @@ class Projector {
   // d'aqui, e isso vae declarado.
   bool pausada() const;
 
+  bool pausar();
+  bool retomar();
+  bool buscar(double segundos);
+  bool buscar_relativo(double deslocamento);
+  bool volume(int porcento);
+
+  // fecha — pede «quit» pelo soquete, e sómente não obedecendo manda o signal.
+  // Pedir primeiro é o que deixa o mpv gravar a posição e sahir limpo.
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
