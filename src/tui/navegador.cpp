@@ -75,6 +75,45 @@ void Navegador::refaz_vista() {
   else if (eleito_ >= vista_.size()) eleito_ = vista_.size() - 1;
 }
 
+Navegador::Navegador(const nucleo::Biblioteca& livraria) : livraria_(livraria) {
+  refaz_vista();
+}
+
+Secao Navegador::secao() const noexcept { return secao_; }
+const std::vector<Linha>& Navegador::vista() const noexcept { return vista_; }
+std::size_t Navegador::eleito() const noexcept { return eleito_; }
+const std::vector<std::string>& Navegador::trilha() const noexcept {
+  return trilha_;
+}
+const std::string& Navegador::termo() const noexcept { return termo_; }
+
+void Navegador::desce() noexcept {
+  if (vista_.empty()) return;
+  if (eleito_ + 1 < vista_.size()) ++eleito_;
+}
+
+void Navegador::sobe() noexcept {
+  if (eleito_ > 0) --eleito_;
+}
+
+void Navegador::ao_principio() noexcept { eleito_ = 0; }
+
+void Navegador::ao_fim() noexcept {
+  eleito_ = vista_.empty() ? 0 : vista_.size() - 1;
+}
+
+void Navegador::filtra(std::string termo) {
+  termo_ = std::move(termo);
+  eleito_ = 0;  // termo novo, lista nova: o eleito volta ao alto
+  refaz_vista();
+}
+
+std::string Navegador::caminho_eleito() const {
+  if (vista_.empty()) return {};
+  if (secao_ != Secao::Faixas && secao_ != Secao::Busca) return {};
+  return vista_[eleito_].chave;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
