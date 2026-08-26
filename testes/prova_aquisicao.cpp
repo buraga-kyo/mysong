@@ -254,5 +254,73 @@ TEST_CASE("achado meio não se mostra, e duração que não é numero não vira 
   CHECK(um[0].duracao == 0);
 }
 
+// ── AS BANDEIRAS DO MOTOR (issue #55) ───────────────────────────────────────
+// Estas provas existem porque a falta d'estas bandeiras deixou a Casa sem colher
+// uma unica faixa. A prova afere as TRES chamadas juntas: quem tirar a bandeira de
+// bandeiras_do_motor derruba as tres, e é assim que se sabe que a guarda vive.
+
+namespace {
+
+// tem — a bandeira e o seu valor, na ordem, e não a bandeira solta em qualquer
+// logar. Bandeira sem valor é bandeira que o yt-dlp recusa.
+bool tem(const std::vector<std::string>& ditos, const std::string& bandeira,
+         const std::string& valor) {
+  for (std::size_t i = 0; i + 1 < ditos.size(); ++i)
+    if (ditos[i] == bandeira && ditos[i + 1] == valor) return true;
+  return false;
+}
+
+bool menciona(const std::vector<std::string>& ditos, const std::string& agulha) {
+  for (const std::string& dito : ditos)
+    if (dito == agulha) return true;
+  return false;
+}
+
+}  // namespace
+
+TEST_CASE("as tres chamadas ao yt-dlp carregam o motor de JS") {
+  const std::vector<std::vector<std::string>> tres = {
+      nu::argumentos_da_sonda("https://exemplo/x"),
+      nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
+      nu::argumentos_da_busca("bach", 5)};
+  for (const std::vector<std::string>& ditos : tres) {
+    // O nome do programa continua a ser o primeiro: as bandeiras entram DEPOIS
+    // d'elle, que ninguem corre `--js-runtimes` como se fosse executavel.
+    CHECK(ditos.front() == "yt-dlp");
+    CHECK(tem(ditos, "--js-runtimes", nu::kMotorDeJs));
+    CHECK(tem(ditos, "--remote-components", nu::kComponenteDoDesafio));
+  }
+}
+
+TEST_CASE("o cookie NAO entra sem que se peca") {
+  // Esta é a prova que importa mais, e a razão é medida: com o cookie do chrome o
+  // yt-dlp responde «The page needs to be reloaded.» a toda URL. Ligá-lo por
+  // omissão seria trocar uma falha por outra.
+  const std::vector<std::vector<std::string>> tres = {
+      nu::argumentos_da_sonda("https://exemplo/x"),
+      nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
+      nu::argumentos_da_busca("bach", 5)};
+  for (const std::vector<std::string>& ditos : tres) {
+    CHECK_FALSE(menciona(ditos, "--cookies-from-browser"));
+    CHECK_FALSE(menciona(ditos, nu::kNavegadorDoCookie));
+  }
+}
+
+TEST_CASE("o cookie entra nas tres quando se pede") {
+  const std::vector<std::vector<std::string>> tres = {
+      nu::argumentos_da_sonda("https://exemplo/x", true),
+      nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T", true),
+      nu::argumentos_da_busca("bach", 5, true)};
+  for (const std::vector<std::string>& ditos : tres)
+    CHECK(tem(ditos, "--cookies-from-browser", nu::kNavegadorDoCookie));
+}
+
+TEST_CASE("bandeiras_do_motor cresce de dous pares para tres com o cookie") {
+  // O tamanho afere-se porque uma implementação que devolvesse o cookie SEMPRE
+  // passaria nas provas de presença e falharia aqui.
+  CHECK(nu::bandeiras_do_motor(false).size() == 4u);
+  CHECK(nu::bandeiras_do_motor(true).size() == 6u);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
