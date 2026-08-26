@@ -86,6 +86,28 @@ Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota);
 std::filesystem::path destino(const std::filesystem::path& raiz,
                               const Pedido& pedido);
 
+// ── AS BANDEIRAS DO MOTOR (issue #55) ───────────────────────────────────────
+
+// O YouTube passou a exigir que o cliente resolva um desafio em JavaScript antes
+// de entregar o audio. Sem motor, o yt-dlp avisa que a assinatura falhou e não
+// colhe fórmato algum. O motor que esta maquina tem é o `node`, e o yt-dlp habilita
+// apenas o `deno` por conta propria, de sorte que dizer-lhe qual é não é ornamento.
+inline constexpr char kMotorDeJs[] = "node";
+
+// A biblioteca solucionadora não vem no yt-dlp: elle a busca quando se lhe permitte.
+inline constexpr char kComponenteDoDesafio[] = "ejs:github";
+
+// O navegador de onde o cookie sahe, QUANDO se pedir. MEDIDO em 2026-08-26: com o
+// cookie do chrome o yt-dlp responde «The page needs to be reloaded.» a toda URL, e
+// SEM elle colhe. Por isso o cookie é opção desligada, e não remedio de omissão:
+// serve ao video restricto por idade, e a nada mais.
+inline constexpr char kNavegadorDoCookie[] = "chrome";
+
+// bandeiras_do_motor — as bandeiras que TODA chamada ao yt-dlp carrega. Vivem n'uma
+// função só para que sejam UM logar: quem as tirar d'aqui derruba as tres provas de
+// uma vez, e não uma só, que é como se sabe que a guarda está viva.
+std::vector<std::string> bandeiras_do_motor(bool com_cookie);
+
 // argumentos_da_sonda — o que se corre para PERGUNTAR pela URL, sem baixar. Seis
 // campos por `--print`, um por linha, na ordem em que le_etiqueta_remota os lê.
 std::vector<std::string> argumentos_da_sonda(const std::string& url);
