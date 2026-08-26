@@ -152,7 +152,8 @@ struct Achado {
 // para busca, e o `--flat-playlist` impede que elle abra cada resultado para lhe ler os
 // fórmatos: sem elle, buscar dez faixas custa dez sondas de rede.
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
-                                             int quantos);
+                                             int quantos,
+                                             bool com_cookie = false);
 
 // le_achados — as linhas que a busca imprimiu, QUATRO por achado e nessa ordem. Lê-se
 // por linha, e não por separador dentro da linha: titulo de video tras barra vertical,

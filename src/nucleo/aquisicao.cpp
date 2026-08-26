@@ -433,11 +433,14 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
 }
 
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
-                                             int quantos) {
+                                             int quantos, bool com_cookie) {
   // Apara-se em vinte: busca maior gasta rede e não cabe na tabella. E em um pelo
   // baixo, que buscar zero é pedido sem sentido.
   const int quantas = quantos < 1 ? 1 : (quantos > 20 ? 20 : quantos);
-  return {"yt-dlp",
+  std::vector<std::string> ditos{"yt-dlp"};
+  const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
+  ditos.insert(ditos.end(), motor.begin(), motor.end());
+  const std::vector<std::string> resto = {
           "--no-warnings",
           "--flat-playlist",
           "--print", "%(title)s",
@@ -446,6 +449,8 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
           "--print", "%(webpage_url)s",
           "--",
           "ytsearch" + std::to_string(quantas) + ":" + termo};
+  ditos.insert(ditos.end(), resto.begin(), resto.end());
+  return ditos;
 }
 
 std::vector<Achado> le_achados(const std::string& sahida) {
