@@ -141,20 +141,30 @@ std::vector<std::string> bandeiras_do_motor(bool com_cookie) {
   return bandeiras;
 }
 
-std::vector<std::string> argumentos_da_sonda(const std::string& url) {
+std::vector<std::string> argumentos_da_sonda(const std::string& url,
+                                             bool com_cookie) {
   // A ordem d'estes seis `--print` é o CONTRACTO com le_etiqueta_remota, e por
   // isso os dous vivem no mesmo arquivo e a prova afere os dous juntos.
-  return {"yt-dlp",   "--no-warnings",      "--no-playlist",
+  std::vector<std::string> ditos{"yt-dlp"};
+  const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
+  ditos.insert(ditos.end(), motor.begin(), motor.end());
+  const std::vector<std::string> resto = {"--no-warnings",      "--no-playlist",
           "--print",  "%(title)s",          "--print",
           "%(uploader)s", "--print",        "%(artist)s",
           "--print", "%(album)s",           "--print",
           "%(track_number)s", "--print",    "%(duration)s",
           "--",      url};
+  ditos.insert(ditos.end(), resto.begin(), resto.end());
+  return ditos;
 }
 
 std::vector<std::string> argumentos_do_download(
-    const std::string& url, const std::filesystem::path& molde) {
-  return {"yt-dlp",
+    const std::string& url, const std::filesystem::path& molde,
+    bool com_cookie) {
+  std::vector<std::string> ditos{"yt-dlp"};
+  const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
+  ditos.insert(ditos.end(), motor.begin(), motor.end());
+  const std::vector<std::string> resto = {
           "--no-warnings",
           "--no-playlist",
           // `--no-overwrites` é a segunda guarda contra perder arquivo. A
@@ -169,6 +179,8 @@ std::vector<std::string> argumentos_do_download(
           "--no-embed-metadata",
           "--output", molde.string() + ".%(ext)s",
           "--", url};
+  ditos.insert(ditos.end(), resto.begin(), resto.end());
+  return ditos;
 }
 
 EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {

@@ -110,13 +110,15 @@ std::vector<std::string> bandeiras_do_motor(bool com_cookie);
 
 // argumentos_da_sonda — o que se corre para PERGUNTAR pela URL, sem baixar. Seis
 // campos por `--print`, um por linha, na ordem em que le_etiqueta_remota os lê.
-std::vector<std::string> argumentos_da_sonda(const std::string& url);
+std::vector<std::string> argumentos_da_sonda(const std::string& url,
+                                             bool com_cookie = false);
 
 // argumentos_do_download — o que se corre para BAIXAR. `--no-overwrites` está lá
 // de proposito, e é a segunda guarda: a primeira é a checagem do destino, e ter
 // as duas quer dizer que uma corrida entre duas aquisições não perde arquivo.
 std::vector<std::string> argumentos_do_download(
-    const std::string& url, const std::filesystem::path& molde);
+    const std::string& url, const std::filesystem::path& molde,
+    bool com_cookie = false);
 
 // le_etiqueta_remota — as seis linhas que a sonda imprimiu. Linha «NA» ou vazia é
 // campo que a rede não soube dizer.
