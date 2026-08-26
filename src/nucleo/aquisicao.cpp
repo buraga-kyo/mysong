@@ -125,6 +125,22 @@ std::filesystem::path destino(const std::filesystem::path& raiz,
   return caminho / (folha + saneia_nome(pedido.titulo));
 }
 
+std::vector<std::string> bandeiras_do_motor(bool com_cookie) {
+  // `--js-runtimes` porque o yt-dlp habilita o `deno` e mais nada por conta
+  // propria; `--remote-components` porque a biblioteca que resolve o desafio elle
+  // a busca, e sem permissão não a busca.
+  std::vector<std::string> bandeiras{"--js-runtimes", kMotorDeJs,
+                                     "--remote-components",
+                                     kComponenteDoDesafio};
+  // O cookie entra SÓ quando se pede, e a razão está no cabeçalho: medido, elle
+  // faz o yt-dlp recusar toda URL. Quem o ligar sabe por que o liga.
+  if (com_cookie) {
+    bandeiras.emplace_back("--cookies-from-browser");
+    bandeiras.emplace_back(kNavegadorDoCookie);
+  }
+  return bandeiras;
+}
+
 std::vector<std::string> argumentos_da_sonda(const std::string& url) {
   // A ordem d'estes seis `--print` é o CONTRACTO com le_etiqueta_remota, e por
   // isso os dous vivem no mesmo arquivo e a prova afere os dous juntos.
