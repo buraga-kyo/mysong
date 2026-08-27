@@ -58,6 +58,9 @@ struct Pedido {
   // casando o achado pela duração. Sem ella não ha casamento de que se possa
   // confiar, e a faixa sahe por duvidosa em vez de baixar cousa errada calada.
   int duracao = 0;
+  // O ANO do lançamento, e zero é «não sei». Sómente a BUSCA o dá (a sonda não o
+  // pergunta), e havendo-o elle vae á etiqueta.
+  int ano = 0;
 };
 
 // saneia_nome — o nome que se ha de pôr no systema de arquivos. Tira a barra, o
@@ -162,6 +165,18 @@ struct Achado {
   std::string canal;
   int duracao = 0;  // em segundos; zero é «não disse»
   std::string url;
+  // Os campos da MUSICA (issue #56): nas art tracks do YouTube Music vêm
+  // preenchidos, e na busca comum vêm NA, que a leitura torna vazio. A `faixa` é
+  // o titulo CANONICO (%(track)s), limpo do que o titulo do video carregue.
+  std::string artista;
+  std::string album;
+  std::string faixa;
+  int ano = 0;
+  // A posição na lista de origem, quando a fonte a tem (o catalogo do Spotify
+  // tem; a busca na rede não). É ella que vira o «NN - » do nome do arquivo.
+  int numero = 0;
+  // A FONTE de que o achado veio, para que a encommenda a carregue adiante.
+  Fonte fonte = Fonte::YouTube;
 };
 
 // argumentos_da_busca — o que se corre. O `ytsearchN:` é o pseudo-endereço do yt-dlp

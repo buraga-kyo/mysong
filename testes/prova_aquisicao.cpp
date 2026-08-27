@@ -338,5 +338,16 @@ TEST_CASE("a fonte cicla pelas tres e volta, e o pedido nasce no YouTube") {
   CHECK(nu::Pedido{}.fonte == nu::Fonte::YouTube);
 }
 
+TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
+  const nu::Achado nada;
+  CHECK(nada.artista.empty());
+  CHECK(nada.album.empty());
+  CHECK(nada.faixa.empty());
+  CHECK(nada.ano == 0);
+  CHECK(nada.numero == 0);
+  CHECK(nada.fonte == nu::Fonte::YouTube);
+  CHECK(nu::Pedido{}.ano == 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -313,6 +313,8 @@ bool escreve_etiqueta(const std::filesystem::path& arquivo,
     etiqueta->setAlbum(TagLib::String(pedido.album, utf8));
   if (pedido.numero > 0)
     etiqueta->setTrack(static_cast<unsigned>(pedido.numero));
+  // O ano entra quando a fonte o deu (issue #56); zero calaria «anno zero».
+  if (pedido.ano > 0) etiqueta->setYear(static_cast<unsigned>(pedido.ano));
   return punho.save();
 }
 
