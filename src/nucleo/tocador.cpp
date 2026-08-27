@@ -139,6 +139,21 @@ double Tocador::duracao() const {
   return motor_.duracao();
 }
 
+// Tudo debaixo da MESMA chave: estado e posição do mesmo momento, e a faixa
+// copiada antes de a tranca se soltar.
+Retracto Tocador::retracto() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  Retracto obra;
+  obra.estado = estado_;
+  obra.faixa = std::string(fila_.corrente());
+  obra.posicao = motor_.posicao();
+  obra.duracao = motor_.duracao();
+  obra.volume = volume_;
+  obra.indice = fila_.vazia() ? 0 : fila_.indice();
+  obra.tamanho = fila_.tamanho();
+  return obra;
+}
+
 // Uma batida: drena o motor, colhe o que mudou, assenta AMBOS, e só então
 // annuncia. Assentar ambos antes de qualquer pregão é o que cumpre a
 // invariante do cabecalho: ao fim natural da faixa a posição vae a zero e o

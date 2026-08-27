@@ -21,6 +21,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -30,6 +31,21 @@
 #include "nucleo/motor.hpp"
 
 namespace mysong::nucleo {
+
+// O RETRACTO: o instante inteiro do tocador, colhido debaixo de UMA tomada da
+// tranca. Quem pergunta campo a campo colhe cada campo de um momento; quem
+// arma tela, pregão de barramento ou assignatura quer o MESMO momento, e é
+// para esses que o retracto existe. A faixa vae COPIADA: vista crua da fila
+// não atravessa a tranca.
+struct Retracto {
+  Estado estado = Estado::Parado;
+  std::string faixa;      // vazia quando nenhuma faixa está em curso
+  double posicao = 0.0;   // em segundos, contados do inicio da faixa
+  double duracao = 0.0;
+  int volume = 100;
+  std::size_t indice = 0;  // 0 tambem em fila vazia: pergunte-se ao tamanho
+  std::size_t tamanho = 0;
+};
 
 class Tocador {
  public:
@@ -62,6 +78,9 @@ class Tocador {
   int volume() const noexcept;
   double posicao() const;
   double duracao() const;
+
+  // O instante inteiro, de uma tomada só. Vide o tractado do Retracto acima.
+  Retracto retracto() const;
 
   // Uma batida do relogio: drena o motor e annuncia o que se moveu. Chama-se
   // de fóra, na cadencia de quem chama.
