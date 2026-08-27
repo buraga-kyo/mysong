@@ -63,6 +63,10 @@ std::string url_da_consulta_pela_busca(std::string_view artista,
 // grupo e numeração. Vazio sem MBID.
 std::string url_da_ficha(std::string_view mbid);
 
+// le_gravacao_da_url — o MBID da gravação que o url-lookup aponta. Vazio quando
+// o corpo não tras relação de gravação (404, truncado, alheio).
+std::string le_gravacao_da_url(std::string_view corpo);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

@@ -16,6 +16,8 @@
 
 #include <string_view>
 
+#include "api/jsonzinho.hpp"
+
 namespace mysong::nucleo {
 namespace {
 
@@ -98,6 +100,23 @@ std::string url_da_ficha(std::string_view mbid) {
   if (mbid.empty()) return {};
   return std::string(kRaiz) + "recording/" + escapa_url(mbid) +
          "?inc=isrcs+artist-credits+releases+release-groups+media&fmt=json";
+}
+
+std::string le_gravacao_da_url(std::string_view corpo) {
+  // O corpo do url-lookup: `relations[]`, e em cada relação a gravação a que o
+  // link aponta. Toma-se a PRIMEIRA cujo alvo é gravação; havendo mais de uma,
+  // qualquer d'ellas é casamento que o proprio MB declarou. Corpo de 404,
+  // truncado ou alheio dá vazio, que é resposta e não erro.
+  const std::string arranjo = api::recorta_arranjo(corpo, "relations");
+  if (arranjo.empty()) return {};
+  for (const std::string& relacao : api::objectos_do_arranjo(arranjo)) {
+    if (api::texto_de_chave(relacao, "target-type") != "recording") continue;
+    const std::string gravacao = api::recorta_objecto(relacao, "recording");
+    if (gravacao.empty()) continue;
+    const std::string mbid = api::texto_de_chave(gravacao, "id");
+    if (!mbid.empty()) return mbid;
+  }
+  return {};
 }
 
 }  // namespace mysong::nucleo
