@@ -186,7 +186,7 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
                                              int quantos,
                                              bool com_cookie = false);
 
-// le_achados — as linhas que a busca imprimiu, QUATRO por achado e nessa ordem. Lê-se
+// le_achados — as linhas que a busca imprimiu, OITO por achado e nessa ordem. Lê-se
 // por linha, e não por separador dentro da linha: titulo de video tras barra vertical,
 // tabulação e tudo o mais, e um separador seria enganado pelo primeiro d'elles.
 std::vector<Achado> le_achados(const std::string& sahida);

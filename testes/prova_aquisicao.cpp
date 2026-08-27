@@ -212,8 +212,8 @@ TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
   // Sem esta bandeira, buscar dez custa dez sondas de rede: o yt-dlp abriria
   // cada resultado para lhe ler os formatos.
   CHECK(tem("--flat-playlist"));
-  // Quatro campos, e nem um a mais: a ordem d'elles é o contracto de le_achados.
-  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 4);
+  // Oito campos, e nem um a mais: a ordem d'elles é o contracto de le_achados.
+  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 8);
   // A aparadura pelas duas pontas. Zero não é pedido, e cem não cabe na tabella.
   CHECK(nu::argumentos_da_busca("x", 0).back() == "ytsearch1:x");
   CHECK(nu::argumentos_da_busca("x", -3).back() == "ytsearch1:x");
@@ -223,8 +223,8 @@ TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
 TEST_CASE("os achados lêem-se por LINHA, e titulo com barra não os parte") {
   // A barra vertical no titulo é o caso que um separador dentro da linha erraria.
   const std::string sahida =
-      "Bach | Toccata e Fuga\nCanal do Orgao\n542\nhttps://y/1\n"
-      "Bach\tPartita\nOutro Canal\nNA\nhttps://y/2\n";
+      "Bach | Toccata e Fuga\nCanal do Orgao\n542\nhttps://y/1\nNA\nNA\nNA\nNA\n"
+      "Bach\tPartita\nOutro Canal\nNA\nhttps://y/2\nNA\nNA\nNA\nNA\n";
   const std::vector<nu::Achado> achados = nu::le_achados(sahida);
   REQUIRE(achados.size() == 2);
   CHECK(achados[0].titulo == "Bach | Toccata e Fuga");
@@ -237,19 +237,25 @@ TEST_CASE("os achados lêem-se por LINHA, e titulo com barra não os parte") {
   // E o NA num campo de TEXTO fica vazio, e não fica a palavra NA: mostrar «NA»
   // por canal seria inventar um canal chamado NA.
   const std::vector<nu::Achado> mudo =
-      nu::le_achados("Titulo\nNA\n60\nhttps://y/9\n");
+      nu::le_achados("Titulo\nNA\n60\nhttps://y/9\nNA\nNA\nNA\nNA\n");
   REQUIRE(mudo.size() == 1);
   CHECK(mudo[0].canal.empty());
+  // E a busca comum deixa vazios os campos da musica: NA não é artista.
+  CHECK(mudo[0].artista.empty());
+  CHECK(mudo[0].album.empty());
+  CHECK(mudo[0].faixa.empty());
+  CHECK(mudo[0].ano == 0);
 }
 
 TEST_CASE("achado meio não se mostra, e duração que não é numero não vira lixo") {
-  // Tres linhas: o grupo de quatro não fecha, e o achado meio cahe. Se ficasse, o
+  // Tres linhas: o grupo de oito não fecha, e o achado meio cahe. Se ficasse, o
   // operador elegia-o e a baixa falhava sem URL.
   CHECK(nu::le_achados("Titulo\nCanal\n100\n").empty());
   // Sem URL não ha o que baixar, ainda que o grupo feche.
-  CHECK(nu::le_achados("Titulo\nCanal\n100\n\n").empty());
+  CHECK(nu::le_achados("Titulo\nCanal\n100\n\nNA\nNA\nNA\nNA\n").empty());
   // Duração que o yt-dlp escreva por extenso não se lê a metade: fica zero.
-  const std::vector<nu::Achado> um = nu::le_achados("T\nC\n9m02s\nhttps://y/3\n");
+  const std::vector<nu::Achado> um =
+      nu::le_achados("T\nC\n9m02s\nhttps://y/3\nNA\nNA\nNA\nNA\n");
   REQUIRE(um.size() == 1);
   CHECK(um[0].duracao == 0);
 }

@@ -467,6 +467,10 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
           "--print", "%(uploader)s",
           "--print", "%(duration)s",
           "--print", "%(webpage_url)s",
+          "--print", "%(artist)s",
+          "--print", "%(album)s",
+          "--print", "%(track)s",
+          "--print", "%(release_year)s",
           "--",
           "ytsearch" + std::to_string(quantas) + ":" + termo};
   ditos.insert(ditos.end(), resto.begin(), resto.end());
@@ -482,20 +486,26 @@ std::vector<Achado> le_achados(const std::string& sahida) {
     linhas.push_back(linha == "NA" ? std::string() : apara(linha));
   }
   std::vector<Achado> achados;
-  // Quatro linhas por achado. Sobrando linhas que não completem um grupo de quatro,
+  // Numero que não é numero dá zero, e não lança: a rede manda lixo.
+  const auto inteiro = [](const std::string& crua) {
+    if (crua.empty()) return 0;
+    for (const unsigned char c : crua)
+      if (std::isdigit(c) == 0) return 0;
+    return std::atoi(crua.c_str());
+  };
+  // Oito linhas por achado. Sobrando linhas que não completem um grupo de oito,
   // descartam-se: achado meio não se mostra, que o operador o escolheria e a baixa
   // falharia sem URL.
-  for (std::size_t i = 0; i + 3 < linhas.size(); i += 4) {
+  for (std::size_t i = 0; i + 7 < linhas.size(); i += 8) {
     Achado achado;
     achado.titulo = linhas[i];
     achado.canal = linhas[i + 1];
-    achado.duracao = 0;
-    for (const unsigned char c : linhas[i + 2])
-      if (std::isdigit(c) == 0) { achado.duracao = -1; break; }
-    if (achado.duracao == 0 && !linhas[i + 2].empty())
-      achado.duracao = std::atoi(linhas[i + 2].c_str());
-    if (achado.duracao < 0) achado.duracao = 0;
+    achado.duracao = inteiro(linhas[i + 2]);
     achado.url = linhas[i + 3];
+    achado.artista = linhas[i + 4];
+    achado.album = linhas[i + 5];
+    achado.faixa = linhas[i + 6];
+    achado.ano = inteiro(linhas[i + 7]);
     if (achado.url.empty()) continue;  // sem URL não ha o que baixar
     achados.push_back(achado);
   }
