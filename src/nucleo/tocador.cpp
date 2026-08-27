@@ -23,9 +23,6 @@ namespace mysong::nucleo {
 
 Tocador::Tocador(Motor& motor) noexcept : motor_(motor) {}
 
-Fila& Tocador::fila() noexcept { return fila_; }
-const Fila& Tocador::fila() const noexcept { return fila_; }
-
 // Os punhos trancados da fila. Movem fila e indice, e nada mandam ao motor.
 std::size_t Tocador::junta(std::string caminho) {
   std::lock_guard<std::mutex> chave(tranca_);

@@ -54,11 +54,8 @@ class Tocador {
   Tocador(const Tocador&) = delete;
   Tocador& operator=(const Tocador&) = delete;
 
-  // A fila é do tocador, e o cliente a arma por esta porta.
-  Fila& fila() noexcept;
-  const Fila& fila() const noexcept;
-
-  // Os punhos TRANCADOS da fila, para quem chama com o relogio já a bater.
+  // A fila é do tocador, e arma-se por estes punhos TRANCADOS. A referencia
+  // crua sahiu na issue #50: vista que atravessa a tranca ninguem guarda.
   // Juntar devolve o tamanho novo, para que «juntei e é o ultimo» não vire
   // duas perguntas com o mundo andando no meio. Nada d'isto desce ao motor:
   // tocar é ordem á parte, como sempre foi.
