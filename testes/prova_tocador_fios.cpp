@@ -94,6 +94,45 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
   CHECK((fim.volume >= 0 && fim.volume <= 100));
 }
 
+// O barramento de verdade corre hoje no fio do relogio, que é quem drena as
+// mensagens em pulsa(); aqui elle corre em fio PROPRIO, de proposito. Se um
+// dia as mensagens mudarem de fio, a tranca já respondeu por ellas.
+TEST_CASE("tres fios, mil voltas: o barramento entra na conta") {
+  MotorSurdo motor;
+  Tocador tocador(motor);
+  tocador.junta("uma.wav");
+  CHECK(tocador.tocar_corrente());
+
+  std::thread relogio([&] {
+    for (int volta = 0; volta < VOLTAS; ++volta) {
+      tocador.pulsa();
+      (void)tocador.retracto();
+    }
+  });
+  std::thread tela([&] {
+    for (int volta = 0; volta < VOLTAS; ++volta) {
+      if (volta % 2 == 0) tocador.pausar();
+      else tocador.retomar();
+      (void)tocador.faixas();
+    }
+  });
+  std::thread barramento([&] {
+    for (int volta = 0; volta < VOLTAS; ++volta) {
+      const Retracto agora = tocador.retracto();  // Get e GetAll fazem isto
+      tocador.volume(agora.volume);               // e Set(Volume) faz isto
+      if (volta % 100 == 99) tocador.proxima();   // Next, na borda da fila
+    }
+  });
+  relogio.join();
+  tela.join();
+  barramento.join();
+
+  const Retracto fim = tocador.retracto();
+  CHECK(fim.tamanho == 1);
+  CHECK(fim.faixa == "uma.wav");
+  CHECK(motor.bombeadas() == static_cast<unsigned long>(VOLTAS));
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
