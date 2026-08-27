@@ -141,7 +141,8 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     const std::vector<std::string> faixas = faixas_da_fila(tocador);
     Objecto obra = abre_acerto();
     obra.par("faixas", vector_de_textos(faixas));
-    obra.par("indice", inteiro(static_cast<long long>(tocador.fila().indice())));
+    obra.par("indice",
+             inteiro(static_cast<long long>(tocador.retracto().indice)));
     obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
     return obra.fecha();
   }
@@ -150,9 +151,9 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     if (caminho == nullptr) return falta("caminho", "texto");
     if (caminho->texto.empty())
       return erro("argumento_invalido", "o caminho da faixa vem vazio");
-    tocador.fila().junta(caminho->texto);
+    const std::size_t tamanho = tocador.junta(caminho->texto);
     Objecto obra = abre_acerto();
-    obra.par("tamanho", inteiro(static_cast<long long>(tocador.fila().tamanho())));
+    obra.par("tamanho", inteiro(static_cast<long long>(tamanho)));
     return obra.fecha();
   }
   // «ir_para» move E manda tocar, á maneira de «proxima» e «anterior»: mover sem
@@ -163,7 +164,7 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     if (alvo == nullptr) return falta("indice", "numero");
     if (!(alvo->numero >= 0.0 && alvo->numero < 1e9))
       return erro("argumento_invalido", "o indice esta fora de faixa razoavel");
-    if (!tocador.fila().ir_para(static_cast<std::size_t>(alvo->numero)))
+    if (!tocador.ir_para(static_cast<std::size_t>(alvo->numero)))
       return recusado("ir_para");
     return conforme(tocador.tocar_corrente(), "ir_para");
   }
