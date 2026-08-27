@@ -14,6 +14,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/musicbrainz.hpp"
 
+#include <cstdlib>
 #include <string_view>
 
 #include "api/jsonzinho.hpp"
@@ -134,6 +135,47 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   const std::vector<std::string> creditos =
       api::objectos_do_arranjo(api::recorta_arranjo(corpo, "artist-credit"));
   if (!creditos.empty()) ficha.artista = api::texto_de_chave(creditos[0], "name");
+
+  // A RELEASE CANONICA (RULINGS R4): Official, de grupo «Album» SEM typo
+  // secundario (compilação é Album de typo secundario), a de data mais antiga;
+  // não havendo nenhuma assim, a mais antiga de qualquer feitio. MEDIDO na
+  // gravação de 1987: sem a regra inteira, a mais antiga crua é um single de
+  // sete pollegadas, e o «Album» mais antigo cru é uma compilação.
+  std::string eleita, data_da_eleita, qualquer, data_de_qualquer;
+  for (const std::string& release :
+       api::objectos_do_arranjo(api::recorta_arranjo(corpo, "releases"))) {
+    const std::string data = api::texto_de_chave(release, "date");
+    const std::string chave = data.empty() ? "9999" : data;  // sem data perde
+    const std::string grupo = api::recorta_objecto(release, "release-group");
+    const bool canonica =
+        api::texto_de_chave(release, "status") == "Official" &&
+        api::texto_de_chave(grupo, "primary-type") == "Album" &&
+        api::textos_do_arranjo(api::recorta_arranjo(grupo, "secondary-types"))
+            .empty();
+    if (canonica && (eleita.empty() || chave < data_da_eleita)) {
+      eleita = release;
+      data_da_eleita = chave;
+    }
+    if (qualquer.empty() || chave < data_de_qualquer) {
+      qualquer = release;
+      data_de_qualquer = chave;
+    }
+  }
+  const std::string& da_vez = !eleita.empty() ? eleita : qualquer;
+  if (da_vez.empty()) return ficha;
+  ficha.album = api::texto_de_chave(da_vez, "title");
+  const std::string data = api::texto_de_chave(da_vez, "date");
+  if (data.size() >= 4) ficha.ano = std::atoi(data.substr(0, 4).c_str());
+  // O numero é `position` da faixa na primeira midia, que é inteiro; o
+  // `number` impresso vem «A3» no vinil, e não serve á etiqueta.
+  const std::vector<std::string> midias =
+      api::objectos_do_arranjo(api::recorta_arranjo(da_vez, "media"));
+  if (!midias.empty()) {
+    const std::vector<std::string> faixas =
+        api::objectos_do_arranjo(api::recorta_arranjo(midias[0], "tracks"));
+    if (!faixas.empty() && api::numero_de_chave(faixas[0], "position", &valor))
+      ficha.numero = static_cast<int>(valor);
+  }
   return ficha;
 }
 
