@@ -53,6 +53,47 @@ constexpr int VOLTAS = 1000;
 
 }  // namespace
 
+// O fio do relogio bombeia e assigna; o da tela dá TODA ordem de tecla que a
+// janella dá, revezadas. Mil voltas cada, e as contas conferem-se no fim: a
+// fila ha de ter as duas faixas de partida mais uma por volta de juntada, e o
+// motor ha de ter sido bombeado uma vez por batida, nem mais nem menos.
+TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
+  MotorSurdo motor;
+  Tocador tocador(motor);
+  tocador.junta("uma.wav");
+  tocador.junta("duas.wav");
+  CHECK(tocador.tocar_corrente());
+
+  std::thread relogio([&] {
+    for (int volta = 0; volta < VOLTAS; ++volta) {
+      tocador.pulsa();
+      (void)tocador.retracto();  // a assignatura do visivel faz o mesmo
+      (void)tocador.bandas();
+    }
+  });
+  std::thread tela([&] {
+    for (int volta = 0; volta < VOLTAS; ++volta) {
+      switch (volta % 8) {
+        case 0: tocador.pausar(); break;
+        case 1: tocador.retomar(); break;
+        case 2: tocador.buscar(volta % 30); break;
+        case 3: tocador.volume(volta % 150); break;
+        case 4: tocador.proxima(); break;
+        case 5: tocador.anterior(); break;
+        case 6: tocador.junta("fio_" + std::to_string(volta)); break;
+        case 7: tocador.ir_para(0); tocador.tocar_corrente(); break;
+      }
+    }
+  });
+  relogio.join();
+  tela.join();
+
+  const Retracto fim = tocador.retracto();
+  CHECK(fim.tamanho == 2 + VOLTAS / 8);
+  CHECK(motor.bombeadas() == static_cast<unsigned long>(VOLTAS));
+  CHECK((fim.volume >= 0 && fim.volume <= 100));
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
