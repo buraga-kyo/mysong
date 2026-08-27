@@ -446,6 +446,38 @@ inline std::string recorta_arranjo(std::string_view corpo, std::string_view nome
   return {};
 }
 
+// recorta_objecto — o objecto que a chave `"<nome>":{` abre, com as chaves de
+// fóra, achado em QUALQUER fundo. Vazio não havendo a chave, ou vindo truncado.
+// Irmão do recorta_arranjo, e vive aqui pela mesma razão d'elle: o MusicBrainz da
+// issue #57 tras a gravação embrulhada dentro da relação, e uma segunda cópia
+// d'esta conta seria uma segunda verdade.
+inline std::string recorta_objecto(std::string_view corpo, std::string_view nome) {
+  const std::string agulha = "\"" + std::string(nome) + "\"";
+  std::size_t onde = 0;
+  while ((onde = corpo.find(agulha, onde)) != std::string_view::npos) {
+    std::size_t i = onde + agulha.size();
+    while (i < corpo.size() && (corpo[i] == ' ' || corpo[i] == ':')) ++i;
+    if (i >= corpo.size() || corpo[i] != '{') {
+      onde += agulha.size();
+      continue;  // esta chave não abre objecto: procura-se a proxima egual
+    }
+    int fundo = 0;
+    bool dentro_de_aspas = false, escapado = false;
+    for (std::size_t j = i; j < corpo.size(); ++j) {
+      const char octeto = corpo[j];
+      if (escapado) { escapado = false; continue; }
+      if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+      if (octeto == '"') { dentro_de_aspas = !dentro_de_aspas; continue; }
+      if (dentro_de_aspas) continue;
+      if (octeto == '{') ++fundo;
+      else if (octeto == '}' && --fundo == 0)
+        return std::string(corpo.substr(i, j - i + 1));
+    }
+    return {};  // truncado
+  }
+  return {};
+}
+
 // texto_de_chave — o valor de texto de uma chave de FUNDO UM do objecto, já
 // desescapado. Vazio quando ella falta, ou quando o valor não é texto. O fundo
 // importa: `title` dentro de `audioPreview` não é o `title` da faixa.
