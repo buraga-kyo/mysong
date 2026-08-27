@@ -344,6 +344,18 @@ TEST_CASE("a fonte cicla pelas tres e volta, e o pedido nasce no YouTube") {
   CHECK(nu::Pedido{}.fonte == nu::Fonte::YouTube);
 }
 
+TEST_CASE("o termo codifica-se por cento, e o cardinal não corta a consulta") {
+  CHECK(nu::codifica_para_url("radiohead karma police") ==
+        "radiohead%20karma%20police");
+  // O `#` cru principiaria o fragmento no meio do termo; o `&` partiria a
+  // consulta; o `+` viraria espaço na leitura do servidor.
+  CHECK(nu::codifica_para_url("a#b&c+d/e?f") == "a%23b%26c%2Bd%2Fe%3Ff");
+  CHECK(nu::codifica_para_url("A-z.0_9~") == "A-z.0_9~");
+  // UTF-8 vae byte a byte: o «é» são dous.
+  CHECK(nu::codifica_para_url("café") == "caf%C3%A9");
+  CHECK(nu::codifica_para_url("").empty());
+}
+
 TEST_CASE("a art track chega com artista, album, faixa e ano") {
   // A sahida MEDIDA em 2026-08-27 contra o music.youtube.com, oito linhas.
   const std::vector<nu::Achado> uns = nu::le_achados(

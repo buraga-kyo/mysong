@@ -179,6 +179,11 @@ struct Achado {
   Fonte fonte = Fonte::YouTube;
 };
 
+// codifica_para_url — o termo como pedaço de URL: todo byte fóra de
+// [A-Za-z0-9._~-] sahe por cento e dous hexadecimaes. O `#` sobretudo: cru, elle
+// cortaria a consulta ao meio, que o fragmento da URL da musica é nosso.
+std::string codifica_para_url(std::string_view crua);
+
 // argumentos_da_busca — o que se corre. O `ytsearchN:` é o pseudo-endereço do yt-dlp
 // para busca, e o `--flat-playlist` impede que elle abra cada resultado para lhe ler os
 // fórmatos: sem elle, buscar dez faixas custa dez sondas de rede.

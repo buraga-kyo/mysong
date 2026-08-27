@@ -452,6 +452,27 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                                         : Colheita::FalhouAEtiqueta;
 }
 
+std::string codifica_para_url(std::string_view crua) {
+  static const char kHex[] = "0123456789ABCDEF";
+  std::string feita;
+  feita.reserve(crua.size());
+  for (const unsigned char c : crua) {
+    // A taboa dos LIVRES da RFC 3986, e nada mais: espaço, `#`, `&`, `+` e todo
+    // UTF-8 sahem por cento, e não ha byte que atravesse por engano.
+    const bool livre = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                       (c >= '0' && c <= '9') || c == '-' || c == '.' ||
+                       c == '_' || c == '~';
+    if (livre) {
+      feita += static_cast<char>(c);
+      continue;
+    }
+    feita += '%';
+    feita += kHex[c >> 4];
+    feita += kHex[c & 0xF];
+  }
+  return feita;
+}
+
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
                                              int quantos, bool com_cookie) {
   // Apara-se em vinte: busca maior gasta rede e não cabe na tabella. E em um pelo
