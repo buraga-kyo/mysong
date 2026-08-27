@@ -119,6 +119,24 @@ std::string le_gravacao_da_url(std::string_view corpo) {
   return {};
 }
 
+FichaMB le_ficha_da_gravacao(std::string_view corpo) {
+  // O corpo do lookup da gravação. Titulo e duração são os de fundo UM: os das
+  // releases moram mais fundo, e os leitores da Casa não os confundem. O
+  // credito de artista toma-se do primeiro arranjo `artist-credit` do corpo,
+  // que numa gravação é o d'ella; e a ficha é «melhor esforço»: campo que o
+  // corpo não traga fica vazio, e quem chama decide o que fazer com o vazio.
+  FichaMB ficha;
+  ficha.titulo = api::texto_de_chave(corpo, "title");
+  double valor = 0.0;
+  if (api::numero_de_chave(corpo, "length", &valor))
+    ficha.duracao_ms = static_cast<int>(valor);
+  ficha.isrcs = api::textos_do_arranjo(api::recorta_arranjo(corpo, "isrcs"));
+  const std::vector<std::string> creditos =
+      api::objectos_do_arranjo(api::recorta_arranjo(corpo, "artist-credit"));
+  if (!creditos.empty()) ficha.artista = api::texto_de_chave(creditos[0], "name");
+  return ficha;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

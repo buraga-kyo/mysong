@@ -67,6 +67,11 @@ std::string url_da_ficha(std::string_view mbid);
 // o corpo não tras relação de gravação (404, truncado, alheio).
 std::string le_gravacao_da_url(std::string_view corpo);
 
+// le_ficha_da_gravacao — a ficha que o corpo do lookup tras: ISRCs na ordem do
+// MB, titulo, artista, duração exacta, e a release canonica (album, anno,
+// numero). Campo que o corpo não diga fica vazio ou zero.
+FichaMB le_ficha_da_gravacao(std::string_view corpo);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
