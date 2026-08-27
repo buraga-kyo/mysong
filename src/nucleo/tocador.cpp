@@ -119,10 +119,25 @@ bool Tocador::volume(int porcento) {
   return motor_.volume(volume_);
 }
 
-Estado Tocador::estado() const noexcept { return estado_; }
-int Tocador::volume() const noexcept { return volume_; }
-double Tocador::posicao() const { return motor_.posicao(); }
-double Tocador::duracao() const { return motor_.duracao(); }
+Estado Tocador::estado() const noexcept {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return estado_;
+}
+
+int Tocador::volume() const noexcept {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return volume_;
+}
+
+double Tocador::posicao() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return motor_.posicao();
+}
+
+double Tocador::duracao() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return motor_.duracao();
+}
 
 // Uma batida: drena o motor, colhe o que mudou, assenta AMBOS, e só então
 // annuncia. Assentar ambos antes de qualquer pregão é o que cumpre a
@@ -157,6 +172,7 @@ void Tocador::observa(FonteDeBandas& fonte) noexcept {
 }
 
 std::vector<float> Tocador::bandas() const {
+  std::lock_guard<std::mutex> chave(tranca_);
   if (fonte_ == nullptr) return std::vector<float>(QUANTAS_BANDAS, 0.0f);
   return fonte_->bandas();
 }
