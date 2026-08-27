@@ -83,8 +83,8 @@ int main(int argc, char** argv) {
                 std::string(nu::nome_do_estado(evento.estado)).c_str(),
                 evento.faixa.c_str(), evento.posicao, evento.razao.c_str());
   });
-  for (int i = 1; i < argc; ++i) tocador.fila().junta(argv[i]);
-  std::printf("fila com %zu faixa(s)\n", tocador.fila().tamanho());
+  for (int i = 1; i < argc; ++i) tocador.junta(argv[i]);
+  std::printf("fila com %zu faixa(s)\n", tocador.retracto().tamanho);
 
   if (!tocador.tocar_corrente()) {
     std::fprintf(stderr, "a primeira faixa NÃO tocou\n");
@@ -142,13 +142,13 @@ int main(int argc, char** argv) {
     relogio(tocador, motor, 750, "adiante");
   }
   std::printf("  cheguei ao fim: proxima() recusa, faixa=%s\n",
-              std::string(tocador.fila().corrente()).c_str());
+              tocador.retracto().faixa.c_str());
 
   while (tocador.anterior()) {
     relogio(tocador, motor, 750, "atras");
   }
   std::printf("  voltei ao inicio: anterior() recusa, faixa=%s\n",
-              std::string(tocador.fila().corrente()).c_str());
+              tocador.retracto().faixa.c_str());
 
   std::printf("[C5b] buscar além do fim apara-se, e não estoura\n");
   tocador.buscar(999.0);
