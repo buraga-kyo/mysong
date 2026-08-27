@@ -284,6 +284,11 @@ target_sources(mysong_core PRIVATE src/nucleo/video.cpp)
 # Dependencia nova alguma se cobra, e o audio continua a vir do yt-dlp da #11.
 target_sources(mysong_core PRIVATE src/nucleo/catalogo.cpp)
 
+# ─── A GRAVAÇÃO NO MUSICBRAINZ (issue #57) ──────────────────────────────────
+# Resolve a faixa do catalogo em gravação: ISRC, album, anno e numero canonicos.
+# Rede pelo MESMO libcurl do catalogo; dependencia nova alguma se cobra.
+target_sources(mysong_core PRIVATE src/nucleo/musicbrainz.cpp)
+
 # O ESPIA do catalogo: o instrumento com que a leitura se afere contra a pagina de
 # verdade, antes de o corpo entrar na bateria escripto á mão.
 add_executable(espia_catalogo exemplos/espia_catalogo.cpp)
