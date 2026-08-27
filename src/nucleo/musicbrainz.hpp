@@ -102,6 +102,13 @@ void espera_a_vez_do_mb();
 // («devagar») são falso sem re-tento, e mandam ao caminho seguinte.
 bool consulta_mb(const std::string& url, std::string* corpo);
 
+// resolve_gravacao — a resolução inteira: pelo link do track quando o ha, pela
+// busca quando não; e a ficha da gravação eleita. Duração em MILESIMOS, como o
+// MB fala. Falso quando nada casou, e ahi quem chama confessa a duvida.
+bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
+                      const std::string& titulo, int duracao_ms,
+                      FichaMB* ficha);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

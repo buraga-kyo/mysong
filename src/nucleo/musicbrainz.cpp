@@ -284,6 +284,35 @@ bool consulta_mb(const std::string& url, std::string* corpo) {
   return desfecho == CURLE_OK && estado >= 200 && estado < 300;
 }
 
+bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
+                      const std::string& titulo, int duracao_ms,
+                      FichaMB* ficha) {
+  // Os dous caminhos com rede, na ordem da issue: o LINK primeiro, que é
+  // casamento que o proprio MB declarou; a BUSCA depois. Consulta que falhe
+  // (404, 503, rede morta, corpo alheio) cae ao passo seguinte, e o falso
+  // final é o aviso honesto de que não se achou: quem chama confessa a
+  // duvida em vez de baixar cousa errada calada.
+  std::string mbid;
+  if (!id_spotify.empty()) {
+    std::string corpo;
+    if (consulta_mb(url_da_consulta_pelo_link(id_spotify), &corpo))
+      mbid = le_gravacao_da_url(corpo);
+  }
+  if (mbid.empty() && !titulo.empty()) {
+    std::string corpo;
+    if (consulta_mb(url_da_consulta_pela_busca(artista, titulo, duracao_ms),
+                    &corpo))
+      mbid = le_eleita_da_busca(corpo, duracao_ms);
+  }
+  if (mbid.empty()) return false;
+  std::string corpo;
+  if (!consulta_mb(url_da_ficha(mbid), &corpo)) return false;
+  FichaMB lida = le_ficha_da_gravacao(corpo);
+  if (lida.titulo.empty()) return false;  // ficha sem titulo não é gravação
+  if (ficha != nullptr) *ficha = std::move(lida);
+  return true;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
