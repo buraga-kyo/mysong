@@ -97,6 +97,11 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
 // a bateria o afira com relogio, sem rede alguma.
 void espera_a_vez_do_mb();
 
+// consulta_mb — pede a URL com o agente da obra, passando pelo acelerador, e
+// enche o corpo. Verdadeiro sómente no 2xx: o 404 («não temos») e o 503
+// («devagar») são falso sem re-tento, e mandam ao caminho seguinte.
+bool consulta_mb(const std::string& url, std::string* corpo);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

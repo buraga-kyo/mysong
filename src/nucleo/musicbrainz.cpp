@@ -14,6 +14,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/musicbrainz.hpp"
 
+#include <curl/curl.h>
+
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -28,6 +30,20 @@ namespace {
 
 // A raiz do ws/2. N'uma constante para que as tres consultas digam UM endereço.
 constexpr char kRaiz[] = "https://musicbrainz.org/ws/2/";
+
+// O TECTO do corpo de resposta: quatro mega-octetos. As respostas medidas têm
+// dezenas de kilo-octetos; corpo maior é anomalia, e devolver menos que o
+// pedido faz o curl abortar a transferencia em vez de a engolir inteira.
+constexpr std::size_t kTectoDoCorpo = std::size_t{4} << 20;
+
+std::size_t recolhe(char* pedaco, std::size_t tamanho, std::size_t quantos,
+                    void* fora) {
+  auto* corpo = static_cast<std::string*>(fora);
+  const std::size_t bytes = tamanho * quantos;
+  if (corpo->size() + bytes > kTectoDoCorpo) return 0;
+  corpo->append(pedaco, bytes);
+  return bytes;
+}
 
 // A janella da busca por duração, em milesimos: os MESMOS doze segundos da
 // TOLERANCIA_DO_CASAMENTO, e pela mesma medida (silencio nas pontas fica dentro,
@@ -245,6 +261,27 @@ void espera_a_vez_do_mb() {
       agora - ultima < std::chrono::seconds(1))
     std::this_thread::sleep_for(std::chrono::seconds(1) - (agora - ultima));
   ultima = std::chrono::steady_clock::now();
+}
+
+bool consulta_mb(const std::string& url, std::string* corpo) {
+  if (url.empty() || corpo == nullptr) return false;
+  espera_a_vez_do_mb();
+  CURL* punho = curl_easy_init();
+  if (punho == nullptr) return false;
+  curl_easy_setopt(punho, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(punho, CURLOPT_WRITEFUNCTION, recolhe);
+  curl_easy_setopt(punho, CURLOPT_WRITEDATA, corpo);
+  curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(punho, CURLOPT_TIMEOUT, 15L);
+  curl_easy_setopt(punho, CURLOPT_USERAGENT, kAgenteDoMB);
+  const CURLcode desfecho = curl_easy_perform(punho);
+  long estado = 0;
+  curl_easy_getinfo(punho, CURLINFO_RESPONSE_CODE, &estado);
+  curl_easy_cleanup(punho);
+  // Sómente o 2xx se lê. O 404 é «não temos» e o 503 é «devagar»: ambos mandam
+  // quem chama ao caminho seguinte, e NENHUM se re-tenta aqui, que uma fila de
+  // faixas re-tentando amplificaria a rajada que o acelerador impede.
+  return desfecho == CURLE_OK && estado >= 200 && estado < 300;
 }
 
 }  // namespace mysong::nucleo
