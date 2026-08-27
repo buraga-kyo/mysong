@@ -29,6 +29,19 @@
 
 namespace mysong::nucleo {
 
+// A FONTE da busca (issue #56). As tres CONVIVEM, e nenhuma substitue outra: o
+// operador escolhe de onde a busca vem, e a eleita acompanha o Pedido até a fila
+// de baixa, para que quem baixa não precise saber quem pediu.
+enum class Fonte { YouTube, YouTubeMusic, Spotify };
+
+// nome_da_fonte — a palavra que o cabeçalho da busca mostra. Vive aqui, e não na
+// tela, pela mesma razão de razao_da_colheita: fonte nova sem nome não compila.
+std::string_view nome_da_fonte(Fonte fonte);
+
+// proxima_fonte — o ciclo fechado da tecla que troca: YouTube, YouTube Music,
+// Spotify, e volta ao começo. A ordem prova-se, em vez de morar na tela.
+Fonte proxima_fonte(Fonte fonte);
+
 // O que se sabe de uma faixa que se vae baixar. Campo vazio quer dizer «não sei»,
 // e ahi vale o que a sonda da URL tiver dito.
 struct Pedido {
@@ -37,6 +50,9 @@ struct Pedido {
   std::string album;
   std::string titulo;
   int numero = 0;
+  // A FONTE que pediu (issue #56). Um pedido sem URL busca o audio na fonte
+  // D'ELLE, e não n'uma que a fila de baixa tivesse de adivinhar.
+  Fonte fonte = Fonte::YouTube;
   // A DURAÇÃO esperada, em segundos, e zero é «não sei». Entra na issue #13: com
   // ella, e sómente com ella, a URL pode vir VAZIA e a baixa busca o audio por si,
   // casando o achado pela duração. Sem ella não ha casamento de que se possa

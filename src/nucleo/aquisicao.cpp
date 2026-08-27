@@ -227,6 +227,24 @@ std::string_view razao_da_colheita(Colheita colheita) {
   return "desfecho sem nome";
 }
 
+std::string_view nome_da_fonte(Fonte fonte) {
+  switch (fonte) {
+    case Fonte::YouTube: return "YouTube";
+    case Fonte::YouTubeMusic: return "YouTube Music";
+    case Fonte::Spotify: return "Spotify";
+  }
+  return "fonte sem nome";
+}
+
+Fonte proxima_fonte(Fonte fonte) {
+  switch (fonte) {
+    case Fonte::YouTube: return Fonte::YouTubeMusic;
+    case Fonte::YouTubeMusic: return Fonte::Spotify;
+    case Fonte::Spotify: return Fonte::YouTube;
+  }
+  return Fonte::YouTube;
+}
+
 int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
   if (argumentos.empty()) return -1;
   int cano[2] = {-1, -1};

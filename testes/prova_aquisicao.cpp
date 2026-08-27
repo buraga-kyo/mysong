@@ -322,5 +322,21 @@ TEST_CASE("bandeiras_do_motor cresce de dous pares para tres com o cookie") {
   CHECK(nu::bandeiras_do_motor(true).size() == 6u);
 }
 
+// ── A FONTE DA BUSCA (issue #56) ────────────────────────────────────────────
+
+TEST_CASE("a fonte cicla pelas tres e volta, e o pedido nasce no YouTube") {
+  // O ciclo é FECHADO: tres passos devolvem o começo. Quem acrescentar fonte
+  // sem a pôr no ciclo deixa a tecla presa n'uma volta que não fecha.
+  CHECK(nu::proxima_fonte(nu::Fonte::YouTube) == nu::Fonte::YouTubeMusic);
+  CHECK(nu::proxima_fonte(nu::Fonte::YouTubeMusic) == nu::Fonte::Spotify);
+  CHECK(nu::proxima_fonte(nu::Fonte::Spotify) == nu::Fonte::YouTube);
+  // O nome é o que o cabeçalho mostra; fonte sem nome não ha de existir.
+  CHECK(nu::nome_da_fonte(nu::Fonte::YouTube) == "YouTube");
+  CHECK(nu::nome_da_fonte(nu::Fonte::YouTubeMusic) == "YouTube Music");
+  CHECK(nu::nome_da_fonte(nu::Fonte::Spotify) == "Spotify");
+  // O padrão do Pedido é o de hoje: quem não escolheu, busca no YouTube.
+  CHECK(nu::Pedido{}.fonte == nu::Fonte::YouTube);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
