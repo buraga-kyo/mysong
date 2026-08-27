@@ -58,6 +58,14 @@ class Tocador {
   Fila& fila() noexcept;
   const Fila& fila() const noexcept;
 
+  // Os punhos TRANCADOS da fila, para quem chama com o relogio já a bater.
+  // Juntar devolve o tamanho novo, para que «juntei e é o ultimo» não vire
+  // duas perguntas com o mundo andando no meio. Nada d'isto desce ao motor:
+  // tocar é ordem á parte, como sempre foi.
+  std::size_t junta(std::string caminho);
+  bool ir_para(std::size_t alvo);
+  std::vector<std::string> faixas() const;
+
   // Registra quem escuta. Zero ouvintes é caso legitimo.
   void escuta(Ouvinte ouvinte);
 

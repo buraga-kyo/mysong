@@ -26,6 +26,24 @@ Tocador::Tocador(Motor& motor) noexcept : motor_(motor) {}
 Fila& Tocador::fila() noexcept { return fila_; }
 const Fila& Tocador::fila() const noexcept { return fila_; }
 
+// Os punhos trancados da fila. Movem fila e indice, e nada mandam ao motor.
+std::size_t Tocador::junta(std::string caminho) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  fila_.junta(std::move(caminho));
+  return fila_.tamanho();
+}
+
+bool Tocador::ir_para(std::size_t alvo) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return fila_.ir_para(alvo);
+}
+
+// A copia sahe INTEIRA debaixo da chave: vista crua não atravessa a tranca.
+std::vector<std::string> Tocador::faixas() const {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return fila_.todas();
+}
+
 // Ouvinte vazio não se guarda: guardá-lo seria adiar para a hora do pregão uma
 // verificação que se faz de graça na hora do registro.
 void Tocador::escuta(Ouvinte ouvinte) {
