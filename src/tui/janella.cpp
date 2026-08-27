@@ -333,8 +333,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   if (!mpris.viva())
     std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
 
-  for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
-  if (!tocador.fila().vazia()) tocador.tocar_corrente();
+  for (const std::string& faixa : faixas) tocador.junta(faixa);
+  if (!faixas.empty()) tocador.tocar_corrente();
 
   // O ÍNDICE e a VARREDURA. A varredura corre em fio proprio e o navegador
   // recarrega quando ella concluir: assim a tela abre de pronto, com o acervo da
@@ -832,14 +832,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
         if (navegador.secao() == tui::Secao::NoRol) {
           const std::size_t eleita = navegador.eleito();
-          const std::size_t antes = tocador.fila().tamanho();
+          const std::size_t antes = tocador.retracto().tamanho;
           std::size_t quantas = 0;
           for (const tui::Linha& linha : navegador.vista()) {
-            tocador.fila().junta(linha.chave);
+            tocador.junta(linha.chave);
             ++quantas;
           }
           if (quantas > 0) {
-            tocador.fila().ir_para(antes + std::min(eleita, quantas - 1));
+            tocador.ir_para(antes + std::min(eleita, quantas - 1));
             tocador.tocar_corrente();
           }
           return true;
@@ -849,8 +849,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (navegador.entra()) {
           const std::string caminho = navegador.caminho_eleito();
           if (!caminho.empty()) {
-            tocador.fila().junta(caminho);
-            tocador.fila().ir_para(tocador.fila().tamanho() - 1);
+            // O tamanho novo vem da propria juntada: o ultimo é elle menos um.
+            tocador.ir_para(tocador.junta(caminho) - 1);
             tocador.tocar_corrente();
           }
         }
