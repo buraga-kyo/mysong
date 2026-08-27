@@ -37,6 +37,10 @@ struct FaixaDoCatalogo {
   std::string artista;
   int numero = 0;       // a posição na lista, contada de um
   int duracao_ms = 0;   // zero é «não disse»
+  // O identificador do track no Spotify, tirado do `uri` da pagina (issue #57): é
+  // por elle que o MusicBrainz acha a gravação e o ISRC. Vazio quando o uri falta
+  // ou não é de track (episodio, arquivo local), e a faixa fica na lista assim mesmo.
+  std::string id_do_track;
 };
 
 // O CATALOGO inteiro: o nome da lista, e as faixas na ordem d'ella.
