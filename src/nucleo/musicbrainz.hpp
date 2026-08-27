@@ -24,6 +24,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -76,6 +77,18 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo);
 // dentro da janella quando o catalogo a disse, e a de first-release-date mais
 // antiga entre as que passam. Vazio quando nenhuma passa.
 std::string le_eleita_da_busca(std::string_view corpo, int duracao_ms);
+
+// O TECTO de ISRCs que a colheita tenta por faixa (RULINGS R5). Tres: um só
+// degradaria faixa cujo primeiro ISRC o YouTube não indexou (medido), e sem
+// tecto uma ficha de oito ISRCs custaria oito buscas de rede.
+inline constexpr std::size_t kIsrcsPorFaixa = 3;
+
+// termos_de_busca — os termos com que a colheita busca o YouTube, NESTA ordem:
+// até kIsrcsPorFaixa ISRCs da ficha, e por derradeiro o termo de hoje (artista
+// e titulo), que é o ultimo recurso e sahe com a duvida confessada.
+std::vector<std::string> termos_de_busca(const FichaMB& ficha,
+                                         const std::string& artista,
+                                         const std::string& titulo);
 
 }  // namespace mysong::nucleo
 

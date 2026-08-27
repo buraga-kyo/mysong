@@ -210,6 +210,21 @@ std::string le_eleita_da_busca(std::string_view corpo, int duracao_ms) {
   return eleita;
 }
 
+std::vector<std::string> termos_de_busca(const FichaMB& ficha,
+                                         const std::string& artista,
+                                         const std::string& titulo) {
+  // Os ISRCs primeiro, no tecto e na ordem do MB: uma gravação accumula ISRCs
+  // de remasters, e nem todo está indexado no YouTube (MEDIDO: o de 1987 não
+  // acha nada, o de 2021 acha a art track da mesma gravação — audio egual).
+  std::vector<std::string> termos;
+  for (const std::string& isrc : ficha.isrcs) {
+    if (termos.size() >= kIsrcsPorFaixa) break;
+    if (!isrc.empty()) termos.push_back(isrc);
+  }
+  termos.push_back(artista.empty() ? titulo : artista + " " + titulo);
+  return termos;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
