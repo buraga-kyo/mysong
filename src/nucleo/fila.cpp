@@ -65,6 +65,8 @@ void Fila::esvazia() noexcept {
   indice_ = 0;
 }
 
+const std::vector<std::string>& Fila::todas() const noexcept { return faixas_; }
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
