@@ -53,6 +53,12 @@ std::string escapa_url(std::string_view crua);
 // EXACTO quando o MusicBrainz tem o link. Vazio sem identificador.
 std::string url_da_consulta_pelo_link(std::string_view id_do_track);
 
+// url_da_consulta_pela_busca — gravação por artista, titulo e duração (janella
+// de doze segundos, a da tolerancia do casamento). Vazio sem titulo; sem
+// artista ou sem duração, a clausula que falta fica de fóra.
+std::string url_da_consulta_pela_busca(std::string_view artista,
+                                       std::string_view titulo, int duracao_ms);
+
 // url_da_ficha — a gravação inteira por MBID: ISRCs, artistas e releases com
 // grupo e numeração. Vazio sem MBID.
 std::string url_da_ficha(std::string_view mbid);

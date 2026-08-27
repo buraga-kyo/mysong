@@ -22,6 +22,24 @@ namespace {
 // A raiz do ws/2. N'uma constante para que as tres consultas digam UM endereço.
 constexpr char kRaiz[] = "https://musicbrainz.org/ws/2/";
 
+// A janella da busca por duração, em milesimos: os MESMOS doze segundos da
+// TOLERANCIA_DO_CASAMENTO, e pela mesma medida (silencio nas pontas fica dentro,
+// versão ao vivo e estendida ficam fóra).
+constexpr int kJanellaMs = 12000;
+
+// aspas_seguras — o texto dentro de aspas da consulta Lucene. Aspa e
+// contra-barra escapam-se; sem isto, um titulo com aspa partiria a frase e o
+// resto do titulo viraria operador de busca.
+std::string aspas_seguras(std::string_view crua) {
+  std::string obra;
+  obra.reserve(crua.size() + 4);
+  for (const char letra : crua) {
+    if (letra == '"' || letra == '\\') obra += '\\';
+    obra += letra;
+  }
+  return obra;
+}
+
 }  // namespace
 
 std::string escapa_url(std::string_view crua) {
@@ -54,6 +72,24 @@ std::string url_da_consulta_pelo_link(std::string_view id_do_track) {
       "https://open.spotify.com/track/" + std::string(id_do_track);
   return std::string(kRaiz) + "url?resource=" + escapa_url(track) +
          "&inc=recording-rels&fmt=json";
+}
+
+std::string url_da_consulta_pela_busca(std::string_view artista,
+                                       std::string_view titulo, int duracao_ms) {
+  // O caminho segundo: gravação por artista, titulo e duração. Duração zero
+  // («não disse») busca sem janella; e a de baixo apara-se no zero, que
+  // janella negativa o Lucene recusa inteira.
+  if (titulo.empty()) return {};
+  std::string consulta = "recording:\"" + aspas_seguras(titulo) + "\"";
+  if (!artista.empty())
+    consulta += " AND artist:\"" + aspas_seguras(artista) + "\"";
+  if (duracao_ms > 0) {
+    const int piso = duracao_ms > kJanellaMs ? duracao_ms - kJanellaMs : 0;
+    consulta += " AND dur:[" + std::to_string(piso) + " TO " +
+                std::to_string(duracao_ms + kJanellaMs) + "]";
+  }
+  return std::string(kRaiz) + "recording?query=" + escapa_url(consulta) +
+         "&limit=8&fmt=json";
 }
 
 std::string url_da_ficha(std::string_view mbid) {
