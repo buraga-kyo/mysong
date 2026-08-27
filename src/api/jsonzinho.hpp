@@ -478,6 +478,34 @@ inline std::string recorta_objecto(std::string_view corpo, std::string_view nome
   return {};
 }
 
+// textos_do_arranjo — os TEXTOS de fundo um de um arranjo, já desescapados. Serve
+// ao `isrcs` do MusicBrainz, que é arranjo de cadeias e não de objectos. Cadeia de
+// dentro de objecto não sahe, e cadeia que não se deixe ler descarta-se sozinha.
+inline std::vector<std::string> textos_do_arranjo(std::string_view arranjo) {
+  std::vector<std::string> achados;
+  int fundo = 0;
+  bool dentro_de_aspas = false, escapado = false;
+  std::size_t principio = 0;
+  for (std::size_t i = 0; i < arranjo.size(); ++i) {
+    const char octeto = arranjo[i];
+    if (escapado) { escapado = false; continue; }
+    if (octeto == '\\' && dentro_de_aspas) { escapado = true; continue; }
+    if (octeto == '"') {
+      if (!dentro_de_aspas) { dentro_de_aspas = true; principio = i; continue; }
+      dentro_de_aspas = false;
+      if (fundo != 1) continue;  // cadeia de dentro de objecto não é item
+      intimo::Leitor leitor(arranjo.substr(principio, i - principio + 1));
+      std::string valor, razao;
+      if (leitor.cadeia(&valor, &razao)) achados.push_back(std::move(valor));
+      continue;
+    }
+    if (dentro_de_aspas) continue;
+    if (octeto == '{' || octeto == '[') ++fundo;
+    else if (octeto == '}' || octeto == ']') --fundo;
+  }
+  return achados;
+}
+
 // texto_de_chave — o valor de texto de uma chave de FUNDO UM do objecto, já
 // desescapado. Vazio quando ella falta, ou quando o valor não é texto. O fundo
 // importa: `title` dentro de `audioPreview` não é o `title` da faixa.
