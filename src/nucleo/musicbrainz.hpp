@@ -72,6 +72,11 @@ std::string le_gravacao_da_url(std::string_view corpo);
 // numero). Campo que o corpo não diga fica vazio ou zero.
 FichaMB le_ficha_da_gravacao(std::string_view corpo);
 
+// le_eleita_da_busca — o MBID eleito do corpo da busca: score ≥ 90, duração
+// dentro da janella quando o catalogo a disse, e a de first-release-date mais
+// antiga entre as que passam. Vazio quando nenhuma passa.
+std::string le_eleita_da_busca(std::string_view corpo, int duracao_ms);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

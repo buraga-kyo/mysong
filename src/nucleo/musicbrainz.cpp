@@ -179,6 +179,37 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   return ficha;
 }
 
+std::string le_eleita_da_busca(std::string_view corpo, int duracao_ms) {
+  // As candidatas da busca vêm quasi todas com score cem (MEDIDO: oito
+  // homonymas, de 1987 a 2026), donde o score sozinho não elege. As regras
+  // (RULINGS R7): score de noventa para cima; duração dentro da janella quando
+  // o catalogo a disse (candidata sem duração não se afere, e não passa); e
+  // entre as que passam, a de first-release-date mais antiga, que é a gravação
+  // ORIGINAL que o Aceite da issue pede contra o cover e o remaster.
+  std::string eleita, data_da_eleita;
+  for (const std::string& gravacao :
+       api::objectos_do_arranjo(api::recorta_arranjo(corpo, "recordings"))) {
+    const std::string id = api::texto_de_chave(gravacao, "id");
+    if (id.empty()) continue;
+    double valor = 0.0;
+    if (!api::numero_de_chave(gravacao, "score", &valor) || valor < 90) continue;
+    if (duracao_ms > 0) {
+      if (!api::numero_de_chave(gravacao, "length", &valor)) continue;
+      const int longe = static_cast<int>(valor) > duracao_ms
+                            ? static_cast<int>(valor) - duracao_ms
+                            : duracao_ms - static_cast<int>(valor);
+      if (longe > kJanellaMs) continue;
+    }
+    const std::string data = api::texto_de_chave(gravacao, "first-release-date");
+    const std::string chave = data.empty() ? "9999" : data;
+    if (eleita.empty() || chave < data_da_eleita) {
+      eleita = id;
+      data_da_eleita = chave;
+    }
+  }
+  return eleita;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
