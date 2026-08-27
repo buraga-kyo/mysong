@@ -344,6 +344,24 @@ TEST_CASE("a fonte cicla pelas tres e volta, e o pedido nasce no YouTube") {
   CHECK(nu::Pedido{}.fonte == nu::Fonte::YouTube);
 }
 
+TEST_CASE("a art track chega com artista, album, faixa e ano") {
+  // A sahida MEDIDA em 2026-08-27 contra o music.youtube.com, oito linhas.
+  const std::vector<nu::Achado> uns = nu::le_achados(
+      "Karma Police\nRadiohead\n264\nhttps://y/4\n"
+      "Radiohead\nOK Computer\nKarma Police\n1997\n");
+  REQUIRE(uns.size() == 1);
+  CHECK(uns[0].artista == "Radiohead");
+  CHECK(uns[0].album == "OK Computer");
+  CHECK(uns[0].faixa == "Karma Police");
+  CHECK(uns[0].ano == 1997);
+  CHECK(uns[0].duracao == 264);
+  // Ano por extenso é lixo, e lixo dá zero, e não lança.
+  const std::vector<nu::Achado> torto =
+      nu::le_achados("T\nC\n10\nhttps://y/5\nNA\nNA\nNA\nMCMXCVII\n");
+  REQUIRE(torto.size() == 1);
+  CHECK(torto[0].ano == 0);
+}
+
 TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
   const nu::Achado nada;
   CHECK(nada.artista.empty());
