@@ -25,6 +25,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace mysong::nucleo {
@@ -43,6 +44,18 @@ struct FichaMB {
   int numero = 0;      // a posição da faixa n'ella (`position`; `number` vem «A3»)
   int duracao_ms = 0;  // a duração exacta da gravação, em milesimos
 };
+
+// escapa_url — o percent-encoding do RFC 3986, proprio porque o do curl pede
+// punho vivo. Sómente letra, cifra e `-._~` passam crus.
+std::string escapa_url(std::string_view crua);
+
+// url_da_consulta_pelo_link — a relação de URL do track do Spotify: casamento
+// EXACTO quando o MusicBrainz tem o link. Vazio sem identificador.
+std::string url_da_consulta_pelo_link(std::string_view id_do_track);
+
+// url_da_ficha — a gravação inteira por MBID: ISRCs, artistas e releases com
+// grupo e numeração. Vazio sem MBID.
+std::string url_da_ficha(std::string_view mbid);
 
 }  // namespace mysong::nucleo
 
