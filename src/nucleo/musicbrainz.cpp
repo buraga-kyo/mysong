@@ -14,8 +14,12 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/musicbrainz.hpp"
 
+#include <chrono>
+#include <cstddef>
 #include <cstdlib>
+#include <mutex>
 #include <string_view>
+#include <thread>
 
 #include "api/jsonzinho.hpp"
 
@@ -223,6 +227,24 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
   }
   termos.push_back(artista.empty() ? titulo : artista + " " + titulo);
   return termos;
+}
+
+// ── E AGORA O QUE TOCA O MUNDO. D'aqui para baixo não ha prova de bateria que
+// valha, fóra a do proprio acelerador, que toca relogio e não rede. ──────────
+
+void espera_a_vez_do_mb() {
+  // O ACELERADOR: uma requisição por segundo, somados TODOS os fios, que os
+  // dous obreiros do estaleiro chegam juntos em rajada. A espera dorme com a
+  // tranca tomada DE PROPOSITO: é isso que serializa a vez; e tranca alguma se
+  // toma aqui dentro, donde ciclo de trancas não ha por onde nascer.
+  static std::mutex tranca;
+  static std::chrono::steady_clock::time_point ultima;
+  std::lock_guard<std::mutex> chave(tranca);
+  const auto agora = std::chrono::steady_clock::now();
+  if (ultima.time_since_epoch().count() != 0 &&
+      agora - ultima < std::chrono::seconds(1))
+    std::this_thread::sleep_for(std::chrono::seconds(1) - (agora - ultima));
+  ultima = std::chrono::steady_clock::now();
 }
 
 }  // namespace mysong::nucleo

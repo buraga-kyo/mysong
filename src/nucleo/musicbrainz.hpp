@@ -90,6 +90,13 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
                                          const std::string& artista,
                                          const std::string& titulo);
 
+// ── E AGORA O QUE TOCA O MUNDO ──────────────────────────────────────────────
+
+// espera_a_vez_do_mb — o acelerador: segura o fio até haver um segundo inteiro
+// desde a ultima passagem, somados todos os fios do processo. Publico para que
+// a bateria o afira com relogio, sem rede alguma.
+void espera_a_vez_do_mb();
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
