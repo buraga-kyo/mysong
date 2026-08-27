@@ -21,6 +21,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -77,7 +78,13 @@ class Tocador {
  private:
   void annuncia(Aviso aviso, std::string razao = {});
   void assenta_estado(Estado novo);
+  bool tocar_corrente_trancado();
 
+  // A TRANCA (issue #50): todo punho publico a toma, e é ella que faz o
+  // tocador chamavel de mais de um fio sem corrida. O pregão sahe com ella
+  // tomada, donde o contracto: ouvinte NÃO chama o tocador de volta, que a
+  // tranca não é reentrante e a segunda tomada seria abraço de si mesma.
+  mutable std::mutex tranca_;
   Motor& motor_;
   Fila fila_;
   std::vector<Ouvinte> ouvintes_;

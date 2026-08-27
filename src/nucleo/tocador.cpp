@@ -16,6 +16,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/tocador.hpp"
 
+#include <mutex>
 #include <utility>
 
 namespace mysong::nucleo {
@@ -28,6 +29,7 @@ const Fila& Tocador::fila() const noexcept { return fila_; }
 // Ouvinte vazio não se guarda: guardá-lo seria adiar para a hora do pregão uma
 // verificação que se faz de graça na hora do registro.
 void Tocador::escuta(Ouvinte ouvinte) {
+  std::lock_guard<std::mutex> chave(tranca_);
   if (ouvinte) ouvintes_.push_back(std::move(ouvinte));
 }
 
@@ -52,6 +54,13 @@ void Tocador::assenta_estado(Estado novo) {
 // Manda tocar o que a fila aponta. O volume corrente vae com a faixa nova, que
 // de outra sorte nasceria no volume de fabrica do motor.
 bool Tocador::tocar_corrente() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return tocar_corrente_trancado();
+}
+
+// O miolo, chamado SEMPRE com a tranca já tomada: é por elle que proxima() e
+// anterior() tocam sem tomar a tranca segunda vez.
+bool Tocador::tocar_corrente_trancado() {
   if (fila_.vazia()) return false;
   const std::string caminho(fila_.corrente());
   if (!motor_.tocar(caminho)) {
@@ -69,22 +78,26 @@ bool Tocador::tocar_corrente() {
 // A fila anda PRIMEIRO, e só depois se manda tocar. Na borda ella não anda,
 // nada se manda, e a faixa em curso segue intacta.
 bool Tocador::proxima() {
-  return fila_.proxima() && tocar_corrente();
+  std::lock_guard<std::mutex> chave(tranca_);
+  return fila_.proxima() && tocar_corrente_trancado();
 }
 
 bool Tocador::anterior() {
-  return fila_.anterior() && tocar_corrente();
+  std::lock_guard<std::mutex> chave(tranca_);
+  return fila_.anterior() && tocar_corrente_trancado();
 }
 
 // Pausar só faz sentido a tocar; retomar, só a pausado. Fóra d'ahi a ordem se
 // recusa em vez de se mandar ao motor uma transição que elle não pode honrar.
 bool Tocador::pausar() {
+  std::lock_guard<std::mutex> chave(tranca_);
   if (estado_ != Estado::Tocando || !motor_.pausar()) return false;
   assenta_estado(Estado::Pausado);
   return true;
 }
 
 bool Tocador::retomar() {
+  std::lock_guard<std::mutex> chave(tranca_);
   if (estado_ != Estado::Pausado || !motor_.retomar()) return false;
   assenta_estado(Estado::Tocando);
   return true;
@@ -93,6 +106,7 @@ bool Tocador::retomar() {
 // O alvo apara-se pela duração ANTES de descer ao motor, com a fonte unica de
 // aparo que mora no tractado do motor.
 bool Tocador::buscar(double segundos) {
+  std::lock_guard<std::mutex> chave(tranca_);
   if (estado_ == Estado::Parado) return false;
   return motor_.buscar(aparar_busca(segundos, motor_.duracao()));
 }
@@ -100,6 +114,7 @@ bool Tocador::buscar(double segundos) {
 // O volume guarda-se aqui, e não sómente no motor: é elle que a faixa seguinte
 // ha de herdar. E é do MOTOR, nunca do systema.
 bool Tocador::volume(int porcento) {
+  std::lock_guard<std::mutex> chave(tranca_);
   volume_ = aparar_volume(porcento);
   return motor_.volume(volume_);
 }
@@ -117,6 +132,7 @@ double Tocador::duracao() const { return motor_.duracao(); }
 // verdade. Assentar o estado primeiro não bastaria: o EstadoMudou sahiria com
 // a posição velha, que é o mesmo defeito virado do outro lado.
 void Tocador::pulsa() {
+  std::lock_guard<std::mutex> chave(tranca_);
   motor_.bombear();
   const Estado visto = motor_.estado();
   const double agora = motor_.posicao();
@@ -135,7 +151,10 @@ void Tocador::pulsa() {
   if (fonte_ != nullptr) fonte_->pulsa();
 }
 
-void Tocador::observa(FonteDeBandas& fonte) noexcept { fonte_ = &fonte; }
+void Tocador::observa(FonteDeBandas& fonte) noexcept {
+  std::lock_guard<std::mutex> chave(tranca_);
+  fonte_ = &fonte;
+}
 
 std::vector<float> Tocador::bandas() const {
   if (fonte_ == nullptr) return std::vector<float>(QUANTAS_BANDAS, 0.0f);
