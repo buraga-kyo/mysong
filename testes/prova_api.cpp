@@ -498,6 +498,33 @@ TEST_CASE("a baixa encommenda-se, e a resposta nao espera pelo desfecho") {
   estaleiro.espera_a_fila();
 }
 
+TEST_CASE("a baixa recusa a mensagem torta antes de encommendar") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  mysong::nucleo::Estaleiro estaleiro(
+      1, [](const mysong::nucleo::Pedido&, std::filesystem::path*) {
+        return mysong::nucleo::Colheita::SemFerramenta;
+      });
+  mysong::api::Arredores arredores;
+  arredores.estaleiro = &estaleiro;
+  const char* tortos[] = {
+      "{\"verbo\":\"baixar\"}",
+      "{\"verbo\":\"baixar\",\"url\":\"\"}",
+      "{\"verbo\":\"baixar\",\"url\":7}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":-1}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":1e9}",
+  };
+  for (const char* torto : tortos) {
+    const std::string resposta = mysong::api::responde(tocador, arredores, torto);
+    CHECK(campo(resposta, "erro") == "argumento_invalido");
+    CHECK_FALSE(campo(resposta, "razao").empty());
+  }
+  // E NADA se encommendou: a mensagem torta não deixa resto na fila.
+  estaleiro.espera_a_fila();
+  CHECK(estaleiro.andamento().colhidas == 0);
+  CHECK(estaleiro.andamento().falhadas == 0);
+}
+
 // A prova de que verbo algum sae MUDO, e de que as quatro recusas se distinguem.
 // Distinguir importa porque o remedio de cada uma é differente: «recusado» manda
 // olhar o estado do tocador, «argumento_invalido» manda olhar a mensagem,
