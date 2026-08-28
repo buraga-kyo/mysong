@@ -67,6 +67,13 @@ inline constexpr std::size_t LINHA_NO_MAXIMO = 4096;
 inline constexpr std::size_t ARQUIVO_NO_MAXIMO = 1024 * 1024;
 inline constexpr std::size_t QUEIXAS_NO_MAXIMO = 32;
 
+// E o tecto dos PARES, que guarda a busca da chave repetida: ella olha os pares
+// que já vieram, e sem tecto um arquivo de um megabyte denso em «k=v» daria
+// duzentos e sessenta mil pares e trinta bilhões de comparações, isto é, minutos
+// de gelo ANTES de a tela abrir. Arquivo de ajustes com mais de duzentos e
+// cincoenta e seis linhas de ajuste não é arquivo de ajustes.
+inline constexpr std::size_t PARES_NO_MAXIMO = 256;
+
 // OS AJUSTES em vigor, já resolvidos: os quatro que o operador governa, o
 // caminho do arquivo que se considerou (ainda que ausente), o estado d'elle, e
 // as queixas. O acervo nasce vazio porque o padrão d'elle depende do HOME, que

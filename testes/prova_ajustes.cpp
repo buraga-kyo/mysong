@@ -191,6 +191,16 @@ TEST_CASE("as queixas têm tecto, e o lixo não afoga o diagnostico") {
   CHECK(texto.find("e ha mais 64 queixas") > texto.rfind("linha "));
 }
 
+TEST_CASE("o numero de pares tem tecto, que a busca da repetida é quadratica") {
+  nu::Ajustes ajustes;
+  std::string denso;
+  for (std::size_t volta = 0; volta < nu::PARES_NO_MAXIMO * 2; ++volta)
+    denso += "k" + std::to_string(volta) + " = 1\n";
+  CHECK(nu::ler_pares(denso, &ajustes).size() == nu::PARES_NO_MAXIMO);
+  REQUIRE(!ajustes.queixas.empty());
+  CHECK(ajustes.queixas.back().find("leu-se até aqui") != std::string::npos);
+}
+
 TEST_CASE("byte nulo, e texto sem quebra no fim, não derrubam o leitor") {
   nu::Ajustes ajustes;
   const std::string cru("volume = 70\nlixo\0binario", 24);

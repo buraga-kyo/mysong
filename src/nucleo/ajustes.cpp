@@ -99,6 +99,12 @@ std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes) {
       ajustes->queixa(onde + "sem chave antes do egual; ignorada");
       continue;
     }
+    if (pares.size() >= PARES_NO_MAXIMO) {
+      ajustes->queixa(onde + "o arquivo passa de " +
+                      std::to_string(PARES_NO_MAXIMO) +
+                      " ajustes; leu-se até aqui");
+      break;
+    }
     for (const Par& antigo : pares)
       if (antigo.chave == chave)
         ajustes->queixa(onde + "a chave «" + std::string(chave) +
