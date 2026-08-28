@@ -107,6 +107,19 @@ Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota) {
   return feito;
 }
 
+Pedido enriquece(const Pedido& pedido, const FichaMB& ficha) {
+  // Aqui a ficha GANHA do que ha, ao contrario do resolve, em que o operador
+  // ganha da rede. Não é contradicção: album e numero de hoje não são dictos do
+  // operador, são o nome da lista e a posição n'ella, remendos confessados da
+  // issue #13; e a ficha só existe quando a GRAVAÇÃO casou, donde o canonico é
+  // mais verdade que o remendo. Artista e titulo ficam: são o que elle vê.
+  Pedido feito = pedido;
+  if (!ficha.album.empty()) feito.album = ficha.album;
+  if (ficha.ano > 0) feito.ano = ficha.ano;
+  if (ficha.numero > 0) feito.numero = ficha.numero;
+  return feito;
+}
+
 std::filesystem::path destino(const std::filesystem::path& raiz,
                               const Pedido& pedido) {
   std::filesystem::path caminho = raiz / saneia_nome(pedido.artista);
@@ -217,6 +230,8 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {
 std::string_view razao_da_colheita(Colheita colheita) {
   switch (colheita) {
     case Colheita::Colhido: return "baixado";
+    case Colheita::ColhidoDuvidoso:
+      return "baixado por titulo, sem a gravação: confira";
     case Colheita::SemFerramenta: return "falta o yt-dlp: uv tool install yt-dlp";
     case Colheita::UrlRecusada: return "o yt-dlp não leu essa URL";
     case Colheita::JaExiste: return "essa faixa já está no acervo";
@@ -313,7 +328,8 @@ bool escreve_etiqueta(const std::filesystem::path& arquivo,
     etiqueta->setAlbum(TagLib::String(pedido.album, utf8));
   if (pedido.numero > 0)
     etiqueta->setTrack(static_cast<unsigned>(pedido.numero));
-  // O ano entra quando a fonte o deu (issue #56); zero calaria «anno zero».
+  // O ano entra quando a fonte o deu (issue #56) ou quando a gravação casou no
+  // MusicBrainz (issue #57); zero é «não se soube», e gravá-lo seria mentira.
   if (pedido.ano > 0) etiqueta->setYear(static_cast<unsigned>(pedido.ano));
   return punho.save();
 }
@@ -383,6 +399,28 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
   return eleito_com_titulo >= 0 ? eleito_com_titulo : eleito;
 }
 
+int achado_mais_proximo(const std::vector<Achado>& achados, int duracao) {
+  // O eleitor do caminho ISRC, e o contrario declarado do melhor_achado: o
+  // termo que trouxe estes achados é o ISRC, que nomeia a gravação, donde o
+  // TITULO não entra e distancia alguma exclue. A duração exacta desempata, e
+  // não criva, por ordem do usuario (RULINGS R3): cover de titulo egual perde
+  // aqui para a art track de titulo estranho, que é o Aceite da issue.
+  if (achados.empty()) return -1;
+  if (duracao <= 0) return 0;  // sem alvo não ha desempate: vale o primeiro
+  int eleito = -1, do_eleito = 0;
+  for (std::size_t i = 0; i < achados.size(); ++i) {
+    if (achados[i].duracao <= 0) continue;  // «não disse» não desempata
+    const int longe = achados[i].duracao > duracao
+                          ? achados[i].duracao - duracao
+                          : duracao - achados[i].duracao;
+    if (eleito < 0 || longe < do_eleito) {
+      do_eleito = longe;
+      eleito = static_cast<int>(i);
+    }
+  }
+  return eleito < 0 ? 0 : eleito;  // nenhum disse duração: vale o primeiro
+}
+
 Pedido encommenda_do_achado(const Achado& achado) {
   Pedido pedido;
   pedido.url = achado.url;
@@ -392,6 +430,7 @@ Pedido encommenda_do_achado(const Achado& achado) {
   pedido.numero = achado.numero;
   pedido.ano = achado.ano;
   pedido.fonte = achado.fonte;
+  pedido.id_spotify = achado.id_spotify;  // o link do MusicBrainz (issue #57)
   // A duração sómente no pedido sem URL, onde ella criva o casamento. Com URL,
   // pô-la mudaria o pedido de hoje sem lhe mudar o desfecho.
   if (achado.url.empty()) pedido.duracao = achado.duracao;
@@ -418,6 +457,7 @@ std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
     // faixa, e a tolerancia do casamento conta-os.
     achado.duracao = (faixa.duracao_ms + 500) / 1000;
     achado.fonte = Fonte::Spotify;
+    achado.id_spotify = faixa.id_do_track;  // por onde o MusicBrainz acha a gravação
     achados.push_back(achado);
   }
   return achados;
@@ -439,24 +479,57 @@ bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
-  // SEM URL, mas com titulo: busca-se o audio por si, e casa-se pela duração. É o
-  // caminho da issue #13, e é o mesmo `baixa` de sempre depois de achado o endereço:
-  // as etiquetas continuam a ser as que o operador disse, que aqui vêm do catalogo.
+  // SEM URL, mas com titulo: busca-se o audio por si (issue #13), agora pela
+  // GRAVAÇÃO antes do titulo (issue #57). O MusicBrainz resolve a faixa n'uma
+  // ficha; os termos de ISRC nomeiam a gravação exacta, e entre os achados a
+  // duração exacta DESEMPATA sem excluir (RULINGS R3); o termo de hoje fica por
+  // derradeiro, e o que baixar por elle sahe confessando a duvida no desfecho.
   if (pedido.url.empty()) {
     if (pedido.titulo.empty()) return Colheita::UrlRecusada;
-    std::vector<Achado> achados;
-    const std::string termo = pedido.artista.empty()
-                                  ? pedido.titulo
-                                  : pedido.artista + " " + pedido.titulo;
-    // E busca-se na fonte do PROPRIO pedido (issue #56): quem pediu é quem sabe
-    // onde o audio d'elle se procura.
-    if (!busca_na_rede(termo, pedido.fonte, 10, &achados))
-      return Colheita::SemFerramenta;
-    const int qual = melhor_achado(achados, pedido, TOLERANCIA_DO_CASAMENTO);
-    if (qual < 0) return Colheita::Duvidosa;
-    Pedido com_url = pedido;
-    com_url.url = achados[static_cast<std::size_t>(qual)].url;
-    return baixa(raiz, com_url, gravado);
+    FichaMB ficha;
+    // A duração do catalogo cinge-se a UM DIA antes de virar milesimos: vinda
+    // da rede, um valor absurdo estouraria a conta por mil; cingida, vale «não
+    // disse», que é o que um numero d'esses de facto diz.
+    const int do_catalogo = pedido.duracao > 0 && pedido.duracao <= 86400
+                                ? pedido.duracao * 1000
+                                : 0;
+    resolve_gravacao(pedido.id_spotify, pedido.artista, pedido.titulo,
+                     do_catalogo, &ficha);
+    // Não casando, a ficha fica vazia: o enriquecimento devolve o pedido tal e
+    // qual e os termos reduzem-se ao de hoje, que é o caminho antigo inteiro.
+    const Pedido rico = enriquece(pedido, ficha);
+    const int alvo_ms = ficha.duracao_ms > 0 ? ficha.duracao_ms : do_catalogo;
+    const std::vector<std::string> termos =
+        termos_de_busca(ficha, pedido.artista, pedido.titulo);
+    for (std::size_t i = 0; i < termos.size(); ++i) {
+      const bool de_hoje = i + 1 == termos.size();  // o derradeiro é o de hoje
+      std::vector<Achado> achados;
+      // A FONTE de cada termo, e a differença é de segurança, não de gosto. O
+      // termo de hoje vae na fonte do PROPRIO pedido, que é o invariante da
+      // issue #56: quem pediu é quem sabe onde o audio d'elle se procura. Os
+      // termos de ISRC vão no ytsearch, e SÓ n'elle, porque é a unica fonte em
+      // que a propriedade de que este caminho vive foi MEDIDA: ISRC não
+      // indexado devolve NADA. A busca do music.youtube.com é difusa e tende a
+      // devolver ALGO; como o caminho do ISRC não criva por duração (RULINGS
+      // R3, ordem do usuario), qualquer achado alheio seria eleito por
+      // proximidade e a faixa sahiria por Colhido, casada com confiança e
+      // errada. Pinar o ISRC aqui é o que torna essa via inexprimivel.
+      const Fonte onde = de_hoje ? pedido.fonte : Fonte::YouTube;
+      if (!busca_na_rede(termos[i], onde, 10, &achados))
+        return Colheita::SemFerramenta;
+      const int qual =
+          de_hoje ? melhor_achado(achados, rico, TOLERANCIA_DO_CASAMENTO)
+                  : achado_mais_proximo(achados, (alvo_ms + 500) / 1000);
+      if (qual < 0) continue;  // busca vazia ou nada casou: o termo seguinte
+      Pedido com_url = rico;
+      com_url.url = achados[static_cast<std::size_t>(qual)].url;
+      const Colheita fim = baixa(raiz, com_url, gravado);
+      // Pelo termo de hoje o casamento é o da issue #13, que aceita cover e
+      // versão ao vivo: o Colhido troca-se pelo desfecho que confessa isso.
+      return de_hoje && fim == Colheita::Colhido ? Colheita::ColhidoDuvidoso
+                                                 : fim;
+    }
+    return Colheita::Duvidosa;
   }
 
   EtiquetaRemota remota;

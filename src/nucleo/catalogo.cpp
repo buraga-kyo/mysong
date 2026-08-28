@@ -97,6 +97,11 @@ Catalogo le_catalogo(std::string_view corpo) {
     double milesimos = 0.0;
     if (api::numero_de_chave(objecto, "duration", &milesimos))
       faixa.duracao_ms = static_cast<int>(milesimos);
+    // O `uri` diz o TYPO da linha, e sómente `spotify:track:` dá identificador:
+    // episodio de podcast e arquivo local não têm gravação que se possa casar.
+    const std::string uri = api::texto_de_chave(objecto, "uri");
+    const std::string_view marca = "spotify:track:";
+    if (uri.rfind(marca, 0) == 0) faixa.id_do_track = uri.substr(marca.size());
     faixa.numero = ordem;
     // Faixa sem TITULO não sahe: ella seria linha que o operador elege e que não se
     // pode buscar, que é buscar por cadeia vazia.

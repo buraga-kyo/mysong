@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "nucleo/catalogo.hpp"
+#include "nucleo/musicbrainz.hpp"
 
 namespace mysong::nucleo {
 
@@ -60,8 +61,13 @@ struct Pedido {
   // casando o achado pela duração. Sem ella não ha casamento de que se possa
   // confiar, e a faixa sahe por duvidosa em vez de baixar cousa errada calada.
   int duracao = 0;
-  // O ANO do lançamento, e zero é «não sei». Sómente a BUSCA o dá (a sonda não o
-  // pergunta), e havendo-o elle vae á etiqueta.
+  // O ID do track no Spotify (issue #57), vindo do catalogo: é por elle que o
+  // MusicBrainz acha a GRAVAÇÃO exacta, e não uma parecida. Vazio quando a
+  // faixa não veio do catalogo, e ahi a resolução tenta a busca por titulo.
+  std::string id_spotify;
+  // O ANO do lançamento, e zero é «não sei»; havendo-o, elle vae á etiqueta. Dão-no
+  // DUAS fontes: a busca da issue #56 (a sonda da URL não o pergunta) e a release
+  // canonica que o MusicBrainz da issue #57 elege, que ganha quando a gravação casa.
   int ano = 0;
 };
 
@@ -76,6 +82,10 @@ std::string saneia_nome(std::string_view crua);
 // operador se ha de tentar outra vez, corrigir a URL ou installar o yt-dlp.
 enum class Colheita {
   Colhido,          // o arquivo está no logar, com as etiquetas
+  // Baixou-se pelo criterio de hoje (titulo e duração), SEM a gravação casada
+  // (issue #57, RULINGS R2): o arquivo ficou no disco, mas o casamento aceita
+  // cover e versão ao vivo, e dizer Colhido seria confiança que elle não tem.
+  ColhidoDuvidoso,
   SemFerramenta,    // o yt-dlp não está no caminho
   UrlRecusada,      // o yt-dlp não conseguiu ler a URL
   JaExiste,         // ha arquivo no destino; NADA se tocou
@@ -100,6 +110,14 @@ struct EtiquetaRemota {
 // operador mas havendo canal, é o CANAL que se usa, com a ressalva de que se
 // registra que se deduziu.
 Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota);
+
+// enriquece — o pedido com o album, o anno e o numero CANONICOS da ficha do
+// MusicBrainz por cima dos de hoje, que eram o nome da lista por album e a
+// posição na lista por numero (issue #57). Artista e titulo não se tocam: são o
+// que o operador vê e o que a busca usa. Campo que a ficha não diga fica como
+// estava, e ficha vazia devolve o pedido tal e qual: é o caminho de quando o
+// MusicBrainz não casou.
+Pedido enriquece(const Pedido& pedido, const FichaMB& ficha);
 
 // destino — o caminho na hierarchia do acervo: `<raiz>/Artista/Álbum/NN - Titulo`.
 // Sem numero, sahe `Artista/Álbum/Titulo`; sem album, `Artista/Titulo`. A extensão
@@ -179,6 +197,10 @@ struct Achado {
   int numero = 0;
   // A FONTE de que o achado veio, para que a encommenda a carregue adiante.
   Fonte fonte = Fonte::YouTube;
+  // O ID do track no Spotify (issue #57), quando o achado sahiu do catalogo: sem
+  // elle a encommenda perderia o casamento pelo LINK e cahiria na busca por
+  // titulo dentro do MusicBrainz, que é o caminho segundo e não o primeiro.
+  std::string id_spotify;
 };
 
 // codifica_para_url — o termo como pedaço de URL: todo byte fóra de
@@ -216,6 +238,14 @@ std::vector<Achado> le_achados(const std::string& sahida);
 //    a tarefa manda marcar por duvidosa em vez de baixar cousa errada calada.
 int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
                   int tolerancia);
+
+// achado_mais_proximo — o indice do achado de duração mais proxima da pedida, e
+// menos um sómente quando não ha achado algum. É o eleitor do caminho ISRC
+// (issue #57): o termo de busca já nomeia a GRAVAÇÃO, donde o titulo não entra
+// e distancia alguma exclue; a duração exacta do MusicBrainz é DESEMPATE, e não
+// crivo, por ordem registrada em RULINGS R3. Sem duração pedida, ou sem achado
+// que a diga, vale o primeiro achado, que é o que a busca poz á frente.
+int achado_mais_proximo(const std::vector<Achado>& achados, int duracao);
 
 // encommenda_do_achado — o Pedido que o achado eleito dá, campo a campo: URL,
 // artista, album, titulo CANONICO (a faixa, e não o titulo do video), numero,

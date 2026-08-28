@@ -127,6 +127,22 @@ TEST_CASE("chave de FUNDO DOUS não vira campo da faixa") {
   CHECK(lida.faixas[0].duracao_ms == 1000);
 }
 
+TEST_CASE("o id do track sahe do uri, e uri que não é de track dá id vazio") {
+  const nu::Catalogo lida = nu::le_catalogo(kPagina);
+  REQUIRE(lida.faixas.size() == 2);
+  CHECK(lida.faixas[0].id_do_track == "7bxa");
+  CHECK(lida.faixas[1].id_do_track == "20jb");
+  // Episodio de podcast: linha legitima do catalogo, mas gravação que não se pode
+  // casar. O id fica vazio, e a faixa fica; é o vazio que manda a baixa á busca.
+  constexpr char kEpisodio[] =
+      R"({"trackList":[{"uri":"spotify:episode:abc1","title":"Um Episodio",)"
+      R"("subtitle":"Alguem","duration":1000}]})";
+  const nu::Catalogo mixto = nu::le_catalogo(kEpisodio);
+  REQUIRE(mixto.faixas.size() == 1);
+  CHECK(mixto.faixas[0].id_do_track.empty());
+  CHECK(mixto.faixas[0].titulo == "Um Episodio");
+}
+
 TEST_CASE("corpo sem lista dá catalogo vazio, e não erro") {
   CHECK(nu::le_catalogo("").faixas.empty());
   CHECK(nu::le_catalogo("<html>nada</html>").faixas.empty());

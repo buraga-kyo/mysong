@@ -154,6 +154,12 @@ void Estaleiro::obreiro() {
       if (fim == Colheita::Colhido) {
         ++colhidas_;
         colheu_ = true;
+      } else if (fim == Colheita::ColhidoDuvidoso) {
+        // Baixou pelo criterio de hoje, sem a gravação casada (issue #57): o
+        // ARQUIVO ficou, donde a bandeira da colheita se levanta e a tela varre
+        // o disco; mas conta-se por duvidosa, que o que ella pede é olho humano.
+        ++duvidosas_;
+        colheu_ = true;
       } else if (fim == Colheita::Duvidosa) {
         // DUVIDOSA não é falha, e conta-se á parte: faixa que não casou pede olho
         // humano, e dizer «falhou» faria o operador tentar outra vez o mesmo.
