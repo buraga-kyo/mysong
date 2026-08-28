@@ -525,6 +525,36 @@ TEST_CASE("a baixa recusa a mensagem torta antes de encommendar") {
   CHECK(estaleiro.andamento().falhadas == 0);
 }
 
+TEST_CASE("a fila de baixa cheia recusa, e nao cresce sem fim") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  std::mutex tranca;
+  std::condition_variable sino;
+  bool solta = false;
+  mysong::nucleo::Estaleiro estaleiro(
+      1, [&](const mysong::nucleo::Pedido&, std::filesystem::path*) {
+        std::unique_lock<std::mutex> chave(tranca);
+        sino.wait(chave, [&solta] { return solta; });
+        return mysong::nucleo::Colheita::Colhido;
+      });
+  mysong::api::Arredores arredores;
+  arredores.estaleiro = &estaleiro;
+  // Oitenta encommendas com a obra presa: passa do tecto de sessenta e quatro
+  // com folga, donde a ultima é recusa CERTA, e não sorteada pelo escalonador.
+  std::string ultima;
+  for (int i = 0; i < 80; ++i)
+    ultima = mysong::api::responde(
+        tocador, arredores, "{\"verbo\":\"baixar\",\"url\":\"https://x\"}");
+  CHECK(campo(ultima, "erro") == "recusado");
+  CHECK_FALSE(campo(ultima, "razao").empty());
+  CHECK(estaleiro.andamento().na_espera <= 64);
+  {
+    std::lock_guard<std::mutex> chave(tranca);
+    solta = true;
+  }
+  sino.notify_all();
+}
+
 // A prova de que verbo algum sae MUDO, e de que as quatro recusas se distinguem.
 // Distinguir importa porque o remedio de cada uma é differente: «recusado» manda
 // olhar o estado do tocador, «argumento_invalido» manda olhar a mensagem,
