@@ -305,8 +305,8 @@ DesfechoMB consulta_mb(const std::string& url, std::string* corpo) {
 }
 
 bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
-                      const std::string& titulo, int duracao_ms,
-                      FichaMB* ficha) {
+                      const std::string& titulo, int duracao_ms, FichaMB* ficha,
+                      const Consulta& consulta) {
   // Os dous caminhos com rede, na ordem da issue: o LINK primeiro, que é
   // casamento que o proprio MB declarou; a BUSCA depois. Consulta que falhe
   // (404, 503, rede morta, corpo alheio) cae ao passo seguinte, e o falso
@@ -315,19 +315,23 @@ bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
   std::string mbid;
   if (!id_spotify.empty()) {
     std::string corpo;
-    if (consulta_mb(url_da_consulta_pelo_link(id_spotify), &corpo) ==
-        DesfechoMB::Achado)
-      mbid = le_gravacao_da_url(corpo);
+    const DesfechoMB pelo_link =
+        consulta(url_da_consulta_pelo_link(id_spotify), &corpo);
+    // O RECUO pára aqui. Gastar a busca contra um servidor que acabou de pedir
+    // menos trafego é engrossar a rajada que o acelerador impede, e a faixa
+    // sahe por duvidosa, que é o que ella seria uma consulta mais tarde.
+    if (pelo_link == DesfechoMB::Recuo) return false;
+    if (pelo_link == DesfechoMB::Achado) mbid = le_gravacao_da_url(corpo);
   }
   if (mbid.empty() && !titulo.empty()) {
     std::string corpo;
-    if (consulta_mb(url_da_consulta_pela_busca(artista, titulo, duracao_ms),
-                    &corpo) == DesfechoMB::Achado)
+    if (consulta(url_da_consulta_pela_busca(artista, titulo, duracao_ms),
+                 &corpo) == DesfechoMB::Achado)
       mbid = le_eleita_da_busca(corpo, duracao_ms);
   }
   if (mbid.empty()) return false;
   std::string corpo;
-  if (consulta_mb(url_da_ficha(mbid), &corpo) != DesfechoMB::Achado)
+  if (consulta(url_da_ficha(mbid), &corpo) != DesfechoMB::Achado)
     return false;
   FichaMB lida = le_ficha_da_gravacao(corpo);
   if (lida.titulo.empty()) return false;  // ficha sem titulo não é gravação

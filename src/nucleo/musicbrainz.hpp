@@ -25,6 +25,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -117,12 +118,18 @@ DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
 // amplificaria a rajada que o acelerador impede.
 DesfechoMB consulta_mb(const std::string& url, std::string* corpo);
 
+// A CONSULTA por parametro: é a junta do dublê, a mesma do Estaleiro. Entrando
+// a rede por parametro, a bateria põe no logar d'ella uma consulta de mentira e
+// afere QUANTAS e QUAES consultas a resolução gasta, sem tocar a rede.
+using Consulta = std::function<DesfechoMB(const std::string&, std::string*)>;
+
 // resolve_gravacao — a resolução inteira: pelo link do track quando o ha, pela
 // busca quando não; e a ficha da gravação eleita. Duração em MILESIMOS, como o
-// MB fala. Falso quando nada casou, e ahi quem chama confessa a duvida.
+// MB fala. Falso quando nada casou, e ahi quem chama confessa a duvida. Pedindo
+// o servidor RECUO no primeiro caminho, o segundo NÃO se gasta.
 bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
-                      const std::string& titulo, int duracao_ms,
-                      FichaMB* ficha);
+                      const std::string& titulo, int duracao_ms, FichaMB* ficha,
+                      const Consulta& consulta = consulta_mb);
 
 }  // namespace mysong::nucleo
 
