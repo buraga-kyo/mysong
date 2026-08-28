@@ -107,6 +107,19 @@ Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota) {
   return feito;
 }
 
+Pedido enriquece(const Pedido& pedido, const FichaMB& ficha) {
+  // Aqui a ficha GANHA do que ha, ao contrario do resolve, em que o operador
+  // ganha da rede. Não é contradicção: album e numero de hoje não são dictos do
+  // operador, são o nome da lista e a posição n'ella, remendos confessados da
+  // issue #13; e a ficha só existe quando a GRAVAÇÃO casou, donde o canonico é
+  // mais verdade que o remendo. Artista e titulo ficam: são o que elle vê.
+  Pedido feito = pedido;
+  if (!ficha.album.empty()) feito.album = ficha.album;
+  if (ficha.ano > 0) feito.ano = ficha.ano;
+  if (ficha.numero > 0) feito.numero = ficha.numero;
+  return feito;
+}
+
 std::filesystem::path destino(const std::filesystem::path& raiz,
                               const Pedido& pedido) {
   std::filesystem::path caminho = raiz / saneia_nome(pedido.artista);

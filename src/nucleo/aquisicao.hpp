@@ -27,6 +27,8 @@
 #include <string_view>
 #include <vector>
 
+#include "nucleo/musicbrainz.hpp"
+
 namespace mysong::nucleo {
 
 // O que se sabe de uma faixa que se vae baixar. Campo vazio quer dizer «não sei»,
@@ -90,6 +92,14 @@ struct EtiquetaRemota {
 // operador mas havendo canal, é o CANAL que se usa, com a ressalva de que se
 // registra que se deduziu.
 Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota);
+
+// enriquece — o pedido com o album, o anno e o numero CANONICOS da ficha do
+// MusicBrainz por cima dos de hoje, que eram o nome da lista por album e a
+// posição na lista por numero (issue #57). Artista e titulo não se tocam: são o
+// que o operador vê e o que a busca usa. Campo que a ficha não diga fica como
+// estava, e ficha vazia devolve o pedido tal e qual: é o caminho de quando o
+// MusicBrainz não casou.
+Pedido enriquece(const Pedido& pedido, const FichaMB& ficha);
 
 // destino — o caminho na hierarchia do acervo: `<raiz>/Artista/Álbum/NN - Titulo`.
 // Sem numero, sahe `Artista/Álbum/Titulo`; sem album, `Artista/Titulo`. A extensão
