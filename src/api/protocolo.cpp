@@ -244,6 +244,11 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
     const nucleo::Biblioteca* livraria = arredores.livraria;
     const Valor* corte = argumento(msg, "corte", Typo::Texto);
     if (corte == nullptr) return falta("corte", "texto");
+    if (corte->texto != "artistas" && corte->texto != "albuns" &&
+        corte->texto != "faixas")
+      return erro("argumento_invalido",
+                  "o corte \"" + corte->texto +
+                      "\" nao existe: ha \"artistas\", \"albuns\" e \"faixas\"");
     if (corte->texto == "artistas") {
       const std::vector<std::string> nomes =
           livraria == nullptr ? std::vector<std::string>{} : livraria->artistas();
@@ -253,9 +258,48 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
       obra.par("tamanho", inteiro(static_cast<long long>(nomes.size())));
       return obra.fecha();
     }
-    return erro("argumento_invalido",
-                "o corte \"" + corte->texto +
-                    "\" nao existe: ha \"artistas\", \"albuns\" e \"faixas\"");
+    const Valor* quem = argumento(msg, "artista", Typo::Texto);
+    if (quem == nullptr) return falta("artista", "texto");
+    if (quem->texto.empty())
+      return erro("argumento_invalido", "o nome do artista vem vazio");
+    if (corte->texto == "albuns") {
+      const std::vector<std::string> nomes =
+          livraria == nullptr ? std::vector<std::string>{}
+                              : livraria->albuns(quem->texto);
+      Objecto obra = abre_acerto();
+      obra.par("corte", texto("albuns"));
+      obra.par("artista", texto(quem->texto));
+      obra.par("albuns", vector_de_textos(nomes));
+      obra.par("tamanho", inteiro(static_cast<long long>(nomes.size())));
+      return obra.fecha();
+    }
+    const Valor* qual = argumento(msg, "album", Typo::Texto);
+    if (qual == nullptr) return falta("album", "texto");
+    if (qual->texto.empty())
+      return erro("argumento_invalido", "o nome do album vem vazio");
+    // Os QUATRO vectores sahem PARALELOS e do mesmo comprimento, que é o
+    // «tamanho»: objecto dentro de objecto sae do subconjunto PLANO do jsonzinho.
+    std::vector<nucleo::Faixa> achadas;
+    if (livraria != nullptr)
+      achadas = livraria->faixas_do_album(quem->texto, qual->texto);
+    std::vector<long long> numeros, duracoes;
+    std::vector<std::string> titulos, caminhos;
+    for (const nucleo::Faixa& faixa : achadas) {
+      numeros.push_back(faixa.numero);
+      duracoes.push_back(faixa.duracao);
+      titulos.push_back(faixa.titulo);
+      caminhos.push_back(faixa.caminho);
+    }
+    Objecto obra = abre_acerto();
+    obra.par("corte", texto("faixas"));
+    obra.par("artista", texto(quem->texto));
+    obra.par("album", texto(qual->texto));
+    obra.par("numeros", vector_de_inteiros(numeros));
+    obra.par("titulos", vector_de_textos(titulos));
+    obra.par("caminhos", vector_de_textos(caminhos));
+    obra.par("duracoes", vector_de_inteiros(duracoes));
+    obra.par("tamanho", inteiro(static_cast<long long>(achadas.size())));
+    return obra.fecha();
   }
   if (verbo == "baixar")     return indisponivel("a fila de baixa");
 
