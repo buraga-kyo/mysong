@@ -295,6 +295,10 @@ DesfechoMB consulta_mb(const std::string& url, std::string* corpo) {
   curl_easy_setopt(punho, CURLOPT_WRITEDATA, corpo);
   curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(punho, CURLOPT_TIMEOUT, 15L);
+  // O SIGNAL cala-se: sem isto o resolvedor do curl arma alarm() e sae do
+  // tractador por longjmp, e n'um processo de mais de um fio o signal cae no fio
+  // errado. É opção DE PUNHO, e por isso repete-se em cada um dos tres.
+  curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(punho, CURLOPT_USERAGENT, kAgenteDoMB);
   const CURLcode desfecho = curl_easy_perform(punho);
   long estado = 0;
