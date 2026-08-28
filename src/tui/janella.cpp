@@ -774,6 +774,28 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Procura;
         termo_em_curso.clear();
         return true;
+      case tui::Verbo::TrocaFonte: {
+        // Troca-se OLHANDO a lista da rede, e sómente ahi: fóra d'ella o f diz
+        // onde o gesto vale, em vez de mudar estado que não está á vista.
+        if (navegador.secao() != tui::Secao::Rede) {
+          aviso_da_rede = "a fonte troca-se na secção da rede (s)";
+          return true;
+        }
+        bool ha_termo = false;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          fonte_da_busca = nucleo::proxima_fonte(fonte_da_busca);
+          ha_termo = !termo_da_rede.empty();
+        }
+        // Trocar de fonte NÃO apaga o termo: havendo um já buscado, re-busca-se
+        // o MESMO na fonte nova, que é o que dá as tres listas para comparar.
+        // Sem termo, muda só o cabeçalho, e busca alguma se dispara.
+        if (ha_termo) {
+          pede_buscar.store(true);
+          aviso_da_rede = "a perguntar á rede...";
+        }
+        return true;
+      }
       case tui::Verbo::AbreRois:
         navegador.mostra_rois();
         return true;
