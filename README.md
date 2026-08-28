@@ -252,7 +252,9 @@ variavel, em `~/.config/mysong/mysong.conf`.
 O programa LE esse arquivo e NUNCA o escreve: o commentario que o senhor puser
 la dentro nao morre. Arquivo ausente nao e erro, e nada se diz: valem os
 padroes. Ha um exemplo commentado em `exemplos/mysong.conf`, e o caminho de
-saber e copia-lo para o logar acima.
+saber e copia-lo para o logar acima: copiado tal e qual elle nao muda cousa
+alguma, que as linhas activas trazem os proprios padroes. O `~` nao se expande
+dentro do arquivo, e o caminho do acervo escreve-se inteiro.
 
 O formato e uma linha por ajuste, `chave = valor`. Linha vazia ignora-se, os
 brancos das pontas aparam-se e os do meio ficam, donde caminho com espaco vale
