@@ -266,8 +266,9 @@ TEST_CASE("achado meio não se mostra, e duração que não é numero não vira 
 
 // ── AS BANDEIRAS DO MOTOR (issue #55) ───────────────────────────────────────
 // Estas provas existem porque a falta d'estas bandeiras deixou a Casa sem colher
-// uma unica faixa. A prova afere as TRES chamadas juntas: quem tirar a bandeira de
-// bandeiras_do_motor derruba as tres, e é assim que se sabe que a guarda vive.
+// uma unica faixa. A prova afere as QUATRO chamadas juntas (a busca da musica
+// entrou com a issue #56): quem tirar a bandeira de bandeiras_do_motor derruba as
+// quatro, e é assim que se sabe que a guarda vive.
 
 namespace {
 
@@ -288,12 +289,13 @@ bool menciona(const std::vector<std::string>& ditos, const std::string& agulha) 
 
 }  // namespace
 
-TEST_CASE("as tres chamadas ao yt-dlp carregam o motor de JS") {
-  const std::vector<std::vector<std::string>> tres = {
+TEST_CASE("as quatro chamadas ao yt-dlp carregam o motor de JS") {
+  const std::vector<std::vector<std::string>> quatro = {
       nu::argumentos_da_sonda("https://exemplo/x"),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
-      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube)};
-  for (const std::vector<std::string>& ditos : tres) {
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube),
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTubeMusic)};
+  for (const std::vector<std::string>& ditos : quatro) {
     // O nome do programa continua a ser o primeiro: as bandeiras entram DEPOIS
     // d'elle, que ninguem corre `--js-runtimes` como se fosse executavel.
     CHECK(ditos.front() == "yt-dlp");
@@ -306,22 +308,24 @@ TEST_CASE("o cookie NAO entra sem que se peca") {
   // Esta é a prova que importa mais, e a razão é medida: com o cookie do chrome o
   // yt-dlp responde «The page needs to be reloaded.» a toda URL. Ligá-lo por
   // omissão seria trocar uma falha por outra.
-  const std::vector<std::vector<std::string>> tres = {
+  const std::vector<std::vector<std::string>> quatro = {
       nu::argumentos_da_sonda("https://exemplo/x"),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
-      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube)};
-  for (const std::vector<std::string>& ditos : tres) {
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube),
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTubeMusic)};
+  for (const std::vector<std::string>& ditos : quatro) {
     CHECK_FALSE(menciona(ditos, "--cookies-from-browser"));
     CHECK_FALSE(menciona(ditos, nu::kNavegadorDoCookie));
   }
 }
 
-TEST_CASE("o cookie entra nas tres quando se pede") {
-  const std::vector<std::vector<std::string>> tres = {
+TEST_CASE("o cookie entra nas quatro quando se pede") {
+  const std::vector<std::vector<std::string>> quatro = {
       nu::argumentos_da_sonda("https://exemplo/x", true),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T", true),
-      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube, true)};
-  for (const std::vector<std::string>& ditos : tres)
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube, true),
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTubeMusic, true)};
+  for (const std::vector<std::string>& ditos : quatro)
     CHECK(tem(ditos, "--cookies-from-browser", nu::kNavegadorDoCookie));
 }
 
