@@ -332,3 +332,12 @@ target_sources(mysong_core PRIVATE src/nucleo/linha.cpp)
 # systema de quem toca musica não tem que as carregar.
 include(GNUInstallDirs)
 install(TARGETS mysong RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+# ─── A PAGINA DE MANUAL (issue #66) ─────────────────────────────────────────
+# Escripta á mão em troff, e ferramenta nova alguma se cobra por ella. O
+# configure_file não a gera: substitue-lhe o numero na linha do .TH, para que a
+# versão que o manual annuncia não envelheça á parte da do binario.
+configure_file(installacao/mysong.1.in
+  "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1"
+  DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")

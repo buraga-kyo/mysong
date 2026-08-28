@@ -1,0 +1,38 @@
+.\" Pagina de manual do mysong, escripta a mao em troff. Ferramenta alguma a
+.\" gera: o CMake toca-lhe n'um logar so, que e o numero da linha do .TH.
+.TH MYSONG 1 "2026-08-28" "mysong @PROJECT_VERSION@" "Manual do operador"
+.SH NOME
+mysong \- tocador de musicas para o terminal
+.SH SYNOPSE
+.B mysong
+.RI [ opcao "]... [" faixa ]...
+.SH DESCRIPCAO
+O
+.B mysong
+e um tocador de musicas que mora na janella do terminal, gratuito e local:
+nao ha nuvem, nao ha conta e nao ha telemetria. A musica esta no disco de quem
+o corre, e a tela desenha-se com a estetica arrowline do RADICAL\-OS.
+.PP
+Ao arrancar elle SONDA os seus requisitos, e faltando a fonte com os glifos de
+seta pinta a tela das faltas, diz o que falta, e sahe sem erguer o tocador. A
+recusa e activa, e nao apenas politica.
+.SH OPCOES
+.TP
+.BR \-\-versao ", " \-\-version
+Escreve o nome e o numero, e sahe com zero. Escreve-o ainda que falte requisito
+que impeca o tocador de abrir, porque quem pergunta a versao nao esta a abrir
+o tocador.
+.TP
+.BR \-\-ajuda ", " \-\-help
+Escreve as opcoes que existem, e sahe com zero.
+.TP
+.B \-\-sonda
+Escreve o diagnostico dos requisitos, em texto puro e sem tela alguma, e sahe
+com codigo differente de zero havendo impedimento. Serve de guarda em script.
+.TP
+.B \-\-
+Encerra as opcoes: o que vier depois e caminho de faixa, ainda que principie
+por traco. Traco sozinho tambem e caminho.
+.PP
+Opcao que nao esteja nesta taboada e RECUSADA: a razao vae pelo stderr, e a
+sahida e 2. Opcao curta alguma existe, e escreve-se a longa.
