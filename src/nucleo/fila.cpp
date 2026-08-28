@@ -67,9 +67,24 @@ bool Fila::proxima() noexcept {
   return true;
 }
 
+// O passo para traz. «todas» envolve nos DOUS sentidos: no MPRIS este modo
+// chama-se Playlist, que é a lista a girar, e girar n'um sentido só faria o `p`
+// na primeira faixa recusar debaixo de um modo que promette giro.
+//
+// «uma» NÃO prende aqui, e é de proposito: a issue nomeou sómente o proxima(),
+// e deixar este livre dá ao operador a sahida do laço sem lhe mexer no modo.
 bool Fila::anterior() noexcept {
-  if (faixas_.empty() || indice_ == 0) return false;
-  --indice_;
+  if (faixas_.empty()) return false;
+  if (embaralhado_ && !ordem_.empty()) {
+    if (passo_ > 0) --passo_;
+    else if (repeticao_ == Repeticao::Todas) passo_ = ordem_.size() - 1;
+    else return false;
+    indice_ = ordem_[passo_];
+    return true;
+  }
+  if (indice_ > 0) { --indice_; return true; }
+  if (repeticao_ != Repeticao::Todas) return false;
+  indice_ = faixas_.size() - 1;
   return true;
 }
 
