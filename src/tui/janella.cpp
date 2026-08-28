@@ -293,6 +293,9 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
   pedido.album = lista;
   pedido.titulo = faixa.titulo;
   pedido.numero = faixa.numero;
+  // O id do track vae junto (issue #57): é por elle que o MusicBrainz acha a
+  // gravação exacta, e o album e o numero acima viram canonicos quando ella casa.
+  pedido.id_spotify = faixa.id_do_track;
   // Milesimos a segundos, arredondando ao mais proximo: truncar perderia meio segundo
   // em cada faixa, e a tolerancia do casamento é de doze.
   pedido.duracao = (faixa.duracao_ms + 500) / 1000;
