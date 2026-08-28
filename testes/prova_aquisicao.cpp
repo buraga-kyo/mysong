@@ -414,6 +414,47 @@ TEST_CASE("a fonte Spotify busca no YouTube, argumento por argumento") {
         nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube));
 }
 
+TEST_CASE("do achado da musica nasce a encommenda inteira, campo a campo") {
+  nu::Achado musica;
+  musica.titulo = "Karma Police (Remastered)";
+  musica.canal = "Radiohead";
+  musica.duracao = 264;
+  musica.url = "https://y/4";
+  musica.artista = "Radiohead";
+  musica.album = "OK Computer";
+  musica.faixa = "Karma Police";
+  musica.ano = 1997;
+  musica.fonte = nu::Fonte::YouTubeMusic;
+  const nu::Pedido pedido = nu::encommenda_do_achado(musica);
+  CHECK(pedido.url == "https://y/4");
+  CHECK(pedido.artista == "Radiohead");
+  CHECK(pedido.album == "OK Computer");
+  // O titulo que vae é o CANONICO, e não o do video com o Remastered no meio.
+  CHECK(pedido.titulo == "Karma Police");
+  CHECK(pedido.ano == 1997);
+  CHECK(pedido.fonte == nu::Fonte::YouTubeMusic);
+  // Com URL a duração fica de fóra: ella só criva o casamento do pedido sem URL.
+  CHECK(pedido.duracao == 0);
+  CHECK(pedido.numero == 0);
+}
+
+TEST_CASE("do achado comum nasce o pedido de hoje: URL, fonte, e mais nada") {
+  nu::Achado comum;
+  comum.titulo = "Bach | Toccata e Fuga";
+  comum.canal = "Canal do Orgao";
+  comum.duracao = 542;
+  comum.url = "https://y/1";
+  const nu::Pedido cru = nu::encommenda_do_achado(comum);
+  CHECK(cru.url == "https://y/1");
+  CHECK(cru.artista.empty());
+  CHECK(cru.album.empty());
+  CHECK(cru.titulo.empty());  // o titulo fica com a sonda, via resolve
+  CHECK(cru.ano == 0);
+  CHECK(cru.duracao == 0);
+  CHECK(cru.numero == 0);
+  CHECK(cru.fonte == nu::Fonte::YouTube);
+}
+
 TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
   const nu::Achado nada;
   CHECK(nada.artista.empty());
