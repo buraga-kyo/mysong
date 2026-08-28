@@ -332,6 +332,39 @@ TEST_CASE("a bibliotheca navega os tres cortes do índice") {
   CHECK(faixas.find('\n') == std::string::npos);
 }
 
+TEST_CASE("os quatro vectores da faixa sahem paralelos") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  const Cova cova;
+  cova.semeia();
+  const mysong::nucleo::Biblioteca livraria(cova.banco());
+  mysong::api::Arredores arredores;
+  arredores.livraria = &livraria;
+  const auto pergunta = [&](const std::string& linha) {
+    return mysong::api::responde(tocador, arredores, linha);
+  };
+  const Mensagem lida = analysa(pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"faixas\",\"artista\":\"Bach\","
+      "\"album\":\"Cantatas\"}"));
+  REQUIRE(lida.valida);
+  REQUIRE(lida.acha("numeros") != nullptr);
+  // Os quatro têm SEMPRE o mesmo comprimento, e elle é o «tamanho»: a posição i
+  // dos quatro é a mesma faixa, e é n'isso que o cliente de fóra se apoia.
+  REQUIRE(lida.acha("numeros")->numeros.size() == 2);
+  CHECK(lida.acha("duracoes")->numeros.size() == 2);
+  CHECK(lida.acha("titulos")->itens.size() == 2);
+  CHECK(lida.acha("caminhos")->itens.size() == 2);
+  CHECK(lida.acha("numeros")->numeros[0] == doctest::Approx(1.0));
+  CHECK(lida.acha("caminhos")->itens[0] == "/acervo/Aria.flac");
+
+  // Artista que não existe dá vector VAZIO e ok verdadeiro: no índice não ha
+  // artista sem album, donde as duas cousas são a mesma vistas de fóra.
+  const std::string ninguem = pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\",\"artista\":\"Ninguem\"}");
+  CHECK(campo(ninguem, "ok") == "true");
+  CHECK(campo(ninguem, "tamanho") == "0.000");
+}
+
 TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   MotorDuble duble;
   Tocador tocador(duble);
