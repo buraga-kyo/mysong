@@ -228,10 +228,11 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido);
 // respondeu; ahi a etiqueta fica como estava.
 bool sonda_url(const std::string& url, EtiquetaRemota* remota);
 
-// busca_no_youtube — pergunta ao yt-dlp. Vazio quando a rede não respondeu, ou quando
-// não ha achado: quem chama distingue-os pelo booleano.
-bool busca_no_youtube(const std::string& termo, int quantos,
-                      std::vector<Achado>* achados);
+// busca_na_rede — pergunta ao yt-dlp NA FONTE dita, e estampa-a nos achados: quem
+// os consome ha de saber de onde vieram sem perguntar á tela. Vazio quando a rede
+// não respondeu, ou quando não ha achado: quem chama distingue-os pelo booleano.
+bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
+                   std::vector<Achado>* achados);
 
 // baixa — o acto inteiro: resolve, monta o caminho, cria o directorio, chama o
 // yt-dlp, e escreve a etiqueta com a taglib. `gravado` recebe o caminho do

@@ -444,8 +444,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           termo = termo_da_rede;
         }
         std::vector<nucleo::Achado> achados;
-        const bool falou =
-            nucleo::busca_no_youtube(termo, ACHADOS_POR_BUSCA, &achados);
+        const bool falou = nucleo::busca_na_rede(
+            termo, nucleo::Fonte::YouTube, ACHADOS_POR_BUSCA, &achados);
         std::vector<tui::Linha> linhas;
         linhas.reserve(achados.size());
         for (const nucleo::Achado& achado : achados)

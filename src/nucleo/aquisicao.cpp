@@ -383,13 +383,17 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
   return eleito_com_titulo >= 0 ? eleito_com_titulo : eleito;
 }
 
-bool busca_no_youtube(const std::string& termo, int quantos,
-                      std::vector<Achado>* achados) {
+bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
+                   std::vector<Achado>* achados) {
   if (termo.empty()) return false;
   std::string colhido;
-  if (corre(argumentos_da_busca(termo, quantos, Fonte::YouTube), &colhido) != 0)
+  if (corre(argumentos_da_busca(termo, quantos, fonte), &colhido) != 0)
     return false;
-  if (achados != nullptr) *achados = le_achados(colhido);
+  if (achados == nullptr) return true;
+  *achados = le_achados(colhido);
+  // A FONTE estampa-se na volta, e não em le_achados: elle lê linhas, e as linhas
+  // não dizem de onde vieram.
+  for (Achado& achado : *achados) achado.fonte = fonte;
   return true;
 }
 
@@ -404,7 +408,10 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     const std::string termo = pedido.artista.empty()
                                   ? pedido.titulo
                                   : pedido.artista + " " + pedido.titulo;
-    if (!busca_no_youtube(termo, 10, &achados)) return Colheita::SemFerramenta;
+    // E busca-se na fonte do PROPRIO pedido (issue #56): quem pediu é quem sabe
+    // onde o audio d'elle se procura.
+    if (!busca_na_rede(termo, pedido.fonte, 10, &achados))
+      return Colheita::SemFerramenta;
     const int qual = melhor_achado(achados, pedido, TOLERANCIA_DO_CASAMENTO);
     if (qual < 0) return Colheita::Duvidosa;
     Pedido com_url = pedido;
