@@ -250,6 +250,30 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
   CHECK(campo(cheio, "tamanho") == "2.000");
 }
 
+TEST_CASE("o espectro responde as bandas, e diz em que escala ellas estao") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  const std::string resposta = fala(tocador, "{\"verbo\":\"espectro\"}");
+  CHECK(campo(resposta, "ok") == "true");
+  CHECK(campo(resposta, "escala") == "logarithmica");
+  CHECK(campo(resposta, "magnitude") == "decibeis");
+  CHECK(campo(resposta, "hertz_minimo") == "40.000");
+  CHECK(campo(resposta, "hertz_maximo") == "16000.000");
+  CHECK(campo(resposta, "piso_decibeis") == "-60.000");
+  CHECK(campo(resposta, "quantas") == "24.000");
+  // As bandas voltam a ENTRAR pelo nosso proprio leitor, e é por isso que se
+  // aferem por VALOR, em vez de se procurarem por texto dentro da resposta.
+  const Mensagem lida = analysa(resposta);
+  REQUIRE(lida.valida);
+  REQUIRE(lida.acha("bandas") != nullptr);
+  REQUIRE(lida.acha("bandas")->typo == Typo::Vector);
+  const std::vector<double>& bandas = lida.acha("bandas")->numeros;
+  CHECK(bandas.size() == mysong::nucleo::QUANTAS_BANDAS);
+  // Sem fonte de bandas o tocador dá zeros, e o silencio é resposta e não erro.
+  for (const double banda : bandas) CHECK(banda == doctest::Approx(0.0));
+  CHECK(resposta.find('\n') == std::string::npos);
+}
+
 // O passeio pela fila NÃO ha de tocar faixa alguma: anda-se na Fila, e não no
 // Tocador. Andar pelo Tocador faria soar duas faixas para listar dous nomes, e é
 // defeito que a prova de resultado não pegaria e a de CHAMADA pega.
