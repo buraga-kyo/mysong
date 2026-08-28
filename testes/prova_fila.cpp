@@ -142,3 +142,27 @@ TEST_CASE("todas dá a vista inteira, na ordem que o cliente definiu") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+
+// A issue #62 diz que a permutação NÃO se re-sorteia ao esgotar: com o repetir
+// em «todas», a segunda volta corre a MESMA ordem da primeira. É a differença
+// entre embaralhar uma vez e embaralhar a cada volta, e sem este caso ella
+// passaria calada, que as duas lavras se parecem em toda a primeira volta.
+TEST_CASE("esgotada, a permutação não se re-sorteia") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  fila.repetir(mysong::nucleo::Repeticao::Todas);
+  const std::vector<std::size_t> sorteada = fila.ordem();
+  REQUIRE(sorteada.size() == 5);
+  std::vector<std::size_t> primeira, segunda;
+  for (int volta = 0; volta < 5; ++volta) {
+    primeira.push_back(fila.indice());
+    REQUIRE(fila.proxima());
+  }
+  for (int volta = 0; volta < 5; ++volta) {
+    segunda.push_back(fila.indice());
+    REQUIRE(fila.proxima());
+  }
+  CHECK(primeira == sorteada);
+  CHECK(segunda == sorteada);
+  CHECK(fila.ordem() == sorteada);
+}
