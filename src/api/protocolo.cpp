@@ -27,6 +27,7 @@
 // adiante e não arrasta a fftw3 consigo, do mesmo modo que a prova da
 // mathematica já o inclue sem os directorios de inclusão d'ella.
 #include "nucleo/espectro.hpp"
+#include "nucleo/biblioteca.hpp"
 
 namespace mysong::api {
 namespace {
@@ -116,6 +117,11 @@ std::string falta(std::string_view nome, std::string_view typo) {
 }
 }  // namespace
 std::string responde(Tocador& tocador, std::string_view linha) {
+  return responde(tocador, Arredores{}, linha);
+}
+
+std::string responde(Tocador& tocador, const Arredores& arredores,
+                     std::string_view linha) {
   // Linha em branco não é pergunta e não é erro: nada se responde a ella. É o
   // UNICO caminho d'esta obra que devolve cadeia vazia, e é por isso que o
   // cliente que abra e feche sem falar não recebe erro algum.
@@ -228,7 +234,29 @@ std::string responde(Tocador& tocador, std::string_view linha) {
 
   // Os dous que faltam. O NOME existe e o subsystema tambem, donde a falta é
   // sómente d'esta instancia, e é isso que a resposta diz.
-  if (verbo == "biblioteca") return indisponivel("o indice do acervo");
+  // A BIBLIOTHECA (issue #8). O CORTE é obrigatorio: tres cortes, e mais nenhum.
+  // Deduzi-lo dos argumentos que viessem seria mais curto e falharia em
+  // SILENCIO, que é o que esta Casa prohibe: quem digitasse «artistaa» receberia
+  // a lista dos artistas com ok verdadeiro e nunca saberia que errou o nome.
+  // Índice ausente responde como índice VAZIO, e não como erro: é o que a
+  // Bibliotheca já faz com banco que não existe, e de fóra as duas são a mesma.
+  if (verbo == "biblioteca") {
+    const nucleo::Biblioteca* livraria = arredores.livraria;
+    const Valor* corte = argumento(msg, "corte", Typo::Texto);
+    if (corte == nullptr) return falta("corte", "texto");
+    if (corte->texto == "artistas") {
+      const std::vector<std::string> nomes =
+          livraria == nullptr ? std::vector<std::string>{} : livraria->artistas();
+      Objecto obra = abre_acerto();
+      obra.par("corte", texto("artistas"));
+      obra.par("artistas", vector_de_textos(nomes));
+      obra.par("tamanho", inteiro(static_cast<long long>(nomes.size())));
+      return obra.fecha();
+    }
+    return erro("argumento_invalido",
+                "o corte \"" + corte->texto +
+                    "\" nao existe: ha \"artistas\", \"albuns\" e \"faixas\"");
+  }
   if (verbo == "baixar")     return indisponivel("a fila de baixa");
 
   return erro("verbo_desconhecido",
