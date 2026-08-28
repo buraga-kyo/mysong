@@ -296,15 +296,17 @@ TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
 
   // Os tres nomes que a issue #65 honrou. Nenhum d'elles responde mais
   // «nao_implementado», e o emissor já nem sabe escrever essa palavra. Sem
-  // arredores, os dous que pedem peça do nucleo dizem «indisponivel»; o
-  // espectro responde as suas bandas, que o tocador as dá em zero sem fonte.
-  for (const char* verbo : {"biblioteca", "baixar"}) {
-    const std::string resposta =
-        fala(tocador, std::string("{\"verbo\":\"") + verbo + "\"}");
-    CHECK(campo(resposta, "erro") == "indisponivel");
-    CHECK_FALSE(campo(resposta, "razao").empty());
-  }
+  // arredores: o espectro responde as suas bandas, que o tocador as dá em zero
+  // sem fonte; a bibliotheca responde como índice vazio; e a baixa, que não tem
+  // como fingir fila, diz «indisponivel», que manda olhar quem ergueu o
+  // servidor. Tres respostas differentes, e nenhuma d'ellas silencio.
   CHECK(campo(fala(tocador, "{\"verbo\":\"espectro\"}"), "ok") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"biblioteca\",\"corte\":\"artistas\"}"),
+              "ok") == "true");
+  const std::string sem_fila =
+      fala(tocador, "{\"verbo\":\"baixar\",\"url\":\"https://ha.de/ser\"}");
+  CHECK(campo(sem_fila, "erro") == "indisponivel");
+  CHECK_FALSE(campo(sem_fila, "razao").empty());
 
   CHECK(campo(fala(tocador, "{\"verbo\":\"voar\"}"), "erro") == "verbo_desconhecido");
   CHECK(campo(fala(tocador, "{\"nada\":1}"), "erro") == "verbo_ausente");
