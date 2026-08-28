@@ -464,7 +464,16 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         std::string recado =
             !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
                    : (achados.empty() ? "nada se achou" : "achados na rede");
-        correio.poe(std::move(achados), std::move(recado));
+        // A resposta só se entrega se o pedido ainda for o VIGENTE: o operador
+        // pode ter trocado de fonte ou de termo com esta busca em voo, e a
+        // lista velha pousando por cima da nova ficaria a mentir sob um
+        // cabeçalho que já diz outra fonte.
+        bool vigente = false;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          vigente = termo == termo_da_rede && fonte == fonte_da_busca;
+        }
+        if (vigente) correio.poe(std::move(achados), std::move(recado));
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
