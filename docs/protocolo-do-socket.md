@@ -7,8 +7,14 @@
 **O que mudou da 1 para a 2**: dous verbos NOVOS, `embaralhar` e `repetir`, e dous
 campos NOVOS no retracto do `estado`, `embaralhado` e `repetir`. Campo algum dos
 velhos mudou de nome ou de typo, e verbo algum sahiu: cliente escripto contra a 1
-segue a funccionar contra a 2 sem lhe tocar uma letra. O que elle não vê são os
-dous modos novos, e é por isso que a versão sobe em vez de ficar onde estava.
+segue a funccionar contra a 2 sem lhe tocar uma letra.
+
+Uma cousa, porém, elle ha de saber, e é por ella que a versão sobe: com um dos
+modos ligado, **a borda do `proxima` e do `anterior` deixa de ser o ultimo e o
+primeiro assento**. Quem tenha chumbado essa borda no seu codigo leia a nota da
+secção 5, ao pé da taboa dos verbos que mandam. Quem a não tenha chumbado nada
+tem a fazer: os modos nascem desligados, e enquanto ninguem os ligar a fila é a
+crua de sempre.
 
 ## 1. Onde, e com que permissão
 
@@ -205,9 +211,25 @@ E a recusa, que tem a mesma forma para os seis:
 | `tocar` | Toca a faixa do assento corrente. | Fila vazia, ou o motor recusou o arquivo. |
 | `pausar` | Pausa. | Quando não está a tocar. |
 | `retomar` | Retoma. | Quando não está pausado. |
-| `proxima` | Anda para a frente **e toca**. | No ultimo assento. Ahi **nada** desce ao motor e a faixa em curso segue. |
-| `anterior` | Anda para tras **e toca**. | No primeiro assento, do mesmo modo. |
+| `proxima` | Anda para a frente **e toca**. | Na PONTA da passagem, e ver a nota abaixo: com o repetir em `nenhuma` e o embaralhar desligado, é o ultimo assento. Ahi **nada** desce ao motor e a faixa em curso segue. |
+| `anterior` | Anda para tras **e toca**. | Na outra ponta, do mesmo modo. |
 | `parar` | **Hoje PAUSA.** Ver a nota abaixo. | Quando não está a tocar. |
+
+> **Onde é a ponta depende dos dous modos, desde a versão 2.** A linha do
+> `proxima` acima descreve a fila crua, que é como ella nasce; ligados os modos,
+> a borda muda, e muda de tres maneiras:
+>
+> - com `repetir` em `todas`, **não ha recusa**: a ultima leva á primeira, e a
+>   primeira á ultima;
+> - com `repetir` em `uma`, o `proxima` **não recusa nunca**, e devolve `ok`
+>   sem andar: prende-se na faixa corrente, e ella recomeça. O `anterior`
+>   **não** se prende, e anda como sempre;
+> - com `embaralhar` ligado, a ponta é o fim da PERMUTAÇÃO, e não o ultimo
+>   assento da fila: a recusa chega n'um `indice` qualquer, e não no maior.
+>
+> Cliente que precise de saber onde está a ponta ha de ler `embaralhado` e
+> `repetir` do verbo `estado`. Cliente que os não leia continua a funccionar, e
+> vê a fila crua enquanto ninguem ligar modo algum.
 
 > **`parar` pausa, hoje, e digo-o em vez de o esconder.** O nucleo do `mysong` não tem
 > parada distincta da pausa, e alargar-lhe a interface não cabia nesta tarefa. O NOME
