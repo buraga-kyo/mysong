@@ -245,6 +245,11 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
       else tocador.volume(static_cast<int>(ordem.alvo));
       break;
     case tui::Verbo::Sahir: sahir.store(true); break;
+    // Os DOUS MODOS (issue #62). Alternar e ciclar são punhos do tocador, e não
+    // «ler o retracto e depois escrever»: entre a leitura e a escripta caberia o
+    // socket ou o barramento, e a tecla assentaria o contrario do que se viu.
+    case tui::Verbo::Embaralhar: tocador.alterna_embaralhar(); break;
+    case tui::Verbo::Repetir: tocador.cicla_repetir(); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
     // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.

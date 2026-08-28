@@ -51,8 +51,9 @@ TEST_CASE("as tres teclas de verbo simples chegam por si") {
 TEST_CASE("tecla sem officio dá ordem nenhuma") {
   const tui::Retracto retracto = tocando();
   // O `a` e o `P` sahiram d'esta lista na issue #10, que lhes deu officio: o `a`
-  // junta á lista, e o `P` abre as listas. Ficam as que ainda não têm nenhum.
-  for (const char letra : {'z', 'w', 'y', 'N', 'Q', '1', '*'})
+  // junta á lista, e o `P` abre as listas. O `z` sahiu na issue #62, que lhe deu
+  // o embaralhar. Ficam as que ainda não têm officio nenhum.
+  for (const char letra : {'w', 'y', 'N', 'Q', '1', '*'})
     CHECK(tui::ordem_da_tecla(ftxui::Event::Character(letra), retracto).verbo ==
           tui::Verbo::Nada);
   CHECK(tui::ordem_da_tecla(ftxui::Event::Tab, retracto).verbo ==
