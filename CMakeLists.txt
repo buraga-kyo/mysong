@@ -7,8 +7,9 @@
 #                   executavel) e mysong_testes (a bateria de provas).
 # INVARIANTE ...... os avisos -Wall -Wextra incidem SO nos alvos desta Casa, por
 #                   target_compile_options e nunca por flag global: terceiros
-#                   entram como SYSTEM e calam-se. Toda dependencia de
-#                   FetchContent vem presa a ETIQUETA fixa, jamais a um ramo.
+#                   entram como SYSTEM e calam-se. E o aviso RECUSA: a opcao
+#                   MYSONG_WERROR traz o -Werror e vem ligada. Toda dependencia
+#                   de FetchContent vem presa a ETIQUETA fixa, jamais a um ramo.
 # Q.E.D. .......... quem clona e roda os dois commandos do README obtem o mesmo
 #                   binario que o auctor. Duas classes de dependencia, e a
 #                   fronteira e firme: as de INTERFACE e de PROVA (FTXUI,
@@ -25,6 +26,25 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(MYSONG_AVISOS -Wall -Wextra)  # avisos desta Casa, num só lugar
+
+# ─── O GATE DA COMPILAÇÃO (issue #64) ───────────────────────────────────────
+# O aviso desta Casa passa a valer por RECUSA. Até aqui o -Wall -Wextra pedia e
+# não cobrava: quem esquecesse um ramo de switch novo via um aviso que a rolagem
+# come, e a guarda de compilação era política humana em vez de gate.
+#
+# Entra na LISTA acima, e nunca em CMAKE_CXX_FLAGS. A lista só existe expandida
+# dentro do target_compile_options de cada alvo d'esta Casa, e por isso a
+# bandeira sahe NOS ALVOS: o FTXUI e o doctest vem por FetchContent, e regra
+# d'esta Casa não julga obra alheia. Alvo novo que siga o costume herda o gate
+# sem que ninguém se lembre d'elle, que é o que dez linhas repetidas não dão.
+#
+# LIGADA por omissão. A opção não existe para se desligar no dia a dia: existe
+# para o dia em que compilador ou versão nova traga aviso inédito, que nesse dia
+# a obra compila-se com -DMYSONG_WERROR=OFF em vez de ficar sem se compilar.
+option(MYSONG_WERROR "O aviso desta Casa vale por erro" ON)
+if(MYSONG_WERROR)
+  list(APPEND MYSONG_AVISOS -Werror)
+endif()
 
 include(FetchContent)
 
