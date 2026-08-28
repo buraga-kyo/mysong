@@ -228,26 +228,13 @@ E a recusa, que tem a mesma forma para os seis:
 |---|---|---|
 | `porcento` | inteiro | De 0 a 100. Fóra d'ahi **apara-se**, e a resposta diz o valor aparado: quem manda 150 lê 100. É o volume do MOTOR, e nunca o do systema. |
 
-## 6. Os verbos RESERVADOS
+## 6. Os verbos que a versão 1 reservava
 
-Estes tres nomes **existem** no protocolo e o seu subsystema **ainda não chegou**.
-Respondem sempre `nao_implementado`, com a issue que os trará:
-
-```
-→ {"verbo":"espectro"}
-← {"ok":false,"erro":"nao_implementado","razao":"o verbo \"espectro\" esta reservado e o seu subsystema ainda nao existe","issue":5}
-```
-
-| Verbo | Para que ha de servir | Issue |
-|---|---|---|
-| `espectro` | Ler as bandas do espectro. | 5 |
-| `biblioteca` | Navegar a bibliotheca de músicas. | 8 |
-| `baixar` | Disparar um download. | 11 |
-
-Estão reservados de proposito, e não deixados fóra. Deixados fóra, dariam
-`verbo_desconhecido`, que é a MESMA resposta de um erro de digitação, e ahi quem
-escreve o cliente não saberia se errou o nome ou se a feição não chegou. Pode codar
-contra estes nomes hoje: quando a feição chegar, o nome não muda.
+Na versão 1 estes tres nomes existiam e respondiam `nao_implementado`, com a issue
+que os traria; e este documento dizia que se podia codar contra elles porque,
+chegando a feição, o nome não mudaria. As tres issues fecharam. A versão 2 cumpre o
+promettido: **os nomes são os mesmos**, e quem escreveu cliente contra elles não
+muda uma letra, sómente passa a receber resposta em logar de recusa.
 
 ## 7. As bordas
 
