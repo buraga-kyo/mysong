@@ -220,3 +220,31 @@ TEST_CASE("os dous modos respondem em fila vazia e em fila de uma faixa") {
   CHECK(uma.anterior());
   CHECK(uma.indice() == 0);
 }
+
+// A faixa juntada DURANTE o embaralhado entra no fim da permutação, e a
+// permutação não se re-sorteia. Sem este caso, ordem_ e faixas_ podiam sahir de
+// synchronia e o indice apontaria para assento que não ha.
+TEST_CASE("juntar durante o embaralhado conserva a permutação inteira") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  fila.junta("f.wav");
+  REQUIRE(fila.ordem().size() == 6);
+  std::vector<std::size_t> visitados = passeio(fila);
+  CHECK(visitados.size() == 6);
+  CHECK(visitados.back() == 5);  // a que chegou depois toca por ultimo
+  std::sort(visitados.begin(), visitados.end());
+  const std::vector<std::size_t> todos = {0, 1, 2, 3, 4, 5};
+  CHECK(visitados == todos);
+}
+
+// Os dous modos são INDEPENDENTES: «uma» prende mesmo com o embaralhado ligado.
+TEST_CASE("os dous modos não se atropelam") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  fila.repetir(Repeticao::Uma);
+  const std::size_t assento = fila.indice();
+  CHECK(fila.proxima());
+  CHECK(fila.indice() == assento);
+  CHECK(fila.embaralhado());
+  CHECK(fila.repeticao() == Repeticao::Uma);
+}
