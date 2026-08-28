@@ -9,6 +9,9 @@
 
 #include <string_view>
 
+#include "nucleo/marca.hpp"
+#include "nucleo/versao.hpp"
+
 namespace mysong::nucleo {
 namespace {
 
@@ -41,6 +44,33 @@ Invocacao ler_linha(int argc, const char* const* argv) {
   else if (quer_versao) invocacao.modo = Modo::Versao;
   else if (quer_sonda) invocacao.modo = Modo::Sonda;
   return invocacao;
+}
+
+// O nome e o numero, e mais nada: quem pergunta a versão costuma perguntal-a
+// de dentro de um script, e linha de enfeite ali é linha a mais para cortar.
+std::string texto_da_versao() {
+  return std::string(marca()) + " " + std::string(versao()) + "\n";
+}
+
+// Texto PELADO, de linhas curtas: sem quadro, sem columna e sem glifo de Nerd
+// Font. Assim o terminal estreito o reflue sem partir cousa alguma, e a ajuda
+// se lê tambem na machina crua, onde o tocador nem chegaria a abrir.
+std::string texto_da_ajuda() {
+  return R"(mysong, tocador de musicas para o terminal.
+
+Uso: mysong [opcao]... [faixa]...
+
+  --versao, --version   diz o nome e o numero, e sahe
+  --ajuda, --help       escreve estas linhas, e sahe
+  --sonda               so o diagnostico dos requisitos, em texto
+  --                    encerra as opcoes; o que vem depois e caminho de
+                        faixa, ainda que principie por traco
+
+Sem faixa alguma, abre com a fila vazia. Opcao que nao esteja nesta
+taboada e recusada, e a sahida vae differente de zero.
+
+O manual inteiro: man mysong
+)";
 }
 
 }  // namespace mysong::nucleo
