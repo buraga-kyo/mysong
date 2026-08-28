@@ -132,3 +132,29 @@ TEST_CASE("o ambiente vale crú, e o acervo do arquivo afere-se") {
   CHECK(cru.acervo.origem == nu::Origem::Ambiente);
   CHECK(cru.queixas.size() == 1);
 }
+
+TEST_CASE("o diagnostico diz a origem de cada ajuste, sem escape algum") {
+  nu::Degraus degraus;
+  degraus.acervo_do_ambiente = "/do-ambiente";
+  nu::Ajustes ajustes = resolvido(
+      "volume = 70\nfonte_da_busca = spotify\nchave_velha = 1\n", degraus);
+  ajustes.arquivo = "/tmp/x/mysong.conf";
+  ajustes.estado = nu::EstadoDoArquivo::Lido;
+  const std::string texto = nu::texto_dos_ajustes(ajustes);
+  CHECK(texto.find("/do-ambiente") != std::string::npos);
+  CHECK(texto.find("(ambiente)") != std::string::npos);
+  CHECK(texto.find("(arquivo)") != std::string::npos);
+  CHECK(texto.find("spotify") != std::string::npos);
+  CHECK(texto.find("baixas_simultaneas") != std::string::npos);
+  CHECK(texto.find("(padrão)") != std::string::npos);
+  CHECK(texto.find("/tmp/x/mysong.conf (lido)") != std::string::npos);
+  CHECK(texto.find("chave desconhecida") != std::string::npos);
+  CHECK(texto.find('\x1b') == std::string::npos);
+}
+
+TEST_CASE("sem queixa não ha secção de queixas, e o ausente diz-se") {
+  const nu::Ajustes ajustes = resolvido("volume = 70\n", {});
+  const std::string texto = nu::texto_dos_ajustes(ajustes);
+  CHECK(texto.find("queixas") == std::string::npos);
+  CHECK(texto.find("(ausente, e valem os padrões)") != std::string::npos);
+}
