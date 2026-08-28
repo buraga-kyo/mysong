@@ -286,11 +286,11 @@ void espera_a_vez_do_mb() {
   ultima = std::chrono::steady_clock::now();
 }
 
-bool consulta_mb(const std::string& url, std::string* corpo) {
-  if (url.empty() || corpo == nullptr) return false;
+DesfechoMB consulta_mb(const std::string& url, std::string* corpo) {
+  if (url.empty() || corpo == nullptr) return DesfechoMB::Falhou;
   espera_a_vez_do_mb();
   CURL* punho = curl_easy_init();
-  if (punho == nullptr) return false;
+  if (punho == nullptr) return DesfechoMB::Falhou;
   curl_easy_setopt(punho, CURLOPT_URL, url.c_str());
   curl_easy_setopt(punho, CURLOPT_WRITEFUNCTION, recolhe);
   curl_easy_setopt(punho, CURLOPT_WRITEDATA, corpo);
@@ -301,10 +301,7 @@ bool consulta_mb(const std::string& url, std::string* corpo) {
   long estado = 0;
   curl_easy_getinfo(punho, CURLINFO_RESPONSE_CODE, &estado);
   curl_easy_cleanup(punho);
-  // Sómente o 2xx se lê. O 404 é «não temos» e o 503 é «devagar»: ambos mandam
-  // quem chama ao caminho seguinte, e NENHUM se re-tenta aqui, que uma fila de
-  // faixas re-tentando amplificaria a rajada que o acelerador impede.
-  return desfecho == CURLE_OK && estado >= 200 && estado < 300;
+  return desfecho_da_resposta(static_cast<int>(desfecho), estado);
 }
 
 bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
@@ -318,18 +315,20 @@ bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
   std::string mbid;
   if (!id_spotify.empty()) {
     std::string corpo;
-    if (consulta_mb(url_da_consulta_pelo_link(id_spotify), &corpo))
+    if (consulta_mb(url_da_consulta_pelo_link(id_spotify), &corpo) ==
+        DesfechoMB::Achado)
       mbid = le_gravacao_da_url(corpo);
   }
   if (mbid.empty() && !titulo.empty()) {
     std::string corpo;
     if (consulta_mb(url_da_consulta_pela_busca(artista, titulo, duracao_ms),
-                    &corpo))
+                    &corpo) == DesfechoMB::Achado)
       mbid = le_eleita_da_busca(corpo, duracao_ms);
   }
   if (mbid.empty()) return false;
   std::string corpo;
-  if (!consulta_mb(url_da_ficha(mbid), &corpo)) return false;
+  if (consulta_mb(url_da_ficha(mbid), &corpo) != DesfechoMB::Achado)
+    return false;
   FichaMB lida = le_ficha_da_gravacao(corpo);
   if (lida.titulo.empty()) return false;  // ficha sem titulo não é gravação
   if (ficha != nullptr) *ficha = std::move(lida);

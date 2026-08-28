@@ -113,9 +113,9 @@ enum class DesfechoMB {
 DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
 
 // consulta_mb — pede a URL com o agente da obra, passando pelo acelerador, e
-// enche o corpo. Verdadeiro sómente no 2xx: o 404 («não temos») e o 503
-// («devagar») são falso sem re-tento, e mandam ao caminho seguinte.
-bool consulta_mb(const std::string& url, std::string* corpo);
+// enche o corpo. Re-tento algum se faz aqui: uma fila de faixas a re-tentar
+// amplificaria a rajada que o acelerador impede.
+DesfechoMB consulta_mb(const std::string& url, std::string* corpo);
 
 // resolve_gravacao — a resolução inteira: pelo link do track quando o ha, pela
 // busca quando não; e a ficha da gravação eleita. Duração em MILESIMOS, como o
