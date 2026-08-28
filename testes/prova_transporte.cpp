@@ -212,11 +212,18 @@ TEST_CASE("não cabendo, os dous modos cedem o logar inteiros") {
   posto.repeticao = nu::Repeticao::Nenhuma;
   CHECK(a_linha_pintada(posto, 51).find("emb") == std::string::npos);
   CHECK(a_linha_pintada(posto, 52).find("emb") != std::string::npos);
-  // E em largura alguma a linha transborda, nem sobra: a conta do reservado é
-  // em std::size_t, e subtracção guardada é o que a impede de dar numero enorme.
+  // E em TODA largura o segmento sae INTEIRO ou não sae: fragmento como «emb r»
+  // é o que a guarda proscreve, e era o que a obra fazia antes d'ella. Afere-se
+  // o CONTEUDO, e não a contagem de codepoints: o écran de papel preenche sempre
+  // a largura que se lhe pediu, donde essa contagem é egual por construcção e
+  // não pode falhar. É a mesma nota que está lá em cima, no primeiro caso.
+  posto.repeticao = nu::Repeticao::Todas;
   for (std::size_t largura = 1; largura <= 200; ++largura) {
-    posto.repeticao = nu::Repeticao::Todas;
-    REQUIRE(codepoints(a_linha_pintada(posto, largura)) == largura);
+    const std::string linha = a_linha_pintada(posto, largura);
+    const bool inteiro = linha.find("emb rep todas") != std::string::npos;
+    const bool nenhum = linha.find("emb") == std::string::npos &&
+                        linha.find("rep") == std::string::npos;
+    REQUIRE_MESSAGE((inteiro || nenhum), "o segmento sahiu partido em ", largura);
   }
 }
 
