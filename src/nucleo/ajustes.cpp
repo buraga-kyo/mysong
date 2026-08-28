@@ -171,13 +171,18 @@ std::optional<std::size_t> baixas_de(std::string_view texto) {
 // que faz a chave repetida valer a ultima, sem regra propria para isso: a
 // segunda occorrencia sobrescreve a primeira, e é tudo.
 Ajustes resolver(const Degraus& degraus,
-                 const std::filesystem::path& padrao_do_acervo) {
+                 const std::filesystem::path& padrao_do_acervo,
+                 const Aferidor& ha_directorio) {
   Ajustes ajustes;
   ajustes.acervo = {padrao_do_acervo, Origem::Padrao};
   for (const Par& par : degraus.arquivo) {
     const std::string onde = "linha " + std::to_string(par.linha) + ": ";
     if (par.chave == "acervo") {
-      ajustes.acervo = {std::filesystem::path(par.valor), Origem::Arquivo};
+      if (ha_directorio(par.valor))
+        ajustes.acervo = {std::filesystem::path(par.valor), Origem::Arquivo};
+      else
+        ajustes.queixa(onde + "acervo «" + par.valor +
+                       "» não é directorio que exista; vale o de baixo");
     } else if (par.chave == "volume") {
       if (const auto numero = volume_de(par.valor))
         ajustes.volume = {*numero, Origem::Arquivo};
@@ -199,6 +204,23 @@ Ajustes resolver(const Degraus& degraus,
     } else {
       ajustes.queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
     }
+  }
+  // O AMBIENTE, e vae CRÚ: quem poz a variavel no perfil do shell manda, e o
+  // programa não julga o caminho d'ella. Aferil-a mudaria o acervo debaixo dos
+  // pés de quem aponta para monte de rede que ainda não montou, e a variavel
+  // existe justamente para esse caso.
+  if (degraus.acervo_do_ambiente)
+    ajustes.acervo = {std::filesystem::path(*degraus.acervo_do_ambiente),
+                      Origem::Ambiente};
+  // O ARGUMENTO, que é o degrau de cima, e este AFERE-SE: quem o digita está a
+  // olhar para a tela agora, e ha de saber já que errou o caminho.
+  if (degraus.acervo_do_argumento) {
+    if (ha_directorio(*degraus.acervo_do_argumento))
+      ajustes.acervo = {std::filesystem::path(*degraus.acervo_do_argumento),
+                        Origem::Argumento};
+    else
+      ajustes.queixa("--acervo «" + *degraus.acervo_do_argumento +
+                     "» não é directorio que exista; vale o de baixo");
   }
   return ajustes;
 }

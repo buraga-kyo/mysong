@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -125,9 +126,16 @@ struct Degraus {
   std::vector<Par> arquivo;
 };
 
+// O AFERIDOR do acervo: a pergunta «isto é directorio que existe?», que entra
+// por parametro e não por chamada directa, pela razão do Inquerito da sonda. É
+// ella que conserva o resolvedor puro quanto ao mundo, e que deixa a bateria
+// provar o caminho da recusa sem creçar directorio algum em disco.
+using Aferidor = std::function<bool(const std::filesystem::path&)>;
+
 // resolver — a ESCADA. Puro quanto ao mundo: não abre arquivo, não lê ambiente.
 Ajustes resolver(const Degraus& degraus,
-                 const std::filesystem::path& padrao_do_acervo);
+                 const std::filesystem::path& padrao_do_acervo,
+                 const Aferidor& ha_directorio);
 
 }  // namespace mysong::nucleo
 
