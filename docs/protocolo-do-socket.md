@@ -1,8 +1,14 @@
 # O protocolo do socket de commando do `mysong`
 
-> **Versão do protocolo: 1.** Este documento é CONTRACTO com quem escrever o outro
+> **Versão do protocolo: 2.** Este documento é CONTRACTO com quem escrever o outro
 > lado. Foi escripto para que se implemente um cliente sem perguntar nada a ninguem,
 > e todo exemplo aqui foi copiado verbatim de uma corrida de verdade.
+
+**O que mudou da 1 para a 2**: dous verbos NOVOS, `embaralhar` e `repetir`, e dous
+campos NOVOS no retracto do `estado`, `embaralhado` e `repetir`. Campo algum dos
+velhos mudou de nome ou de typo, e verbo algum sahiu: cliente escripto contra a 1
+segue a funccionar contra a 2 sem lhe tocar uma letra. O que elle não vê são os
+dous modos novos, e é por isso que a versão sobe em vez de ficar onde estava.
 
 ## 1. Onde, e com que permissão
 
@@ -86,23 +92,23 @@ Devolve o contracto, para que o cliente o possa exigir antes de confiar.
 
 ```
 → {"verbo":"versao"}
-← {"ok":true,"obra":"mysong","protocolo":1}
+← {"ok":true,"obra":"mysong","protocolo":2}
 ```
 
 | Campo | Typo | |
 |---|---|---|
 | `obra` | texto | Sempre `"mysong"`. |
-| `protocolo` | inteiro | A versão d'este documento. |
+| `protocolo` | inteiro | A versão d'este documento. Hoje 2. |
 
 ### `estado`
 
-O retracto inteiro, num instante só. **Os sete campos vêm sempre**, e é de proposito:
+O retracto inteiro, num instante só. **Os nove campos vêm sempre**, e é de proposito:
 cliente que tenha de perguntar duas vezes para armar uma tela veria a segunda resposta
 não casar com a primeira, porque entre as duas o mundo andou.
 
 ```
 → {"verbo":"estado"}
-← {"ok":true,"estado":"Tocando","faixa":"/tmp/pa-s1-prova/01 - Canção 音楽.wav","posicao":1.275,"duracao":20.000,"volume":100,"indice":0,"tamanho":3}
+← {"ok":true,"estado":"Tocando","faixa":"/tmp/pa-s1-prova/01 - Canção 音楽.wav","posicao":0.780,"duracao":20.000,"volume":100,"indice":0,"tamanho":3,"embaralhado":false,"repetir":"nenhuma"}
 ```
 
 | Campo | Typo | |
@@ -114,6 +120,8 @@ não casar com a primeira, porque entre as duas o mundo andou.
 | `volume` | inteiro | De 0 a 100. É o volume do MOTOR, e nunca o do systema. |
 | `indice` | inteiro | O assento da faixa corrente na fila, contado de zero. |
 | `tamanho` | inteiro | Quantas faixas ha na fila. |
+| `embaralhado` | booleano | `true` quando a fila anda por permutação. Ver o verbo `embaralhar`. |
+| `repetir` | texto | `"nenhuma"`, `"uma"` ou `"todas"`. Ver o verbo `repetir`. |
 
 ### `fila`
 
