@@ -2,7 +2,7 @@
 //   TRACTADO DA PROVA DA API, BANDA PURA — testes/prova_api.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o jsonzinho e o protocolo em MACHINA SURDA: sem socket, sem barramento,
-// sem placa de som e sem arquivo em disco. É onde treze verbos e todo o
+// sem placa de som e sem arquivo em disco. É onde dezeseis verbos e todo o
 // enquadramento se provam de graça; o que de facto precisa de socket mora em
 // prova_api_viva.cpp, e são cinco casos, não trinta.
 //
@@ -175,7 +175,7 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
   MotorDuble duble;
   Tocador tocador(duble);
 
-  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "1.000");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "2.000");
   CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "obra") == "mysong");
 
   // Fila vazia é retracto legitimo, e não erro.
