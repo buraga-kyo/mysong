@@ -152,8 +152,19 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   if (api::numero_de_chave(corpo, "length", &valor))
     ficha.duracao_ms = static_cast<int>(valor);
   ficha.isrcs = api::textos_do_arranjo(api::recorta_arranjo(corpo, "isrcs"));
+  // O credito do artista lê-se com as releases EXCISADAS do corpo. O recorte
+  // acha a PRIMEIRA chave do texto, em qualquer fundo; o MB serializa as chaves
+  // em ordem que muda de resposta para resposta (medido: as releases á frente);
+  // e cada release tras o credito PROPRIO, que n'uma compilação é «Various
+  // Artists» e não o artista da gravação. Sem a excisão, o artista sahia da
+  // sorte da ordem.
+  const std::string releases = api::recorta_arranjo(corpo, "releases");
+  std::string sem_releases(corpo);
+  const std::size_t onde =
+      releases.empty() ? std::string::npos : sem_releases.find(releases);
+  if (onde != std::string::npos) sem_releases.erase(onde, releases.size());
   const std::vector<std::string> creditos =
-      api::objectos_do_arranjo(api::recorta_arranjo(corpo, "artist-credit"));
+      api::objectos_do_arranjo(api::recorta_arranjo(sem_releases, "artist-credit"));
   if (!creditos.empty()) ficha.artista = api::texto_de_chave(creditos[0], "name");
 
   // A RELEASE CANONICA (RULINGS R4): Official, de grupo «Album» SEM typo
@@ -162,8 +173,7 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   // gravação de 1987: sem a regra inteira, a mais antiga crua é um single de
   // sete pollegadas, e o «Album» mais antigo cru é uma compilação.
   std::string eleita, data_da_eleita, qualquer, data_de_qualquer;
-  for (const std::string& release :
-       api::objectos_do_arranjo(api::recorta_arranjo(corpo, "releases"))) {
+  for (const std::string& release : api::objectos_do_arranjo(releases)) {
     const std::string data = api::texto_de_chave(release, "date");
     const std::string chave = data.empty() ? "9999" : data;  // sem data perde
     const std::string grupo = api::recorta_objecto(release, "release-group");
