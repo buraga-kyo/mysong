@@ -299,3 +299,8 @@ target_link_libraries(espia_catalogo PRIVATE mysong_core)
 add_executable(espia_musicbrainz exemplos/espia_musicbrainz.cpp)
 target_compile_options(espia_musicbrainz PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
+
+# ─── OS AJUSTES DO OPERADOR (issue #67) ─────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Dependencia
+# nova alguma se cobra: o arquivo lê-se por ifstream.
+target_sources(mysong_core PRIVATE src/nucleo/ajustes.cpp)
