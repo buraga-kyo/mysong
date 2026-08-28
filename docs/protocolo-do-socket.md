@@ -1,8 +1,14 @@
 # O protocolo do socket de commando do `mysong`
 
-> **Versão do protocolo: 1.** Este documento é CONTRACTO com quem escrever o outro
+> **Versão do protocolo: 2.** Este documento é CONTRACTO com quem escrever o outro
 > lado. Foi escripto para que se implemente um cliente sem perguntar nada a ninguem,
 > e todo exemplo aqui foi copiado verbatim de uma corrida de verdade.
+>
+> **O que a 2 mudou da 1**: os verbos `espectro`, `biblioteca` e `baixar` deixaram
+> de ser reservados e passaram a responder de verdade (secção 6); o codigo de erro
+> `nao_implementado` sahiu da taboada, porque verbo algum o pode produzir; e entrou
+> `indisponivel`, para a peça que existe na obra e que a instancia não ergueu.
+> Verbo algum mudou de nome, e resposta alguma perdeu campo.
 
 ## 1. Onde, e com que permissão
 
@@ -68,15 +74,15 @@ protocolo suba. Não ramifique pela `razao`.
 | `json_malformado` | A linha não é um objecto JSON do subconjunto que se aceita. | A linha que se mandou. |
 | `verbo_ausente` | Falta a chave `verbo`, ou ella não é texto. | A mensagem. |
 | `verbo_desconhecido` | O `verbo` não existe neste protocolo. | O nome que se digitou. |
-| `nao_implementado` | O verbo EXISTE e está reservado; o seu subsystema ainda não chegou. Vem com a chave `issue`. | A issue que a resposta nomeia. |
+| `indisponivel` | O verbo existe e o seu subsystema tambem; ESTA instancia do servidor não o ergueu. | Quem ergueu o servidor. |
 | `argumento_invalido` | Um argumento falta, é do typo errado, ou está fóra de faixa. | A mensagem. |
-| `recusado` | O nucleo disse não a uma ordem legitima (pausar o que está parado, `proxima` na borda da fila). | O ESTADO do tocador. |
+| `recusado` | O nucleo disse não a uma ordem legitima (pausar o que está parado, `proxima` na borda da fila, `baixar` com a fila de baixa cheia). | O ESTADO do nucleo. |
 | `linha_longa` | A linha passou de 64 KiB sem terminar em `\n`. A connexão fecha-se. | O cliente. |
 | `lotado` | Ha 16 clientes ao mesmo tempo. A connexão fecha-se depois d'esta resposta. | Tente outra vez. |
 
 A differença entre `recusado` e `argumento_invalido` importa, e é d'esta taboa que
-ella se lê: `recusado` manda olhar o estado do tocador, `argumento_invalido` manda
-olhar a mensagem que se escreveu.
+ella se lê: `recusado` manda olhar o estado do nucleo (o do tocador, ou o da fila
+de baixa), `argumento_invalido` manda olhar a mensagem que se escreveu.
 
 ## 4. Os verbos de leitura
 
