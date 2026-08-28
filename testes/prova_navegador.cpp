@@ -299,11 +299,16 @@ TEST_CASE("a rolagem rola o menos que baste, e não perde a posição") {
 // A unica cujas linhas não vêm da bibliotheca. Os casos abaixo guardam a fronteira
 // entre ella e o acervo, que é o que impede uma URL de cahir na fila do motor.
 
-// achado — uma linha da rede, como mostra_rede a recebe: o titulo por texto, a URL
-// por chave, o canal por autor.
-tui::Linha achado(const std::string& titulo, const std::string& canal,
+// achado — um achado da busca comum, como mostra_rede o recebe (issue #56): sem
+// os campos da musica, donde o texto sahe do titulo e o autor do canal.
+nu::Achado achado(const std::string& titulo, const std::string& canal,
                   int duracao, const std::string& url) {
-  return {titulo, url, 0, duracao, canal};
+  nu::Achado feito;
+  feito.titulo = titulo;
+  feito.canal = canal;
+  feito.duracao = duracao;
+  feito.url = url;
+  return feito;
 }
 
 TEST_CASE("a rede põe linhas de fóra na tela, e a URL não é caminho") {
@@ -319,16 +324,16 @@ TEST_CASE("a rede põe linhas de fóra na tela, e a URL não é caminho") {
   CHECK(navegador.vista()[0].texto == "Toccata");
   CHECK(navegador.vista()[0].autor == "Canal A");
   CHECK(navegador.vista()[0].duracao == 542);
-  CHECK(navegador.url_eleita() == "https://y/1");
+  CHECK(navegador.achado_eleito().url == "https://y/1");
   // A FRONTEIRA: caminho_eleito é vazio na rede. Se elle devolvesse a URL, a
   // janella enfileirava-a no motor e o mpv tentava tocar um endereço por arquivo.
   CHECK(navegador.caminho_eleito().empty());
-  // E entrar n'um achado não desce degrau algum: quem chama pede a url_eleita.
+  // E entrar n'um achado não desce degrau algum: quem chama pede o achado eleito.
   CHECK_FALSE(navegador.entra());
   CHECK(navegador.secao() == tui::Secao::Rede);
 
   navegador.desce();
-  CHECK(navegador.url_eleita() == "https://y/2");
+  CHECK(navegador.achado_eleito().url == "https://y/2");
 }
 
 TEST_CASE("fóra da rede não ha URL eleita, e o filtro corta os achados") {
@@ -337,9 +342,9 @@ TEST_CASE("fóra da rede não ha URL eleita, e o filtro corta os achados") {
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
 
-  // Em Artistas, url_eleita é vazia ainda que haja linha eleita.
+  // Em Artistas não ha achado, ainda que haja linha eleita.
   REQUIRE_FALSE(navegador.vista().empty());
-  CHECK(navegador.url_eleita().empty());
+  CHECK_FALSE(navegador.ha_achado());
 
   navegador.mostra_rede({achado("Toccata em Re", "A", 1, "https://y/1"),
                          achado("Fuga em Sol", "B", 2, "https://y/2"),
@@ -348,6 +353,10 @@ TEST_CASE("fóra da rede não ha URL eleita, e o filtro corta os achados") {
   REQUIRE(navegador.vista().size() == 2);
   CHECK(navegador.vista()[0].texto == "Toccata em Re");
   CHECK(navegador.vista()[1].texto == "Toccata em Do");
+  // O ACHADO eleito segue o filtro pelo origem, e não pelo indice da vista: a
+  // segunda linha filtrada é o TERCEIRO achado, e é o d'elle que a URL sahe.
+  navegador.desce();
+  CHECK(navegador.achado_eleito().url == "https://y/3");
   // O filtro corta a VISTA e não a fonte: limpando-o, os tres voltam.
   navegador.filtra("");
   CHECK(navegador.vista().size() == 3);
@@ -372,7 +381,7 @@ TEST_CASE("recarregar na rede não mexe na vista, e voltar sahe da secção") {
   // Voltando, a vista é o ACERVO outra vez, e não os achados.
   CHECK_FALSE(navegador.vista().empty());
   CHECK(navegador.vista()[0].texto == "Ada Lovelace");
-  CHECK(navegador.url_eleita().empty());
+  CHECK_FALSE(navegador.ha_achado());
 }
 
 // ── AS LISTAS (issue #10) ───────────────────────────────────────────────────

@@ -60,9 +60,14 @@ std::size_t escriptas(const std::string& linha) {
   return conta;
 }
 
-tui::Linha achado(const std::string& titulo, const std::string& canal,
+nu::Achado achado(const std::string& titulo, const std::string& canal,
                   int duracao) {
-  return {titulo, "https://y/" + titulo, 0, duracao, canal};
+  nu::Achado feito;
+  feito.titulo = titulo;
+  feito.canal = canal;
+  feito.duracao = duracao;
+  feito.url = "https://y/" + titulo;
+  return feito;
 }
 
 // A cova e o índice: a tabella pede um Navegador, e o Navegador pede uma
