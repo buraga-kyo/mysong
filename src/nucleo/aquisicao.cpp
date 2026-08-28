@@ -485,9 +485,22 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
   std::vector<std::string> ditos{"yt-dlp"};
   const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
   ditos.insert(ditos.end(), motor.begin(), motor.end());
+  ditos.emplace_back("--no-warnings");
+  if (fonte == Fonte::YouTubeMusic) {
+    // SEM o --flat-playlist, e é medido: com elle os campos da musica vêm NA.
+    ditos.emplace_back("--playlist-items");
+    ditos.emplace_back("1:" + std::to_string(quantas));
+  } else {
+    ditos.emplace_back("--flat-playlist");
+  }
+  // O alvo. O SPOTIFY busca no YouTube, e não é descuido: o catalogo é metadado,
+  // o audio vem do YouTube, e a tela busca a fonte Spotify no catalogo local.
+  const std::string alvo =
+      fonte == Fonte::YouTubeMusic
+          ? "https://music.youtube.com/search?q=" + codifica_para_url(termo) +
+                "#songs"
+          : "ytsearch" + std::to_string(quantas) + ":" + termo;
   const std::vector<std::string> resto = {
-          "--no-warnings",
-          "--flat-playlist",
           "--print", "%(title)s",
           "--print", "%(uploader)s",
           "--print", "%(duration)s",
@@ -497,7 +510,7 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
           "--print", "%(track)s",
           "--print", "%(release_year)s",
           "--",
-          "ytsearch" + std::to_string(quantas) + ":" + termo};
+          alvo};
   ditos.insert(ditos.end(), resto.begin(), resto.end());
   return ditos;
 }

@@ -188,9 +188,12 @@ std::string codifica_para_url(std::string_view crua);
 // achado é uma sonda de rede (~1,3 s medidos), e dez respondem em ~17 s.
 inline constexpr int ACHADOS_DA_MUSICA = 10;
 
-// argumentos_da_busca — o que se corre. O `ytsearchN:` é o pseudo-endereço do yt-dlp
-// para busca, e o `--flat-playlist` impede que elle abra cada resultado para lhe ler os
-// fórmatos: sem elle, buscar dez faixas custa dez sondas de rede.
+// argumentos_da_busca — o que se corre, POR FONTE. YouTube: `ytsearchN:` com
+// `--flat-playlist` (abrir cada resultado custaria N sondas). YouTubeMusic: a URL
+// de busca do music.youtube.com com o fragmento #songs (só a prateleira das
+// musicas; sem elle um album no meio expande a lista inteira d'elle) e SEM flat,
+// que com flat os campos da musica vêm NA (medido em 2026-08-27). Spotify: mapa
+// para o YouTube, que o audio do catalogo vem de lá (fronteira da issue #13).
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
                                              int quantos, Fonte fonte,
                                              bool com_cookie = false);
