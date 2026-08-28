@@ -260,4 +260,36 @@ TEST_CASE("ao fim natural da faixa, pregão algum sahe com retracto composto") {
   CHECK(compostos == 0);
 }
 
+// ── OS DOUS MODOS (issue #62) ────────────────────────────────────────────────
+// A tecla `x` cicla por tres valores, e é o TOCADOR que cicla: a tela sómente
+// pede o verbo. Aferir a volta inteira, e não um passo só, é o que apanha o
+// ciclo que anda mas não fecha.
+TEST_CASE("o repetir cicla por nenhuma, uma, todas e torna ao principio") {
+  using mysong::nucleo::Repeticao;
+  MotorDuble duble;
+  Tocador tocador(duble);
+  CHECK(tocador.retracto().repeticao == Repeticao::Nenhuma);
+  CHECK(tocador.cicla_repetir() == Repeticao::Uma);
+  CHECK(tocador.retracto().repeticao == Repeticao::Uma);
+  CHECK(tocador.cicla_repetir() == Repeticao::Todas);
+  CHECK(tocador.cicla_repetir() == Repeticao::Nenhuma);
+  CHECK(tocador.retracto().repeticao == Repeticao::Nenhuma);
+  // E o punho que assenta o valor directo, que é o do socket e o do barramento.
+  tocador.repetir(Repeticao::Todas);
+  CHECK(tocador.retracto().repeticao == Repeticao::Todas);
+}
+
+TEST_CASE("o embaralhar alterna, e o retracto o diz do mesmo momento") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav"}) tocador.junta(faixa);
+  CHECK_FALSE(tocador.retracto().embaralhado);
+  CHECK(tocador.alterna_embaralhar());
+  CHECK(tocador.retracto().embaralhado);
+  CHECK_FALSE(tocador.alterna_embaralhar());
+  CHECK_FALSE(tocador.retracto().embaralhado);
+  tocador.embaralhar(true);
+  CHECK(tocador.retracto().embaralhado);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
