@@ -13,6 +13,7 @@
 
 #include <charconv>
 #include <cstdlib>
+#include <fstream>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -240,6 +241,35 @@ std::filesystem::path caminho_da_configuracao() {
     raiz = std::filesystem::path(casa) / ".config";
   }
   return raiz / "mysong" / "mysong.conf";
+}
+
+// ler_o_arquivo — abre para LEITURA, e não ha n'esta unidade uma segunda porta
+// que escreva. O tecto de tamanho existe porque o caminho pode apontar para
+// cousa que não é configuração: sem elle, um binario de meio giga viraria meio
+// giga de cadeia na pilha antes de a primeira linha se ler.
+EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
+                              std::string* texto, Ajustes* ajustes) {
+  std::error_code erro;
+  if (caminho.empty() || !std::filesystem::exists(caminho, erro))
+    return EstadoDoArquivo::Ausente;
+  if (!std::filesystem::is_regular_file(caminho, erro)) {
+    ajustes->queixa("«" + caminho.string() +
+                    "» não é arquivo regular; valem os padrões");
+    return EstadoDoArquivo::Illegivel;
+  }
+  std::ifstream porta(caminho, std::ios::binary);
+  if (!porta) {
+    ajustes->queixa("não se pôde ler «" + caminho.string() +
+                    "»; valem os padrões");
+    return EstadoDoArquivo::Illegivel;
+  }
+  texto->resize(ARQUIVO_NO_MAXIMO);
+  porta.read(texto->data(), static_cast<std::streamsize>(ARQUIVO_NO_MAXIMO));
+  const std::size_t colhido = static_cast<std::size_t>(porta.gcount());
+  texto->resize(colhido);
+  if (colhido == ARQUIVO_NO_MAXIMO)
+    ajustes->queixa("o arquivo passa de um megabyte: leu-se só o começo");
+  return EstadoDoArquivo::Lido;
 }
 
 // padrao_do_acervo — o chão da escada, e o mesmo de sempre: `~/Música`. Sem

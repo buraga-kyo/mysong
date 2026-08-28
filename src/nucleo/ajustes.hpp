@@ -146,6 +146,12 @@ void resolver(const Degraus& degraus,
 // trata como arquivo ausente.
 std::filesystem::path caminho_da_configuracao();
 
+// ler_o_arquivo — a UNICA porta de disco d'este modulo, e ella SÓ LÊ. Ausente
+// cala-se, que é o caso normal e a issue manda que seja calado; presente que se
+// não deixa ler lavra queixa, que não é o mesmo caso.
+EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
+                              std::string* texto, Ajustes* ajustes);
+
 // padrao_do_acervo — `~/Música`, o chão da escada. Vive aqui, e não na janella,
 // para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
 std::filesystem::path padrao_do_acervo();
