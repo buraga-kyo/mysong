@@ -199,15 +199,19 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   ficha.album = api::texto_de_chave(da_vez, "title");
   const std::string data = api::texto_de_chave(da_vez, "date");
   if (data.size() >= 4) ficha.ano = std::atoi(data.substr(0, 4).c_str());
-  // O numero é `position` da faixa na primeira midia, que é inteiro; o
-  // `number` impresso vem «A3» no vinil, e não serve á etiqueta.
-  const std::vector<std::string> midias =
-      api::objectos_do_arranjo(api::recorta_arranjo(da_vez, "media"));
-  if (!midias.empty()) {
+  // O numero é `position` da faixa, que é inteiro; o `number` impresso vem «A3»
+  // no vinil, e não serve á etiqueta. Varrem-se as midias TODAS, e não a
+  // primeira: o MusicBrainz devolve cada midia do lançamento, e sómente a que
+  // tem a gravação vem com `tracks`, donde um lançamento de dous discos com a
+  // faixa no segundo dava numero zero. Vale a primeira midia que traga faixa.
+  for (const std::string& midia :
+       api::objectos_do_arranjo(api::recorta_arranjo(da_vez, "media"))) {
     const std::vector<std::string> faixas =
-        api::objectos_do_arranjo(api::recorta_arranjo(midias[0], "tracks"));
-    if (!faixas.empty() && api::numero_de_chave(faixas[0], "position", &valor))
-      ficha.numero = static_cast<int>(valor);
+        api::objectos_do_arranjo(api::recorta_arranjo(midia, "tracks"));
+    if (faixas.empty() || !api::numero_de_chave(faixas[0], "position", &valor))
+      continue;
+    ficha.numero = static_cast<int>(valor);
+    break;
   }
   return ficha;
 }
