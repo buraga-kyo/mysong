@@ -12,6 +12,7 @@
 #include "nucleo/ajustes.hpp"
 
 #include <charconv>
+#include <cstdlib>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -221,6 +222,32 @@ void resolver(const Degraus& degraus,
       ajustes->queixa("--acervo «" + *degraus.acervo_do_argumento +
                      "» não é directorio que exista; vale o de baixo");
   }
+}
+
+// caminho_da_configuracao — o mesmo desenho do caminho_do_indice, com UMA
+// differença dita de proposito: aquelle CREA o directorio, porque o índice é
+// nosso e nasce d'esta obra; este não crea cousa alguma, porque o arquivo é do
+// operador. Directorio creado por nós, vazio, faria o operador crer que a obra
+// escreveu alli o que elle havia de escrever á mão.
+std::filesystem::path caminho_da_configuracao() {
+  const char* const posto = std::getenv("XDG_CONFIG_HOME");
+  std::filesystem::path raiz;
+  if (posto != nullptr && posto[0] != '\0') {
+    raiz = std::filesystem::path(posto);
+  } else {
+    const char* const casa = std::getenv("HOME");
+    if (casa == nullptr) return {};
+    raiz = std::filesystem::path(casa) / ".config";
+  }
+  return raiz / "mysong" / "mysong.conf";
+}
+
+// padrao_do_acervo — o chão da escada, e o mesmo de sempre: `~/Música`. Sem
+// HOME, devolve vazio, e ahi a varredura não acha nada, que é o que já succedia.
+std::filesystem::path padrao_do_acervo() {
+  const char* const casa = std::getenv("HOME");
+  if (casa == nullptr) return {};
+  return std::filesystem::path(casa) / "Música";
 }
 
 }  // namespace mysong::nucleo

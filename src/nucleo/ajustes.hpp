@@ -139,6 +139,17 @@ void resolver(const Degraus& degraus,
               const std::filesystem::path& padrao_do_acervo,
               const Aferidor& ha_directorio, Ajustes* ajustes);
 
+// caminho_da_configuracao — `$XDG_CONFIG_HOME/mysong/mysong.conf`, e sem a
+// variavel `~/.config/mysong/mysong.conf`, pelo precedente exacto do
+// caminho_do_indice. Directorio algum se cria e arquivo algum se escreve: este
+// arquivo é do operador, e a obra sómente o lê. Sem HOME, devolve vazio, que se
+// trata como arquivo ausente.
+std::filesystem::path caminho_da_configuracao();
+
+// padrao_do_acervo — `~/Música`, o chão da escada. Vive aqui, e não na janella,
+// para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
+std::filesystem::path padrao_do_acervo();
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
