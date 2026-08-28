@@ -44,3 +44,45 @@ TEST_CASE("linha sem egual, ou sem chave, vira queixa e não par") {
   CHECK(nu::ler_pares("volume 70\n= 70\n", &ajustes).empty());
   CHECK(ajustes.queixas.size() == 2);
 }
+
+namespace {
+
+// O dublê do aferidor que dá TUDO por directorio. Com elle, e com o irmão que
+// não dá nada, os dous caminhos do acervo provam-se sem se creçar pasta alguma
+// em disco, que é o que faz esta bateria correr egual em qualquer machina.
+const nu::Aferidor tudo_vale = [](const std::filesystem::path&) { return true; };
+
+// resolvido — corre o leitor e a escada n'um golpe, sobre o MESMO vaso, que é
+// como o programa os corre.
+nu::Ajustes resolvido(std::string_view arquivo, nu::Degraus degraus,
+                      const nu::Aferidor& afere = tudo_vale) {
+  nu::Ajustes ajustes;
+  degraus.arquivo = nu::ler_pares(arquivo, &ajustes);
+  nu::resolver(degraus, "/padrao", afere, &ajustes);
+  return ajustes;
+}
+
+}  // namespace
+
+TEST_CASE("a escada inteira: argumento, ambiente, arquivo, padrão") {
+  nu::Degraus degraus;
+  degraus.acervo_do_ambiente = "/do-ambiente";
+  degraus.acervo_do_argumento = "/do-argumento";
+  const nu::Ajustes quatro = resolvido("acervo = /do-arquivo\n", degraus);
+  CHECK(quatro.acervo.valor == "/do-argumento");
+  CHECK(quatro.acervo.origem == nu::Origem::Argumento);
+
+  degraus.acervo_do_argumento.reset();
+  const nu::Ajustes tres = resolvido("acervo = /do-arquivo\n", degraus);
+  CHECK(tres.acervo.valor == "/do-ambiente");
+  CHECK(tres.acervo.origem == nu::Origem::Ambiente);
+
+  degraus.acervo_do_ambiente.reset();
+  const nu::Ajustes dous = resolvido("acervo = /do-arquivo\n", degraus);
+  CHECK(dous.acervo.valor == "/do-arquivo");
+  CHECK(dous.acervo.origem == nu::Origem::Arquivo);
+
+  const nu::Ajustes um = resolvido("", degraus);
+  CHECK(um.acervo.valor == "/padrao");
+  CHECK(um.acervo.origem == nu::Origem::Padrao);
+}
