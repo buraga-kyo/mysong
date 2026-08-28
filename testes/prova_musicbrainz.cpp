@@ -150,6 +150,44 @@ TEST_CASE("os termos da colheita: tres ISRCs no tecto, e o de hoje por ultimo") 
   CHECK(sos[0] == "Never Gonna Give You Up");
 }
 
+TEST_CASE("as consultas sahem percent-encodadas, byte a byte") {
+  // O encoder proprio é o que a SPEC manda provar: um defeito no escape da
+  // query degradaria TODO caminho 2 ao caminho 3, calado, porque o MB
+  // devolveria zero achados e a colheita cahiria no titulo sem alarde.
+  CHECK(nu::escapa_url("Ab1-._~") == "Ab1-._~");  // os livres passam crus
+  CHECK(nu::escapa_url("çã o") == "%C3%A7%C3%A3%20o");  // UTF-8 por octeto
+  CHECK(nu::url_da_consulta_pelo_link("1Ojc3QD0dfJ5HG8uzLsfTg") ==
+        "https://musicbrainz.org/ws/2/url?resource=https%3A%2F%2F"
+        "open.spotify.com%2Ftrack%2F1Ojc3QD0dfJ5HG8uzLsfTg"
+        "&inc=recording-rels&fmt=json");
+  CHECK(nu::url_da_ficha("8f3471b5-7e6a-48da-86a9-c1c07a0f47ae") ==
+        "https://musicbrainz.org/ws/2/recording/"
+        "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae"
+        "?inc=isrcs+artist-credits+releases+release-groups+media&fmt=json");
+  CHECK(nu::url_da_consulta_pelo_link("").empty());
+  CHECK(nu::url_da_ficha("").empty());
+}
+
+TEST_CASE("a busca escapa a aspa do Lucene e apara o piso da janella no zero") {
+  // Titulo com aspa, espaço e reservado, artista com barra: a aspa interna
+  // escapa-se para o Lucene, e a consulta INTEIRA sahe percent-encodada por
+  // cima, com a janella de doze segundos nas duas pontas.
+  CHECK(nu::url_da_consulta_pela_busca("M/M", "Say \"Hello\" & Wave", 213000) ==
+        "https://musicbrainz.org/ws/2/recording?query=recording%3A%22"
+        "Say%20%5C%22Hello%5C%22%20%26%20Wave%22%20AND%20artist%3A%22M%2FM%22"
+        "%20AND%20dur%3A%5B201000%20TO%20225000%5D&limit=8&fmt=json");
+  // Sem artista e sem duração, as clausulas que faltam ficam de fóra inteiras.
+  CHECK(nu::url_da_consulta_pela_busca("", "Waltz", 0) ==
+        "https://musicbrainz.org/ws/2/recording?query="
+        "recording%3A%22Waltz%22&limit=8&fmt=json");
+  // Duração menor que a janella: o piso apara-se no zero, sem numero negativo,
+  // que o Lucene recusaria a clausula inteira.
+  CHECK(nu::url_da_consulta_pela_busca("", "Waltz", 5000) ==
+        "https://musicbrainz.org/ws/2/recording?query=recording%3A%22Waltz%22"
+        "%20AND%20dur%3A%5B0%20TO%2017000%5D&limit=8&fmt=json");
+  CHECK(nu::url_da_consulta_pela_busca("Rick", "", 213000).empty());
+}
+
 TEST_CASE("duas passagens pelo acelerador distam um segundo, de fios distinctos") {
   // Os dous obreiros do estaleiro chegam em rajada; a promessa é UMA requisição
   // por segundo somados todos os fios. Toca RELOGIO, e não rede: o segundo que
