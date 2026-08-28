@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
@@ -49,6 +50,27 @@ std::string apara(std::string_view crua) {
   while (fim > principio && std::isspace(static_cast<unsigned char>(crua[fim - 1])))
     --fim;
   return std::string(crua.substr(principio, fim - principio));
+}
+
+// O TECTO do inteiro que vem da rede. Um dia em segundos: dos tres campos que
+// passam por aqui (numero de faixa, duração e anno), o maior legitimo é a
+// duração, e um dia é o tecto que esta Casa já lhe dá no casamento do catalogo.
+constexpr long kTectoDoInteiro = 86400;
+
+// inteiro_da_rede — o inteiro que uma linha de fonte alheia diz. Texto que não
+// seja digito de ponta a ponta dá ZERO, e não lança: a rede manda lixo, e zero
+// é como esta Casa diz «não se soube». Lê-se por strtol, e não pela leitura
+// antiga, que era comportamento INDEFINIDO em transbordo e vinte digitos vindos
+// da rede transbordam. O que passa do tecto vae a zero pela mesma razão: aparar
+// no proprio tecto poria por anno o numero do tecto, e isso seria mentira nova.
+int inteiro_da_rede(const std::string& crua) {
+  if (crua.empty()) return 0;
+  for (const unsigned char c : crua)
+    if (std::isdigit(c) == 0) return 0;
+  errno = 0;
+  const long lido = std::strtol(crua.c_str(), nullptr, 10);
+  if (errno != 0 || lido > kTectoDoInteiro) return 0;
+  return static_cast<int>(lido);
 }
 
 }  // namespace
@@ -214,16 +236,8 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {
   remota.canal = linhas[1];
   remota.artista = linhas[2];
   remota.album = linhas[3];
-  // Numero e duração vêm em texto. Texto que não é numero dá ZERO, e não lança:
-  // a rede é fonte alheia, e fonte alheia manda lixo.
-  const auto inteiro = [](const std::string& crua) {
-    if (crua.empty()) return 0;
-    for (const unsigned char c : crua)
-      if (std::isdigit(c) == 0) return 0;
-    return std::atoi(crua.c_str());
-  };
-  remota.numero = inteiro(linhas[4]);
-  remota.duracao = inteiro(linhas[5]);
+  remota.numero = inteiro_da_rede(linhas[4]);
+  remota.duracao = inteiro_da_rede(linhas[5]);
   return remota;
 }
 
@@ -644,13 +658,6 @@ std::vector<Achado> le_achados(const std::string& sahida) {
     linhas.push_back(linha == "NA" ? std::string() : apara(linha));
   }
   std::vector<Achado> achados;
-  // Numero que não é numero dá zero, e não lança: a rede manda lixo.
-  const auto inteiro = [](const std::string& crua) {
-    if (crua.empty()) return 0;
-    for (const unsigned char c : crua)
-      if (std::isdigit(c) == 0) return 0;
-    return std::atoi(crua.c_str());
-  };
   // Oito linhas por achado. Sobrando linhas que não completem um grupo de oito,
   // descartam-se: achado meio não se mostra, que o operador o escolheria e a baixa
   // falharia sem URL.
@@ -658,12 +665,12 @@ std::vector<Achado> le_achados(const std::string& sahida) {
     Achado achado;
     achado.titulo = linhas[i];
     achado.canal = linhas[i + 1];
-    achado.duracao = inteiro(linhas[i + 2]);
+    achado.duracao = inteiro_da_rede(linhas[i + 2]);
     achado.url = linhas[i + 3];
     achado.artista = linhas[i + 4];
     achado.album = linhas[i + 5];
     achado.faixa = linhas[i + 6];
-    achado.ano = inteiro(linhas[i + 7]);
+    achado.ano = inteiro_da_rede(linhas[i + 7]);
     if (achado.url.empty()) continue;  // sem URL não ha o que baixar
     achados.push_back(achado);
   }
