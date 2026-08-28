@@ -23,6 +23,10 @@
 #include <vector>
 
 #include "api/jsonzinho.hpp"
+// Sómente pelas CONSTANTES da escala. Este cabeçalho declara o plano da fftw
+// adiante e não arrasta a fftw3 consigo, do mesmo modo que a prova da
+// mathematica já o inclue sem os directorios de inclusão d'ella.
+#include "nucleo/espectro.hpp"
 
 namespace mysong::api {
 namespace {
@@ -146,6 +150,27 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
     return obra.fecha();
   }
+  // O ESPECTRO (issue #5), pelo mesmo punho que a tela usa. Vae a ESCALA junto
+  // com as bandas, e não sómente ellas: quem lê de fóra não tem tela para
+  // adivinhar que as bordas se espaçam em logarithmo entre 40 e 16000 Hz, nem
+  // que a magnitude vem comprimida em decibeis com o piso a valer zero. Bandas
+  // sem escala são vinte e quatro numeros que o cliente não sabe pintar.
+  //
+  // Sem fonte de bandas, o tocador devolve QUANTAS_BANDAS zeros, e não erro: o
+  // silencio é resposta legitima, e a escala vae na mesma.
+  if (verbo == "espectro") {
+    const std::vector<float> bandas = tocador.bandas();
+    Objecto obra = abre_acerto();
+    obra.par("bandas", vector_de_duplos(bandas));
+    obra.par("quantas", inteiro(static_cast<long long>(bandas.size())));
+    obra.par("escala", texto("logarithmica"));
+    obra.par("hertz_minimo", duplo(nucleo::HERTZ_MINIMO));
+    obra.par("hertz_maximo", duplo(nucleo::HERTZ_MAXIMO));
+    obra.par("magnitude", texto("decibeis"));
+    obra.par("piso_decibeis", duplo(nucleo::PISO_EM_DECIBEIS));
+    return obra.fecha();
+  }
+
   if (verbo == "juntar") {
     const Valor* caminho = argumento(msg, "caminho", Typo::Texto);
     if (caminho == nullptr) return falta("caminho", "texto");
@@ -208,7 +233,6 @@ std::string responde(Tocador& tocador, std::string_view linha) {
   // digitação, e ahi o cliente não saberia se errou o nome ou se a feição não
   // chegou. Com a issue na resposta, elle sabe as duas cousas de uma vez.
   if (verbo == "biblioteca") return reservado(verbo, 8);
-  if (verbo == "espectro")   return reservado(verbo, 5);
   if (verbo == "baixar")     return reservado(verbo, 11);
 
   return erro("verbo_desconhecido",
