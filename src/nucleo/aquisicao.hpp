@@ -62,6 +62,10 @@ std::string saneia_nome(std::string_view crua);
 // operador se ha de tentar outra vez, corrigir a URL ou installar o yt-dlp.
 enum class Colheita {
   Colhido,          // o arquivo está no logar, com as etiquetas
+  // Baixou-se pelo criterio de hoje (titulo e duração), SEM a gravação casada
+  // (issue #57, RULINGS R2): o arquivo ficou no disco, mas o casamento aceita
+  // cover e versão ao vivo, e dizer Colhido seria confiança que elle não tem.
+  ColhidoDuvidoso,
   SemFerramenta,    // o yt-dlp não está no caminho
   UrlRecusada,      // o yt-dlp não conseguiu ler a URL
   JaExiste,         // ha arquivo no destino; NADA se tocou

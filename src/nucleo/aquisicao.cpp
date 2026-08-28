@@ -217,6 +217,8 @@ EtiquetaRemota le_etiqueta_remota(const std::string& sahida) {
 std::string_view razao_da_colheita(Colheita colheita) {
   switch (colheita) {
     case Colheita::Colhido: return "baixado";
+    case Colheita::ColhidoDuvidoso:
+      return "baixado por titulo, sem a gravação: confira";
     case Colheita::SemFerramenta: return "falta o yt-dlp: uv tool install yt-dlp";
     case Colheita::UrlRecusada: return "o yt-dlp não leu essa URL";
     case Colheita::JaExiste: return "essa faixa já está no acervo";
