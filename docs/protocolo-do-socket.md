@@ -312,6 +312,48 @@ bibliotheca d'esta Casa já faz com banco que não existe.
 ← {"ok":true,"corte":"albuns","artista":"Ninguem","albuns":[],"tamanho":0}
 ```
 
+### `baixar`
+
+Encommenda uma baixa á mesma fila que a tecla `s` da tela usa, e responde na HORA.
+**Não espera a baixa acabar**, e é de proposito: este socket responde por linha, e
+uma baixa leva minutos; esperar por ella prenderia a batida do servidor, e com
+ella o tocador, que bate na mesma linha de execução.
+
+```
+→ {"verbo":"baixar","url":"https://www.youtube.com/watch?v=aaaaaaaaaaa","artista":"Bach","album":"Cantatas","titulo":"Aria","numero":1}
+← {"ok":true,"em_curso":0,"na_espera":1,"colhidas":0,"falhadas":0,"duvidosas":0,"ultima":""}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `url` | texto | Obrigatorio, e não pode ser vazio. |
+| `artista`, `album`, `titulo` | texto | Opcionaes. O que o operador diz GANHA do que a rede disser. |
+| `numero` | inteiro | Opcional, de 0 a 9999. Zero é «sem numero». |
+
+**Aceite não é promessa de arquivo.** O `ok` diz que a encommenda entrou na fila,
+e mais nada: yt-dlp que falte, URL que não se leia ou rede que caia apparecem
+DEPOIS, nas contas da proxima resposta. Foi o que succedeu abaixo, com a URL
+inventada do exemplo acima:
+
+```
+→ {"verbo":"baixar","url":"https://www.youtube.com/watch?v=bbbbbbbbbbb"}
+← {"ok":true,"em_curso":0,"na_espera":1,"colhidas":0,"falhadas":1,"duvidosas":0,"ultima":"o yt-dlp não leu essa URL"}
+```
+
+| Campo | Typo | |
+|---|---|---|
+| `em_curso` | inteiro | Quantas baixas correm agora. Não passa de 2, que é o limite de obreiros. |
+| `na_espera` | inteiro | Quantas esperam vez. |
+| `colhidas` | inteiro | Quantas já ficaram no disco. |
+| `falhadas` | inteiro | Quantas falharam. |
+| `duvidosas` | inteiro | Quantas pedem olho humano: não falharam, casaram mal. |
+| `ultima` | texto | A razão do ultimo desfecho. Vazia quando nada acabou ainda. |
+
+Com **64 ou mais** á espera, a fila está cheia e a encommenda devolve `recusado`
+sem pôr nada n'ella. O tecto existe porque a fila do nucleo não tem limite, e por
+este socket um cliente a encheria até a memoria acabar: é a mesma guarda que o
+tamanho da linha e o numero de clientes já têm.
+
 ## 7. As bordas
 
 | O que o cliente faz | O que o servidor faz |
