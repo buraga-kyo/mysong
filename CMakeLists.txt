@@ -341,3 +341,11 @@ configure_file(installacao/mysong.1.in
   "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1"
   DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+
+# ─── A ENTRADA DE MENU (issue #66) ──────────────────────────────────────────
+# A obra é de terminal, e a entrada leva Terminal=true: sem essa chave, a area
+# de trabalho ergueria o binario sem terminal algum, e o operador veria uma
+# janella piscar e morrer. Icone não vae: a obra não traz nenhum, e chave Icon
+# apontando para o que não existe dá quadricula vazia no menu, que é peor.
+install(FILES installacao/mysong.desktop
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
