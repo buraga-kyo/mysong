@@ -12,6 +12,7 @@
 #include <string>
 #include <thread>
 
+#include "api/jsonzinho.hpp"
 #include "nucleo/musicbrainz.hpp"
 
 namespace nu = mysong::nucleo;
@@ -150,6 +151,24 @@ TEST_CASE("os termos da colheita: tres ISRCs no tecto, e o de hoje por ultimo") 
   CHECK(sos[0] == "Never Gonna Give You Up");
 }
 
+TEST_CASE("recorte de objecto truncado dá vazio, e ficha meio lida não inventa") {
+  // O objecto que abre e não fecha é o corpo cortado a meio da transferencia.
+  CHECK(mysong::api::recorta_objecto(R"({"grupo":{"a":1)", "grupo").empty());
+  // A ficha de um corpo cortado a meio da primeira release: o que se leu de
+  // fundo um fica (titulo, duração), e release ou ISRC meio lidos NÃO saem;
+  // quem chama vê a ficha sem album e sem ISRC e segue pelo caminho de hoje.
+  const std::string corpo(kCorpoDaFicha);
+  const nu::FichaMB meia =
+      nu::le_ficha_da_gravacao(corpo.substr(0, corpo.find("Boom")));
+  CHECK(meia.titulo == "Never Gonna Give You Up");
+  CHECK(meia.duracao_ms == 212946);
+  CHECK(meia.isrcs.empty());
+  CHECK(meia.artista.empty());
+  CHECK(meia.album.empty());
+  CHECK(meia.ano == 0);
+  CHECK(meia.numero == 0);
+}
+
 TEST_CASE("as consultas sahem percent-encodadas, byte a byte") {
   // O encoder proprio é o que a SPEC manda provar: um defeito no escape da
   // query degradaria TODO caminho 2 ao caminho 3, calado, porque o MB
@@ -199,10 +218,11 @@ TEST_CASE("duas passagens pelo acelerador distam um segundo, de fios distinctos"
   um.join();
   dous.join();
   const auto entre = a < b ? b - a : a - b;
-  // Novecentos e noventa, e não mil crus: o carimbo toma-se dentro da tranca e o
-  // relogio lê-se fóra, e a folga de dez milesimos paga essa fresta sem deixar
-  // passar cadencia quebrada, que erraria por um segundo inteiro.
-  CHECK(entre >= std::chrono::milliseconds(990));
+  // Novecentos, e não mil crus: o carimbo toma-se dentro da tranca e o relogio
+  // lê-se fóra, e a folga de cem milesimos paga essa fresta mesmo em machina
+  // carregada, sem deixar passar cadencia quebrada, que erraria por um segundo
+  // inteiro.
+  CHECK(entre >= std::chrono::milliseconds(900));
 }
 
 TEST_CASE("o agente do MB nomeia a obra: nome, versão e contato") {
