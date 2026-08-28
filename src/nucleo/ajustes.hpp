@@ -99,6 +99,11 @@ struct Par {
 std::string_view aparar(std::string_view texto);
 std::string_view corta_commentario(std::string_view linha);
 
+// ler_pares — o LEITOR. Recebe o TEXTO do arquivo, e nunca um caminho: é d'isto
+// que vem a bateria provar o formato inteiro sem tocar em disco. Devolve os
+// pares na ORDEM em que vieram, e as queixas ficam nos ajustes.
+std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

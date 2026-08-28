@@ -61,6 +61,51 @@ std::string_view corta_commentario(std::string_view linha) {
   return linha.substr(0, cerquilha);
 }
 
+// ler_pares — o LEITOR do formato: linhas «chave = valor», com o `#` a abrir
+// commentario, os brancos aparados nas pontas, e a linha vazia ignorada. A
+// chave repetida NÃO se resolve aqui: os pares sahem na ordem em que vieram, e
+// quem os consome adeante toma o ultimo, que é o costume de todo arquivo de
+// linhas e o que deixa o operador corrigir accrescentando no fim.
+//
+// Nada aqui é fatal. Linha que se não entende vira QUEIXA e segue: arquivo
+// velho, escripto para uma versão anterior d'esta obra, não ha de impedir a
+// obra de abrir, que é o que a issue #67 manda por extenso.
+std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes) {
+  std::vector<Par> pares;
+  std::size_t numero = 0;
+  while (!texto.empty()) {
+    const std::size_t quebra = texto.find('\n');
+    const bool ultima = quebra == std::string_view::npos;
+    const std::string_view crua = texto.substr(0, ultima ? texto.size() : quebra);
+    texto.remove_prefix(crua.size() + (ultima ? 0 : 1));
+    const std::string onde = "linha " + std::to_string(++numero) + ": ";
+    if (crua.size() > LINHA_NO_MAXIMO) {
+      ajustes->queixa(onde + "comprida de mais; ignorada");
+      continue;
+    }
+    const std::string_view linha = aparar(corta_commentario(crua));
+    if (linha.empty()) continue;
+    const std::size_t egual = linha.find('=');
+    if (egual == std::string_view::npos) {
+      ajustes->queixa(onde + "sem o signal de egual; ignorada");
+      continue;
+    }
+    const std::string_view chave = aparar(linha.substr(0, egual));
+    if (chave.empty()) {
+      ajustes->queixa(onde + "sem chave antes do egual; ignorada");
+      continue;
+    }
+    for (const Par& antigo : pares)
+      if (antigo.chave == chave)
+        ajustes->queixa(onde + "a chave «" + std::string(chave) +
+                        "» já veio na linha " + std::to_string(antigo.linha) +
+                        "; vale a ultima");
+    pares.push_back({numero, std::string(chave),
+                     std::string(aparar(linha.substr(egual + 1)))});
+  }
+  return pares;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
