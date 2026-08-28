@@ -147,20 +147,22 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
                                    const std::string& recado, bool mostra_letra,
                                    bool varrida, unsigned long geracao,
                                    bool video) {
+  // O instante sahe de UMA tomada da tranca do tocador (issue #50): cada
+  // campo do mesmo momento, e a faixa já copiada, sem vista crua da fila.
+  const nucleo::Retracto agora = tocador.retracto();
   std::string marca;
   marca.reserve(128);
-  marca += std::to_string(static_cast<int>(tocador.estado()));
+  marca += std::to_string(static_cast<int>(agora.estado));
   marca += ':';
-  marca += std::to_string(static_cast<long>(tocador.posicao()));
+  marca += std::to_string(static_cast<long>(agora.posicao));
   marca += ':';
-  marca += std::to_string(static_cast<long>(tocador.duracao()));
+  marca += std::to_string(static_cast<long>(agora.duracao));
   marca += ':';
-  marca += std::to_string(tocador.volume());
+  marca += std::to_string(agora.volume);
   marca += ':';
-  const nucleo::Fila& fila = tocador.fila();
-  marca += std::to_string(fila.tamanho());
+  marca += std::to_string(agora.tamanho);
   marca += ':';
-  marca += fila.vazia() ? std::string() : std::string(fila.corrente());
+  marca += agora.faixa;
   marca += ':';
   // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
   // pagava a animação que não mostrava: medido em cento e trinta e dous KiB por segundo,
@@ -186,9 +188,9 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   return marca;
 }
 
-// retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
-// pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
-// poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
+// retracto_do — colhe o instante do tocador n'uma cópia. O nucleo colhe o seu
+// proprio retracto de UMA tomada da tranca (issue #50); aqui só se veste a
+// tela por cima d'elle.
 tui::Retracto retracto_do(nucleo::Tocador& tocador,
                           nucleo::Projector& projector) {
   tui::Retracto retracto;
@@ -196,15 +198,15 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   // é funcção PURA do retracto, e o que ella não vê n'elle não pode governar.
   retracto.video = projector.rodando();
   retracto.video_pausada = projector.pausada();
-  retracto.estado = tocador.estado();
-  retracto.posicao = tocador.posicao();
-  retracto.duracao = tocador.duracao();
-  retracto.volume = tocador.volume();
-  const nucleo::Fila& fila = tocador.fila();
-  retracto.tamanho = fila.tamanho();
-  if (!fila.vazia()) {
-    retracto.indice = fila.indice();
-    retracto.titulo = std::string(fila.corrente());
+  const nucleo::Retracto agora = tocador.retracto();
+  retracto.estado = agora.estado;
+  retracto.posicao = agora.posicao;
+  retracto.duracao = agora.duracao;
+  retracto.volume = agora.volume;
+  retracto.tamanho = agora.tamanho;
+  if (agora.tamanho > 0) {
+    retracto.indice = agora.indice;
+    retracto.titulo = agora.faixa;
   }
   return retracto;
 }
@@ -331,8 +333,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   if (!mpris.viva())
     std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
 
-  for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
-  if (!tocador.fila().vazia()) tocador.tocar_corrente();
+  for (const std::string& faixa : faixas) tocador.junta(faixa);
+  if (!faixas.empty()) tocador.tocar_corrente();
 
   // O ÍNDICE e a VARREDURA. A varredura corre em fio proprio e o navegador
   // recarrega quando ella concluir: assim a tela abre de pronto, com o acervo da
@@ -830,14 +832,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
         if (navegador.secao() == tui::Secao::NoRol) {
           const std::size_t eleita = navegador.eleito();
-          const std::size_t antes = tocador.fila().tamanho();
+          const std::size_t antes = tocador.retracto().tamanho;
           std::size_t quantas = 0;
           for (const tui::Linha& linha : navegador.vista()) {
-            tocador.fila().junta(linha.chave);
+            tocador.junta(linha.chave);
             ++quantas;
           }
           if (quantas > 0) {
-            tocador.fila().ir_para(antes + std::min(eleita, quantas - 1));
+            tocador.ir_para(antes + std::min(eleita, quantas - 1));
             tocador.tocar_corrente();
           }
           return true;
@@ -847,8 +849,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (navegador.entra()) {
           const std::string caminho = navegador.caminho_eleito();
           if (!caminho.empty()) {
-            tocador.fila().junta(caminho);
-            tocador.fila().ir_para(tocador.fila().tamanho() - 1);
+            // O tamanho novo vem da propria juntada: o ultimo é elle menos um.
+            tocador.ir_para(tocador.junta(caminho) - 1);
             tocador.tocar_corrente();
           }
         }

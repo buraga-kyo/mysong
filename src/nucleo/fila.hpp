@@ -48,6 +48,10 @@ class Fila {
 
   void esvazia() noexcept;
 
+  // A vista INTEIRA, na ordem guardada. Vale enquanto a fila não se alterar,
+  // como a de corrente(); quem precise levá-la, que a copie.
+  const std::vector<std::string>& todas() const noexcept;
+
  private:
   std::vector<std::string> faixas_;
   std::size_t indice_ = 0;

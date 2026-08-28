@@ -61,38 +61,27 @@ std::string conforme(bool foi, std::string_view ordem) {
   return foi ? feito() : recusado(ordem);
 }
 
-// O RETRACTO. Sete campos, e os sete SEMPRE: cliente que tenha de perguntar duas
-// vezes para armar uma tela é cliente que verá a segunda resposta não casar com a
-// primeira, porque entre as duas o mundo andou.
+// O RETRACTO. Sete campos, e os sete SEMPRE, colhidos de UMA tomada da tranca
+// do tocador: cliente que tenha de perguntar duas vezes para armar uma tela é
+// cliente que verá a segunda resposta não casar com a primeira, porque entre
+// as duas o mundo andou.
 std::string retracto(Tocador& tocador) {
+  const nucleo::Retracto agora = tocador.retracto();
   Objecto obra = abre_acerto();
-  obra.par("estado", texto(nucleo::nome_do_estado(tocador.estado())));
-  obra.par("faixa", texto(tocador.fila().corrente()));
-  obra.par("posicao", duplo(tocador.posicao()));
-  obra.par("duracao", duplo(tocador.duracao()));
-  obra.par("volume", inteiro(tocador.volume()));
-  obra.par("indice", inteiro(static_cast<long long>(tocador.fila().indice())));
-  obra.par("tamanho", inteiro(static_cast<long long>(tocador.fila().tamanho())));
+  obra.par("estado", texto(nucleo::nome_do_estado(agora.estado)));
+  obra.par("faixa", texto(agora.faixa));
+  obra.par("posicao", duplo(agora.posicao));
+  obra.par("duracao", duplo(agora.duracao));
+  obra.par("volume", inteiro(agora.volume));
+  obra.par("indice", inteiro(static_cast<long long>(agora.indice)));
+  obra.par("tamanho", inteiro(static_cast<long long>(agora.tamanho)));
   return obra.fecha();
 }
-// AS FAIXAS DA FILA. A Fila não tem porta que devolva a faixa de um indice
-// qualquer: tem «corrente()» e tem «ir_para()». Alargá-la seria editar
-// src/nucleo/fila.hpp, e a tarefa irmã reescreve o nucleo agora. Donde se anda
-// pela fila e se RESTAURA o assento no fim. E anda-se na FILA, e não no TOCADOR:
-// Fila::ir_para move o indice e nada desce ao motor, de sorte que este passeio
-// não toca em som algum nem se ouve de fóra.
+// AS FAIXAS DA FILA, pela copia trancada do tocador. A issue #50 aposentou o
+// passeio que andava com ir_para e restaurava o assento: era mexida onde se
+// queria leitura, e mexida sem tranca com o relogio a bater n'outro fio.
 std::vector<std::string> faixas_da_fila(Tocador& tocador) {
-  nucleo::Fila& fila = tocador.fila();
-  std::vector<std::string> obra;
-  if (fila.vazia()) return obra;
-  const std::size_t assento = fila.indice();
-  obra.reserve(fila.tamanho());
-  for (std::size_t passo = 0; passo < fila.tamanho(); ++passo) {
-    fila.ir_para(passo);
-    obra.emplace_back(fila.corrente());
-  }
-  fila.ir_para(assento);
-  return obra;
+  return tocador.faixas();
 }
 
 // «nao_implementado» é nome que a Casa TEM e cujo subsystema ainda não chegou. A
@@ -152,7 +141,8 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     const std::vector<std::string> faixas = faixas_da_fila(tocador);
     Objecto obra = abre_acerto();
     obra.par("faixas", vector_de_textos(faixas));
-    obra.par("indice", inteiro(static_cast<long long>(tocador.fila().indice())));
+    obra.par("indice",
+             inteiro(static_cast<long long>(tocador.retracto().indice)));
     obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
     return obra.fecha();
   }
@@ -161,9 +151,9 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     if (caminho == nullptr) return falta("caminho", "texto");
     if (caminho->texto.empty())
       return erro("argumento_invalido", "o caminho da faixa vem vazio");
-    tocador.fila().junta(caminho->texto);
+    const std::size_t tamanho = tocador.junta(caminho->texto);
     Objecto obra = abre_acerto();
-    obra.par("tamanho", inteiro(static_cast<long long>(tocador.fila().tamanho())));
+    obra.par("tamanho", inteiro(static_cast<long long>(tamanho)));
     return obra.fecha();
   }
   // «ir_para» move E manda tocar, á maneira de «proxima» e «anterior»: mover sem
@@ -174,7 +164,7 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     if (alvo == nullptr) return falta("indice", "numero");
     if (!(alvo->numero >= 0.0 && alvo->numero < 1e9))
       return erro("argumento_invalido", "o indice esta fora de faixa razoavel");
-    if (!tocador.fila().ir_para(static_cast<std::size_t>(alvo->numero)))
+    if (!tocador.ir_para(static_cast<std::size_t>(alvo->numero)))
       return recusado("ir_para");
     return conforme(tocador.tocar_corrente(), "ir_para");
   }
