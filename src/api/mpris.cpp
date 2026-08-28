@@ -420,6 +420,26 @@ const std::string& CasaDoMpris::razao() const noexcept { return punho_->razao; }
 
 namespace {
 
+// assenta_propriedade — o miolo do `Set`, já dentro da variante. Sae á parte para
+// que cada propriedade que se ponha traga a sua guarda de typo ao lado do seu
+// effeito, em vez de as guardas todas se empilharem antes do primeiro effeito.
+DBusMessage* assenta_propriedade(CasaDoMpris::Punho& punho, DBusMessage* pedido,
+                                 const std::string& nome,
+                                 DBusMessageIter* dentro) {
+  const int typo = dbus_message_iter_get_arg_type(dentro);
+  if (nome == "Volume") {
+    if (typo != DBUS_TYPE_DOUBLE)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o volume é um duplo de zero a um");
+    double valor = 0.0;
+    dbus_message_iter_get_basic(dentro, &valor);
+    punho.tocador.volume(volume_para_porcento(valor));
+    return dbus_message_new_method_return(pedido);
+  }
+  return dbus_message_new_error(pedido, DBUS_ERROR_PROPERTY_READ_ONLY,
+                                "essa propriedade não se põe");
+}
+
 // responde_propriedades — o `Get`, o `GetAll` e o `Set` da interface de propriedades.
 DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedido,
                                    const std::string& membro) {
@@ -471,15 +491,9 @@ DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedid
     DBusMessageIter dentro;
     if (dbus_message_iter_get_arg_type(&leitor) != DBUS_TYPE_VARIANT)
       return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
-                                    "o volume ha de vir n'uma variante");
+                                    "o valor ha de vir n'uma variante");
     dbus_message_iter_recurse(&leitor, &dentro);
-    if (dbus_message_iter_get_arg_type(&dentro) != DBUS_TYPE_DOUBLE)
-      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
-                                    "o volume é um duplo de zero a um");
-    double valor = 0.0;
-    dbus_message_iter_get_basic(&dentro, &valor);
-    punho.tocador.volume(volume_para_porcento(valor));
-    return dbus_message_new_method_return(pedido);
+    return assenta_propriedade(punho, pedido, nome, &dentro);
   }
   return dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_METHOD,
                                 "esta Casa não conhece esse metodo");
