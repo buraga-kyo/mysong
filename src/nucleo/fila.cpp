@@ -23,6 +23,11 @@ namespace mysong::nucleo {
 
 void Fila::junta(std::string caminho) {
   faixas_.push_back(std::move(caminho));
+  // Embaralhado, a faixa nova entra no FIM da permutação, e a permutação NÃO se
+  // re-sorteia: a issue proscreve o re-sorteio, e encaixá-la n'um logar sorteado
+  // da cauda faria a ordem deixar de se poder inspeccionar. Ella toca por ultimo
+  // n'esta passagem; quem a quiser sorteada desliga e torna a ligar o modo.
+  if (embaralhado_) ordem_.push_back(faixas_.size() - 1);
 }
 
 bool Fila::vazia() const noexcept {
@@ -88,15 +93,26 @@ bool Fila::anterior() noexcept {
   return true;
 }
 
+// O alvo é SEMPRE o assento na ordem de chegada, embaralhado ou não: é o que o
+// socket, o navegador e o trackid do MPRIS já falam, e fazer o mesmo numero
+// querer dizer duas cousas conforme o modo quebraria cliente que hoje existe. O
+// passo re-synchroniza-se, para que a faixa corrente siga a ser a do passo.
 bool Fila::ir_para(std::size_t alvo) noexcept {
   if (alvo >= faixas_.size()) return false;
   indice_ = alvo;
+  if (embaralhado_)
+    for (std::size_t k = 0; k < ordem_.size(); ++k)
+      if (ordem_[k] == alvo) { passo_ = k; break; }
   return true;
 }
 
+// A permutação e o passo vão com as faixas; os dous MODOS ficam. São assento do
+// operador, e não conteudo da fila: esvaziar não é desligar o embaralhar.
 void Fila::esvazia() noexcept {
   faixas_.clear();
   indice_ = 0;
+  ordem_.clear();
+  passo_ = 0;
 }
 
 const std::vector<std::string>& Fila::todas() const noexcept { return faixas_; }
