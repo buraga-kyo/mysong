@@ -61,7 +61,7 @@ std::string conforme(bool foi, std::string_view ordem) {
   return foi ? feito() : recusado(ordem);
 }
 
-// O RETRACTO. Sete campos, e os sete SEMPRE, colhidos de UMA tomada da tranca
+// O RETRACTO. Nove campos, e os nove SEMPRE, colhidos de UMA tomada da tranca
 // do tocador: cliente que tenha de perguntar duas vezes para armar uma tela é
 // cliente que verá a segunda resposta não casar com a primeira, porque entre
 // as duas o mundo andou.
@@ -75,6 +75,12 @@ std::string retracto(Tocador& tocador) {
   obra.par("volume", inteiro(agora.volume));
   obra.par("indice", inteiro(static_cast<long long>(agora.indice)));
   obra.par("tamanho", inteiro(static_cast<long long>(agora.tamanho)));
+  // Os dous modos (issue #62), colhidos da MESMA tomada que os sete de cima:
+  // quem arma tela com este retracto não ha de ver modo de um momento ao lado
+  // de faixa de outro. Campo NOVO, e nome nenhum dos velhos muda: cliente
+  // escripto contra a versão 1 segue a ler o que já lia.
+  obra.par("embaralhado", booleano(agora.embaralhado));
+  obra.par("repetir", texto(nucleo::nome_da_repeticao(agora.repeticao)));
   return obra.fecha();
 }
 // AS FAIXAS DA FILA, pela copia trancada do tocador. A issue #50 aposentou o
