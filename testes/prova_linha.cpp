@@ -7,6 +7,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <sys/wait.h>
+
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -15,6 +18,8 @@
 using mysong::nucleo::Invocacao;
 using mysong::nucleo::ler_linha;
 using mysong::nucleo::Modo;
+using mysong::nucleo::texto_da_ajuda;
+using mysong::nucleo::texto_da_versao;
 
 namespace {
 
@@ -66,4 +71,49 @@ TEST_CASE("a opção desconhecida recusa NOMEANDO-a, e nada toca") {
   CHECK(torta.faixas.empty());
   CHECK(ler({"-h"}).modo == Modo::Recusa);  // opção curta alguma existe
   CHECK(ler({"--versao", "--coisa-errada"}).modo == Modo::Recusa);
+}
+
+// ── O BINARIO, e não a bibliotheca: o que a issue #66 promette é o que o
+// programa ESCREVE e o codigo com que elle SAHE, e afere-se correndo-o.
+namespace {
+
+std::string colher(const std::string& commando, int* codigo) {
+  std::string colhido;
+  FILE* cano = ::popen(commando.c_str(), "r");
+  if (cano == nullptr) return colhido;
+  char pedaco[256];
+  while (std::fgets(pedaco, sizeof pedaco, cano) != nullptr) colhido += pedaco;
+  *codigo = WEXITSTATUS(::pclose(cano));
+  return colhido;
+}
+const std::string BINARIO = "'" MYSONG_BINARIO "'";
+
+}  // namespace
+
+TEST_CASE("o binario diz o nome e o numero, e sahe com zero") {
+  int codigo = -1;
+  CHECK(colher(BINARIO + " --versao", &codigo) == texto_da_versao());
+  CHECK(codigo == 0);
+}
+
+TEST_CASE("a versão sahe ainda que falte o requisito que impede o tocador") {
+  int codigo = -1;  // a falta força-se pela chave da sonda, sem tocar o systema
+  CHECK(colher("MYSONG_SONDA_FORCA=fonte " + BINARIO + " --versao", &codigo) ==
+        texto_da_versao());
+  CHECK(codigo == 0);
+}
+
+TEST_CASE("o binario escreve a ajuda, e sahe com zero") {
+  int codigo = -1;
+  CHECK(colher(BINARIO + " --ajuda", &codigo) == texto_da_ajuda());
+  CHECK(codigo == 0);
+}
+
+// A queixa vae ao stderr: quem encana o mysong não a recebe no que pediu.
+TEST_CASE("o binario recusa a opção torta pelo stderr, e sahe com dous") {
+  int codigo = -1;
+  CHECK(colher(BINARIO + " --coisa-errada 2>/dev/null", &codigo).empty());
+  CHECK(codigo == 2);
+  CHECK(colher(BINARIO + " --coisa-errada 2>&1", &codigo).find(
+            "--coisa-errada") != std::string::npos);
 }
