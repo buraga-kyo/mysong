@@ -28,6 +28,7 @@
 // mathematica já o inclue sem os directorios de inclusão d'ella.
 #include "nucleo/espectro.hpp"
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/estaleiro.hpp"
 
 namespace mysong::api {
 namespace {
@@ -301,7 +302,43 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
     obra.par("tamanho", inteiro(static_cast<long long>(achadas.size())));
     return obra.fecha();
   }
-  if (verbo == "baixar")     return indisponivel("a fila de baixa");
+  // A BAIXA (issue #11), pela MESMA fila que a tecla «s» da tela usa. NÃO se
+  // espera pelo desfecho: o socket responde por linha, e uma baixa leva minutos;
+  // esperar por ella prenderia a batida do servidor, e com ella o tocador, que
+  // bate na mesma linha de execução. Aceite não é promessa de arquivo, e o que
+  // acontecer depois lê-se nas contas que a proxima resposta trouxer.
+  if (verbo == "baixar") {
+    if (arredores.estaleiro == nullptr) return indisponivel("a fila de baixa");
+    const Valor* onde = argumento(msg, "url", Typo::Texto);
+    if (onde == nullptr) return falta("url", "texto");
+    if (onde->texto.empty())
+      return erro("argumento_invalido", "a url da faixa vem vazia");
+    nucleo::Pedido pedido;
+    pedido.url = onde->texto;
+    // O que o operador DIZ ganha do que a rede disser, que é a regra que o
+    // resolve() da aquisição já lavra. Campo que elle não diga fica vazio.
+    if (const Valor* v = argumento(msg, "artista", Typo::Texto))
+      pedido.artista = v->texto;
+    if (const Valor* v = argumento(msg, "album", Typo::Texto))
+      pedido.album = v->texto;
+    if (const Valor* v = argumento(msg, "titulo", Typo::Texto))
+      pedido.titulo = v->texto;
+    if (const Valor* v = argumento(msg, "numero", Typo::Numero)) {
+      if (!(v->numero >= 0.0 && v->numero <= 9999.0))
+        return erro("argumento_invalido", "o numero da faixa esta fora de faixa");
+      pedido.numero = static_cast<int>(v->numero);
+    }
+    arredores.estaleiro->encommenda(std::move(pedido));
+    const nucleo::Andamento agora = arredores.estaleiro->andamento();
+    Objecto obra = abre_acerto();
+    obra.par("em_curso", inteiro(static_cast<long long>(agora.em_curso)));
+    obra.par("na_espera", inteiro(static_cast<long long>(agora.na_espera)));
+    obra.par("colhidas", inteiro(static_cast<long long>(agora.colhidas)));
+    obra.par("falhadas", inteiro(static_cast<long long>(agora.falhadas)));
+    obra.par("duvidosas", inteiro(static_cast<long long>(agora.duvidosas)));
+    obra.par("ultima", texto(agora.ultima));
+    return obra.fecha();
+  }
 
   return erro("verbo_desconhecido",
               "esta Casa nao conhece o verbo \"" + verbo + "\"");
