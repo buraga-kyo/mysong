@@ -280,6 +280,31 @@ std::filesystem::path padrao_do_acervo() {
   return std::filesystem::path(casa) / "Música";
 }
 
+// ajustes_do_systema — a montagem. Tudo o que toca o mundo está n'estas vinte
+// linhas, e tudo o mais d'este arquivo é puro: é o que faz a bateria alcançar
+// o formato inteiro e a precedencia inteira sem tocar disco nem ambiente.
+Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
+  Ajustes ajustes;
+  ajustes.arquivo = caminho_da_configuracao();
+  Degraus degraus;
+  degraus.acervo_do_argumento = do_argumento;
+  const char* const posto = std::getenv("MYSONG_ACERVO");
+  if (posto != nullptr && posto[0] != '\0') degraus.acervo_do_ambiente = posto;
+  std::string texto;
+  ajustes.estado = ler_o_arquivo(ajustes.arquivo, &texto, &ajustes);
+  if (ajustes.estado == EstadoDoArquivo::Lido)
+    degraus.arquivo = ler_pares(texto, &ajustes);
+  // O aferidor de verdade. O erro do systema colhe-se no error_code e não em
+  // excepção: caminho em monte que se desligou responde «não é directorio», e
+  // não derruba o programa por lançar de dentro do resolvedor.
+  const Aferidor ha_directorio = [](const std::filesystem::path& caminho) {
+    std::error_code erro;
+    return std::filesystem::is_directory(caminho, erro);
+  };
+  resolver(degraus, padrao_do_acervo(), ha_directorio, &ajustes);
+  return ajustes;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

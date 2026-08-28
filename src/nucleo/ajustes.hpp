@@ -156,6 +156,12 @@ EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
 // para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
 std::filesystem::path padrao_do_acervo();
 
+// ajustes_do_systema — a MONTAGEM, e a unica funcção d'este modulo que toca o
+// mundo: lê o ambiente, abre o arquivo, e afere o directorio com o filesystem
+// de verdade. Chama-se UMA vez, no main, antes de fio algum se erguer: ler
+// ambiente com fios a correr é corrida, e os consumidores recebem cópia.
+Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
