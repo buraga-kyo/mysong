@@ -117,6 +117,47 @@ constexpr char kCorpoDaBusca[] =
 
 }  // namespace
 
+namespace {
+
+// O lançamento de DOUS DISCOS, na fórma que o MusicBrainz serializa: cada midia
+// vem com formato, posição e conta de faixas, e sómente a que tras a gravação
+// consultada vem com `tracks`. Aqui a faixa está no SEGUNDO disco. MODELADA
+// sobre essa fórma, e não recortada do vivo como as demais d'este arquivo.
+constexpr char kCorpoDeDousDiscos[] =
+    R"({"length":300000,"title":"Fuga","id":"aaaaaaaa-0000-4000-8000-000000000001",)"
+    R"("releases":[{"title":"Obra Completa","date":"1990-01-01",)"
+    R"("status":"Official","release-group":{"primary-type":"Album",)"
+    R"("secondary-types":[]},"media":[{"format":"CD","position":1,)"
+    R"("track-count":12},{"format":"CD","position":2,"track-count":9,)"
+    R"("tracks":[{"number":"4","position":4,"length":300000}]}]}],)"
+    R"("artist-credit":[{"name":"Bach"}]})";
+
+}  // namespace
+
+TEST_CASE("o lançamento de dous discos dá o numero da faixa, e não zero") {
+  // A issue #63: lia-se sómente a primeira midia, e a faixa que morasse na
+  // segunda dava numero zero, donde a etiqueta sahia sem numero.
+  const nu::FichaMB ficha = nu::le_ficha_da_gravacao(kCorpoDeDousDiscos);
+  CHECK(ficha.album == "Obra Completa");
+  CHECK(ficha.ano == 1990);
+  CHECK(ficha.numero == 4);
+
+  // Tres midias com a faixa na TERCEIRA: a varredura não pára na segunda.
+  std::string tres(kCorpoDeDousDiscos);
+  const std::string primeira = R"({"format":"CD","position":1,"track-count":12},)";
+  tres.replace(tres.find(primeira), primeira.size(), primeira + primeira);
+  CHECK(nu::le_ficha_da_gravacao(tres).numero == 4);
+
+  // Lançamento SEM midia nenhuma: numero zero, que é «o MB não disse», e laço
+  // algum corre. Era o comportamento de antes, e continua a ser.
+  std::string sem(kCorpoDeDousDiscos);
+  const std::size_t abre = sem.find(R"("media":[)");
+  sem.erase(abre, sem.find("}]}]") + 4 - abre);
+  const nu::FichaMB nua = nu::le_ficha_da_gravacao(sem);
+  CHECK(nua.album == "Obra Completa");
+  CHECK(nua.numero == 0);
+}
+
 TEST_CASE("a eleição da busca criva score e duração, e elege a mais antiga") {
   // A de 1987 vence: as de 1998 e 2008 passam os crivos mas são mais novas; a
   // de 1970 tem score 85, e a de 1960 está a 27 segundos do pedido. Se qualquer
