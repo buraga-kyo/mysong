@@ -170,10 +170,12 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
 | `j` / `k` ou `↑` / `↓` | anda na lista |
+| `g` / `G` ou Home / End | ao principio, ao fim da lista |
 | Enter ou `→` | entra (artista, album, faixa) |
 | Escape, Backspace ou `←` | volta um degrau |
 | `/` | filtra a lista que esta a vista |
 | `s` | busca na rede, pelo yt-dlp; Enter no achado baixa-o |
+| `f` | troca a fonte da busca, dentro da lista da rede: YouTube, YouTube Music, Spotify |
 | `b` | baixa por URL |
 | `l` | troca o espectro pela letra |
 | `r` | varre o acervo outra vez |
@@ -181,6 +183,7 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `c` | cria lista (pede o nome) |
 | `R` | renomeia a lista |
 | `D` | apaga a lista (pede confirmacao) |
+| `S` ou `s` | responde sim a pergunta do `D`; toda outra tecla e nao |
 | `a` | junta a faixa eleita a lista alvo |
 | `t` | retira o item eleito da lista |
 | `K` / `J` | move o item para cima, para baixo |
