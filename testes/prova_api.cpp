@@ -513,6 +513,13 @@ TEST_CASE("a baixa recusa a mensagem torta antes de encommendar") {
       "{\"verbo\":\"baixar\",\"url\":7}",
       "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":-1}",
       "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":1e9}",
+      // O typo TORTO no opcional. Presente e errado NÃO é o mesmo que ausente:
+      // calado, encommendaria a baixa com o campo em branco, e o operador que
+      // pediu a faixa 3 receberia faixa sem numero sem nada lhe dizer por que.
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":\"tres\"}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"artista\":7}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"album\":true}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"titulo\":[\"a\"]}",
   };
   for (const char* torto : tortos) {
     const std::string resposta = mysong::api::responde(tocador, arredores, torto);
@@ -523,6 +530,11 @@ TEST_CASE("a baixa recusa a mensagem torta antes de encommendar") {
   estaleiro.espera_a_fila();
   CHECK(estaleiro.andamento().colhidas == 0);
   CHECK(estaleiro.andamento().falhadas == 0);
+  // E FALTAR continua legitimo: sem opcional algum, a baixa encommenda-se.
+  CHECK(campo(mysong::api::responde(
+                  tocador, arredores,
+                  "{\"verbo\":\"baixar\",\"url\":\"https://x\"}"),
+              "ok") == "true");
 }
 
 TEST_CASE("a fila de baixa cheia recusa, e nao cresce sem fim") {
