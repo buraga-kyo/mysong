@@ -414,6 +414,24 @@ TEST_CASE("a fonte Spotify busca no YouTube, argumento por argumento") {
         nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube));
 }
 
+TEST_CASE("os oito --print da busca sahem na ordem que le_achados lê") {
+  // A ORDEM é o contracto com le_achados: trocada, o artista pousava por album
+  // em toda colheita real, e a contagem de oito seguia verde. O alvo vae
+  // escripto á mão, e afere-se nas DUAS fontes que correm rede (a Spotify é
+  // byte-egual á YouTube, e o caso acima a prende).
+  const std::vector<std::string> alvo = {
+      "%(title)s",  "%(uploader)s", "%(duration)s", "%(webpage_url)s",
+      "%(artist)s", "%(album)s",    "%(track)s",    "%(release_year)s"};
+  for (const nu::Fonte fonte : {nu::Fonte::YouTube, nu::Fonte::YouTubeMusic}) {
+    const std::vector<std::string> ditos =
+        nu::argumentos_da_busca("bach", 5, fonte);
+    std::vector<std::string> moldes;
+    for (std::size_t i = 0; i + 1 < ditos.size(); ++i)
+      if (ditos[i] == "--print") moldes.push_back(ditos[i + 1]);
+    CHECK(moldes == alvo);
+  }
+}
+
 TEST_CASE("do achado da musica nasce a encommenda inteira, campo a campo") {
   nu::Achado musica;
   musica.titulo = "Karma Police (Remastered)";
