@@ -294,3 +294,8 @@ target_sources(mysong_core PRIVATE src/nucleo/musicbrainz.cpp)
 add_executable(espia_catalogo exemplos/espia_catalogo.cpp)
 target_compile_options(espia_catalogo PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_catalogo PRIVATE mysong_core)
+
+# O ESPIA do MusicBrainz: a prova viva da resolução da issue #57, passo a passo.
+add_executable(espia_musicbrainz exemplos/espia_musicbrainz.cpp)
+target_compile_options(espia_musicbrainz PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
