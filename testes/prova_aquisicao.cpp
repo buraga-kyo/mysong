@@ -455,6 +455,35 @@ TEST_CASE("do achado comum nasce o pedido de hoje: URL, fonte, e mais nada") {
   CHECK(cru.fonte == nu::Fonte::YouTube);
 }
 
+TEST_CASE("do catalogo nascem achados: filtro sem caixa, e a lista por album") {
+  nu::Catalogo catalogo;
+  catalogo.nome = "Minha Lista";
+  catalogo.faixas = {
+      {"Karma Police", "Radiohead", 1, 264500},
+      {"Paranoid Android", "Radiohead", 2, 386000},
+      {"Ageispolis", "Aphex Twin", 3, 322499},
+  };
+  // Por TITULO, sem caixa, e com todo campo no seu logar.
+  const std::vector<nu::Achado> uns = nu::achados_do_catalogo(catalogo, "karma");
+  REQUIRE(uns.size() == 1);
+  CHECK(uns[0].titulo == "Karma Police");
+  CHECK(uns[0].faixa == "Karma Police");
+  CHECK(uns[0].artista == "Radiohead");
+  CHECK(uns[0].album == "Minha Lista");  // o album é o NOME da lista
+  CHECK(uns[0].numero == 1);             // a posição vira o «NN - » do nome
+  CHECK(uns[0].duracao == 265);          // 264500 ms arredondam para cima
+  CHECK(uns[0].fonte == nu::Fonte::Spotify);
+  CHECK(uns[0].url.empty());  // sem URL: a baixa busca por si e casa pela duração
+  // Por ARTISTA, que com musica se busca tanto um como o outro.
+  CHECK(nu::achados_do_catalogo(catalogo, "RADIOHEAD").size() == 2);
+  // O meio que não chega á metade arredonda para baixo.
+  CHECK(nu::achados_do_catalogo(catalogo, "ageis")[0].duracao == 322);
+  // Termo que nada casa dá lista vazia, que é resposta e não erro.
+  CHECK(nu::achados_do_catalogo(catalogo, "bach").empty());
+  // E termo vazio dá o catalogo inteiro: é o que a troca de fonte mostra.
+  CHECK(nu::achados_do_catalogo(catalogo, "").size() == 3);
+}
+
 TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
   const nu::Achado nada;
   CHECK(nada.artista.empty());
