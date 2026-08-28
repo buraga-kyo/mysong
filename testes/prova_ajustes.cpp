@@ -168,3 +168,37 @@ TEST_CASE("a bandeira do acervo colhe-se, e o que não é ella fica faixa") {
   CHECK(nu::eh_acervo("--acervo=", &acervo));
   CHECK(acervo->empty());
 }
+
+TEST_CASE("linha comprida de mais vira queixa, e não par") {
+  nu::Ajustes ajustes;
+  const std::string comprida =
+      "volume = " + std::string(nu::LINHA_NO_MAXIMO, '7') + "\n";
+  CHECK(nu::ler_pares(comprida, &ajustes).empty());
+  CHECK(ajustes.queixas.size() == 1);
+}
+
+TEST_CASE("as queixas têm tecto, e o lixo não afoga o diagnostico") {
+  nu::Ajustes ajustes;
+  std::string lixo;
+  for (std::size_t volta = 0; volta < nu::QUEIXAS_NO_MAXIMO * 3; ++volta)
+    lixo += "linha torta sem egual\n";
+  nu::ler_pares(lixo, &ajustes);
+  CHECK(ajustes.queixas.size() == nu::QUEIXAS_NO_MAXIMO + 1);
+  CHECK(ajustes.queixas.back().find("mais queixas") != std::string::npos);
+}
+
+TEST_CASE("byte nulo, e texto sem quebra no fim, não derrubam o leitor") {
+  nu::Ajustes ajustes;
+  const std::string cru("volume = 70\nlixo\0binario", 24);
+  const auto pares = nu::ler_pares(cru, &ajustes);
+  REQUIRE(pares.size() == 1);
+  CHECK(pares[0].valor == "70");
+  CHECK(ajustes.queixas.size() == 1);
+}
+
+TEST_CASE("a cerquilha dentro do caminho corta, que o limite é declarado") {
+  nu::Ajustes ajustes;
+  const auto pares = nu::ler_pares("acervo = /mnt/disco#2\n", &ajustes);
+  REQUIRE(pares.size() == 1);
+  CHECK(pares[0].valor == "/mnt/disco");
+}
