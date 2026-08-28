@@ -350,7 +350,11 @@ void linha_do_ajuste(std::string* texto, std::string_view chave,
   texto->append(chave);
   texto->append(chave.size() < 20 ? 20 - chave.size() : 1, ' ');
   *texto += valor;
-  *texto += "  (";
+  // A columna da origem alinha-se tambem, e cede quando o valor é comprido: as
+  // quatro palavras uma debaixo da outra lêem-se de relance, e caminho longo
+  // empurra a d'elle para a direita em vez de truncar o que importa.
+  texto->append(valor.size() < 34 ? 34 - valor.size() : 2, ' ');
+  *texto += "(";
   texto->append(nome_da_origem(origem));
   *texto += ")\n";
 }
