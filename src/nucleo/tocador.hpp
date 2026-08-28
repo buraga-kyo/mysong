@@ -45,6 +45,8 @@ struct Retracto {
   int volume = 100;
   std::size_t indice = 0;  // 0 tambem em fila vazia: pergunte-se ao tamanho
   std::size_t tamanho = 0;
+  bool embaralhado = false;
+  Repeticao repeticao = Repeticao::Nenhuma;
 };
 
 class Tocador {
@@ -62,6 +64,14 @@ class Tocador {
   std::size_t junta(std::string caminho);
   bool ir_para(std::size_t alvo);
   std::vector<std::string> faixas() const;
+
+  // ── OS DOUS MODOS (issue #62). Alternar e ciclar são punhos PROPRIOS, e não
+  // «ler de fóra e depois escrever»: entre a leitura e a escripta caberia outro
+  // fio, e o socket, o barramento e a tecla batem no MESMO tocador.
+  void embaralhar(bool ligado);
+  bool alterna_embaralhar();
+  void repetir(Repeticao modo);
+  Repeticao cicla_repetir();
 
   // Registra quem escuta. Zero ouvintes é caso legitimo.
   void escuta(Ouvinte ouvinte);
