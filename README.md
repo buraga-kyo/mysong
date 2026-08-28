@@ -190,7 +190,8 @@ o operador escreve em portuguez e o dedo escreve em inglez. Opcao que nao
 esteja nessa taboada e RECUSADA, com a razao pelo stderr e sahida differente
 de zero; ate aqui ella era tratada como caminho de faixa. A opcao vale em
 qualquer logar da linha, e nao so antes das faixas: `mysong faixa.mp3 --versao`
-diz a versao.
+diz a versao. Apparecendo mais de uma, a recusa manda em todas; depois della
+manda a `--ajuda`, depois a `--versao`, e por fim o `--sonda`.
 
 A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
 acervo da corrida anterior, e o `r` manda varrer outra vez.
