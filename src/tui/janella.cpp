@@ -455,6 +455,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           termo = termo_da_rede;
           fonte = fonte_da_busca;
         }
+        // A fonte Spotify NUNCA corre aqui: a tela responde do catalogo, no
+        // proprio quadro e sem correio. Um pedido que envelheceu na flag (dous
+        // f seguidos com busca em voo) viraria um ytsearch de REDE a pousar
+        // por cima do catalogo, sob um cabeçalho que diz Spotify.
+        if (fonte == nucleo::Fonte::Spotify) continue;
         std::vector<nucleo::Achado> achados;
         const bool falou =
             nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
@@ -535,8 +540,18 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     std::vector<nucleo::Achado> achados;
     std::string recado;
     if (correio.colhe(&achados, &recado)) {
-      navegador.mostra_rede(std::move(achados));
-      aviso_da_rede = recado;
+      // A guarda da COLHEITA, par da do fio: entre a checagem de lá e o pouso
+      // aqui cabe um f, e a resposta que já não é da fonte vigente cai. Os
+      // achados vêm estampados; a resposta VAZIA é sempre de fonte de rede,
+      // donde sob a fonte Spotify ella é velha por construcção (o catalogo
+      // responde no proprio quadro, sem passar por este correio).
+      const bool casa = achados.empty()
+                            ? fonte_da_busca != nucleo::Fonte::Spotify
+                            : achados.front().fonte == fonte_da_busca;
+      if (casa) {
+        navegador.mostra_rede(std::move(achados));
+        aviso_da_rede = recado;
+      }
     }
     // O CATALOGO chega pelo mesmo caminho, e no mesmo fio: mostra-se ANTES de se
     // baixar cousa alguma, que é o que a tarefa pede quando manda devolver a lista
