@@ -436,6 +436,33 @@ DBusMessage* assenta_propriedade(CasaDoMpris::Punho& punho, DBusMessage* pedido,
     punho.tocador.volume(volume_para_porcento(valor));
     return dbus_message_new_method_return(pedido);
   }
+  // Os DOUS MODOS (issue #62). Typo que não casa com a introspecção, e nome de
+  // LoopStatus que a especificação não tem, recebem erro NOMEADO e o modo fica
+  // COMO ESTAVA: assentar valor por defeito em resposta a pedido que a Casa não
+  // entendeu seria ella desligar o modo por sua conta.
+  if (nome == "Shuffle") {
+    if (typo != DBUS_TYPE_BOOLEAN)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o Shuffle é um booleano");
+    dbus_bool_t valor = FALSE;
+    dbus_message_iter_get_basic(dentro, &valor);
+    punho.tocador.embaralhar(valor != FALSE);
+    return dbus_message_new_method_return(pedido);
+  }
+  if (nome == "LoopStatus") {
+    if (typo != DBUS_TYPE_STRING)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o LoopStatus é uma cadeia");
+    const char* cru = nullptr;
+    dbus_message_iter_get_basic(dentro, &cru);
+    const std::optional<nucleo::Repeticao> modo =
+        repeticao_do_nome(cru != nullptr ? cru : "");
+    if (!modo.has_value())
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o LoopStatus é None, Track ou Playlist");
+    punho.tocador.repetir(*modo);
+    return dbus_message_new_method_return(pedido);
+  }
   return dbus_message_new_error(pedido, DBUS_ERROR_PROPERTY_READ_ONLY,
                                 "essa propriedade não se põe");
 }
@@ -482,11 +509,11 @@ DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedid
   }
 
   if (membro == "Set") {
-    // SÓMENTE o volume se põe, que é o unico `readwrite` da introspecção. Aceitar
-    // outro faria a Casa mentir sobre o que a introspecção promette.
-    if (interface != kTocador || nome != "Volume")
+    // As TRES `readwrite` da introspecção, e sómente ellas: o punho abaixo recusa
+    // o resto. Acceitar outra faria a Casa mentir sobre o que ella annuncia.
+    if (interface != kTocador)
       return dbus_message_new_error(pedido, DBUS_ERROR_PROPERTY_READ_ONLY,
-                                    "sómente o volume se põe");
+                                    "esta Casa não serve essa interface");
     dbus_message_iter_next(&leitor);
     DBusMessageIter dentro;
     if (dbus_message_iter_get_arg_type(&leitor) != DBUS_TYPE_VARIANT)
