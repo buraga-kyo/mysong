@@ -8,7 +8,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <chrono>
 #include <string>
+#include <thread>
 
 #include "nucleo/musicbrainz.hpp"
 
@@ -146,6 +148,38 @@ TEST_CASE("os termos da colheita: tres ISRCs no tecto, e o de hoje por ultimo") 
       nu::termos_de_busca(vazia, "", "Never Gonna Give You Up");
   REQUIRE(sos.size() == 1);
   CHECK(sos[0] == "Never Gonna Give You Up");
+}
+
+TEST_CASE("duas passagens pelo acelerador distam um segundo, de fios distinctos") {
+  // Os dous obreiros do estaleiro chegam em rajada; a promessa é UMA requisição
+  // por segundo somados todos os fios. Toca RELOGIO, e não rede: o segundo que
+  // este caso custa á bateria é o preço declarado da promessa (PLAN, Riscos).
+  using relogio = std::chrono::steady_clock;
+  relogio::time_point a, b;
+  std::thread um([&a] { nu::espera_a_vez_do_mb(); a = relogio::now(); });
+  std::thread dous([&b] { nu::espera_a_vez_do_mb(); b = relogio::now(); });
+  um.join();
+  dous.join();
+  const auto entre = a < b ? b - a : a - b;
+  // Novecentos e noventa, e não mil crus: o carimbo toma-se dentro da tranca e o
+  // relogio lê-se fóra, e a folga de dez milesimos paga essa fresta sem deixar
+  // passar cadencia quebrada, que erraria por um segundo inteiro.
+  CHECK(entre >= std::chrono::milliseconds(990));
+}
+
+TEST_CASE("o agente do MB nomeia a obra: nome, versão e contato") {
+  // O formato é a politica publicada do MusicBrainz: `nome/versão (contato)`.
+  // Agente anonymo é recusado pelo servidor, e recusado em nome do IP inteiro.
+  const std::string agente = nu::kAgenteDoMB;
+  REQUIRE(agente.rfind("mysong/", 0) == 0);
+  const std::size_t espaco = agente.find(' ');
+  REQUIRE(espaco != std::string::npos);
+  for (const char c : agente.substr(7, espaco - 7))
+    CHECK((c == '.' || (c >= '0' && c <= '9')));
+  CHECK(espaco > 7);                   // ha versão entre a barra e o espaço
+  CHECK(agente[espaco + 1] == '(');
+  CHECK(agente.back() == ')');
+  CHECK(agente.size() > espaco + 3);   // e ha contato entre os parentheses
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
