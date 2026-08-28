@@ -322,5 +322,33 @@ TEST_CASE("bandeiras_do_motor cresce de dous pares para tres com o cookie") {
   CHECK(nu::bandeiras_do_motor(true).size() == 6u);
 }
 
+TEST_CASE("o ISRC ganha do titulo quando os dous discordam (aceite da issue)") {
+  // A MESMA lista, dous eleitores, lado a lado. O cover tras o titulo do pedido
+  // no seu e está a nove segundos do alvo; a art track da gravação tem titulo
+  // estranho e está a um. O eleitor de hoje pesa o titulo e leva o COVER; o do
+  // caminho ISRC ignora o titulo, desempata pela duração exacta e leva a
+  // GRAVAÇÃO: é o aceite da issue #57, aferido com os dous no mesmo palco.
+  const std::vector<nu::Achado> achados = {
+      {"Never Gonna Give You Up (cover)", "Canal do Fulano", 222,
+       "https://youtube/cover"},
+      {"NGGYU (2022 Remaster)", "Rick Astley", 214, "https://youtube/gravacao"},
+  };
+  nu::Pedido pedido;
+  pedido.titulo = "Never Gonna Give You Up";
+  pedido.duracao = 213;
+  CHECK(nu::melhor_achado(achados, pedido, nu::TOLERANCIA_DO_CASAMENTO) == 0);
+  CHECK(nu::achado_mais_proximo(achados, 213) == 1);
+}
+
+TEST_CASE("sem alvo de duração, o caminho ISRC fica com o primeiro achado") {
+  const std::vector<nu::Achado> achados = {
+      {"sem duração dita", "canal", 0, "https://youtube/a"},
+      {"com duração dita", "canal", 214, "https://youtube/b"},
+  };
+  CHECK(nu::achado_mais_proximo(achados, 0) == 0);    // sem alvo: o primeiro
+  CHECK(nu::achado_mais_proximo(achados, 213) == 1);  // «não disse» não desempata
+  CHECK(nu::achado_mais_proximo({}, 213) == -1);      // sem achado não ha indice
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
