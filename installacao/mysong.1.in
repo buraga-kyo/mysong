@@ -36,6 +36,16 @@ por traco. Traco sozinho tambem e caminho.
 .PP
 Opcao que nao esteja nesta taboada e RECUSADA: a razao vae pelo stderr, e a
 sahida e 2. Opcao curta alguma existe, e escreve-se a longa.
+.PP
+A opcao vale em qualquer logar da linha, e nao so antes das faixas:
+.B mysong faixa.mp3 \-\-versao
+diz a versao. Apparecendo mais de uma, a recusa manda em todas; depois della
+manda a
+.BR \-\-ajuda ,
+depois a
+.BR \-\-versao ,
+e por fim o
+.BR \-\-sonda .
 .SH TECLAS
 A taboada esta inteira, e vae dividida pelo que cada grupo governa.
 .SS Transporte

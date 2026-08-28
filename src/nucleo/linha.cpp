@@ -69,6 +69,10 @@ Uso: mysong [opcao]... [faixa]...
 Sem faixa alguma, abre com a fila vazia. Opcao que nao esteja nesta
 taboada e recusada, e a sahida vae differente de zero.
 
+A opcao vale em qualquer logar da linha, e nao so antes das faixas.
+Apparecendo mais de uma, a recusa manda em todas; depois della manda a
+--ajuda, depois a --versao, e por fim o --sonda.
+
 O manual inteiro: man mysong
 )";
 }
