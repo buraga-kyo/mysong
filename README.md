@@ -183,7 +183,7 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `c` | cria lista (pede o nome) |
 | `R` | renomeia a lista |
 | `D` | apaga a lista (pede confirmacao) |
-| `S` ou `s` | responde sim a pergunta do `D`; toda outra tecla e nao |
+| `S` ou `s` | responde sim a pergunta do `D`; outro caractere, Escape ou Enter e nao |
 | `a` | junta a faixa eleita a lista alvo |
 | `t` | retira o item eleito da lista |
 | `K` / `J` | move o item para cima, para baixo |
