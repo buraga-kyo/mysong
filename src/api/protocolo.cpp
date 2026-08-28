@@ -120,6 +120,16 @@ const Valor* argumento(const Mensagem& msg, std::string_view nome, Typo typo) {
   return (achado != nullptr && achado->typo == typo) ? achado : nullptr;
 }
 
+// O argumento OPCIONAL, e a differença que importa n'elle: chave AUSENTE é caso
+// legitimo, e chave PRESENTE com o typo errado NÃO é. O argumento() de cima
+// devolve nullo nos dous casos, donde tratá-los por egual faria o pedido seguir
+// com o campo em branco e sem uma palavra, que é o silêncio que este tractado
+// prohibe pelo nome.
+bool typo_torto(const Mensagem& msg, std::string_view nome, Typo typo) {
+  return msg.acha(std::string(nome)) != nullptr &&
+         argumento(msg, nome, typo) == nullptr;
+}
+
 std::string falta(std::string_view nome, std::string_view typo) {
   return erro("argumento_invalido",
               "o argumento \"" + std::string(nome) + "\" falta ou nao e do typo " +
@@ -322,6 +332,10 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
     if (onde == nullptr) return falta("url", "texto");
     if (onde->texto.empty())
       return erro("argumento_invalido", "a url da faixa vem vazia");
+    // Os OPCIONAES: faltar é legitimo, vir com o typo torto não é. Vide typo_torto.
+    for (const char* nome : {"artista", "album", "titulo"})
+      if (typo_torto(msg, nome, Typo::Texto)) return falta(nome, "texto");
+    if (typo_torto(msg, "numero", Typo::Numero)) return falta("numero", "numero");
     const nucleo::Andamento antes = arredores.estaleiro->andamento();
     if (antes.na_espera >= kTectoDaFilaDeBaixa)
       return erro("recusado", "a fila de baixa esta cheia: " +
