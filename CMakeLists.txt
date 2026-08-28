@@ -299,3 +299,12 @@ target_link_libraries(espia_catalogo PRIVATE mysong_core)
 add_executable(espia_musicbrainz exemplos/espia_musicbrainz.cpp)
 target_compile_options(espia_musicbrainz PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
+
+# ─── O NUMERO DA VERSÃO (issue #66) ─────────────────────────────────────────
+# O numero mora n'um logar só, que é o project() lá em cima, e chega ao C++ por
+# cabeçalho CONFIGURADO. Constante copiada no codigo envelheceria á parte, e a
+# obra passaria a mentir sobre a sua propria versão no dia em que o numero
+# subisse. Vae para a arvore de compilação, que é onde cousa gerada mora.
+configure_file(src/nucleo/versao.hpp.in
+  "${CMAKE_CURRENT_BINARY_DIR}/gerado/nucleo/versao.hpp" @ONLY)
+target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/gerado")
