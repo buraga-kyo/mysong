@@ -203,6 +203,38 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     return obra.fecha();
   }
 
+  // ── OS DOUS MODOS (issue #62). Os nomes são os d'esta Casa, e não os do
+  // MPRIS: o documento inteiro fala «Tocando» e nunca «Playing», e mudar de
+  // lingua no meio obrigaria o cliente a saber duas taboadas. A correspondencia
+  // com o barramento mora em api/unidades.cpp, e é lá que ella se prova.
+  if (verbo == "embaralhar") {
+    const Valor* liga = argumento(msg, "ligado", Typo::Booleano);
+    if (liga == nullptr) return falta("ligado", "booleano");
+    tocador.embaralhar(liga->booleano);
+    Objecto obra = abre_acerto();
+    obra.par("embaralhado", booleano(liga->booleano));
+    return obra.fecha();
+  }
+  if (verbo == "repetir") {
+    const Valor* modo = argumento(msg, "modo", Typo::Texto);
+    if (modo == nullptr) return falta("modo", "texto");
+    nucleo::Repeticao qual = nucleo::Repeticao::Nenhuma;
+    if (modo->texto == "uma") {
+      qual = nucleo::Repeticao::Uma;
+    } else if (modo->texto == "todas") {
+      qual = nucleo::Repeticao::Todas;
+    } else if (modo->texto != "nenhuma") {
+      // Nome que não ha é a MENSAGEM errada, e não o nucleo a recusar: por isso
+      // «argumento_invalido», que manda olhar o que se escreveu.
+      return erro("argumento_invalido",
+                  "o modo de repetir e \"nenhuma\", \"uma\" ou \"todas\"");
+    }
+    tocador.repetir(qual);
+    Objecto obra = abre_acerto();
+    obra.par("repetir", texto(nucleo::nome_da_repeticao(qual)));
+    return obra.fecha();
+  }
+
   // Os RESERVADOS. Existem no contracto e ainda não no nucleo. Deixá-los fóra
   // lhes daria «verbo_desconhecido», que é a MESMA resposta de um erro de
   // digitação, e ahi o cliente não saberia se errou o nome ou se a feição não
