@@ -316,6 +316,12 @@ TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
       "{\"verbo\":\"ir_para\",\"indice\":-1}",
       "{\"verbo\":\"ir_para\",\"indice\":1e30}",
       "{\"verbo\":\"buscar\"}",
+      // Os dous modos (issue #62): argumento que falta, argumento de typo
+      // errado, e nome de modo que não ha. Os tres são a MENSAGEM errada.
+      "{\"verbo\":\"embaralhar\"}",
+      "{\"verbo\":\"embaralhar\",\"ligado\":1}",
+      "{\"verbo\":\"repetir\"}",
+      "{\"verbo\":\"repetir\",\"modo\":\"sempre\"}",
   };
   for (const char* torto : tortos)
     CHECK(campo(fala(tocador, torto), "erro") == "argumento_invalido");
