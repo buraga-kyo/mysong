@@ -341,6 +341,16 @@ std::string_view nome_do_estado(EstadoDoArquivo estado) {
   return "estado sem nome";
 }
 
+// largura — conta CARACTERES, e não bytes. «Música» tem seis letras e sete
+// bytes, e guarnecendo-se por byte a columna sahia torta justamente na linha
+// do acervo, que é a que traz acento com mais frequencia.
+std::size_t largura(std::string_view texto) {
+  std::size_t conta = 0;
+  for (const char letra : texto)
+    if ((static_cast<unsigned char>(letra) & 0xC0) != 0x80) ++conta;
+  return conta;
+}
+
 // linha_do_ajuste — a chave guarnecida á largura da maior, o valor, e a origem
 // entre parenthesis. O valor NÃO se trunca: caminho cortado n'um diagnostico é
 // o defeito, e não o remedio.
@@ -348,12 +358,12 @@ void linha_do_ajuste(std::string* texto, std::string_view chave,
                      const std::string& valor, Origem origem) {
   *texto += "  ";
   texto->append(chave);
-  texto->append(chave.size() < 20 ? 20 - chave.size() : 1, ' ');
+  texto->append(largura(chave) < 20 ? 20 - largura(chave) : 1, ' ');
   *texto += valor;
   // A columna da origem alinha-se tambem, e cede quando o valor é comprido: as
   // quatro palavras uma debaixo da outra lêem-se de relance, e caminho longo
   // empurra a d'elle para a direita em vez de truncar o que importa.
-  texto->append(valor.size() < 34 ? 34 - valor.size() : 2, ' ');
+  texto->append(largura(valor) < 34 ? 34 - largura(valor) : 2, ' ');
   *texto += "(";
   texto->append(nome_da_origem(origem));
   *texto += ")\n";
