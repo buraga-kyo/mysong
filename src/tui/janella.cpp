@@ -113,17 +113,6 @@ std::filesystem::path raiz_do_soquete() {
   return std::filesystem::path("/tmp");
 }
 
-// raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
-// que o operador com monte de rede não tenha de mover o acervo para casa.
-std::filesystem::path raiz_do_acervo() {
-  const char* posto = std::getenv("MYSONG_ACERVO");
-  if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
-  const char* casa = std::getenv("HOME");
-  if (casa == nullptr) return {};
-  return std::filesystem::path(casa) / "Música";
-}
-
-
 // QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
 // rolar muito, e o `--flat-playlist` faz d'isso uma sonda de rede só.
 constexpr int ACHADOS_POR_BUSCA = 15;
@@ -316,6 +305,9 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
 // e é por isso que ellas vivem fóra d'aqui.
 int erguer_tocador(const std::vector<std::string>& faixas,
                    const nucleo::Ajustes& ajustes) {
+  // O acervo em cópia: dous fios o lêem, e a cópia n'esta pilha vive mais que
+  // elles, que se juntam antes de esta funcção voltar.
+  const std::filesystem::path acervo = ajustes.acervo.valor;
   std::string razao;
   std::optional<nucleo::MotorMpv> motor = nucleo::MotorMpv::abrir(&razao);
   if (!motor) {
@@ -370,8 +362,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // reaproveita-se inteiro, em vez de se duplicar.
   nucleo::Estaleiro estaleiro(
       ajustes.baixas_simultaneas.valor,
-      [](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
-        return nucleo::baixa(raiz_do_acervo(), pedido, ficou);
+      [acervo](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
+        return nucleo::baixa(acervo, pedido, ficou);
       });
 
 
@@ -442,7 +434,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     while (!sahir.load()) {
       if (pede_varrer.exchange(false)) {
         varrida.store(false);
-        nucleo::Varredura varredura(banco, {raiz_do_acervo()});
+        nucleo::Varredura varredura(banco, {acervo});
         while (!sahir.load() && varredura.passo()) {
         }
         varrida.store(true);
