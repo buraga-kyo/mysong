@@ -186,5 +186,24 @@ TEST_CASE("a duvidosa conta á parte da falhada") {
   CHECK(nu::texto_do_andamento(fim).find("falhada") == std::string::npos);
 }
 
+TEST_CASE("o colhido duvidoso conta por duvidosa e levanta a bandeira") {
+  // O desfecho novo da issue #57: baixou pelo criterio de hoje, sem gravação
+  // casada. As duas verdades aferem-se juntas: conta em DUVIDOSAS, que o que
+  // ella pede é olho humano e «falhada» faria o operador tentar o mesmo outra
+  // vez; e levanta a bandeira da colheita, que o arquivo FICOU no disco e a
+  // tela ha de o varrer. Nenhum outro desfecho diz as duas cousas de uma vez.
+  nu::Estaleiro estaleiro(1, [](const nu::Pedido&, std::filesystem::path*) {
+    return nu::Colheita::ColhidoDuvidoso;
+  });
+  estaleiro.encommenda(nu::Pedido{});
+  estaleiro.espera_a_fila();
+  CHECK(estaleiro.colheu());
+  const nu::Andamento fim = estaleiro.andamento();
+  CHECK(fim.duvidosas == 1);
+  CHECK(fim.colhidas == 0);
+  CHECK(fim.falhadas == 0);
+  CHECK(fim.ultima == "baixado por titulo, sem a gravação: confira");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
