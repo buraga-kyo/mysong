@@ -282,6 +282,15 @@ TEST_CASE("achado meio não se mostra, e duração que não é numero não vira 
   CHECK(um[0].duracao == 0);
 }
 
+TEST_CASE("a tolerancia de doze segundos declara-se n'um logar só") {
+  // A issue #63: os doze moravam em duas constantes, e duas verdades dão a que
+  // se corrige e a que fica a errar. A fonte é a do musicbrainz.hpp, e esta
+  // deriva d'ella; o `grep` do numero acha UMA declaração, e não duas.
+  CHECK(nu::kToleranciaSeg == 12);
+  CHECK(nu::kJanellaMs == 12000);
+  CHECK(nu::TOLERANCIA_DO_CASAMENTO == nu::kToleranciaSeg);
+}
+
 TEST_CASE("o anno absurdo da rede não estoura as contas") {
   // A issue #63: o campo do anno vem de linha do yt-dlp, e a leitura antiga era
   // comportamento INDEFINIDO em transbordo. Vinte digitos são o caso que ella

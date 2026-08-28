@@ -36,6 +36,17 @@ namespace mysong::nucleo {
 inline constexpr char kAgenteDoMB[] =
     "mysong/0.1 (https://github.com/bragaus/mysong)";
 
+// A TOLERANCIA do casamento por duração, em SEGUNDOS, e a FONTE do numero
+// (issue #63). Doze: o mesmo audio costuma trazer um ou dous segundos de
+// silencio nas pontas, e a versão ao vivo ou a estendida differe de muito mais
+// que isso. Mora AQUI, e não na aquisição, por razão de dependencia e não de
+// gosto: `aquisicao.hpp` inclue este cabeçalho, e o contrario seria cyclo.
+inline constexpr int kToleranciaSeg = 12;
+
+// A MESMA tolerancia em milesimos, que é como o MusicBrainz fala de duração.
+// DERIVA, e não se declara: quem mudar os doze muda UM logar.
+inline constexpr int kJanellaMs = kToleranciaSeg * 1000;
+
 // A FICHA de uma gravação. Campo vazio ou zero é «o MusicBrainz não disse».
 struct FichaMB {
   std::vector<std::string> isrcs;  // na ordem do MB; uma gravação accumula varios

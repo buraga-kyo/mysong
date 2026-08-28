@@ -45,11 +45,6 @@ std::size_t recolhe(char* pedaco, std::size_t tamanho, std::size_t quantos,
   return bytes;
 }
 
-// A janella da busca por duração, em milesimos: os MESMOS doze segundos da
-// TOLERANCIA_DO_CASAMENTO, e pela mesma medida (silencio nas pontas fica dentro,
-// versão ao vivo e estendida ficam fóra).
-constexpr int kJanellaMs = 12000;
-
 // aspas_seguras — o texto dentro de aspas da consulta Lucene. Aspa e
 // contra-barra escapam-se; sem isto, um titulo com aspa partiria a frase e o
 // resto do titulo viraria operador de busca.
