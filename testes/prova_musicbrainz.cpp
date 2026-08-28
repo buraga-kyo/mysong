@@ -87,5 +87,44 @@ TEST_CASE("a ficha sahe com os ISRCs na ordem e a release canonica") {
   CHECK(ficha.numero == 1);
 }
 
+namespace {
+
+// O corpo da busca, no embrulho vivo do ws/2: tres homonymas de score cem que
+// só a data separa, mais duas ISCAS que a eleição ha de recusar; cada uma é a
+// mais antiga de todas, e venceria se a guarda respectiva morresse. E a de 1987
+// tras uma release ANINHADA de data alheia, que o leitor de fundo um não lê.
+constexpr char kCorpoDaBusca[] =
+    R"({"created":"2026-08-27T14:00:00.000Z","count":21,"offset":0,)"
+    R"("recordings":[{"id":"8f3471b5-7e6a-48da-86a9-c1c07a0f47ae","score":100,)"
+    R"("title":"Never Gonna Give You Up","length":212946,)"
+    R"("first-release-date":"1987-07-27","video":null,)"
+    R"("releases":[{"title":"Remaster","date":"2024-01-01"}]},)"
+    R"({"id":"0efeb239-fa6d-4284-ba83-94c604584809","score":100,)"
+    R"("title":"Never Gonna Give You Up","length":213000,)"
+    R"("first-release-date":"1998"},)"
+    R"({"id":"cd29e7db-6f4b-4b53-8b19-3e0e05b4bda5","score":100,)"
+    R"("title":"Never Gonna Give You Up","length":209000,)"
+    R"("first-release-date":"2008"},)"
+    R"({"id":"ff6c55fc-1111-4222-8333-944444444444","score":85,)"
+    R"("title":"Never Gonna Give You Up","length":213000,)"
+    R"("first-release-date":"1970"},)"
+    R"({"id":"2e7756e5-5555-4666-8777-988888888888","score":100,)"
+    R"("title":"Never Gonna Give You Up","length":240000,)"
+    R"("first-release-date":"1960"}]})";
+
+}  // namespace
+
+TEST_CASE("a eleição da busca criva score e duração, e elege a mais antiga") {
+  // A de 1987 vence: as de 1998 e 2008 passam os crivos mas são mais novas; a
+  // de 1970 tem score 85, e a de 1960 está a 27 segundos do pedido. Se qualquer
+  // das duas guardas morresse, a isca respectiva ganhava por mais antiga.
+  CHECK(nu::le_eleita_da_busca(kCorpoDaBusca, 213000) ==
+        "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae");
+  // Pedido a cem segundos de tudo: candidata alguma passa, e o vazio manda ao
+  // caminho de hoje em vez de casar por casar.
+  CHECK(nu::le_eleita_da_busca(kCorpoDaBusca, 100000).empty());
+  CHECK(nu::le_eleita_da_busca("", 213000).empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
