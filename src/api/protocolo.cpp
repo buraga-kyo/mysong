@@ -9,8 +9,8 @@
 // CONTRA-DOMÍNIO .. uma linha de JSON, sempre.
 // INVARIANTE ...... tres recusas, e tres codigos que NÃO se confundem:
 //                   «verbo_desconhecido» é nome que a Casa não tem;
-//                   «nao_implementado» é nome que a Casa TEM e cujo subsystema
-//                   ainda não chegou, e vae com a issue que o trará; e
+//                   «indisponivel» é nome que a Casa tem, com o subsystema em
+//                   pé, e que ESTA instancia do servidor não ergueu; e
 //                   «recusado» é o nucleo a dizer não a ordem legitima. Quem
 //                   depura do outro lado precisa de as distinguir, porque o
 //                   remedio de cada uma é differente.
@@ -88,18 +88,16 @@ std::vector<std::string> faixas_da_fila(Tocador& tocador) {
   return tocador.faixas();
 }
 
-// «nao_implementado» é nome que a Casa TEM e cujo subsystema ainda não chegou. A
-// issue vae na resposta, para que o implementador do outro lado saiba ONDE
-// procurar quando aquillo passar a funccionar, em vez de ficar a supor se errou o
-// nome ou se a feição não veio.
-std::string reservado(std::string_view verbo, int issue) {
-  Objecto obra;
-  obra.par("ok", booleano(false));
-  obra.par("erro", texto("nao_implementado"));
-  obra.par("razao", texto("o verbo \"" + std::string(verbo) +
-                          "\" esta reservado e o seu subsystema ainda nao existe"));
-  obra.par("issue", inteiro(issue));
-  return obra.fecha();
+// «indisponivel» é a peça que EXISTE na obra e que ESTA INSTANCIA do servidor
+// não ergueu: quem abriu o socket sem índice de acervo, ou sem fila de baixa.
+// Não é «nao_implementado», que dizia «a feição não existe em parte alguma» e
+// passou a ser mentira quando as issues #5, #8 e #11 fecharam; nem é «recusado»,
+// que manda olhar o ESTADO do nucleo, quando aqui não ha estado que mudar de
+// ordem para ordem. O remedio é de quem ERGUEU o servidor, e não de quem manda a
+// ordem, e é por isso que leva codigo proprio.
+std::string indisponivel(std::string_view peca) {
+  return erro("indisponivel",
+              "esta instancia do servidor nao ergueu " + std::string(peca));
 }
 // OS ARGUMENTOS. Argumento ausente ou de typo errado é «argumento_invalido», e
 // jamais «recusado». A differença importa a quem depura do outro lado, e importa
@@ -228,12 +226,10 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     return obra.fecha();
   }
 
-  // Os RESERVADOS. Existem no contracto e ainda não no nucleo. Deixá-los fóra
-  // lhes daria «verbo_desconhecido», que é a MESMA resposta de um erro de
-  // digitação, e ahi o cliente não saberia se errou o nome ou se a feição não
-  // chegou. Com a issue na resposta, elle sabe as duas cousas de uma vez.
-  if (verbo == "biblioteca") return reservado(verbo, 8);
-  if (verbo == "baixar")     return reservado(verbo, 11);
+  // Os dous que faltam. O NOME existe e o subsystema tambem, donde a falta é
+  // sómente d'esta instancia, e é isso que a resposta diz.
+  if (verbo == "biblioteca") return indisponivel("o indice do acervo");
+  if (verbo == "baixar")     return indisponivel("a fila de baixa");
 
   return erro("verbo_desconhecido",
               "esta Casa nao conhece o verbo \"" + verbo + "\"");

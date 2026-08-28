@@ -13,7 +13,7 @@
 //                   a responder» e é o que a linha em branco merece.
 // INVARIANTE ...... verbo algum fica MUDO. Todo caminho d'esta obra devolve JSON
 //                   ou a cadeia vazia da linha em branco: o que não se conhece,
-//                   o que se conhece e ainda não existe, e o que o nucleo
+//                   o que esta instancia não ergueu, e o que o nucleo
 //                   recusou têm cada um o seu codigo, e os tres se distinguem.
 //                   Erro que volta como silêncio é o que a issue proibiu com
 //                   essas palavras.
