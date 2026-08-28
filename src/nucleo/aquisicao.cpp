@@ -398,6 +398,31 @@ Pedido encommenda_do_achado(const Achado& achado) {
   return pedido;
 }
 
+std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
+                                        const std::string& termo) {
+  std::vector<Achado> achados;
+  const std::string alvo = minuscula_ascii(termo);
+  for (const FaixaDoCatalogo& faixa : catalogo.faixas) {
+    // Titulo OU artista, como o filtro da secção Lista: com fonte de musica o
+    // que se busca é tanto um como o outro.
+    if (minuscula_ascii(faixa.titulo).find(alvo) == std::string::npos &&
+        minuscula_ascii(faixa.artista).find(alvo) == std::string::npos)
+      continue;
+    Achado achado;
+    achado.titulo = faixa.titulo;
+    achado.faixa = faixa.titulo;  // no catalogo o canonico é o proprio titulo
+    achado.artista = faixa.artista;
+    achado.album = catalogo.nome;  // o album é o nome da lista (issue #13)
+    achado.numero = faixa.numero;
+    // Milesimos a segundos, ao mais proximo: truncar perderia meio segundo por
+    // faixa, e a tolerancia do casamento conta-os.
+    achado.duracao = (faixa.duracao_ms + 500) / 1000;
+    achado.fonte = Fonte::Spotify;
+    achados.push_back(achado);
+  }
+  return achados;
+}
+
 bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
                    std::vector<Achado>* achados) {
   if (termo.empty()) return false;

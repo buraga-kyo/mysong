@@ -27,6 +27,8 @@
 #include <string_view>
 #include <vector>
 
+#include "nucleo/catalogo.hpp"
+
 namespace mysong::nucleo {
 
 // A FONTE da busca (issue #56). As tres CONVIVEM, e nenhuma substitue outra: o
@@ -221,6 +223,14 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
 // sahe só com URL e fonte, egual ao de hoje. A DURAÇÃO entra sómente no pedido
 // SEM URL: lá ella é o crivo do casamento (issue #13); havendo URL, nada decide.
 Pedido encommenda_do_achado(const Achado& achado);
+
+// achados_do_catalogo — a fonte Spotify da tela busca AQUI, no catalogo que a
+// issue #13 importou, e rede alguma se toca. O filtro é o da tela: titulo OU
+// artista, sem caixa. O album é o nome da LISTA (a pagina de embutir não publica
+// album), o numero é a posição, a duração arredonda-se de milesimos, e a URL vae
+// vazia de proposito: é o pedido sem URL, o que casa pela duração.
+std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
+                                        const std::string& termo);
 
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
