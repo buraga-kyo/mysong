@@ -86,3 +86,49 @@ TEST_CASE("a escada inteira: argumento, ambiente, arquivo, padrão") {
   CHECK(um.acervo.valor == "/padrao");
   CHECK(um.acervo.origem == nu::Origem::Padrao);
 }
+
+namespace {
+
+// O irmão do dublê de cima: não dá NADA por directorio. É com elle que se prova
+// a recusa do acervo, e que se prova que o ambiente não passa por ella.
+const nu::Aferidor nada_vale = [](const std::filesystem::path&) {
+  return false;
+};
+
+}  // namespace
+
+TEST_CASE("o numero ha de ser inteiro inteiramente consumido") {
+  CHECK(nu::volume_de("70") == 70);
+  CHECK(nu::volume_de("+70") == 70);
+  CHECK_FALSE(nu::volume_de("70 lixo"));
+  CHECK_FALSE(nu::volume_de("abc"));
+  CHECK_FALSE(nu::volume_de("101"));
+  CHECK_FALSE(nu::volume_de("99999999999999999999"));
+  CHECK(nu::baixas_de("8"));
+  CHECK_FALSE(nu::baixas_de("9"));
+  CHECK_FALSE(nu::baixas_de("0"));
+  CHECK_FALSE(nu::baixas_de("-3"));
+  CHECK(nu::fonte_de("YouTube-Music") == nu::Fonte::YouTubeMusic);
+  CHECK_FALSE(nu::fonte_de("spotfy"));
+}
+
+TEST_CASE("valor invalido cae no degrau de baixo, e deixa queixa") {
+  const nu::Ajustes ajustes = resolvido(
+      "volume = 500\nfonte_da_busca = spotfy\nbaixas_simultaneas = 0\n"
+      "chave_de_versão_velha = 1\n", {});
+  CHECK(ajustes.volume.valor == nu::VOLUME_DA_CASA);
+  CHECK(ajustes.volume.origem == nu::Origem::Padrao);
+  CHECK(ajustes.fonte_da_busca.origem == nu::Origem::Padrao);
+  CHECK(ajustes.baixas_simultaneas.valor == nu::OBREIROS_DA_BAIXA);
+  CHECK(ajustes.queixas.size() == 4);
+}
+
+TEST_CASE("o ambiente vale crú, e o acervo do arquivo afere-se") {
+  nu::Degraus degraus;
+  degraus.acervo_do_ambiente = "/monte-que-ainda-não-montou";
+  const nu::Ajustes cru =
+      resolvido("acervo = /do-arquivo\n", degraus, nada_vale);
+  CHECK(cru.acervo.valor == "/monte-que-ainda-não-montou");
+  CHECK(cru.acervo.origem == nu::Origem::Ambiente);
+  CHECK(cru.queixas.size() == 1);
+}
