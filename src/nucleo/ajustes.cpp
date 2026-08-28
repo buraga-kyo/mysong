@@ -11,6 +11,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/ajustes.hpp"
 
+#include <algorithm>
 #include <charconv>
 #include <cstdlib>
 #include <fstream>
@@ -341,6 +342,17 @@ std::string_view nome_do_estado(EstadoDoArquivo estado) {
   return "estado sem nome";
 }
 
+// numero_da_linha — o «linha N» com que a queixa começa, e ZERO quando ella
+// não é de linha alguma, como a do arquivo que se não leu e a da bandeira.
+std::size_t numero_da_linha(const std::string& queixa) {
+  constexpr std::string_view prefixo = "linha ";
+  if (queixa.compare(0, prefixo.size(), prefixo) != 0) return 0;
+  int numero = 0;
+  std::from_chars(queixa.data() + prefixo.size(),
+                  queixa.data() + queixa.size(), numero);
+  return numero > 0 ? static_cast<std::size_t>(numero) : 0;
+}
+
 // largura — conta CARACTERES, e não bytes. «Música» tem seis letras e sete
 // bytes, e guarnecendo-se por byte a columna sahia torta justamente na linha
 // do acervo, que é a que traz acento com mais frequencia.
@@ -392,8 +404,15 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
   // porta: quem vê lista de erros n'um diagnostico suppõe que o programa parou.
   if (!ajustes.queixas.empty()) {
     texto += "\n  queixas, que não impedem a obra de abrir:\n";
-    for (const std::string& queixa : ajustes.queixas)
-      texto += "    " + queixa + "\n";
+    // Na ordem das LINHAS do arquivo, e não na ordem em que se lavraram: o
+    // leitor lavra as d'elle antes de a resolução começar, e o operador que
+    // corrige o arquivo lê de cima para baixo, e não por phase da obra.
+    std::vector<std::string> queixas = ajustes.queixas;
+    std::stable_sort(queixas.begin(), queixas.end(),
+                     [](const std::string& esta, const std::string& aquella) {
+                       return numero_da_linha(esta) < numero_da_linha(aquella);
+                     });
+    for (const std::string& queixa : queixas) texto += "    " + queixa + "\n";
   }
   return texto;
 }
