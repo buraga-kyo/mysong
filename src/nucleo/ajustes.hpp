@@ -116,6 +116,19 @@ std::optional<Fonte> fonte_de(std::string_view texto);
 std::optional<int> volume_de(std::string_view texto);
 std::optional<std::size_t> baixas_de(std::string_view texto);
 
+// Os DEGRAUS colhidos, crus, como cada um os deu. Entram todos de uma vez, e
+// não um a um, porque a precedencia ha de se resolver n'um logar só: espalhada
+// por quatro chamadas, seriam quatro regras, e nenhuma d'ellas visivel.
+struct Degraus {
+  std::optional<std::string> acervo_do_argumento;
+  std::optional<std::string> acervo_do_ambiente;
+  std::vector<Par> arquivo;
+};
+
+// resolver — a ESCADA. Puro quanto ao mundo: não abre arquivo, não lê ambiente.
+Ajustes resolver(const Degraus& degraus,
+                 const std::filesystem::path& padrao_do_acervo);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

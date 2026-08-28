@@ -166,6 +166,43 @@ std::optional<std::size_t> baixas_de(std::string_view texto) {
   return static_cast<std::size_t>(*numero);
 }
 
+// resolver — a ESCADA, assentada de baixo para cima: o padrão primeiro, e o
+// arquivo a escrever por cima. Percorrer os pares na ORDEM em que vieram é o
+// que faz a chave repetida valer a ultima, sem regra propria para isso: a
+// segunda occorrencia sobrescreve a primeira, e é tudo.
+Ajustes resolver(const Degraus& degraus,
+                 const std::filesystem::path& padrao_do_acervo) {
+  Ajustes ajustes;
+  ajustes.acervo = {padrao_do_acervo, Origem::Padrao};
+  for (const Par& par : degraus.arquivo) {
+    const std::string onde = "linha " + std::to_string(par.linha) + ": ";
+    if (par.chave == "acervo") {
+      ajustes.acervo = {std::filesystem::path(par.valor), Origem::Arquivo};
+    } else if (par.chave == "volume") {
+      if (const auto numero = volume_de(par.valor))
+        ajustes.volume = {*numero, Origem::Arquivo};
+      else
+        ajustes.queixa(onde + "volume «" + par.valor +
+                       "» não é numero de zero a cem; vale o degrau de baixo");
+    } else if (par.chave == "fonte_da_busca") {
+      if (const auto fonte = fonte_de(par.valor))
+        ajustes.fonte_da_busca = {*fonte, Origem::Arquivo};
+      else
+        ajustes.queixa(onde + "fonte_da_busca «" + par.valor +
+                       "» não é youtube, youtube-music nem spotify");
+    } else if (par.chave == "baixas_simultaneas") {
+      if (const auto quantas = baixas_de(par.valor))
+        ajustes.baixas_simultaneas = {*quantas, Origem::Arquivo};
+      else
+        ajustes.queixa(onde + "baixas_simultaneas «" + par.valor +
+                       "» não é numero de um a oito");
+    } else {
+      ajustes.queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
+    }
+  }
+  return ajustes;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
