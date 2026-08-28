@@ -314,7 +314,8 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
 // o espectro por cima. Esta funcção NÃO se prova em bateria: ella abre terminal,
 // abre som e depende de relogio. O que se prova são as duas peças que ella usa,
 // e é por isso que ellas vivem fóra d'aqui.
-int erguer_tocador(const std::vector<std::string>& faixas) {
+int erguer_tocador(const std::vector<std::string>& faixas,
+                   const nucleo::Ajustes& ajustes) {
   std::string razao;
   std::optional<nucleo::MotorMpv> motor = nucleo::MotorMpv::abrir(&razao);
   if (!motor) {
@@ -326,6 +327,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   }
 
   nucleo::Tocador tocador(*motor);
+  // O volume dos ajustes entra ANTES da primeira faixa: posto depois, ella já
+  // teria arrancado no volume de fabrica, e ouvir-se-ia o salto.
+  tocador.volume(ajustes.volume.valor);
   nucleo::Analisador analisador;
   if (analisador.vivo()) {
     tocador.observa(analisador);
@@ -365,7 +369,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // MESMA para a URL colada á mão e para o achado eleito na rede: o caminho
   // reaproveita-se inteiro, em vez de se duplicar.
   nucleo::Estaleiro estaleiro(
-      nucleo::OBREIROS_DA_BAIXA,
+      ajustes.baixas_simultaneas.valor,
       [](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
         return nucleo::baixa(raiz_do_acervo(), pedido, ficou);
       });
@@ -380,7 +384,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // A FONTE vigente da busca (issue #56): pegajosa na sessão, YouTube de saida.
   // Vive sob a MESMA tranca do termo, e o fio da busca copia os dous n'um golpe:
   // assim não ha quadro em que o termo seja de uma fonte e a busca de outra.
-  nucleo::Fonte fonte_da_busca = nucleo::Fonte::YouTube;
+  nucleo::Fonte fonte_da_busca = ajustes.fonte_da_busca.valor;
   std::atomic<bool> pede_buscar{false};
 
   // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
@@ -1068,7 +1072,7 @@ int main(int argc, char** argv) {
   const std::string avisos = tui::texto_dos_avisos(relatorio);
   if (!avisos.empty()) std::cerr << avisos;
 
-  return erguer_tocador(faixas);
+  return erguer_tocador(faixas, ajustes);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
