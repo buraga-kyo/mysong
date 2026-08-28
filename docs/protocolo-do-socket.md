@@ -261,6 +261,32 @@ banda 0. A escala que a resposta declara é a que a resposta cumpre.
 | `magnitude` | texto | `"decibeis"`: a magnitude vem comprimida, com 0 no piso e 1 na escala cheia. |
 | `piso_decibeis` | duplo | O piso: -60. |
 
+### `biblioteca`
+
+Navega o índice do acervo. O **`corte`** é obrigatorio, e é elle que diz o que se
+quer: tres cortes, e mais nenhum. Deduzir o corte dos argumentos que viessem seria
+mais curto de escrever e falharia em silencio, que é o que este contracto não faz:
+quem digitasse `artistaa` receberia a lista dos artistas com `ok` verdadeiro e
+nunca saberia que errou o nome.
+
+```
+→ {"verbo":"biblioteca","corte":"artistas"}
+← {"ok":true,"corte":"artistas","artistas":["Bach","Coltrane"],"tamanho":2}
+→ {"verbo":"biblioteca","corte":"albuns","artista":"Bach"}
+← {"ok":true,"corte":"albuns","artista":"Bach","albuns":["Cantatas","Suites"],"tamanho":2}
+→ {"verbo":"biblioteca","corte":"faixas","artista":"Bach","album":"Cantatas"}
+← {"ok":true,"corte":"faixas","artista":"Bach","album":"Cantatas","numeros":[1,2],"titulos":["Aria","Coro 音楽"],"caminhos":["/tmp/pa-s4-prova/acervo/Bach/Cantatas/01 - Aria.flac","/tmp/pa-s4-prova/acervo/Bach/Cantatas/02 - Coro 音楽.flac"],"duracoes":[210,187],"tamanho":2}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `corte` | texto | Obrigatorio. `"artistas"`, `"albuns"` ou `"faixas"`. Outro valor devolve `argumento_invalido` nomeando os tres. |
+| `artista` | texto | Obrigatorio em `albuns` e em `faixas`, e não pode ser vazio. Em `artistas` ignora-se. |
+| `album` | texto | Obrigatorio em `faixas`, e não pode ser vazio. |
+
+A resposta ecoa o `corte` e os argumentos que a recortaram, para que uma resposta
+lida fóra de contexto se saiba explicar. O `tamanho` é quantos itens vieram.
+
 ## 7. As bordas
 
 | O que o cliente faz | O que o servidor faz |
