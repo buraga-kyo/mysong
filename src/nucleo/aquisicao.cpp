@@ -227,6 +227,24 @@ std::string_view razao_da_colheita(Colheita colheita) {
   return "desfecho sem nome";
 }
 
+std::string_view nome_da_fonte(Fonte fonte) {
+  switch (fonte) {
+    case Fonte::YouTube: return "YouTube";
+    case Fonte::YouTubeMusic: return "YouTube Music";
+    case Fonte::Spotify: return "Spotify";
+  }
+  return "fonte sem nome";
+}
+
+Fonte proxima_fonte(Fonte fonte) {
+  switch (fonte) {
+    case Fonte::YouTube: return Fonte::YouTubeMusic;
+    case Fonte::YouTubeMusic: return Fonte::Spotify;
+    case Fonte::Spotify: return Fonte::YouTube;
+  }
+  return Fonte::YouTube;
+}
+
 int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
   if (argumentos.empty()) return -1;
   int cano[2] = {-1, -1};
@@ -295,6 +313,8 @@ bool escreve_etiqueta(const std::filesystem::path& arquivo,
     etiqueta->setAlbum(TagLib::String(pedido.album, utf8));
   if (pedido.numero > 0)
     etiqueta->setTrack(static_cast<unsigned>(pedido.numero));
+  // O ano entra quando a fonte o deu (issue #56); zero calaria «anno zero».
+  if (pedido.ano > 0) etiqueta->setYear(static_cast<unsigned>(pedido.ano));
   return punho.save();
 }
 
@@ -363,12 +383,57 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
   return eleito_com_titulo >= 0 ? eleito_com_titulo : eleito;
 }
 
-bool busca_no_youtube(const std::string& termo, int quantos,
-                      std::vector<Achado>* achados) {
+Pedido encommenda_do_achado(const Achado& achado) {
+  Pedido pedido;
+  pedido.url = achado.url;
+  pedido.artista = achado.artista;
+  pedido.album = achado.album;
+  pedido.titulo = achado.faixa;
+  pedido.numero = achado.numero;
+  pedido.ano = achado.ano;
+  pedido.fonte = achado.fonte;
+  // A duração sómente no pedido sem URL, onde ella criva o casamento. Com URL,
+  // pô-la mudaria o pedido de hoje sem lhe mudar o desfecho.
+  if (achado.url.empty()) pedido.duracao = achado.duracao;
+  return pedido;
+}
+
+std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
+                                        const std::string& termo) {
+  std::vector<Achado> achados;
+  const std::string alvo = minuscula_ascii(termo);
+  for (const FaixaDoCatalogo& faixa : catalogo.faixas) {
+    // Titulo OU artista, como o filtro da secção Lista: com fonte de musica o
+    // que se busca é tanto um como o outro.
+    if (minuscula_ascii(faixa.titulo).find(alvo) == std::string::npos &&
+        minuscula_ascii(faixa.artista).find(alvo) == std::string::npos)
+      continue;
+    Achado achado;
+    achado.titulo = faixa.titulo;
+    achado.faixa = faixa.titulo;  // no catalogo o canonico é o proprio titulo
+    achado.artista = faixa.artista;
+    achado.album = catalogo.nome;  // o album é o nome da lista (issue #13)
+    achado.numero = faixa.numero;
+    // Milesimos a segundos, ao mais proximo: truncar perderia meio segundo por
+    // faixa, e a tolerancia do casamento conta-os.
+    achado.duracao = (faixa.duracao_ms + 500) / 1000;
+    achado.fonte = Fonte::Spotify;
+    achados.push_back(achado);
+  }
+  return achados;
+}
+
+bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
+                   std::vector<Achado>* achados) {
   if (termo.empty()) return false;
   std::string colhido;
-  if (corre(argumentos_da_busca(termo, quantos), &colhido) != 0) return false;
-  if (achados != nullptr) *achados = le_achados(colhido);
+  if (corre(argumentos_da_busca(termo, quantos, fonte), &colhido) != 0)
+    return false;
+  if (achados == nullptr) return true;
+  *achados = le_achados(colhido);
+  // A FONTE estampa-se na volta, e não em le_achados: elle lê linhas, e as linhas
+  // não dizem de onde vieram.
+  for (Achado& achado : *achados) achado.fonte = fonte;
   return true;
 }
 
@@ -383,7 +448,10 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     const std::string termo = pedido.artista.empty()
                                   ? pedido.titulo
                                   : pedido.artista + " " + pedido.titulo;
-    if (!busca_no_youtube(termo, 10, &achados)) return Colheita::SemFerramenta;
+    // E busca-se na fonte do PROPRIO pedido (issue #56): quem pediu é quem sabe
+    // onde o audio d'elle se procura.
+    if (!busca_na_rede(termo, pedido.fonte, 10, &achados))
+      return Colheita::SemFerramenta;
     const int qual = melhor_achado(achados, pedido, TOLERANCIA_DO_CASAMENTO);
     if (qual < 0) return Colheita::Duvidosa;
     Pedido com_url = pedido;
@@ -432,23 +500,64 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                                         : Colheita::FalhouAEtiqueta;
 }
 
+std::string codifica_para_url(std::string_view crua) {
+  static const char kHex[] = "0123456789ABCDEF";
+  std::string feita;
+  feita.reserve(crua.size());
+  for (const unsigned char c : crua) {
+    // A taboa dos LIVRES da RFC 3986, e nada mais: espaço, `#`, `&`, `+` e todo
+    // UTF-8 sahem por cento, e não ha byte que atravesse por engano.
+    const bool livre = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                       (c >= '0' && c <= '9') || c == '-' || c == '.' ||
+                       c == '_' || c == '~';
+    if (livre) {
+      feita += static_cast<char>(c);
+      continue;
+    }
+    feita += '%';
+    feita += kHex[c >> 4];
+    feita += kHex[c & 0xF];
+  }
+  return feita;
+}
+
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
-                                             int quantos, bool com_cookie) {
+                                             int quantos, Fonte fonte,
+                                             bool com_cookie) {
   // Apara-se em vinte: busca maior gasta rede e não cabe na tabella. E em um pelo
-  // baixo, que buscar zero é pedido sem sentido.
-  const int quantas = quantos < 1 ? 1 : (quantos > 20 ? 20 : quantos);
+  // baixo, que buscar zero é pedido sem sentido. A MUSICA apara em dez, e AQUI,
+  // para o tecto valer em todo caminho: o da tela e o da baixa sem URL.
+  const int tecto = fonte == Fonte::YouTubeMusic ? ACHADOS_DA_MUSICA : 20;
+  const int quantas = quantos < 1 ? 1 : (quantos > tecto ? tecto : quantos);
   std::vector<std::string> ditos{"yt-dlp"};
   const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
   ditos.insert(ditos.end(), motor.begin(), motor.end());
+  ditos.emplace_back("--no-warnings");
+  if (fonte == Fonte::YouTubeMusic) {
+    // SEM o --flat-playlist, e é medido: com elle os campos da musica vêm NA.
+    ditos.emplace_back("--playlist-items");
+    ditos.emplace_back("1:" + std::to_string(quantas));
+  } else {
+    ditos.emplace_back("--flat-playlist");
+  }
+  // O alvo. O SPOTIFY busca no YouTube, e não é descuido: o catalogo é metadado,
+  // o audio vem do YouTube, e a tela busca a fonte Spotify no catalogo local.
+  const std::string alvo =
+      fonte == Fonte::YouTubeMusic
+          ? "https://music.youtube.com/search?q=" + codifica_para_url(termo) +
+                "#songs"
+          : "ytsearch" + std::to_string(quantas) + ":" + termo;
   const std::vector<std::string> resto = {
-          "--no-warnings",
-          "--flat-playlist",
           "--print", "%(title)s",
           "--print", "%(uploader)s",
           "--print", "%(duration)s",
           "--print", "%(webpage_url)s",
+          "--print", "%(artist)s",
+          "--print", "%(album)s",
+          "--print", "%(track)s",
+          "--print", "%(release_year)s",
           "--",
-          "ytsearch" + std::to_string(quantas) + ":" + termo};
+          alvo};
   ditos.insert(ditos.end(), resto.begin(), resto.end());
   return ditos;
 }
@@ -462,20 +571,26 @@ std::vector<Achado> le_achados(const std::string& sahida) {
     linhas.push_back(linha == "NA" ? std::string() : apara(linha));
   }
   std::vector<Achado> achados;
-  // Quatro linhas por achado. Sobrando linhas que não completem um grupo de quatro,
+  // Numero que não é numero dá zero, e não lança: a rede manda lixo.
+  const auto inteiro = [](const std::string& crua) {
+    if (crua.empty()) return 0;
+    for (const unsigned char c : crua)
+      if (std::isdigit(c) == 0) return 0;
+    return std::atoi(crua.c_str());
+  };
+  // Oito linhas por achado. Sobrando linhas que não completem um grupo de oito,
   // descartam-se: achado meio não se mostra, que o operador o escolheria e a baixa
   // falharia sem URL.
-  for (std::size_t i = 0; i + 3 < linhas.size(); i += 4) {
+  for (std::size_t i = 0; i + 7 < linhas.size(); i += 8) {
     Achado achado;
     achado.titulo = linhas[i];
     achado.canal = linhas[i + 1];
-    achado.duracao = 0;
-    for (const unsigned char c : linhas[i + 2])
-      if (std::isdigit(c) == 0) { achado.duracao = -1; break; }
-    if (achado.duracao == 0 && !linhas[i + 2].empty())
-      achado.duracao = std::atoi(linhas[i + 2].c_str());
-    if (achado.duracao < 0) achado.duracao = 0;
+    achado.duracao = inteiro(linhas[i + 2]);
     achado.url = linhas[i + 3];
+    achado.artista = linhas[i + 4];
+    achado.album = linhas[i + 5];
+    achado.faixa = linhas[i + 6];
+    achado.ano = inteiro(linhas[i + 7]);
     if (achado.url.empty()) continue;  // sem URL não ha o que baixar
     achados.push_back(achado);
   }

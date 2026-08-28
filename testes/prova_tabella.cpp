@@ -60,9 +60,14 @@ std::size_t escriptas(const std::string& linha) {
   return conta;
 }
 
-tui::Linha achado(const std::string& titulo, const std::string& canal,
+nu::Achado achado(const std::string& titulo, const std::string& canal,
                   int duracao) {
-  return {titulo, "https://y/" + titulo, 0, duracao, canal};
+  nu::Achado feito;
+  feito.titulo = titulo;
+  feito.canal = canal;
+  feito.duracao = duracao;
+  feito.url = "https://y/" + titulo;
+  return feito;
 }
 
 // A cova e o índice: a tabella pede um Navegador, e o Navegador pede uma
@@ -130,9 +135,9 @@ TEST_CASE("sem autor algum a columna do canal não se abre, e o titulo fica larg
   // Titulo de setenta e cinco caracteres. Sem columna de canal, o que sobra para
   // elle é maior, e por isso corta-se mais tarde: é o que este caso lê.
   const std::string comprido(75, 'x');
-  navegador.mostra_rede({{comprido, "https://y/1", 0, 100, {}}});
+  navegador.mostra_rede({achado(comprido, {}, 100)});
   const std::vector<std::string> sem = pintar(navegador, 1, 60);
-  navegador.mostra_rede({{comprido, "https://y/1", 0, 100, "Canal"}});
+  navegador.mostra_rede({achado(comprido, "Canal", 100)});
   const std::vector<std::string> com = pintar(navegador, 1, 60);
   const auto quantos_x = [](const std::vector<std::string>& onde) {
     std::size_t conta = 0;
@@ -152,8 +157,8 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   // columna ficava fechada e o canal da segunda não apparecia; decidindo-se pela
   // FATIA, ella abre-se para as duas e as columnas alinham.
   const std::string comprido(75, 'x');
-  navegador.mostra_rede({{comprido, "https://y/1", 0, 100, {}},
-                         {"Fuga", "https://y/2", 0, 65, "Canal do Orgao"}});
+  navegador.mostra_rede({achado(comprido, {}, 100),
+                         achado("Fuga", "Canal do Orgao", 65)});
   const std::vector<std::string> linhas = pintar(navegador, 2, 60);
   REQUIRE(linhas.size() == 2);
   CHECK(linhas[1].find("Canal do Orgao") != std::string::npos);
@@ -174,7 +179,7 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   CHECK(listas[0].find("cria uma") != std::string::npos);
   CHECK(listas[0].find("varra o acervo") == std::string::npos);
 
-  navegador.mostra_rede({});
+  navegador.mostra_rede(std::vector<nu::Achado>{});
   const std::vector<std::string> rede = pintar(navegador, 1, 70);
   CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
 }

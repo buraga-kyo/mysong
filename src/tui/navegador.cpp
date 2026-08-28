@@ -123,8 +123,12 @@ void Navegador::refaz_vista() {
       // consulta ao acervo n'este ramo, a varredura que conclua no meio de o
       // operador escolher um achado refaz a vista IDENTICA, e não lhe apaga a lista.
       // Guarda apartada houve, e sahiu: a mutação que a tirava sobrevivia á bateria.
+      // O filtro olha texto OU autor, como na secção Lista: com a fonte de
+      // musica o autor é o artista, e buscar por elle é o gesto natural (#56).
       for (const Linha& achado : rede_)
-        if (contem_sem_caixa(achado.texto, termo_)) vista_.push_back(achado);
+        if (contem_sem_caixa(achado.texto, termo_) ||
+            contem_sem_caixa(achado.autor, termo_))
+          vista_.push_back(achado);
       break;
   }
   if (vista_.empty()) eleito_ = 0;
@@ -326,8 +330,23 @@ nucleo::FaixaDoCatalogo Navegador::faixa_de_catalogo_eleita() const {
   return catalogo_.faixas[static_cast<std::size_t>(vista_[eleito_].numero - 1)];
 }
 
-void Navegador::mostra_rede(std::vector<Linha> achados) {
-  rede_ = std::move(achados);
+void Navegador::mostra_rede(std::vector<nucleo::Achado> achados) {
+  achados_ = std::move(achados);
+  rede_.clear();
+  rede_.reserve(achados_.size());
+  for (std::size_t i = 0; i < achados_.size(); ++i) {
+    const nucleo::Achado& achado = achados_[i];
+    Linha linha;
+    // A faixa CANONICA quando a fonte a deu; o titulo do video quando não. E o
+    // artista pela mesma regra, cahindo ao canal, que é o que a busca comum tem.
+    linha.texto = achado.faixa.empty() ? achado.titulo : achado.faixa;
+    linha.chave = achado.url;
+    linha.numero = achado.numero;
+    linha.duracao = achado.duracao;
+    linha.autor = achado.artista.empty() ? achado.canal : achado.artista;
+    linha.origem = static_cast<int>(i);
+    rede_.push_back(std::move(linha));
+  }
   secao_ = Secao::Rede;
   // A trilha vae-se: ella dizia por onde se andou no acervo, e a rede não está no
   // acervo. Deixá-la de pé faria o titulo da tabella mentir sobre a origem da lista.
@@ -337,9 +356,15 @@ void Navegador::mostra_rede(std::vector<Linha> achados) {
   refaz_vista();
 }
 
-std::string Navegador::url_eleita() const {
-  if (secao_ != Secao::Rede || vista_.empty()) return {};
-  return vista_[eleito_].chave;
+bool Navegador::ha_achado() const {
+  if (secao_ != Secao::Rede || vista_.empty()) return false;
+  const int origem = vista_[eleito_].origem;
+  return origem >= 0 && static_cast<std::size_t>(origem) < achados_.size();
+}
+
+nucleo::Achado Navegador::achado_eleito() const {
+  if (!ha_achado()) return {};
+  return achados_[static_cast<std::size_t>(vista_[eleito_].origem)];
 }
 
 bool Navegador::entra() {

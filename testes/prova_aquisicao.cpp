@@ -203,7 +203,8 @@ TEST_CASE("os argumentos do download não embutem etiqueta, e não sobrescrevem"
 }
 
 TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
-  const std::vector<std::string> ditos = nu::argumentos_da_busca("bach", 5);
+  const std::vector<std::string> ditos =
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube);
   CHECK(ditos.back() == "ytsearch5:bach");
   CHECK(ditos[ditos.size() - 2] == "--");
   const auto tem = [&ditos](const std::string& q) {
@@ -212,19 +213,22 @@ TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
   // Sem esta bandeira, buscar dez custa dez sondas de rede: o yt-dlp abriria
   // cada resultado para lhe ler os formatos.
   CHECK(tem("--flat-playlist"));
-  // Quatro campos, e nem um a mais: a ordem d'elles é o contracto de le_achados.
-  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 4);
+  // Oito campos, e nem um a mais: a ordem d'elles é o contracto de le_achados.
+  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 8);
   // A aparadura pelas duas pontas. Zero não é pedido, e cem não cabe na tabella.
-  CHECK(nu::argumentos_da_busca("x", 0).back() == "ytsearch1:x");
-  CHECK(nu::argumentos_da_busca("x", -3).back() == "ytsearch1:x");
-  CHECK(nu::argumentos_da_busca("x", 100).back() == "ytsearch20:x");
+  CHECK(nu::argumentos_da_busca("x", 0, nu::Fonte::YouTube).back() ==
+        "ytsearch1:x");
+  CHECK(nu::argumentos_da_busca("x", -3, nu::Fonte::YouTube).back() ==
+        "ytsearch1:x");
+  CHECK(nu::argumentos_da_busca("x", 100, nu::Fonte::YouTube).back() ==
+        "ytsearch20:x");
 }
 
 TEST_CASE("os achados lêem-se por LINHA, e titulo com barra não os parte") {
   // A barra vertical no titulo é o caso que um separador dentro da linha erraria.
   const std::string sahida =
-      "Bach | Toccata e Fuga\nCanal do Orgao\n542\nhttps://y/1\n"
-      "Bach\tPartita\nOutro Canal\nNA\nhttps://y/2\n";
+      "Bach | Toccata e Fuga\nCanal do Orgao\n542\nhttps://y/1\nNA\nNA\nNA\nNA\n"
+      "Bach\tPartita\nOutro Canal\nNA\nhttps://y/2\nNA\nNA\nNA\nNA\n";
   const std::vector<nu::Achado> achados = nu::le_achados(sahida);
   REQUIRE(achados.size() == 2);
   CHECK(achados[0].titulo == "Bach | Toccata e Fuga");
@@ -237,27 +241,34 @@ TEST_CASE("os achados lêem-se por LINHA, e titulo com barra não os parte") {
   // E o NA num campo de TEXTO fica vazio, e não fica a palavra NA: mostrar «NA»
   // por canal seria inventar um canal chamado NA.
   const std::vector<nu::Achado> mudo =
-      nu::le_achados("Titulo\nNA\n60\nhttps://y/9\n");
+      nu::le_achados("Titulo\nNA\n60\nhttps://y/9\nNA\nNA\nNA\nNA\n");
   REQUIRE(mudo.size() == 1);
   CHECK(mudo[0].canal.empty());
+  // E a busca comum deixa vazios os campos da musica: NA não é artista.
+  CHECK(mudo[0].artista.empty());
+  CHECK(mudo[0].album.empty());
+  CHECK(mudo[0].faixa.empty());
+  CHECK(mudo[0].ano == 0);
 }
 
 TEST_CASE("achado meio não se mostra, e duração que não é numero não vira lixo") {
-  // Tres linhas: o grupo de quatro não fecha, e o achado meio cahe. Se ficasse, o
+  // Tres linhas: o grupo de oito não fecha, e o achado meio cahe. Se ficasse, o
   // operador elegia-o e a baixa falhava sem URL.
   CHECK(nu::le_achados("Titulo\nCanal\n100\n").empty());
   // Sem URL não ha o que baixar, ainda que o grupo feche.
-  CHECK(nu::le_achados("Titulo\nCanal\n100\n\n").empty());
+  CHECK(nu::le_achados("Titulo\nCanal\n100\n\nNA\nNA\nNA\nNA\n").empty());
   // Duração que o yt-dlp escreva por extenso não se lê a metade: fica zero.
-  const std::vector<nu::Achado> um = nu::le_achados("T\nC\n9m02s\nhttps://y/3\n");
+  const std::vector<nu::Achado> um =
+      nu::le_achados("T\nC\n9m02s\nhttps://y/3\nNA\nNA\nNA\nNA\n");
   REQUIRE(um.size() == 1);
   CHECK(um[0].duracao == 0);
 }
 
 // ── AS BANDEIRAS DO MOTOR (issue #55) ───────────────────────────────────────
 // Estas provas existem porque a falta d'estas bandeiras deixou a Casa sem colher
-// uma unica faixa. A prova afere as TRES chamadas juntas: quem tirar a bandeira de
-// bandeiras_do_motor derruba as tres, e é assim que se sabe que a guarda vive.
+// uma unica faixa. A prova afere as QUATRO chamadas juntas (a busca da musica
+// entrou com a issue #56): quem tirar a bandeira de bandeiras_do_motor derruba as
+// quatro, e é assim que se sabe que a guarda vive.
 
 namespace {
 
@@ -278,12 +289,13 @@ bool menciona(const std::vector<std::string>& ditos, const std::string& agulha) 
 
 }  // namespace
 
-TEST_CASE("as tres chamadas ao yt-dlp carregam o motor de JS") {
-  const std::vector<std::vector<std::string>> tres = {
+TEST_CASE("as quatro chamadas ao yt-dlp carregam o motor de JS") {
+  const std::vector<std::vector<std::string>> quatro = {
       nu::argumentos_da_sonda("https://exemplo/x"),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
-      nu::argumentos_da_busca("bach", 5)};
-  for (const std::vector<std::string>& ditos : tres) {
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube),
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTubeMusic)};
+  for (const std::vector<std::string>& ditos : quatro) {
     // O nome do programa continua a ser o primeiro: as bandeiras entram DEPOIS
     // d'elle, que ninguem corre `--js-runtimes` como se fosse executavel.
     CHECK(ditos.front() == "yt-dlp");
@@ -296,22 +308,24 @@ TEST_CASE("o cookie NAO entra sem que se peca") {
   // Esta é a prova que importa mais, e a razão é medida: com o cookie do chrome o
   // yt-dlp responde «The page needs to be reloaded.» a toda URL. Ligá-lo por
   // omissão seria trocar uma falha por outra.
-  const std::vector<std::vector<std::string>> tres = {
+  const std::vector<std::vector<std::string>> quatro = {
       nu::argumentos_da_sonda("https://exemplo/x"),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
-      nu::argumentos_da_busca("bach", 5)};
-  for (const std::vector<std::string>& ditos : tres) {
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube),
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTubeMusic)};
+  for (const std::vector<std::string>& ditos : quatro) {
     CHECK_FALSE(menciona(ditos, "--cookies-from-browser"));
     CHECK_FALSE(menciona(ditos, nu::kNavegadorDoCookie));
   }
 }
 
-TEST_CASE("o cookie entra nas tres quando se pede") {
-  const std::vector<std::vector<std::string>> tres = {
+TEST_CASE("o cookie entra nas quatro quando se pede") {
+  const std::vector<std::vector<std::string>> quatro = {
       nu::argumentos_da_sonda("https://exemplo/x", true),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T", true),
-      nu::argumentos_da_busca("bach", 5, true)};
-  for (const std::vector<std::string>& ditos : tres)
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube, true),
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTubeMusic, true)};
+  for (const std::vector<std::string>& ditos : quatro)
     CHECK(tem(ditos, "--cookies-from-browser", nu::kNavegadorDoCookie));
 }
 
@@ -320,6 +334,183 @@ TEST_CASE("bandeiras_do_motor cresce de dous pares para tres com o cookie") {
   // passaria nas provas de presença e falharia aqui.
   CHECK(nu::bandeiras_do_motor(false).size() == 4u);
   CHECK(nu::bandeiras_do_motor(true).size() == 6u);
+}
+
+// ── A FONTE DA BUSCA (issue #56) ────────────────────────────────────────────
+
+TEST_CASE("a fonte cicla pelas tres e volta, e o pedido nasce no YouTube") {
+  // O ciclo é FECHADO: tres passos devolvem o começo. Quem acrescentar fonte
+  // sem a pôr no ciclo deixa a tecla presa n'uma volta que não fecha.
+  CHECK(nu::proxima_fonte(nu::Fonte::YouTube) == nu::Fonte::YouTubeMusic);
+  CHECK(nu::proxima_fonte(nu::Fonte::YouTubeMusic) == nu::Fonte::Spotify);
+  CHECK(nu::proxima_fonte(nu::Fonte::Spotify) == nu::Fonte::YouTube);
+  // O nome é o que o cabeçalho mostra; fonte sem nome não ha de existir.
+  CHECK(nu::nome_da_fonte(nu::Fonte::YouTube) == "YouTube");
+  CHECK(nu::nome_da_fonte(nu::Fonte::YouTubeMusic) == "YouTube Music");
+  CHECK(nu::nome_da_fonte(nu::Fonte::Spotify) == "Spotify");
+  // O padrão do Pedido é o de hoje: quem não escolheu, busca no YouTube.
+  CHECK(nu::Pedido{}.fonte == nu::Fonte::YouTube);
+}
+
+TEST_CASE("o termo codifica-se por cento, e o cardinal não corta a consulta") {
+  CHECK(nu::codifica_para_url("radiohead karma police") ==
+        "radiohead%20karma%20police");
+  // O `#` cru principiaria o fragmento no meio do termo; o `&` partiria a
+  // consulta; o `+` viraria espaço na leitura do servidor.
+  CHECK(nu::codifica_para_url("a#b&c+d/e?f") == "a%23b%26c%2Bd%2Fe%3Ff");
+  CHECK(nu::codifica_para_url("A-z.0_9~") == "A-z.0_9~");
+  // UTF-8 vae byte a byte: o «é» são dous.
+  CHECK(nu::codifica_para_url("café") == "caf%C3%A9");
+  CHECK(nu::codifica_para_url("").empty());
+}
+
+TEST_CASE("a art track chega com artista, album, faixa e ano") {
+  // A sahida MEDIDA em 2026-08-27 contra o music.youtube.com, oito linhas.
+  const std::vector<nu::Achado> uns = nu::le_achados(
+      "Karma Police\nRadiohead\n264\nhttps://y/4\n"
+      "Radiohead\nOK Computer\nKarma Police\n1997\n");
+  REQUIRE(uns.size() == 1);
+  CHECK(uns[0].artista == "Radiohead");
+  CHECK(uns[0].album == "OK Computer");
+  CHECK(uns[0].faixa == "Karma Police");
+  CHECK(uns[0].ano == 1997);
+  CHECK(uns[0].duracao == 264);
+  // Ano por extenso é lixo, e lixo dá zero, e não lança.
+  const std::vector<nu::Achado> torto =
+      nu::le_achados("T\nC\n10\nhttps://y/5\nNA\nNA\nNA\nMCMXCVII\n");
+  REQUIRE(torto.size() == 1);
+  CHECK(torto[0].ano == 0);
+}
+
+TEST_CASE("a busca da musica vae por URL codificada, sem flat e com recorte") {
+  const std::vector<std::string> ditos =
+      nu::argumentos_da_busca("karma police", 5, nu::Fonte::YouTubeMusic);
+  // O alvo escripto á mão: termo codificado por cento, e o fragmento #songs no
+  // fim, que é o que segura a prateleira só nas musicas.
+  CHECK(ditos.back() ==
+        "https://music.youtube.com/search?q=karma%20police#songs");
+  CHECK(ditos[ditos.size() - 2] == "--");
+  const auto tem = [&ditos](const std::string& q) {
+    return std::find(ditos.begin(), ditos.end(), q) != ditos.end();
+  };
+  // SEM o flat, que com elle os campos da musica vêm NA (medido); o custo
+  // paga-se com o recorte da playlist.
+  CHECK_FALSE(tem("--flat-playlist"));
+  CHECK(tem("--playlist-items"));
+  CHECK(tem("1:5"));
+  // Os mesmos oito campos da comum: o contracto de le_achados é UM.
+  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 8);
+  // O TECTO proprio da musica: cem pedidos aparam-se em DEZ, e não nos vinte da
+  // comum. O dez vae escripto á mão, que é o numero que o custo medido fixou.
+  const std::vector<std::string> cem =
+      nu::argumentos_da_busca("x", 100, nu::Fonte::YouTubeMusic);
+  CHECK(std::find(cem.begin(), cem.end(), std::string("1:10")) != cem.end());
+}
+
+TEST_CASE("a fonte Spotify busca no YouTube, argumento por argumento") {
+  // O audio do catalogo vem do YouTube (fronteira da issue #13): pedido sem URL
+  // com fonte Spotify ha de correr a MESMA busca de hoje, byte a byte.
+  CHECK(nu::argumentos_da_busca("bach", 5, nu::Fonte::Spotify) ==
+        nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube));
+}
+
+TEST_CASE("os oito --print da busca sahem na ordem que le_achados lê") {
+  // A ORDEM é o contracto com le_achados: trocada, o artista pousava por album
+  // em toda colheita real, e a contagem de oito seguia verde. O alvo vae
+  // escripto á mão, e afere-se nas DUAS fontes que correm rede (a Spotify é
+  // byte-egual á YouTube, e o caso acima a prende).
+  const std::vector<std::string> alvo = {
+      "%(title)s",  "%(uploader)s", "%(duration)s", "%(webpage_url)s",
+      "%(artist)s", "%(album)s",    "%(track)s",    "%(release_year)s"};
+  for (const nu::Fonte fonte : {nu::Fonte::YouTube, nu::Fonte::YouTubeMusic}) {
+    const std::vector<std::string> ditos =
+        nu::argumentos_da_busca("bach", 5, fonte);
+    std::vector<std::string> moldes;
+    for (std::size_t i = 0; i + 1 < ditos.size(); ++i)
+      if (ditos[i] == "--print") moldes.push_back(ditos[i + 1]);
+    CHECK(moldes == alvo);
+  }
+}
+
+TEST_CASE("do achado da musica nasce a encommenda inteira, campo a campo") {
+  nu::Achado musica;
+  musica.titulo = "Karma Police (Remastered)";
+  musica.canal = "Radiohead";
+  musica.duracao = 264;
+  musica.url = "https://y/4";
+  musica.artista = "Radiohead";
+  musica.album = "OK Computer";
+  musica.faixa = "Karma Police";
+  musica.ano = 1997;
+  musica.fonte = nu::Fonte::YouTubeMusic;
+  const nu::Pedido pedido = nu::encommenda_do_achado(musica);
+  CHECK(pedido.url == "https://y/4");
+  CHECK(pedido.artista == "Radiohead");
+  CHECK(pedido.album == "OK Computer");
+  // O titulo que vae é o CANONICO, e não o do video com o Remastered no meio.
+  CHECK(pedido.titulo == "Karma Police");
+  CHECK(pedido.ano == 1997);
+  CHECK(pedido.fonte == nu::Fonte::YouTubeMusic);
+  // Com URL a duração fica de fóra: ella só criva o casamento do pedido sem URL.
+  CHECK(pedido.duracao == 0);
+  CHECK(pedido.numero == 0);
+}
+
+TEST_CASE("do achado comum nasce o pedido de hoje: URL, fonte, e mais nada") {
+  nu::Achado comum;
+  comum.titulo = "Bach | Toccata e Fuga";
+  comum.canal = "Canal do Orgao";
+  comum.duracao = 542;
+  comum.url = "https://y/1";
+  const nu::Pedido cru = nu::encommenda_do_achado(comum);
+  CHECK(cru.url == "https://y/1");
+  CHECK(cru.artista.empty());
+  CHECK(cru.album.empty());
+  CHECK(cru.titulo.empty());  // o titulo fica com a sonda, via resolve
+  CHECK(cru.ano == 0);
+  CHECK(cru.duracao == 0);
+  CHECK(cru.numero == 0);
+  CHECK(cru.fonte == nu::Fonte::YouTube);
+}
+
+TEST_CASE("do catalogo nascem achados: filtro sem caixa, e a lista por album") {
+  nu::Catalogo catalogo;
+  catalogo.nome = "Minha Lista";
+  catalogo.faixas = {
+      {"Karma Police", "Radiohead", 1, 264500},
+      {"Paranoid Android", "Radiohead", 2, 386000},
+      {"Ageispolis", "Aphex Twin", 3, 322499},
+  };
+  // Por TITULO, sem caixa, e com todo campo no seu logar.
+  const std::vector<nu::Achado> uns = nu::achados_do_catalogo(catalogo, "karma");
+  REQUIRE(uns.size() == 1);
+  CHECK(uns[0].titulo == "Karma Police");
+  CHECK(uns[0].faixa == "Karma Police");
+  CHECK(uns[0].artista == "Radiohead");
+  CHECK(uns[0].album == "Minha Lista");  // o album é o NOME da lista
+  CHECK(uns[0].numero == 1);             // a posição vira o «NN - » do nome
+  CHECK(uns[0].duracao == 265);          // 264500 ms arredondam para cima
+  CHECK(uns[0].fonte == nu::Fonte::Spotify);
+  CHECK(uns[0].url.empty());  // sem URL: a baixa busca por si e casa pela duração
+  // Por ARTISTA, que com musica se busca tanto um como o outro.
+  CHECK(nu::achados_do_catalogo(catalogo, "RADIOHEAD").size() == 2);
+  // O meio que não chega á metade arredonda para baixo.
+  CHECK(nu::achados_do_catalogo(catalogo, "ageis")[0].duracao == 322);
+  // Termo que nada casa dá lista vazia, que é resposta e não erro.
+  CHECK(nu::achados_do_catalogo(catalogo, "bach").empty());
+  // E termo vazio dá o catalogo inteiro: é o que a troca de fonte mostra.
+  CHECK(nu::achados_do_catalogo(catalogo, "").size() == 3);
+}
+
+TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
+  const nu::Achado nada;
+  CHECK(nada.artista.empty());
+  CHECK(nada.album.empty());
+  CHECK(nada.faixa.empty());
+  CHECK(nada.ano == 0);
+  CHECK(nada.numero == 0);
+  CHECK(nada.fonte == nu::Fonte::YouTube);
+  CHECK(nu::Pedido{}.ano == 0);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
