@@ -288,20 +288,23 @@ TEST_CASE("a ordem que o nucleo recusa volta como recusado, e nunca como ok") {
 // A prova de que verbo algum sae MUDO, e de que as quatro recusas se distinguem.
 // Distinguir importa porque o remedio de cada uma é differente: «recusado» manda
 // olhar o estado do tocador, «argumento_invalido» manda olhar a mensagem,
-// «nao_implementado» manda olhar a issue, e «verbo_desconhecido» manda olhar o
-// nome que se escreveu.
+// «indisponivel» manda olhar quem ergueu o servidor, e «verbo_desconhecido»
+// manda olhar o nome que se escreveu.
 TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
   MotorDuble duble;
   Tocador tocador(duble);
 
-  const struct { const char* verbo; const char* issue; } reservados[] = {
-      {"biblioteca", "8.000"}, {"espectro", "5.000"}, {"baixar", "11.000"}};
-  for (const auto& caso : reservados) {
+  // Os tres nomes que a issue #65 honrou. Nenhum d'elles responde mais
+  // «nao_implementado», e o emissor já nem sabe escrever essa palavra. Sem
+  // arredores, os dous que pedem peça do nucleo dizem «indisponivel»; o
+  // espectro responde as suas bandas, que o tocador as dá em zero sem fonte.
+  for (const char* verbo : {"biblioteca", "baixar"}) {
     const std::string resposta =
-        fala(tocador, std::string("{\"verbo\":\"") + caso.verbo + "\"}");
-    CHECK(campo(resposta, "erro") == "nao_implementado");
-    CHECK(campo(resposta, "issue") == caso.issue);
+        fala(tocador, std::string("{\"verbo\":\"") + verbo + "\"}");
+    CHECK(campo(resposta, "erro") == "indisponivel");
+    CHECK_FALSE(campo(resposta, "razao").empty());
   }
+  CHECK(campo(fala(tocador, "{\"verbo\":\"espectro\"}"), "ok") == "true");
 
   CHECK(campo(fala(tocador, "{\"verbo\":\"voar\"}"), "erro") == "verbo_desconhecido");
   CHECK(campo(fala(tocador, "{\"nada\":1}"), "erro") == "verbo_ausente");
