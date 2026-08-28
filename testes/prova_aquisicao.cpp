@@ -350,5 +350,31 @@ TEST_CASE("sem alvo de duração, o caminho ISRC fica com o primeiro achado") {
   CHECK(nu::achado_mais_proximo({}, 213) == -1);      // sem achado não ha indice
 }
 
+TEST_CASE("o enriquecimento põe o canonico por cima do remendo, e só elle") {
+  nu::Pedido pedido;
+  pedido.artista = "Rick Astley";
+  pedido.titulo = "Never Gonna Give You Up";
+  pedido.album = "Minha Lista";  // o remendo de hoje: o nome da lista
+  pedido.numero = 7;             // e a posição n'ella
+  nu::FichaMB ficha;
+  ficha.album = "Whenever You Need Somebody";
+  ficha.ano = 1987;
+  ficha.numero = 1;
+  ficha.titulo = "titulo da ficha, que NÃO entra";
+  ficha.artista = "artista da ficha, que NÃO entra";
+  const nu::Pedido feito = nu::enriquece(pedido, ficha);
+  CHECK(feito.album == "Whenever You Need Somebody");
+  CHECK(feito.ano == 1987);
+  CHECK(feito.numero == 1);
+  CHECK(feito.artista == "Rick Astley");
+  CHECK(feito.titulo == "Never Gonna Give You Up");
+  // Ficha vazia (o MusicBrainz não casou): o pedido fica tal e qual, remendos e
+  // tudo, que é o caminho de hoje seguindo inteiro.
+  const nu::Pedido intacto = nu::enriquece(pedido, nu::FichaMB{});
+  CHECK(intacto.album == "Minha Lista");
+  CHECK(intacto.ano == 0);
+  CHECK(intacto.numero == 7);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
