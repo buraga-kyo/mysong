@@ -383,6 +383,21 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
   return eleito_com_titulo >= 0 ? eleito_com_titulo : eleito;
 }
 
+Pedido encommenda_do_achado(const Achado& achado) {
+  Pedido pedido;
+  pedido.url = achado.url;
+  pedido.artista = achado.artista;
+  pedido.album = achado.album;
+  pedido.titulo = achado.faixa;
+  pedido.numero = achado.numero;
+  pedido.ano = achado.ano;
+  pedido.fonte = achado.fonte;
+  // A duração sómente no pedido sem URL, onde ella criva o casamento. Com URL,
+  // pô-la mudaria o pedido de hoje sem lhe mudar o desfecho.
+  if (achado.url.empty()) pedido.duracao = achado.duracao;
+  return pedido;
+}
+
 bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
                    std::vector<Achado>* achados) {
   if (termo.empty()) return false;

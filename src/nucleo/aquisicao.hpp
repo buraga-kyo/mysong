@@ -215,6 +215,13 @@ std::vector<Achado> le_achados(const std::string& sahida);
 int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
                   int tolerancia);
 
+// encommenda_do_achado — o Pedido que o achado eleito dá, campo a campo: URL,
+// artista, album, titulo CANONICO (a faixa, e não o titulo do video), numero,
+// ano e fonte. No achado da busca comum esses campos vêm vazios, donde o pedido
+// sahe só com URL e fonte, egual ao de hoje. A DURAÇÃO entra sómente no pedido
+// SEM URL: lá ella é o crivo do casamento (issue #13); havendo URL, nada decide.
+Pedido encommenda_do_achado(const Achado& achado);
+
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
 // aqui, e o olho vê a fronteira de um relance.
