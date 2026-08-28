@@ -16,6 +16,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/fila.hpp"
 
+#include <algorithm>
 #include <utility>
 
 namespace mysong::nucleo {
@@ -66,6 +67,33 @@ void Fila::esvazia() noexcept {
 }
 
 const std::vector<std::string>& Fila::todas() const noexcept { return faixas_; }
+
+// O EMBARALHAR. Ligar sorteia UMA ordem de toda a fila; desligar deita-a fóra. Nem
+// uma cousa nem outra toca no indice_, que segue a FAIXA e não a posição: é por
+// isso que desligar não troca a faixa que está a tocar.
+//
+// A faixa corrente vae ao PRINCIPIO da permutação, e não ao logar que o sorteio
+// lhe desse. É a unica lavra que honra ao mesmo tempo as duas cousas que a issue
+// pede: «a faixa corrente NÃO troca» e «nenhuma faixa torna antes de todas terem
+// tocado». Cahindo ella no meio, as que ficassem atraz nunca tocariam n'aquella
+// passagem, e a permutação não esgotaria.
+void Fila::embaralhar(bool ligado) {
+  embaralhado_ = ligado;
+  ordem_.clear();
+  passo_ = 0;
+  if (!ligado || faixas_.empty()) return;
+  ordem_.reserve(faixas_.size());
+  ordem_.push_back(indice_);
+  for (std::size_t assento = 0; assento < faixas_.size(); ++assento)
+    if (assento != indice_) ordem_.push_back(assento);
+  // Sorteia-se a CAUDA, do segundo assento em deante: o primeiro é a faixa que
+  // toca, e mexer n'elle seria trocá-la.
+  std::shuffle(ordem_.begin() + 1, ordem_.end(), sorteio_);
+}
+
+bool Fila::embaralhado() const noexcept { return embaralhado_; }
+
+const std::vector<std::size_t>& Fila::ordem() const noexcept { return ordem_; }
 
 }  // namespace mysong::nucleo
 
