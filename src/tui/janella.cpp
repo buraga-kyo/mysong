@@ -45,6 +45,7 @@
 
 #include "api/mpris.hpp"
 
+#include "nucleo/ajustes.hpp"
 #include "nucleo/analisador.hpp"
 #include "nucleo/capa.hpp"
 #include "nucleo/catalogo.hpp"
@@ -1030,10 +1031,23 @@ int main(int argc, char** argv) {
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
 
+  // OS AJUSTES, colhidos antes de tudo e UMA vez só: aqui não ha fio algum
+  // erguido ainda, e ler variavel de ambiente com fios a correr é corrida. A
+  // fila da linha de commando colhe-se no mesmo laço, que a bandeira do acervo
+  // não é faixa e não ha de cahir na fila do tocador.
+  std::vector<std::string> faixas;
+  std::optional<std::string> acervo_pedido;
+  for (int i = 1; i < argc; ++i)
+    if (!nucleo::eh_acervo(argv[i], &acervo_pedido))
+      faixas.emplace_back(argv[i]);
+  const nucleo::Ajustes ajustes = nucleo::ajustes_do_systema(acervo_pedido);
+
   // O modo de diagnostico: texto puro, tela nenhuma, e codigo differente de
-  // zero havendo impedimento, para que sirva de guarda em script.
+  // zero havendo impedimento, para que sirva de guarda em script. Queixa de
+  // configuração NÃO muda esse codigo: arquivo velho não é requisito ausente.
   if (argc > 1 && std::string_view(argv[1]) == "--sonda") {
-    std::cout << tui::texto_do_relatorio(relatorio);
+    std::cout << tui::texto_do_relatorio(relatorio)
+              << nucleo::texto_dos_ajustes(ajustes);
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
@@ -1054,10 +1068,6 @@ int main(int argc, char** argv) {
   const std::string avisos = tui::texto_dos_avisos(relatorio);
   if (!avisos.empty()) std::cerr << avisos;
 
-  // A fila vem da linha de commando. Não ha varredura de acervo ainda (issue
-  // #34), e por isso é assim que uma faixa entra: `mysong caminho.mp3 outro.mp3`.
-  std::vector<std::string> faixas;
-  for (int i = 1; i < argc; ++i) faixas.emplace_back(argv[i]);
   return erguer_tocador(faixas);
 }
 
