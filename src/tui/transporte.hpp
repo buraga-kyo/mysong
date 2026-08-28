@@ -27,6 +27,7 @@
 
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/fila.hpp"
 #include "nucleo/motor.hpp"
 
 namespace mysong::tui {
@@ -48,6 +49,11 @@ struct Retracto {
   // pausava nada. Foi defeito medido n'um pty, e não suposto.
   bool video = false;
   bool video_pausada = false;
+  // OS DOUS MODOS (issue #62). Entram no FIM da estructura de proposito: a
+  // bateria arma Retractos por inicialização aggregada, que nomeia os campos por
+  // POSIÇÃO, e campo novo no meio faria cada uma d'ellas assentar n'outro logar.
+  bool embaralhado = false;
+  nucleo::Repeticao repeticao = nucleo::Repeticao::Nenhuma;
 };
 
 // mm_ss — segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não

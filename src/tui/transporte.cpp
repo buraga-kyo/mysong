@@ -92,6 +92,21 @@ ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
   return ftxui::hbox(std::move(partes));
 }
 
+// rotulo_dos_modos — o que a fita diz dos dous modos, e cadeia VAZIA quando os
+// dous estão desligados. ASCII curto, e não o glifo bonito: a Fita conta
+// CODEPOINTS, e os emoji de embaralhar e de repetir occupam DUAS collunhas no
+// terminal; a linha transbordaria sem que conta alguma o accusasse.
+std::string rotulo_dos_modos(const Retracto& retracto) {
+  std::string dito;
+  if (retracto.embaralhado) dito = "emb";
+  if (retracto.repeticao != nucleo::Repeticao::Nenhuma) {
+    if (!dito.empty()) dito += ' ';
+    dito += "rep ";
+    dito += nucleo::nome_da_repeticao(retracto.repeticao);
+  }
+  return dito;
+}
+
 }  // namespace
 
 // A fita dos botões e do estado. Sentido DEXTRA sómente: misturar os dous
@@ -109,6 +124,12 @@ Fita fita_dos_botoes(const Retracto& retracto) {
   fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
   fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
               tokens::v900, tokens::text_bright});
+  // Os dous modos, e SÓMENTE quando ha modo ligado: fita que dissesse «emb:
+  // não» gastaria collunhas para dizer que nada ha. Com os dous desligados a
+  // fita sae egual á de sempre, byte a byte, e a prova que já existe o afere.
+  const std::string modos = rotulo_dos_modos(retracto);
+  if (!modos.empty())
+    fita.junta({" " + modos + " ", tokens::v950, tokens::text_primary});
   return fita;
 }
 
