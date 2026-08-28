@@ -82,9 +82,9 @@ class MotorDuble final : public mysong::nucleo::Motor {
 TEST_CASE("o motor recebe cada faixa da fila, nos dous sentidos") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
-  tocador.fila().junta("duas.wav");
-  tocador.fila().junta("tres.wav");
+  tocador.junta("uma.wav");
+  tocador.junta("duas.wav");
+  tocador.junta("tres.wav");
 
   CHECK(tocador.tocar_corrente());
   CHECK(tocador.proxima());
@@ -95,13 +95,13 @@ TEST_CASE("o motor recebe cada faixa da fila, nos dous sentidos") {
   const std::vector<std::string> esperado = {"uma.wav", "duas.wav", "tres.wav",
                                              "duas.wav", "uma.wav"};
   CHECK(duble.tocados == esperado);
-  CHECK(tocador.fila().corrente() == "uma.wav");
+  CHECK(tocador.retracto().faixa == "uma.wav");
 }
 
 TEST_CASE("na borda da fila NADA se manda ao motor") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
 
   CHECK(tocador.tocar_corrente());
   CHECK_FALSE(tocador.proxima());
@@ -124,7 +124,7 @@ TEST_CASE("fila vazia não faz o tocador mandar nada") {
 TEST_CASE("as transições de estado, todas quatro") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
 
   CHECK(tocador.estado() == Estado::Parado);
   CHECK(tocador.tocar_corrente());
@@ -147,7 +147,7 @@ TEST_CASE("o motor que recusa não deixa o tocador a crer que toca") {
   MotorDuble duble;
   duble.recusa_tocar = true;
   Tocador tocador(duble);
-  tocador.fila().junta("inexistente.wav");
+  tocador.junta("inexistente.wav");
 
   CHECK_FALSE(tocador.tocar_corrente());
   CHECK(tocador.estado() == Estado::Parado);
@@ -157,7 +157,7 @@ TEST_CASE("o motor que recusa não deixa o tocador a crer que toca") {
 TEST_CASE("o pregão chega a quem escuta") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
 
   int faixas = 0;
   int estados = 0;
@@ -183,7 +183,7 @@ TEST_CASE("o pregão chega a quem escuta") {
 TEST_CASE("zero ouvintes não é erro: tudo corre igual") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
 
   CHECK(tocador.tocar_corrente());
   duble.avanca(1.0);
@@ -194,7 +194,7 @@ TEST_CASE("zero ouvintes não é erro: tudo corre igual") {
 TEST_CASE("o volume apara-se, e a faixa nova o herda") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
 
   CHECK(tocador.volume(140));
   CHECK(tocador.volume() == 100);
@@ -213,7 +213,7 @@ TEST_CASE("buscar apara-se pela duração, e recusa-se parado") {
   MotorDuble duble;
   duble.duracao_dita = 5.0;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
 
   CHECK_FALSE(tocador.buscar(2.0));  // parado, nada ha que buscar
   CHECK(duble.alvo_buscado == doctest::Approx(-1.0));
@@ -232,7 +232,7 @@ TEST_CASE("buscar apara-se pela duração, e recusa-se parado") {
 TEST_CASE("ao fim natural da faixa, pregão algum sahe com retracto composto") {
   MotorDuble duble;
   Tocador tocador(duble);
-  tocador.fila().junta("uma.wav");
+  tocador.junta("uma.wav");
   CHECK(tocador.tocar_corrente());
   duble.avanca(2.5);
   tocador.pulsa();  // antes de escutar: assenta a posição em dous e meio

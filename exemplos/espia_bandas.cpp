@@ -78,9 +78,9 @@ int main(int argc, char** argv) {
               mappa.banda_de(100.0f), mappa.banda_de(440.0f),
               mappa.banda_de(1000.0f), mappa.banda_de(6000.0f));
 
-  for (int i = 2; i < argc; ++i) tocador.fila().junta(argv[i]);
-  std::printf("fila com %zu faixa(s)\n", tocador.fila().tamanho());
-  if (tocador.fila().tamanho() > 0 && !tocador.tocar_corrente()) {
+  for (int i = 2; i < argc; ++i) tocador.junta(argv[i]);
+  std::printf("fila com %zu faixa(s)\n", tocador.retracto().tamanho);
+  if (tocador.retracto().tamanho > 0 && !tocador.tocar_corrente()) {
     std::fprintf(stderr, "a primeira faixa NÃO tocou\n");
     return 3;
   }
@@ -113,7 +113,8 @@ int main(int argc, char** argv) {
     // tocar depois de uma pausa, e o serial impresso na columna «no» ha de ser
     // OUTRO: nó novo, preso sozinho, sem que esta corrida se reiniciasse.
     const bool toca = tocador.estado() == nu::Estado::Tocando;
-    if (!toca && tocador.fila().tamanho() > 0 && passado > 1.0 && acabou_em < 0.0) {
+    if (!toca && tocador.retracto().tamanho > 0 && passado > 1.0 &&
+        acabou_em < 0.0) {
       acabou_em = passado;
       std::printf("a faixa acabou em t=%.2f: as bandas hão de descer a zero\n", acabou_em);
     }

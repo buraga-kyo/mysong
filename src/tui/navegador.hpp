@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "nucleo/aquisicao.hpp"
 #include "nucleo/biblioteca.hpp"
 #include "nucleo/catalogo.hpp"
 #include "nucleo/rol.hpp"
@@ -47,6 +48,9 @@ struct Linha {
   int numero = 0;      // sómente em faixas; zero é «sem numero»
   int duracao = 0;     // sómente em faixas, em segundos
   std::string autor;   // sómente em faixas: o artista, para a columna do meio
+  // O INDICE do achado de que a linha veio (Rede; menos um nas demais). Nunca se
+  // exibe: é por elle que o achado eleito se acha com o filtro posto (issue #56).
+  int origem = -1;
 };
 
 // A JANELLA da rolagem: qual a primeira linha a mostrar, dada a altura da
@@ -94,15 +98,19 @@ class Navegador {
   // volta — sobe um degrau. Falso quando já se está no alto, e ahi nada muda.
   bool volta();
 
-  // mostra_rede — põe na tela uma lista que veio de FÓRA da bibliotheca, e passa á
-  // secção Rede. A lista guarda-se, e é ella a fonte da vista enquanto se estiver
-  // n'esta secção: o filtro applica-se sobre ella, como nas outras.
-  void mostra_rede(std::vector<Linha> achados);
+  // mostra_rede — põe na tela os ACHADOS que vieram de FÓRA da bibliotheca, e
+  // passa á secção Rede: o texto é a faixa canonica quando a fonte a deu, senão o
+  // titulo; o autor é o artista, senão o canal (issue #56). A lista guarda-se
+  // inteira, é ella a fonte da vista n'esta secção, e o `origem` de cada linha
+  // liga-a ao seu achado.
+  void mostra_rede(std::vector<nucleo::Achado> achados);
 
-  // url_eleita — a URL da linha eleita, e SÓMENTE estando-se na Rede. Existe á parte
-  // de caminho_eleito porque as duas cousas não se podem confundir: uma é caminho no
-  // disco, e a outra é endereço na rede. Confundi-las poria uma URL na fila do motor.
-  std::string url_eleita() const;
+  // ha_achado / achado_eleito — o achado da linha eleita, e SÓMENTE na Rede. O
+  // laço é o `origem` da linha, e não o indice da vista: com filtro posto os dous
+  // desencontram-se, e encommendar-se-hia o achado errado. E URL não é caminho:
+  // confundi-los poria endereço de rede na fila do motor.
+  bool ha_achado() const;
+  nucleo::Achado achado_eleito() const;
 
   // ── O CATALOGO DO SPOTIFY (issue #13) ─────────────────────────────────────
 
@@ -110,8 +118,9 @@ class Navegador {
   // alguma: é o que a tarefa pede quando manda devolver a lista para se conferir.
   void mostra_catalogo(nucleo::Catalogo catalogo);
 
-  // O nome da lista lida, que é o que vae por album nas etiquetas. Vazio fóra d'esta
-  // secção.
+  // O nome da lista lida, que é o que vae por album nas etiquetas. O catalogo
+  // FICA depois de se sahir da secção, de proposito: a busca da fonte Spotify
+  // (issue #56) lê-o de qualquer parte; vazio sómente antes de se importar.
   const std::string& nome_do_catalogo() const noexcept;
 
   // A faixa eleita do catalogo, e TODAS ellas. A eleita acha-se pelo indice que a
@@ -173,6 +182,7 @@ class Navegador {
   Secao secao_ = Secao::Artistas;
   std::vector<Linha> vista_;
   std::vector<Linha> rede_;  // a fonte da vista na secção Rede, e sómente n'ella
+  std::vector<nucleo::Achado> achados_;  // os achados de que as linhas vieram
   nucleo::Catalogo catalogo_;  // a fonte da vista na secção Lista
   std::vector<std::string> trilha_;
   std::string termo_;

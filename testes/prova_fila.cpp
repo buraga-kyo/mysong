@@ -88,4 +88,12 @@ TEST_CASE("esvaziada, a fila torna ao estado de vazia") {
   CHECK(fila.indice() == 0);
 }
 
+TEST_CASE("todas dá a vista inteira, na ordem que o cliente definiu") {
+  auto fila = com_tres();
+  const std::vector<std::string> esperado = {"primeira.wav", "segunda.wav",
+                                             "terceira.wav"};
+  CHECK(fila.todas() == esperado);
+  CHECK(mysong::nucleo::Fila().todas().empty());
+}
+
 // ══════════════════════════════════════════════════════════════════════════

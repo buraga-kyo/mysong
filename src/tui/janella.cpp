@@ -147,20 +147,22 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
                                    const std::string& recado, bool mostra_letra,
                                    bool varrida, unsigned long geracao,
                                    bool video) {
+  // O instante sahe de UMA tomada da tranca do tocador (issue #50): cada
+  // campo do mesmo momento, e a faixa já copiada, sem vista crua da fila.
+  const nucleo::Retracto agora = tocador.retracto();
   std::string marca;
   marca.reserve(128);
-  marca += std::to_string(static_cast<int>(tocador.estado()));
+  marca += std::to_string(static_cast<int>(agora.estado));
   marca += ':';
-  marca += std::to_string(static_cast<long>(tocador.posicao()));
+  marca += std::to_string(static_cast<long>(agora.posicao));
   marca += ':';
-  marca += std::to_string(static_cast<long>(tocador.duracao()));
+  marca += std::to_string(static_cast<long>(agora.duracao));
   marca += ':';
-  marca += std::to_string(tocador.volume());
+  marca += std::to_string(agora.volume);
   marca += ':';
-  const nucleo::Fila& fila = tocador.fila();
-  marca += std::to_string(fila.tamanho());
+  marca += std::to_string(agora.tamanho);
   marca += ':';
-  marca += fila.vazia() ? std::string() : std::string(fila.corrente());
+  marca += agora.faixa;
   marca += ':';
   // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
   // pagava a animação que não mostrava: medido em cento e trinta e dous KiB por segundo,
@@ -186,9 +188,9 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   return marca;
 }
 
-// retracto_do — colhe o instante do tocador n'uma cópia. É a UNICA funcção que
-// pergunta ao tocador, e por isso é o unico logar onde uma pergunta a mais
-// poderia dar dous valores no mesmo quadro. Colhe-se tudo aqui, de uma vez.
+// retracto_do — colhe o instante do tocador n'uma cópia. O nucleo colhe o seu
+// proprio retracto de UMA tomada da tranca (issue #50); aqui só se veste a
+// tela por cima d'elle.
 tui::Retracto retracto_do(nucleo::Tocador& tocador,
                           nucleo::Projector& projector) {
   tui::Retracto retracto;
@@ -196,15 +198,15 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   // é funcção PURA do retracto, e o que ella não vê n'elle não pode governar.
   retracto.video = projector.rodando();
   retracto.video_pausada = projector.pausada();
-  retracto.estado = tocador.estado();
-  retracto.posicao = tocador.posicao();
-  retracto.duracao = tocador.duracao();
-  retracto.volume = tocador.volume();
-  const nucleo::Fila& fila = tocador.fila();
-  retracto.tamanho = fila.tamanho();
-  if (!fila.vazia()) {
-    retracto.indice = fila.indice();
-    retracto.titulo = std::string(fila.corrente());
+  const nucleo::Retracto agora = tocador.retracto();
+  retracto.estado = agora.estado;
+  retracto.posicao = agora.posicao;
+  retracto.duracao = agora.duracao;
+  retracto.volume = agora.volume;
+  retracto.tamanho = agora.tamanho;
+  if (agora.tamanho > 0) {
+    retracto.indice = agora.indice;
+    retracto.titulo = agora.faixa;
   }
   return retracto;
 }
@@ -268,6 +270,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::AbreVideo:
     case tui::Verbo::AbreCatalogo:
     case tui::Verbo::BaixaTudo:
+    case tui::Verbo::TrocaFonte:
       break;
   }
 }
@@ -299,6 +302,9 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
   // Milesimos a segundos, arredondando ao mais proximo: truncar perderia meio segundo
   // em cada faixa, e a tolerancia do casamento é de doze.
   pedido.duracao = (faixa.duracao_ms + 500) / 1000;
+  // A FONTE estampa-se (issue #56): pedido sem URL busca na fonte d'elle, e a do
+  // catalogo é o Spotify, que no nucleo mapeia para o ytsearch de sempre.
+  pedido.fonte = nucleo::Fonte::Spotify;
   return pedido;
 }
 
@@ -334,8 +340,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   if (!mpris.viva())
     std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
 
-  for (const std::string& faixa : faixas) tocador.fila().junta(faixa);
-  if (!tocador.fila().vazia()) tocador.tocar_corrente();
+  for (const std::string& faixa : faixas) tocador.junta(faixa);
+  if (!faixas.empty()) tocador.tocar_corrente();
 
   // O ÍNDICE e a VARREDURA. A varredura corre em fio proprio e o navegador
   // recarrega quando ella concluir: assim a tela abre de pronto, com o acervo da
@@ -364,10 +370,16 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       });
 
 
-  // O CORREIO da busca na rede, e o pedido que o fio d'ella espera.
-  tui::Correio correio;
+  // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
+  // ACHADOS do nucleo (issue #56): quem constroe linhas é o navegador, que é
+  // quem sabe guardar o achado inteiro para a encommenda.
+  tui::CorreioDe<nucleo::Achado> correio;
   std::mutex tranca_do_termo;
   std::string termo_da_rede;
+  // A FONTE vigente da busca (issue #56): pegajosa na sessão, YouTube de saida.
+  // Vive sob a MESMA tranca do termo, e o fio da busca copia os dous n'um golpe:
+  // assim não ha quadro em que o termo seja de uma fonte e a busca de outra.
+  nucleo::Fonte fonte_da_busca = nucleo::Fonte::YouTube;
   std::atomic<bool> pede_buscar{false};
 
   // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
@@ -442,24 +454,36 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     while (!sahir.load()) {
       if (pede_buscar.exchange(false)) {
         std::string termo;
+        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
         {
           std::lock_guard<std::mutex> chave(tranca_do_termo);
           termo = termo_da_rede;
+          fonte = fonte_da_busca;
         }
+        // A fonte Spotify NUNCA corre aqui: a tela responde do catalogo, no
+        // proprio quadro e sem correio. Um pedido que envelheceu na flag (dous
+        // f seguidos com busca em voo) viraria um ytsearch de REDE a pousar
+        // por cima do catalogo, sob um cabeçalho que diz Spotify.
+        if (fonte == nucleo::Fonte::Spotify) continue;
         std::vector<nucleo::Achado> achados;
         const bool falou =
-            nucleo::busca_no_youtube(termo, ACHADOS_POR_BUSCA, &achados);
-        std::vector<tui::Linha> linhas;
-        linhas.reserve(achados.size());
-        for (const nucleo::Achado& achado : achados)
-          linhas.push_back(
-              {achado.titulo, achado.url, 0, achado.duracao, achado.canal});
+            nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
         // Tres desfechos, e tres recados: a rede muda, a rede que nada achou, e os
         // achados. «Nada se achou» e «não respondeu» são cousas differentes, e dizer
         // a mesma palavra ás duas faria o operador buscar outra vez em vão.
-        correio.poe(std::move(linhas),
-                    !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
-                           : (achados.empty() ? "nada se achou" : "achados na rede"));
+        std::string recado =
+            !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
+                   : (achados.empty() ? "nada se achou" : "achados na rede");
+        // A resposta só se entrega se o pedido ainda for o VIGENTE: o operador
+        // pode ter trocado de fonte ou de termo com esta busca em voo, e a
+        // lista velha pousando por cima da nova ficaria a mentir sob um
+        // cabeçalho que já diz outra fonte.
+        bool vigente = false;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          vigente = termo == termo_da_rede && fonte == fonte_da_busca;
+        }
+        if (vigente) correio.poe(std::move(achados), std::move(recado));
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
@@ -494,16 +518,45 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
   });
 
+  // A BUSCA DA FONTE SPOTIFY, e é SYNCHRONA de proposito: o catalogo é local
+  // (issue #13), rede alguma se toca, e responder no proprio quadro poupa o
+  // correio. Sem catalogo importado a vista fica como está: trocá-la por vazia
+  // apagaria achados uteis por um erro do fluxo, e não do termo. Corre no fio da
+  // tela, que é o unico que toca o navegador.
+  const auto busca_no_catalogo = [&](const std::string& termo) {
+    if (navegador.faixas_do_catalogo().empty()) {
+      aviso_da_rede = "importa uma lista do Spotify primeiro (I)";
+      return;
+    }
+    std::vector<nucleo::Achado> achados = nucleo::achados_do_catalogo(
+        {navegador.nome_do_catalogo(), navegador.faixas_do_catalogo()}, termo);
+    const std::string recado =
+        achados.empty() ? "nada se achou no catalogo"
+                        : std::to_string(achados.size()) + " achados no catalogo";
+    navegador.mostra_rede(std::move(achados));
+    aviso_da_rede = recado;
+  };
+
   auto pintor = ftxui::Renderer([&] {
     // Os achados da rede chegam AQUI, no fio da tela, que é o unico que pode tocar o
     // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
     // na colheita, donde a lista se assenta UMA vez e o eleito não volta ao alto a
     // cada quadro.
-    std::vector<tui::Linha> achados;
+    std::vector<nucleo::Achado> achados;
     std::string recado;
     if (correio.colhe(&achados, &recado)) {
-      navegador.mostra_rede(std::move(achados));
-      aviso_da_rede = recado;
+      // A guarda da COLHEITA, par da do fio: entre a checagem de lá e o pouso
+      // aqui cabe um f, e a resposta que já não é da fonte vigente cai. Os
+      // achados vêm estampados; a resposta VAZIA é sempre de fonte de rede,
+      // donde sob a fonte Spotify ella é velha por construcção (o catalogo
+      // responde no proprio quadro, sem passar por este correio).
+      const bool casa = achados.empty()
+                            ? fonte_da_busca != nucleo::Fonte::Spotify
+                            : achados.front().fonte == fonte_da_busca;
+      if (casa) {
+        navegador.mostra_rede(std::move(achados));
+        aviso_da_rede = recado;
+      }
     }
     // O CATALOGO chega pelo mesmo caminho, e no mesmo fio: mostra-se ANTES de se
     // baixar cousa alguma, que é o que a tarefa pede quando manda devolver a lista
@@ -552,7 +605,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
-    if (navegador.secao() == tui::Secao::Rede) trilha = "NET";
+    // A fonte no titulo da secção, SEMPRE: a lista pode ser da fonte anterior por
+    // um instante (a busca é assynchrona), e o cabeçalho é a verdade da vigente.
+    if (navegador.secao() == tui::Secao::Rede)
+      trilha = "NET · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
     if (navegador.secao() == tui::Secao::Lista) {
       trilha = "SPOTIFY";
       if (!navegador.nome_do_catalogo().empty())
@@ -566,7 +622,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
-    else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
+    else if (digita == Digita::Procura)
+      trilha = "BUSCA NA REDE (" +
+               std::string(nucleo::nome_da_fonte(fonte_da_busca)) +
+               "): " + termo_em_curso;
     else if (digita == Digita::Lista) trilha = "PLAYLIST DO SPOTIFY: " + termo_em_curso;
     else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
     else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
@@ -617,7 +676,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
-                           " · b baixa por URL · r varre · l letra · espaço pausa"
+                           " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
                            " · K/J move · R renomeia · D apaga · v video"
                            " · I spotify · T baixa todas · q sahe") |
@@ -673,12 +732,18 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           }
         } else if (era == Digita::Procura) {
           if (!termo_em_curso.empty()) {
+            nucleo::Fonte fonte = nucleo::Fonte::YouTube;
             {
               std::lock_guard<std::mutex> chave(tranca_do_termo);
               termo_da_rede = termo_em_curso;
+              fonte = fonte_da_busca;
             }
-            pede_buscar.store(true);
-            aviso_da_rede = "a perguntar á rede...";
+            if (fonte == nucleo::Fonte::Spotify) {
+              busca_no_catalogo(termo_em_curso);
+            } else {
+              pede_buscar.store(true);
+              aviso_da_rede = "a perguntar á rede...";
+            }
           }
         } else if (!termo_em_curso.empty()) {
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
@@ -766,6 +831,33 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         digita = Digita::Procura;
         termo_em_curso.clear();
         return true;
+      case tui::Verbo::TrocaFonte: {
+        // Troca-se OLHANDO a lista da rede, e sómente ahi: fóra d'ella o f diz
+        // onde o gesto vale, em vez de mudar estado que não está á vista.
+        if (navegador.secao() != tui::Secao::Rede) {
+          aviso_da_rede = "a fonte troca-se na secção da rede (s)";
+          return true;
+        }
+        std::string termo;
+        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          fonte_da_busca = nucleo::proxima_fonte(fonte_da_busca);
+          fonte = fonte_da_busca;
+          termo = termo_da_rede;
+        }
+        // Trocar de fonte NÃO apaga o termo: havendo um já buscado, re-busca-se
+        // o MESMO na fonte nova, que é o que dá as tres listas para comparar.
+        // Sem termo, muda só o cabeçalho, e busca alguma se dispara.
+        if (termo.empty()) return true;
+        if (fonte == nucleo::Fonte::Spotify) {
+          busca_no_catalogo(termo);
+        } else {
+          pede_buscar.store(true);
+          aviso_da_rede = "a perguntar á rede...";
+        }
+        return true;
+      }
       case tui::Verbo::AbreRois:
         navegador.mostra_rois();
         return true;
@@ -818,14 +910,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
               navegador.faixa_de_catalogo_eleita(), navegador.nome_do_catalogo()));
           return true;
         }
-        // Na REDE, entrar é BAIXAR, e a URL vem por punho proprio: caminho_eleito é
-        // vazio n'esta secção de proposito, para que endereço algum cahia na fila do
-        // motor. Quem baixa é o estaleiro, o mesmo que a URL collada á mão usa.
-        const std::string url = navegador.url_eleita();
-        if (!url.empty()) {
-          nucleo::Pedido pedido;
-          pedido.url = url;
-          estaleiro.encommenda(pedido);
+        // Na REDE, entrar é BAIXAR o achado eleito, pela encommenda que elle dá:
+        // a URL e o que a fonte soube dizer (artista, album, titulo canonico,
+        // ano, fonte). O achado comum dá o pedido só de URL, que é o de hoje; o
+        // caminho_eleito segue vazio n'esta secção, para que endereço algum
+        // cahia na fila do motor. Quem baixa é o estaleiro, como sempre.
+        if (navegador.ha_achado()) {
+          estaleiro.encommenda(
+              nucleo::encommenda_do_achado(navegador.achado_eleito()));
           return true;
         }
         // Dentro de uma lista, entrar enche a fila com a lista TODA na ordem
@@ -833,14 +925,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
         if (navegador.secao() == tui::Secao::NoRol) {
           const std::size_t eleita = navegador.eleito();
-          const std::size_t antes = tocador.fila().tamanho();
+          const std::size_t antes = tocador.retracto().tamanho;
           std::size_t quantas = 0;
           for (const tui::Linha& linha : navegador.vista()) {
-            tocador.fila().junta(linha.chave);
+            tocador.junta(linha.chave);
             ++quantas;
           }
           if (quantas > 0) {
-            tocador.fila().ir_para(antes + std::min(eleita, quantas - 1));
+            tocador.ir_para(antes + std::min(eleita, quantas - 1));
             tocador.tocar_corrente();
           }
           return true;
@@ -850,8 +942,8 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         if (navegador.entra()) {
           const std::string caminho = navegador.caminho_eleito();
           if (!caminho.empty()) {
-            tocador.fila().junta(caminho);
-            tocador.fila().ir_para(tocador.fila().tamanho() - 1);
+            // O tamanho novo vem da propria juntada: o ultimo é elle menos um.
+            tocador.ir_para(tocador.junta(caminho) - 1);
             tocador.tocar_corrente();
           }
         }

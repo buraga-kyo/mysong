@@ -90,9 +90,10 @@ void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
   dbus_message_iter_open_container(pae, DBUS_TYPE_VARIANT, "a{sv}", &variante);
   dbus_message_iter_open_container(&variante, DBUS_TYPE_ARRAY, "{sv}", &mapa);
 
-  const nucleo::Fila& fila = tocador.fila();
-  const bool ha = !fila.vazia();
-  const std::string caminho(ha ? fila.corrente() : std::string_view());
+  // De UMA tomada da tranca: faixa, indice e duração do mesmo momento.
+  const nucleo::Retracto agora = tocador.retracto();
+  const bool ha = agora.tamanho > 0;
+  const std::string& caminho = agora.faixa;
 
   const auto par = [&mapa](const char* chave, auto escriptor) {
     DBusMessageIter entrada;
@@ -104,7 +105,7 @@ void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
   };
 
   par("mpris:trackid", [&](DBusMessageIter* onde) {
-    escreve_variante_caminho(onde, caminho_da_faixa(ha ? fila.indice() : 0, ha));
+    escreve_variante_caminho(onde, caminho_da_faixa(agora.indice, ha));
   });
   if (ha) {
     par("xesam:url", [&](DBusMessageIter* onde) {
@@ -117,7 +118,7 @@ void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
                              std::filesystem::path(caminho).filename().string());
     });
     par("mpris:length", [&](DBusMessageIter* onde) {
-      escreve_variante_int64(onde, segundos_para_micros(tocador.duracao()));
+      escreve_variante_int64(onde, segundos_para_micros(agora.duracao));
     });
   }
   dbus_message_iter_close_container(&variante, &mapa);
@@ -513,15 +514,15 @@ void CasaDoMpris::pulsa() {
     dbus_message_unref(pedido);
   }
 
-  // E o pregão, sómente quando muda. A comparação é dos TRES: estado, volume e faixa.
-  const nucleo::Fila& fila = punho_->tocador.fila();
-  const std::string faixa(fila.vazia() ? std::string_view() : fila.corrente());
-  if (punho_->tocador.estado() != punho_->ultimo_estado ||
-      punho_->tocador.volume() != punho_->ultimo_volume ||
-      faixa != punho_->ultima_faixa) {
-    punho_->ultimo_estado = punho_->tocador.estado();
-    punho_->ultimo_volume = punho_->tocador.volume();
-    punho_->ultima_faixa = faixa;
+  // E o pregão, sómente quando muda. A comparação é dos TRES: estado, volume e
+  // faixa, colhidos de UMA tomada da tranca do tocador.
+  const nucleo::Retracto agora = punho_->tocador.retracto();
+  if (agora.estado != punho_->ultimo_estado ||
+      agora.volume != punho_->ultimo_volume ||
+      agora.faixa != punho_->ultima_faixa) {
+    punho_->ultimo_estado = agora.estado;
+    punho_->ultimo_volume = agora.volume;
+    punho_->ultima_faixa = agora.faixa;
     annuncia_mudanca(punho_->ligacao, punho_->tocador);
   }
   dbus_connection_flush(punho_->ligacao);

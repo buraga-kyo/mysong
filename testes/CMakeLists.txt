@@ -117,6 +117,11 @@ target_sources(mysong_testes PRIVATE prova_video.cpp)
 # aninhados conservados, que são as duas cousas que um leitor plano erraria.
 target_sources(mysong_testes PRIVATE prova_catalogo.cpp)
 
+# ─── A PROVA DOS FIOS (issue #50) ───────────────────────────────────────────
+# Dous e tres fios a bater no MESMO tocador, mil voltas cada. O aceite corre-a
+# tambem sob -fsanitize=thread, por build dir proprio, e lê a saída limpa.
+target_sources(mysong_testes PRIVATE prova_tocador_fios.cpp)
+
 # ─── A PROVA DO MUSICBRAINZ (issue #57) ─────────────────────────────────────
 # Sem rede: os corpos são recortes verbatim das respostas vivas de 2026-08-27.
 # O unico caso que toca o mundo toca RELOGIO (o acelerador), e não rede.

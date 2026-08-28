@@ -27,9 +27,23 @@
 #include <string_view>
 #include <vector>
 
+#include "nucleo/catalogo.hpp"
 #include "nucleo/musicbrainz.hpp"
 
 namespace mysong::nucleo {
+
+// A FONTE da busca (issue #56). As tres CONVIVEM, e nenhuma substitue outra: o
+// operador escolhe de onde a busca vem, e a eleita acompanha o Pedido até a fila
+// de baixa, para que quem baixa não precise saber quem pediu.
+enum class Fonte { YouTube, YouTubeMusic, Spotify };
+
+// nome_da_fonte — a palavra que o cabeçalho da busca mostra. Vive aqui, e não na
+// tela, pela mesma razão de razao_da_colheita: fonte nova sem nome não compila.
+std::string_view nome_da_fonte(Fonte fonte);
+
+// proxima_fonte — o ciclo fechado da tecla que troca: YouTube, YouTube Music,
+// Spotify, e volta ao começo. A ordem prova-se, em vez de morar na tela.
+Fonte proxima_fonte(Fonte fonte);
 
 // O que se sabe de uma faixa que se vae baixar. Campo vazio quer dizer «não sei»,
 // e ahi vale o que a sonda da URL tiver dito.
@@ -39,6 +53,9 @@ struct Pedido {
   std::string album;
   std::string titulo;
   int numero = 0;
+  // A FONTE que pediu (issue #56). Um pedido sem URL busca o audio na fonte
+  // D'ELLE, e não n'uma que a fila de baixa tivesse de adivinhar.
+  Fonte fonte = Fonte::YouTube;
   // A DURAÇÃO esperada, em segundos, e zero é «não sei». Entra na issue #13: com
   // ella, e sómente com ella, a URL pode vir VAZIA e a baixa busca o audio por si,
   // casando o achado pela duração. Sem ella não ha casamento de que se possa
@@ -48,8 +65,9 @@ struct Pedido {
   // MusicBrainz acha a GRAVAÇÃO exacta, e não uma parecida. Vazio quando a
   // faixa não veio do catalogo, e ahi a resolução tenta a busca por titulo.
   std::string id_spotify;
-  // O ANNO da release canonica, que o MusicBrainz dá e a etiqueta grava. Zero é
-  // «não se soube», e anno algum se escreve.
+  // O ANO do lançamento, e zero é «não sei»; havendo-o, elle vae á etiqueta. Dão-no
+  // DUAS fontes: a busca da issue #56 (a sonda da URL não o pergunta) e a release
+  // canonica que o MusicBrainz da issue #57 elege, que ganha quando a gravação casa.
   int ano = 0;
 };
 
@@ -167,16 +185,40 @@ struct Achado {
   std::string canal;
   int duracao = 0;  // em segundos; zero é «não disse»
   std::string url;
+  // Os campos da MUSICA (issue #56): nas art tracks do YouTube Music vêm
+  // preenchidos, e na busca comum vêm NA, que a leitura torna vazio. A `faixa` é
+  // o titulo CANONICO (%(track)s), limpo do que o titulo do video carregue.
+  std::string artista;
+  std::string album;
+  std::string faixa;
+  int ano = 0;
+  // A posição na lista de origem, quando a fonte a tem (o catalogo do Spotify
+  // tem; a busca na rede não). É ella que vira o «NN - » do nome do arquivo.
+  int numero = 0;
+  // A FONTE de que o achado veio, para que a encommenda a carregue adiante.
+  Fonte fonte = Fonte::YouTube;
 };
 
-// argumentos_da_busca — o que se corre. O `ytsearchN:` é o pseudo-endereço do yt-dlp
-// para busca, e o `--flat-playlist` impede que elle abra cada resultado para lhe ler os
-// fórmatos: sem elle, buscar dez faixas custa dez sondas de rede.
+// codifica_para_url — o termo como pedaço de URL: todo byte fóra de
+// [A-Za-z0-9._~-] sahe por cento e dous hexadecimaes. O `#` sobretudo: cru, elle
+// cortaria a consulta ao meio, que o fragmento da URL da musica é nosso.
+std::string codifica_para_url(std::string_view crua);
+
+// O TECTO da fonte da MUSICA. Dez, e não os vinte da comum: sem o flat cada
+// achado é uma sonda de rede (~1,3 s medidos), e dez respondem em ~17 s.
+inline constexpr int ACHADOS_DA_MUSICA = 10;
+
+// argumentos_da_busca — o que se corre, POR FONTE. YouTube: `ytsearchN:` com
+// `--flat-playlist` (abrir cada resultado custaria N sondas). YouTubeMusic: a URL
+// de busca do music.youtube.com com o fragmento #songs (só a prateleira das
+// musicas; sem elle um album no meio expande a lista inteira d'elle) e SEM flat,
+// que com flat os campos da musica vêm NA (medido em 2026-08-27). Spotify: mapa
+// para o YouTube, que o audio do catalogo vem de lá (fronteira da issue #13).
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
-                                             int quantos,
+                                             int quantos, Fonte fonte,
                                              bool com_cookie = false);
 
-// le_achados — as linhas que a busca imprimiu, QUATRO por achado e nessa ordem. Lê-se
+// le_achados — as linhas que a busca imprimiu, OITO por achado e nessa ordem. Lê-se
 // por linha, e não por separador dentro da linha: titulo de video tras barra vertical,
 // tabulação e tudo o mais, e um separador seria enganado pelo primeiro d'elles.
 std::vector<Achado> le_achados(const std::string& sahida);
@@ -201,6 +243,21 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
 // que a diga, vale o primeiro achado, que é o que a busca poz á frente.
 int achado_mais_proximo(const std::vector<Achado>& achados, int duracao);
 
+// encommenda_do_achado — o Pedido que o achado eleito dá, campo a campo: URL,
+// artista, album, titulo CANONICO (a faixa, e não o titulo do video), numero,
+// ano e fonte. No achado da busca comum esses campos vêm vazios, donde o pedido
+// sahe só com URL e fonte, egual ao de hoje. A DURAÇÃO entra sómente no pedido
+// SEM URL: lá ella é o crivo do casamento (issue #13); havendo URL, nada decide.
+Pedido encommenda_do_achado(const Achado& achado);
+
+// achados_do_catalogo — a fonte Spotify da tela busca AQUI, no catalogo que a
+// issue #13 importou, e rede alguma se toca. O filtro é o da tela: titulo OU
+// artista, sem caixa. O album é o nome da LISTA (a pagina de embutir não publica
+// album), o numero é a posição, a duração arredonda-se de milesimos, e a URL vae
+// vazia de proposito: é o pedido sem URL, o que casa pela duração.
+std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
+                                        const std::string& termo);
+
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
 // aqui, e o olho vê a fronteira de um relance.
@@ -214,10 +271,11 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido);
 // respondeu; ahi a etiqueta fica como estava.
 bool sonda_url(const std::string& url, EtiquetaRemota* remota);
 
-// busca_no_youtube — pergunta ao yt-dlp. Vazio quando a rede não respondeu, ou quando
-// não ha achado: quem chama distingue-os pelo booleano.
-bool busca_no_youtube(const std::string& termo, int quantos,
-                      std::vector<Achado>* achados);
+// busca_na_rede — pergunta ao yt-dlp NA FONTE dita, e estampa-a nos achados: quem
+// os consome ha de saber de onde vieram sem perguntar á tela. Vazio quando a rede
+// não respondeu, ou quando não ha achado: quem chama distingue-os pelo booleano.
+bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
+                   std::vector<Achado>* achados);
 
 // baixa — o acto inteiro: resolve, monta o caminho, cria o directorio, chama o
 // yt-dlp, e escreve a etiqueta com a taglib. `gravado` recebe o caminho do
