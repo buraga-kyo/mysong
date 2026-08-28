@@ -126,3 +126,6 @@ target_sources(mysong_testes PRIVATE prova_tocador_fios.cpp)
 # Sem rede: os corpos são recortes verbatim das respostas vivas de 2026-08-27.
 # O unico caso que toca o mundo toca RELOGIO (o acelerador), e não rede.
 target_sources(mysong_testes PRIVATE prova_musicbrainz.cpp)
+
+# ─── A PROVA DA LINHA DE COMMANDO (issue #66) ───────────────────────────────
+target_sources(mysong_testes PRIVATE prova_linha.cpp)
