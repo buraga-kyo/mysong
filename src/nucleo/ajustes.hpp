@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -103,6 +104,11 @@ std::string_view corta_commentario(std::string_view linha);
 // que vem a bateria provar o formato inteiro sem tocar em disco. Devolve os
 // pares na ORDEM em que vieram, e as queixas ficam nos ajustes.
 std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes);
+
+// fonte_de — a fonte da busca pelo nome que o operador escreve. Vazio quando o
+// nome não é uma das tres, e a QUEIXA fica com quem chama: a recusa e a razão
+// d'ella hão de morar n'um logar só.
+std::optional<Fonte> fonte_de(std::string_view texto);
 
 }  // namespace mysong::nucleo
 

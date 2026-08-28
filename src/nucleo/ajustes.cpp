@@ -106,6 +106,35 @@ std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes) {
   return pares;
 }
 
+namespace {
+
+// egual_sem_caixa — compara cego á caixa, em ASCII, e faz a caixa á mão pela
+// razão que o contem_insensivel da sonda já tem escripta: sob locale turco o
+// 'I' desce a caractere que não é 'i', e «YouTube» fugiria da comparação por
+// motivo que ninguem havia de suspeitar.
+bool egual_sem_caixa(std::string_view esta, std::string_view aquella) {
+  const auto baixa = [](char letra) {
+    return letra >= 'A' && letra <= 'Z' ? static_cast<char>(letra | 0x20)
+                                        : letra;
+  };
+  if (esta.size() != aquella.size()) return false;
+  for (std::size_t passo = 0; passo < esta.size(); ++passo)
+    if (baixa(esta[passo]) != baixa(aquella[passo])) return false;
+  return true;
+}
+
+}  // namespace
+
+// fonte_de — as tres da issue #56, e sómente ellas. Nome que não é nenhuma
+// d'ellas devolve vazio, e não a primeira da lista: acceitar por approximação
+// faria o operador buscar no Spotify a pensar que buscava no YouTube.
+std::optional<Fonte> fonte_de(std::string_view texto) {
+  if (egual_sem_caixa(texto, "youtube")) return Fonte::YouTube;
+  if (egual_sem_caixa(texto, "youtube-music")) return Fonte::YouTubeMusic;
+  if (egual_sem_caixa(texto, "spotify")) return Fonte::Spotify;
+  return std::nullopt;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
