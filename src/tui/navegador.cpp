@@ -337,6 +337,37 @@ void Navegador::mostra_rede(std::vector<Linha> achados) {
   refaz_vista();
 }
 
+void Navegador::mostra_rede(std::vector<nucleo::Achado> achados) {
+  achados_ = std::move(achados);
+  std::vector<Linha> linhas;
+  linhas.reserve(achados_.size());
+  for (std::size_t i = 0; i < achados_.size(); ++i) {
+    const nucleo::Achado& achado = achados_[i];
+    Linha linha;
+    // A faixa CANONICA quando a fonte a deu; o titulo do video quando não. E o
+    // artista pela mesma regra, cahindo ao canal, que é o que a busca comum tem.
+    linha.texto = achado.faixa.empty() ? achado.titulo : achado.faixa;
+    linha.chave = achado.url;
+    linha.numero = achado.numero;
+    linha.duracao = achado.duracao;
+    linha.autor = achado.artista.empty() ? achado.canal : achado.artista;
+    linha.origem = static_cast<int>(i);
+    linhas.push_back(std::move(linha));
+  }
+  mostra_rede(std::move(linhas));
+}
+
+bool Navegador::ha_achado() const {
+  if (secao_ != Secao::Rede || vista_.empty()) return false;
+  const int origem = vista_[eleito_].origem;
+  return origem >= 0 && static_cast<std::size_t>(origem) < achados_.size();
+}
+
+nucleo::Achado Navegador::achado_eleito() const {
+  if (!ha_achado()) return {};
+  return achados_[static_cast<std::size_t>(vista_[eleito_].origem)];
+}
+
 std::string Navegador::url_eleita() const {
   if (secao_ != Secao::Rede || vista_.empty()) return {};
   return vista_[eleito_].chave;

@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "nucleo/aquisicao.hpp"
 #include "nucleo/biblioteca.hpp"
 #include "nucleo/catalogo.hpp"
 #include "nucleo/rol.hpp"
@@ -47,6 +48,9 @@ struct Linha {
   int numero = 0;      // sómente em faixas; zero é «sem numero»
   int duracao = 0;     // sómente em faixas, em segundos
   std::string autor;   // sómente em faixas: o artista, para a columna do meio
+  // O INDICE do achado de que a linha veio (Rede; menos um nas demais). Nunca se
+  // exibe: é por elle que o achado eleito se acha com o filtro posto (issue #56).
+  int origem = -1;
 };
 
 // A JANELLA da rolagem: qual a primeira linha a mostrar, dada a altura da
@@ -98,6 +102,18 @@ class Navegador {
   // secção Rede. A lista guarda-se, e é ella a fonte da vista enquanto se estiver
   // n'esta secção: o filtro applica-se sobre ella, como nas outras.
   void mostra_rede(std::vector<Linha> achados);
+
+  // mostra_rede — a MESMA secção, recebendo os ACHADOS do nucleo (issue #56): o
+  // texto é a faixa canonica quando a fonte a deu, senão o titulo; o autor é o
+  // artista, senão o canal. A lista guarda-se inteira, e o `origem` de cada linha
+  // liga-a ao seu achado.
+  void mostra_rede(std::vector<nucleo::Achado> achados);
+
+  // ha_achado / achado_eleito — o achado da linha eleita, e SÓMENTE na Rede. O
+  // laço é o `origem` da linha, e não o indice da vista: com filtro posto os dous
+  // desencontram-se, e encommendar-se-hia o achado errado.
+  bool ha_achado() const;
+  nucleo::Achado achado_eleito() const;
 
   // url_eleita — a URL da linha eleita, e SÓMENTE estando-se na Rede. Existe á parte
   // de caminho_eleito porque as duas cousas não se podem confundir: uma é caminho no
@@ -173,6 +189,7 @@ class Navegador {
   Secao secao_ = Secao::Artistas;
   std::vector<Linha> vista_;
   std::vector<Linha> rede_;  // a fonte da vista na secção Rede, e sómente n'ella
+  std::vector<nucleo::Achado> achados_;  // os achados de que as linhas vieram
   nucleo::Catalogo catalogo_;  // a fonte da vista na secção Lista
   std::vector<std::string> trilha_;
   std::string termo_;

@@ -174,7 +174,7 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   CHECK(listas[0].find("cria uma") != std::string::npos);
   CHECK(listas[0].find("varra o acervo") == std::string::npos);
 
-  navegador.mostra_rede({});
+  navegador.mostra_rede(std::vector<nu::Achado>{});
   const std::vector<std::string> rede = pintar(navegador, 1, 70);
   CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
 }
