@@ -366,6 +366,28 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
   return eleito_com_titulo >= 0 ? eleito_com_titulo : eleito;
 }
 
+int achado_mais_proximo(const std::vector<Achado>& achados, int duracao) {
+  // O eleitor do caminho ISRC, e o contrario declarado do melhor_achado: o
+  // termo que trouxe estes achados é o ISRC, que nomeia a gravação, donde o
+  // TITULO não entra e distancia alguma exclue. A duração exacta desempata, e
+  // não criva, por ordem do usuario (RULINGS R3): cover de titulo egual perde
+  // aqui para a art track de titulo estranho, que é o Aceite da issue.
+  if (achados.empty()) return -1;
+  if (duracao <= 0) return 0;  // sem alvo não ha desempate: vale o primeiro
+  int eleito = -1, do_eleito = 0;
+  for (std::size_t i = 0; i < achados.size(); ++i) {
+    if (achados[i].duracao <= 0) continue;  // «não disse» não desempata
+    const int longe = achados[i].duracao > duracao
+                          ? achados[i].duracao - duracao
+                          : duracao - achados[i].duracao;
+    if (eleito < 0 || longe < do_eleito) {
+      do_eleito = longe;
+      eleito = static_cast<int>(i);
+    }
+  }
+  return eleito < 0 ? 0 : eleito;  // nenhum disse duração: vale o primeiro
+}
+
 bool busca_no_youtube(const std::string& termo, int quantos,
                       std::vector<Achado>* achados) {
   if (termo.empty()) return false;

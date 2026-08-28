@@ -179,6 +179,14 @@ std::vector<Achado> le_achados(const std::string& sahida);
 int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
                   int tolerancia);
 
+// achado_mais_proximo — o indice do achado de duração mais proxima da pedida, e
+// menos um sómente quando não ha achado algum. É o eleitor do caminho ISRC
+// (issue #57): o termo de busca já nomeia a GRAVAÇÃO, donde o titulo não entra
+// e distancia alguma exclue; a duração exacta do MusicBrainz é DESEMPATE, e não
+// crivo, por ordem registrada em RULINGS R3. Sem duração pedida, ou sem achado
+// que a diga, vale o primeiro achado, que é o que a busca poz á frente.
+int achado_mais_proximo(const std::vector<Achado>& achados, int duracao);
+
 // ── E AGORA O QUE TOCA O MUNDO. Estas tres não são puras, e é de proposito que
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
 // aqui, e o olho vê a fronteira de um relance.
