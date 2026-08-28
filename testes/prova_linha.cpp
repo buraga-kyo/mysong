@@ -45,3 +45,25 @@ TEST_CASE("as faixas entram na ordem em que vieram") {
   CHECK(duas.faixas[0] == "faixa.mp3");
   CHECK(duas.faixas[1] == "outra.flac");
 }
+
+// As duas metades da MESMA guarda: a recusa, e a sahida por onde quem tem
+// arquivo de nome torto continua a passar. Provar a primeira sem a segunda
+// deixaria de fóra o preço classico de se pôr guarda na linha de commando.
+TEST_CASE("o traço duplo encerra as opções, e o traço sozinho é caminho") {
+  const Invocacao com_traco = ler({"--", "--arquivo-com-traco.mp3"});
+  CHECK(com_traco.modo == Modo::Tocar);
+  REQUIRE(com_traco.faixas.size() == 1);
+  CHECK(com_traco.faixas[0] == "--arquivo-com-traco.mp3");
+  REQUIRE(ler({"-"}).faixas.size() == 1);
+  CHECK(ler({"-"}).faixas[0] == "-");
+}
+
+TEST_CASE("a opção desconhecida recusa NOMEANDO-a, e nada toca") {
+  const Invocacao torta = ler({"--coisa-errada"});
+  CHECK(torta.modo == Modo::Recusa);
+  CHECK(torta.razao.find("--coisa-errada") != std::string::npos);
+  CHECK(torta.razao.find("--ajuda") != std::string::npos);
+  CHECK(torta.faixas.empty());
+  CHECK(ler({"-h"}).modo == Modo::Recusa);  // opção curta alguma existe
+  CHECK(ler({"--versao", "--coisa-errada"}).modo == Modo::Recusa);
+}
