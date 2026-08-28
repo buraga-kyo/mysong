@@ -123,8 +123,12 @@ void Navegador::refaz_vista() {
       // consulta ao acervo n'este ramo, a varredura que conclua no meio de o
       // operador escolher um achado refaz a vista IDENTICA, e não lhe apaga a lista.
       // Guarda apartada houve, e sahiu: a mutação que a tirava sobrevivia á bateria.
+      // O filtro olha texto OU autor, como na secção Lista: com a fonte de
+      // musica o autor é o artista, e buscar por elle é o gesto natural (#56).
       for (const Linha& achado : rede_)
-        if (contem_sem_caixa(achado.texto, termo_)) vista_.push_back(achado);
+        if (contem_sem_caixa(achado.texto, termo_) ||
+            contem_sem_caixa(achado.autor, termo_))
+          vista_.push_back(achado);
       break;
   }
   if (vista_.empty()) eleito_ = 0;

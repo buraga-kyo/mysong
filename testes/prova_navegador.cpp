@@ -360,6 +360,11 @@ TEST_CASE("fóra da rede não ha URL eleita, e o filtro corta os achados") {
   // O filtro corta a VISTA e não a fonte: limpando-o, os tres voltam.
   navegador.filtra("");
   CHECK(navegador.vista().size() == 3);
+  // E olha o AUTOR tambem, como na secção Lista: com a fonte de musica o autor
+  // é o artista, e buscar por elle é o gesto natural (issue #56).
+  navegador.filtra("b");  // texto algum tem b; o autor da Fuga é B
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Fuga em Sol");
 }
 
 TEST_CASE("recarregar na rede não mexe na vista, e voltar sahe da secção") {
