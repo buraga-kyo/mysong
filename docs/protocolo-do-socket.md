@@ -228,6 +228,48 @@ E a recusa, que tem a mesma forma para os seis:
 |---|---|---|
 | `porcento` | inteiro | De 0 a 100. Fóra d'ahi **apara-se**, e a resposta diz o valor aparado: quem manda 150 lê 100. É o volume do MOTOR, e nunca o do systema. |
 
+### `embaralhar`
+
+Liga e desliga a permutação da fila. Ligar sorteia UMA ordem de toda a fila, com a
+faixa corrente no principio d'ella, e anda-se por essa ordem: faixa alguma torna
+antes de todas terem tocado. Esgotada, a permutação **não se re-sorteia**. Desligar
+volta á ordem de chegada, e **a faixa corrente não troca**.
+
+```
+→ {"verbo":"embaralhar","ligado":true}
+← {"ok":true,"embaralhado":true}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `ligado` | booleano | Obrigatorio. Ausente, ou de outro typo, devolve `argumento_invalido`. |
+
+Resposta: `embaralhado` (booleano), o valor que ficou.
+
+### `repetir`
+
+Assenta o modo de repetição. Tres valores, e sómente tres.
+
+```
+→ {"verbo":"repetir","modo":"todas"}
+← {"ok":true,"repetir":"todas"}
+→ {"verbo":"repetir","modo":"sempre"}
+← {"ok":false,"erro":"argumento_invalido","razao":"o modo de repetir e \"nenhuma\", \"uma\" ou \"todas\""}
+```
+
+| `modo` | Que faz | Nome no MPRIS |
+|---|---|---|
+| `nenhuma` | A borda recusa, como sempre. | `None` |
+| `uma` | `proxima` prende na faixa corrente, e ella recomeça. `anterior` **não** se prende. | `Track` |
+| `todas` | A ultima leva á primeira, e a primeira á ultima. | `Playlist` |
+
+Resposta: `repetir` (texto), o valor que ficou. Nome fóra dos tres devolve
+`argumento_invalido`, e o modo fica como estava.
+
+> **Os dous modos não sobrevivem ao fechar o programa**, e isso é decisão
+> declarada e não esquecimento: arquivo de estado algum se escreve, e abrir o
+> tocador outra vez dá os dous desligados.
+
 ## 6. Os verbos RESERVADOS
 
 Estes tres nomes **existem** no protocolo e o seu subsystema **ainda não chegou**.
