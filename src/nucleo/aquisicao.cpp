@@ -414,21 +414,41 @@ bool busca_no_youtube(const std::string& termo, int quantos,
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
-  // SEM URL, mas com titulo: busca-se o audio por si, e casa-se pela duração. É o
-  // caminho da issue #13, e é o mesmo `baixa` de sempre depois de achado o endereço:
-  // as etiquetas continuam a ser as que o operador disse, que aqui vêm do catalogo.
+  // SEM URL, mas com titulo: busca-se o audio por si (issue #13), agora pela
+  // GRAVAÇÃO antes do titulo (issue #57). O MusicBrainz resolve a faixa n'uma
+  // ficha; os termos de ISRC nomeiam a gravação exacta, e entre os achados a
+  // duração exacta DESEMPATA sem excluir (RULINGS R3); o termo de hoje fica por
+  // derradeiro, e o que baixar por elle sahe confessando a duvida no desfecho.
   if (pedido.url.empty()) {
     if (pedido.titulo.empty()) return Colheita::UrlRecusada;
-    std::vector<Achado> achados;
-    const std::string termo = pedido.artista.empty()
-                                  ? pedido.titulo
-                                  : pedido.artista + " " + pedido.titulo;
-    if (!busca_no_youtube(termo, 10, &achados)) return Colheita::SemFerramenta;
-    const int qual = melhor_achado(achados, pedido, TOLERANCIA_DO_CASAMENTO);
-    if (qual < 0) return Colheita::Duvidosa;
-    Pedido com_url = pedido;
-    com_url.url = achados[static_cast<std::size_t>(qual)].url;
-    return baixa(raiz, com_url, gravado);
+    FichaMB ficha;
+    resolve_gravacao(pedido.id_spotify, pedido.artista, pedido.titulo,
+                     pedido.duracao * 1000, &ficha);
+    // Não casando, a ficha fica vazia: o enriquecimento devolve o pedido tal e
+    // qual e os termos reduzem-se ao de hoje, que é o caminho antigo inteiro.
+    const Pedido rico = enriquece(pedido, ficha);
+    const int alvo_ms =
+        ficha.duracao_ms > 0 ? ficha.duracao_ms : pedido.duracao * 1000;
+    const std::vector<std::string> termos =
+        termos_de_busca(ficha, pedido.artista, pedido.titulo);
+    for (std::size_t i = 0; i < termos.size(); ++i) {
+      const bool de_hoje = i + 1 == termos.size();  // o derradeiro é o de hoje
+      std::vector<Achado> achados;
+      if (!busca_no_youtube(termos[i], 10, &achados))
+        return Colheita::SemFerramenta;
+      const int qual =
+          de_hoje ? melhor_achado(achados, rico, TOLERANCIA_DO_CASAMENTO)
+                  : achado_mais_proximo(achados, (alvo_ms + 500) / 1000);
+      if (qual < 0) continue;  // busca vazia ou nada casou: o termo seguinte
+      Pedido com_url = rico;
+      com_url.url = achados[static_cast<std::size_t>(qual)].url;
+      const Colheita fim = baixa(raiz, com_url, gravado);
+      // Pelo termo de hoje o casamento é o da issue #13, que aceita cover e
+      // versão ao vivo: o Colhido troca-se pelo desfecho que confessa isso.
+      return de_hoje && fim == Colheita::Colhido ? Colheita::ColhidoDuvidoso
+                                                 : fim;
+    }
+    return Colheita::Duvidosa;
   }
 
   EtiquetaRemota remota;
