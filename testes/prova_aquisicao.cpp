@@ -15,6 +15,24 @@
 
 namespace nu = mysong::nucleo;
 
+namespace {
+
+// um_achado — o achado com os tres campos de que os casos dos eleitores vivem:
+// titulo, duração e URL. Existe por causa da juncção das duas tarefas irmãs: o
+// Achado ganhou os campos da musica (issue #56) e o id do track (issue #57), e a
+// inicialização por lista deixava-os sem menção, que o compilador accusa com
+// -Wmissing-field-initializers. Nomear campo a campo mantem a bateria calada.
+nu::Achado um_achado(std::string titulo, int duracao, std::string url) {
+  nu::Achado achado;
+  achado.titulo = std::move(titulo);
+  achado.canal = "canal";
+  achado.duracao = duracao;
+  achado.url = std::move(url);
+  return achado;
+}
+
+}  // namespace
+
 TEST_CASE("o saneamento tira o que o kernel proscreve, e mais o que engana") {
   // A barra TROCA-SE, e não se apaga: apagar collaria AC/DC em ACDC.
   CHECK(nu::saneia_nome("AC/DC") == "AC-DC");
@@ -343,9 +361,8 @@ TEST_CASE("o ISRC ganha do titulo quando os dous discordam (aceite da issue)") {
   // caminho ISRC ignora o titulo, desempata pela duração exacta e leva a
   // GRAVAÇÃO: é o aceite da issue #57, aferido com os dous no mesmo palco.
   const std::vector<nu::Achado> achados = {
-      {"Never Gonna Give You Up (cover)", "Canal do Fulano", 222,
-       "https://youtube/cover"},
-      {"NGGYU (2022 Remaster)", "Rick Astley", 214, "https://youtube/gravacao"},
+      um_achado("Never Gonna Give You Up (cover)", 222, "https://youtube/cover"),
+      um_achado("NGGYU (2022 Remaster)", 214, "https://youtube/gravacao"),
   };
   nu::Pedido pedido;
   pedido.titulo = "Never Gonna Give You Up";
@@ -356,8 +373,8 @@ TEST_CASE("o ISRC ganha do titulo quando os dous discordam (aceite da issue)") {
 
 TEST_CASE("sem alvo de duração, o caminho ISRC fica com o primeiro achado") {
   const std::vector<nu::Achado> achados = {
-      {"sem duração dita", "canal", 0, "https://youtube/a"},
-      {"com duração dita", "canal", 214, "https://youtube/b"},
+      um_achado("sem duração dita", 0, "https://youtube/a"),
+      um_achado("com duração dita", 214, "https://youtube/b"),
   };
   CHECK(nu::achado_mais_proximo(achados, 0) == 0);    // sem alvo: o primeiro
   CHECK(nu::achado_mais_proximo(achados, 213) == 1);  // «não disse» não desempata
@@ -530,10 +547,12 @@ TEST_CASE("do achado comum nasce o pedido de hoje: URL, fonte, e mais nada") {
 TEST_CASE("do catalogo nascem achados: filtro sem caixa, e a lista por album") {
   nu::Catalogo catalogo;
   catalogo.nome = "Minha Lista";
+  // O ultimo campo é o id do track (issue #57), vazio aqui: estes casos são da
+  // fonte da busca, e o id prova-se no caso proprio d'elle.
   catalogo.faixas = {
-      {"Karma Police", "Radiohead", 1, 264500},
-      {"Paranoid Android", "Radiohead", 2, 386000},
-      {"Ageispolis", "Aphex Twin", 3, 322499},
+      {"Karma Police", "Radiohead", 1, 264500, ""},
+      {"Paranoid Android", "Radiohead", 2, 386000, ""},
+      {"Ageispolis", "Aphex Twin", 3, 322499, ""},
   };
   // Por TITULO, sem caixa, e com todo campo no seu logar.
   const std::vector<nu::Achado> uns = nu::achados_do_catalogo(catalogo, "karma");
