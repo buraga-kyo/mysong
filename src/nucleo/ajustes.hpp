@@ -111,6 +111,11 @@ std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes);
 // d'ella hão de morar n'um logar só.
 std::optional<Fonte> fonte_de(std::string_view texto);
 
+// chave_da_fonte — o INVERSO do fonte_de: a palavra tal como se escreve no
+// arquivo, e não o nome de mostrar da aquisição. O --sonda ha de dizer o que o
+// operador digitaria, para que elle possa copiar do diagnostico para o arquivo.
+std::string_view chave_da_fonte(Fonte fonte);
+
 // volume_de e baixas_de — os dous numeros. Vazio quando o texto não é inteiro
 // INTEIRAMENTE consumido, ou quando cae fóra do que a chave admitte: o volume
 // de zero a cem, e as baixas de uma até o tecto.

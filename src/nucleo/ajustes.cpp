@@ -153,6 +153,18 @@ std::optional<Fonte> fonte_de(std::string_view texto) {
   return std::nullopt;
 }
 
+// chave_da_fonte — o inverso do fonte_de, e as duas listas hão de bater. Ficam
+// visinhas de proposito: fonte nova acrescentada n'uma e esquecida na outra
+// accende aviso do compilador nos dous switches, e não em nenhum.
+std::string_view chave_da_fonte(Fonte fonte) {
+  switch (fonte) {
+    case Fonte::YouTube: return "youtube";
+    case Fonte::YouTubeMusic: return "youtube-music";
+    case Fonte::Spotify: return "spotify";
+  }
+  return "fonte sem nome";
+}
+
 std::optional<int> volume_de(std::string_view texto) {
   const std::optional<int> numero = inteiro_de(texto);
   if (!numero || *numero < 0 || *numero > VOLUME_DA_CASA) return std::nullopt;
