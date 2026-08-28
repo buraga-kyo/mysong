@@ -126,5 +126,27 @@ TEST_CASE("a eleição da busca criva score e duração, e elege a mais antiga")
   CHECK(nu::le_eleita_da_busca("", 213000).empty());
 }
 
+TEST_CASE("os termos da colheita: tres ISRCs no tecto, e o de hoje por ultimo") {
+  // A ficha de oito ISRCs dá TRES termos de ISRC, na ordem do MB, e o termo de
+  // hoje (artista e titulo) por derradeiro: é o tecto de RULINGS R5, que poupa
+  // cinco buscas de rede por faixa sem degradar a que o primeiro ISRC não acha.
+  const nu::FichaMB cheia = nu::le_ficha_da_gravacao(kCorpoDaFicha);
+  const std::vector<std::string> termos =
+      nu::termos_de_busca(cheia, "Rick Astley", "Never Gonna Give You Up");
+  REQUIRE(termos.size() == 4);
+  CHECK(termos[0] == "GB5KW2103369");
+  CHECK(termos[1] == "GB5KW2202504");
+  CHECK(termos[2] == "GBARL0401372");
+  CHECK(termos[3] == "Rick Astley Never Gonna Give You Up");
+
+  // Ficha sem ISRC algum: sómente o termo de hoje, que sahe com a duvida
+  // confessada por quem chama. E sem artista, o termo é o titulo sósinho.
+  const nu::FichaMB vazia;
+  const std::vector<std::string> sos =
+      nu::termos_de_busca(vazia, "", "Never Gonna Give You Up");
+  REQUIRE(sos.size() == 1);
+  CHECK(sos[0] == "Never Gonna Give You Up");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
