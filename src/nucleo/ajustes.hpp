@@ -19,7 +19,13 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
+#include <filesystem>
+#include <string>
 #include <string_view>
+#include <vector>
+
+#include "nucleo/estaleiro.hpp"  // OBREIROS_DA_BAIXA, e por elle o Fonte
 
 namespace mysong::nucleo {
 
@@ -43,6 +49,40 @@ struct Ajuste {
 // O ESTADO do arquivo. Ausente e Illegivel NÃO são o mesmo caso: ausente é o
 // caso normal e cala-se; presente que se não lê é queixa.
 enum class EstadoDoArquivo { Ausente, Lido, Illegivel };
+
+// O VOLUME de fabrica. Applica-se SEMPRE ao abrir, donde é este o numero que
+// vale, e não o do tocador: uma verdade, e não duas a divergirem com o tempo.
+inline constexpr int VOLUME_DA_CASA = 100;
+
+// O TECTO das baixas simultaneas. Oito, e não sem tecto: zero obreiro é fila
+// que nunca anda, e o tractado do estaleiro já declara que a rede é uma só;
+// numero sem tecto seria fio de systema por conta de erro de dedo.
+inline constexpr int BAIXAS_NO_MAXIMO = 8;
+
+// Os tectos do ARQUIVO, que existem para que lixo não vire relatorio infinito:
+// arquivo binario passado por engano, linha de um megabyte, queixa por byte.
+inline constexpr std::size_t LINHA_NO_MAXIMO = 4096;
+inline constexpr std::size_t ARQUIVO_NO_MAXIMO = 1024 * 1024;
+inline constexpr std::size_t QUEIXAS_NO_MAXIMO = 32;
+
+// OS AJUSTES em vigor, já resolvidos: os quatro que o operador governa, o
+// caminho do arquivo que se considerou (ainda que ausente), o estado d'elle, e
+// as queixas. O acervo nasce vazio porque o padrão d'elle depende do HOME, que
+// é do mundo e não d'este cabeçalho.
+struct Ajustes {
+  Ajuste<std::filesystem::path> acervo;
+  Ajuste<int> volume{VOLUME_DA_CASA, Origem::Padrao};
+  Ajuste<Fonte> fonte_da_busca{Fonte::YouTube, Origem::Padrao};
+  Ajuste<std::size_t> baixas_simultaneas{OBREIROS_DA_BAIXA, Origem::Padrao};
+
+  std::filesystem::path arquivo;
+  EstadoDoArquivo estado = EstadoDoArquivo::Ausente;
+  std::vector<std::string> queixas;
+
+  // queixa — accrescenta uma queixa, até o tecto. Passado o tecto, cala-se e
+  // deixa UMA linha a dizer quantas ficaram de fóra.
+  void queixa(std::string dito);
+};
 
 }  // namespace mysong::nucleo
 
