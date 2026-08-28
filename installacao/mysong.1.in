@@ -36,3 +36,43 @@ por traco. Traco sozinho tambem e caminho.
 .PP
 Opcao que nao esteja nesta taboada e RECUSADA: a razao vae pelo stderr, e a
 sahida e 2. Opcao curta alguma existe, e escreve-se a longa.
+.SH TECLAS
+A taboada esta inteira, e vae dividida pelo que cada grupo governa.
+.SS Transporte
+.nf
+espaco        pausa tocando, retoma pausado
+n, p          faixa seguinte, faixa anterior
+\&. e ,         busca cinco segundos no som, para deante ou para tras
++, \-          volume, por degrau de cinco
+.fi
+.SS Navegacao
+.nf
+j, k          anda na lista; as setas de cima e de baixo fazem o mesmo
+Enter         entra em artista, album ou faixa; a seta direita idem
+Escape        volta um degrau; Backspace e a seta esquerda idem
+/             filtra a lista que esta a vista, sem tocar a rede
+.fi
+.SS Acervo e rede
+.nf
+r             varre o acervo outra vez
+s             busca na rede pelo yt-dlp; Enter no achado baixa-o
+b             baixa por URL
+I             le uma playlist publica do Spotify por catalogo
+T             baixa TODAS as faixas da lista lida
+.fi
+.SS Listas
+.nf
+P             abre as listas
+c             cria lista, e pede o nome
+R             renomeia a lista
+D             apaga a lista, e pede confirmacao
+a             junta a faixa eleita a lista alvo
+t             retira o item eleito da lista
+K, J          move o item para cima, para baixo
+.fi
+.SS Tela
+.nf
+l             troca o espectro pela letra
+v             abre a faixa eleita em janella de video
+q             sahe
+.fi
