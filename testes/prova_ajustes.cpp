@@ -158,3 +158,13 @@ TEST_CASE("sem queixa não ha secção de queixas, e o ausente diz-se") {
   CHECK(texto.find("queixas") == std::string::npos);
   CHECK(texto.find("(ausente, e valem os padrões)") != std::string::npos);
 }
+
+TEST_CASE("a bandeira do acervo colhe-se, e o que não é ella fica faixa") {
+  std::optional<std::string> acervo;
+  CHECK(nu::eh_acervo("--acervo=/tmp/x", &acervo));
+  CHECK(*acervo == "/tmp/x");
+  CHECK_FALSE(nu::eh_acervo("faixa.mp3", &acervo));
+  CHECK_FALSE(nu::eh_acervo("--acervo", &acervo));
+  CHECK(nu::eh_acervo("--acervo=", &acervo));
+  CHECK(acervo->empty());
+}

@@ -161,6 +161,12 @@ EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
 // para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
 std::filesystem::path padrao_do_acervo();
 
+// eh_acervo — diz se o argumento é o `--acervo=<caminho>` e, sendo-o, põe o
+// caminho no destino. Devolvendo verdadeiro, o argumento NÃO é faixa. Vive
+// aqui, e não no main, por duas razões: prova-se sem se armar vector de char*,
+// e a janella fica com duas linhas em vez de um bloco de leitura de bandeira.
+bool eh_acervo(std::string_view argumento, std::optional<std::string>* acervo);
+
 // ajustes_do_systema — a MONTAGEM, e a unica funcção d'este modulo que toca o
 // mundo: lê o ambiente, abre o arquivo, e afere o directorio com o filesystem
 // de verdade. Chama-se UMA vez, no main, antes de fio algum se erguer: ler

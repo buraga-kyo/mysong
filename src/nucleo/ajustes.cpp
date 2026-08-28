@@ -292,6 +292,17 @@ std::filesystem::path padrao_do_acervo() {
   return std::filesystem::path(casa) / "Música";
 }
 
+// eh_acervo — a UNICA bandeira que esta lavra accrescenta. Repetida, vale a
+// ultima, pela mesma regra da chave repetida do arquivo; e `--acervo=` sem
+// caminho dá caminho vazio, que a aferição recusa e a queixa nomeia, em vez de
+// se tratar como se a bandeira não tivesse sido escripta.
+bool eh_acervo(std::string_view argumento, std::optional<std::string>* acervo) {
+  constexpr std::string_view bandeira = "--acervo=";
+  if (argumento.substr(0, bandeira.size()) != bandeira) return false;
+  *acervo = std::string(argumento.substr(bandeira.size()));
+  return true;
+}
+
 // ajustes_do_systema — a montagem. Tudo o que toca o mundo está n'estas vinte
 // linhas, e tudo o mais d'este arquivo é puro: é o que faz a bateria alcançar
 // o formato inteiro e a precedencia inteira sem tocar disco nem ambiente.
