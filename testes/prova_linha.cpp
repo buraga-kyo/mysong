@@ -9,6 +9,7 @@
 
 #include <sys/wait.h>
 
+#include <cctype>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -71,6 +72,23 @@ TEST_CASE("a opção desconhecida recusa NOMEANDO-a, e nada toca") {
   CHECK(torta.faixas.empty());
   CHECK(ler({"-h"}).modo == Modo::Recusa);  // opção curta alguma existe
   CHECK(ler({"--versao", "--coisa-errada"}).modo == Modo::Recusa);
+}
+
+// O FORMATO, e não a concordancia. Os casos do binario, abaixo, comparam-no
+// com a MESMA funcção que elle chama: concordariam ainda que o
+// @PROJECT_VERSION@ deixasse de se substituir, e o `mysong @PROJECT_VERSION@`
+// passaria verde. Aqui escreve-se á mão o que se ha de VER.
+TEST_CASE("o numero tem forma de numero, e a ajuda nomeia o que existe") {
+  const std::string dito = texto_da_versao();
+  REQUIRE(dito.rfind("mysong ", 0) == 0);
+  REQUIRE(dito.size() > 7);
+  CHECK(std::isdigit(static_cast<unsigned char>(dito[7])));
+
+  const std::string ajuda = texto_da_ajuda();
+  CHECK(ajuda.find("--versao") != std::string::npos);
+  CHECK(ajuda.find("--ajuda") != std::string::npos);
+  CHECK(ajuda.find("--sonda") != std::string::npos);
+  CHECK(ajuda.find("\n  -- ") != std::string::npos);
 }
 
 // ── O BINARIO, e não a bibliotheca: o que a issue #66 promette é o que o
