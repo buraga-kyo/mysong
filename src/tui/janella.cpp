@@ -162,6 +162,12 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += ':';
   marca += std::to_string(agora.tamanho);
   marca += ':';
+  // Os DOUS MODOS (issue #62). Sem elles aqui, teclar `z` com a musica pausada
+  // mudava o modo e a fita ficava como estava até o operador carregar n'outra
+  // tecla por acaso: é o defeito que a issue #49 já apanhou uma vez n'esta Casa.
+  marca += agora.embaralhado ? 'E' : '.';
+  marca += static_cast<char>('0' + static_cast<int>(agora.repeticao));
+  marca += ':';
   marca += agora.faixa;
   marca += ':';
   // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
@@ -204,6 +210,8 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   retracto.duracao = agora.duracao;
   retracto.volume = agora.volume;
   retracto.tamanho = agora.tamanho;
+  retracto.embaralhado = agora.embaralhado;
+  retracto.repeticao = agora.repeticao;
   if (agora.tamanho > 0) {
     retracto.indice = agora.indice;
     retracto.titulo = agora.faixa;
