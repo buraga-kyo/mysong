@@ -74,6 +74,12 @@ class Fila {
   // ── OS DOUS MODOS (issue #62), e são INDEPENDENTES: um sorteia a ordem, o
   // outro governa o que succede na borda.
   //
+  // NÃO SOBREVIVEM AO FECHAR O PROGRAMA, e é decisão declarada, não esquecimento:
+  // arquivo de estado algum se lê nem se escreve, aqui ou em logar nenhum, e o
+  // tocador aberto de novo nasce com os dous desligados. Quem vier accrescentar
+  // persistencia ha de a pedir ao usuario primeiro; a issue #67 traz configuração
+  // de LEITURA APENAS, e ella não guarda modo de reprodução.
+  //
   // O EMBARALHAR é PERMUTAÇÃO QUE ESGOTA. Ao ligar, sorteia-se UMA ordem de
   // toda a fila, com a faixa corrente no PRINCIPIO d'ella, e anda-se por essa
   // ordem: faixa alguma torna antes de todas terem tocado. Esgotada, ella NÃO
