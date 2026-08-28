@@ -32,6 +32,7 @@
 #include <ctime>
 
 #include "api/socket.hpp"
+#include "nucleo/analisador.hpp"
 #include "nucleo/biblioteca.hpp"
 #include "nucleo/estaleiro.hpp"
 #include "nucleo/motor.hpp"
@@ -66,6 +67,16 @@ int main(int argc, char** argv) {
   }
   nucleo::Tocador tocador(*motor);
   for (int passo = 1; passo < argc; ++passo) tocador.junta(argv[passo]);
+
+  // O ANALISADOR, pelo mesmo padrão da janella: espectro é ornamento, e não
+  // requisito. Sem elle o tocador toca e as bandas sahem em zero; mas sem elle
+  // aqui, o verbo «espectro» d'este socket JAMAIS mostraria banda que se movesse,
+  // e o aceite não teria onde se dar.
+  nucleo::Analisador analisador;
+  if (analisador.vivo())
+    tocador.observa(analisador);
+  else
+    std::cerr << "superficie_viva: sem espectro: " << analisador.razao() << "\n";
 
   // O socket DEGRADA e não aborta: faltando-lhe caminho ou estando o caminho tomado,
   // escreve-se a razão e o tocador segue a tocar. Superfície de commando que
