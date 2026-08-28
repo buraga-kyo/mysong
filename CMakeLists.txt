@@ -72,10 +72,12 @@ target_link_libraries(mysong_core PUBLIC ftxui::dom ftxui::screen)
 # ─── O QUE O DOCTEST NÃO HA DE INSTALLAR (issue #66) ────────────────────────
 # Vae ANTES do MakeAvailable, e é a unica lavra da #66 fóra do fim do arquivo:
 # o doctest declara DOCTEST_NO_INSTALL como opção DESLIGADA, e entrando elle
-# por subdirectorio as sete regras de install() d'elle passariam a ser nossas.
-# Quem installasse o mysong levaria junto os cabeçalhos, o pacote de CMake e o
-# de pkg-config de uma bibliotheca de PROVA. Depois do MakeAvailable já não ha
-# como as desfazer, e por isso esta linha não pôde ir com as outras.
+# por subdirectorio as sete chamadas de install() d'elle passariam a ser
+# nossas, e ellas dão SEIS regras de file(INSTALL) no script gerado, que é o
+# numero que eu medi tirando esta linha: quem installasse o mysong levaria
+# junto os cabeçalhos, o pacote de CMake e o de pkg-config de uma bibliotheca
+# de PROVA. Depois do MakeAvailable já não ha como as desfazer, e por isso
+# esta linha não pôde ir com as outras.
 set(DOCTEST_NO_INSTALL ON CACHE BOOL "" FORCE)
 
 # doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
