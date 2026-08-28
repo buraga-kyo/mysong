@@ -327,6 +327,37 @@ TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
   CHECK(fala(tocador, "{\"verbo\":\"estado\"}").find('\n') == std::string::npos);
   CHECK(fala(tocador, "{\"verbo\":\"voar\"}").find('\n') == std::string::npos);
 }
+// Os DOUS MODOS pelo socket (issue #62). O retracto é o que o cliente lê para
+// armar tela, e por isso os dous campos se aferem d'elle, e não sómente da
+// resposta do verbo que os assentou.
+TEST_CASE("os dous modos assentam-se pelo socket, e sahem no retracto") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav", "tres.wav"})
+    fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":" + mysong::api::texto(faixa) + "}");
+
+  // O retracto nasce com os dous desligados: é o que o programa recem-aberto vê.
+  const std::string cru = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(cru, "embaralhado") == "false");
+  CHECK(campo(cru, "repetir") == "nenhuma");
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"embaralhar\",\"ligado\":true}"),
+              "embaralhado") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"repetir\",\"modo\":\"todas\"}"),
+              "repetir") == "todas");
+  const std::string posto = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(posto, "embaralhado") == "true");
+  CHECK(campo(posto, "repetir") == "todas");
+  CHECK(posto.find('\n') == std::string::npos);  // UMA linha, como as outras
+
+  // E desligar volta os dous, que modo que não se desliga não é modo.
+  fala(tocador, "{\"verbo\":\"embaralhar\",\"ligado\":false}");
+  fala(tocador, "{\"verbo\":\"repetir\",\"modo\":\"nenhuma\"}");
+  const std::string quieto = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(quieto, "embaralhado") == "false");
+  CHECK(campo(quieto, "repetir") == "nenhuma");
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
