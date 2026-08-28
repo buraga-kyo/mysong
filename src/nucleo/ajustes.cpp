@@ -319,6 +319,17 @@ Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
 
 namespace {
 
+// nome_do_estado — a palavra do arquivo no diagnostico. O caso «ausente» diz
+// tambem o que succedeu por causa d'elle, que é a duvida seguinte de quem lê.
+std::string_view nome_do_estado(EstadoDoArquivo estado) {
+  switch (estado) {
+    case EstadoDoArquivo::Ausente: return "ausente, e valem os padrões";
+    case EstadoDoArquivo::Lido: return "lido";
+    case EstadoDoArquivo::Illegivel: return "não se leu";
+  }
+  return "estado sem nome";
+}
+
 // linha_do_ajuste — a chave guarnecida á largura da maior, o valor, e a origem
 // entre parenthesis. O valor NÃO se trunca: caminho cortado n'um diagnostico é
 // o defeito, e não o remedio.
@@ -347,6 +358,18 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
   linha_do_ajuste(&texto, "baixas_simultaneas",
                   std::to_string(ajustes.baixas_simultaneas.valor),
                   ajustes.baixas_simultaneas.origem);
+  // O CAMINHO vae sempre, ainda que o arquivo não exista: sem elle, quem
+  // escreveu o arquivo no logar errado não tem como descobrir qual é o certo.
+  texto += "\n  arquivo: " + ajustes.arquivo.string() + " (";
+  texto.append(nome_do_estado(ajustes.estado));
+  texto += ")\n";
+  // As QUEIXAS, e a linha que as apresenta diz logo que ellas não trancam a
+  // porta: quem vê lista de erros n'um diagnostico suppõe que o programa parou.
+  if (!ajustes.queixas.empty()) {
+    texto += "\n  queixas, que não impedem a obra de abrir:\n";
+    for (const std::string& queixa : ajustes.queixas)
+      texto += "    " + queixa + "\n";
+  }
   return texto;
 }
 
