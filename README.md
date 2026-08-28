@@ -169,6 +169,8 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
+| `z` | liga e desliga o embaralhar |
+| `x` | cicla o repetir: nenhuma, uma, todas |
 | `j` / `k` ou `↑` / `↓` | anda na lista |
 | Enter ou `→` | entra (artista, album, faixa) |
 | Escape, Backspace ou `←` | volta um degrau |
