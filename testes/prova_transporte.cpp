@@ -178,5 +178,47 @@ TEST_CASE("a linha da barra sahe egual á cadeia escripta á mão") {
   CHECK(tui::linha_da_barra(no_principio, 4) == "\u2591\u2591\u2591\u2591");
 }
 
+// A FITA DOS DOUS MODOS (issue #62). Calada com os dous desligados, e é isso que
+// faz o caso da linha escripta á mão, lá em cima, seguir a valer sem se lhe tocar.
+TEST_CASE("a fita cala os dous modos quando desligados") {
+  const tui::Retracto quieto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  const std::string linha = a_linha_pintada(quieto, 80);
+  CHECK(linha.find("emb") == std::string::npos);
+  CHECK(linha.find("rep ") == std::string::npos);
+}
+
+TEST_CASE("a fita diz os dous modos quando ligados") {
+  tui::Retracto posto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  posto.embaralhado = true;
+  CHECK(a_linha_pintada(posto, 80).find("emb") != std::string::npos);
+  posto.embaralhado = false;
+  posto.repeticao = nu::Repeticao::Uma;
+  CHECK(a_linha_pintada(posto, 80).find("rep uma") != std::string::npos);
+  posto.repeticao = nu::Repeticao::Todas;
+  CHECK(a_linha_pintada(posto, 80).find("rep todas") != std::string::npos);
+  posto.embaralhado = true;
+  CHECK(a_linha_pintada(posto, 80).find("emb rep todas") != std::string::npos);
+}
+
+// O CÓRTE DECLARADO: não cabendo, o segmento sae INTEIRO. As tres bordas vão
+// escriptas á mão, e foram MEDIDAS n'um écran de papel; contá-las aqui pela
+// mesma conta que a obra faz não provaria cousa alguma.
+TEST_CASE("não cabendo, os dous modos cedem o logar inteiros") {
+  tui::Retracto posto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
+  posto.embaralhado = true;
+  posto.repeticao = nu::Repeticao::Todas;
+  CHECK(a_linha_pintada(posto, 61).find("emb") == std::string::npos);
+  CHECK(a_linha_pintada(posto, 62).find("emb rep todas") != std::string::npos);
+  posto.repeticao = nu::Repeticao::Nenhuma;
+  CHECK(a_linha_pintada(posto, 51).find("emb") == std::string::npos);
+  CHECK(a_linha_pintada(posto, 52).find("emb") != std::string::npos);
+  // E em largura alguma a linha transborda, nem sobra: a conta do reservado é
+  // em std::size_t, e subtracção guardada é o que a impede de dar numero enorme.
+  for (std::size_t largura = 1; largura <= 200; ++largura) {
+    posto.repeticao = nu::Repeticao::Todas;
+    REQUIRE(codepoints(a_linha_pintada(posto, largura)) == largura);
+  }
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
