@@ -23,11 +23,16 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <filesystem>
 #include <string>
+#include <system_error>
 #include <vector>
+
+#include <unistd.h>
 
 #include "api/jsonzinho.hpp"
 #include "api/protocolo.hpp"
+#include "nucleo/biblioteca.hpp"
 
 namespace {
 using mysong::api::analysa;
@@ -98,6 +103,49 @@ std::string campo(const std::string& resposta, const std::string& chave) {
   }
   return "null";
 }
+
+// Uma COVA com um índice lavrado á mão: dous artistas, dous albuns de um
+// d'elles, duas faixas n'um album, e titulo com aspa e com UTF-8, que é o que o
+// mundo tem. O banco entra por parametro, e é por isso que a prova não pode
+// tocar o índice do operador.
+class Cova {
+ public:
+  Cova() {
+    static int conta = 0;
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-api-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++conta));
+    std::error_code erro;
+    std::filesystem::create_directories(caminho_, erro);
+  }
+  ~Cova() { std::error_code erro; std::filesystem::remove_all(caminho_, erro); }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+
+  std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+
+  void semeia() const {
+    mysong::nucleo::Escriba escriba(banco());
+    const struct { const char* quem; const char* qual; const char* titulo; } acervo[] = {
+        {"Bach", "Cantatas", "Aria"},   {"Bach", "Cantatas", "Cor\"o"},
+        {"Bach", "Suites", "Prelude"},  {"Coltrane", "Blue", "音楽"}};
+    int numero = 0;
+    for (const auto& linha : acervo) {
+      mysong::nucleo::Faixa faixa;
+      faixa.artista = linha.quem;
+      faixa.album = linha.qual;
+      faixa.titulo = linha.titulo;
+      faixa.caminho = std::string("/acervo/") + linha.titulo + ".flac";
+      faixa.numero = ++numero;
+      faixa.duracao = 200 + numero;
+      escriba.grava(faixa);
+    }
+    escriba.conclui();
+  }
+
+ private:
+  std::filesystem::path caminho_;
+};
 
 std::string fala(Tocador& tocador, const std::string& linha) {
   return mysong::api::responde(tocador, linha);
