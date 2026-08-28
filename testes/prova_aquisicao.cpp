@@ -354,6 +354,27 @@ TEST_CASE("bandeiras_do_motor cresce de dous pares para tres com o cookie") {
   CHECK(nu::bandeiras_do_motor(true).size() == 6u);
 }
 
+TEST_CASE("achado vindo da rede tras SEMPRE URL, que é o que segura o ISRC") {
+  // Esta é a guarda de que o caminho do ISRC vive, e por isso tem caso proprio.
+  // O eleitor d'esse caminho não criva (RULINGS R3): havendo lista, elle elege
+  // alguem. O que impede a eleição de virar baixa errada é este passo: achado
+  // sem URL NÃO sahe da leitura, donde todo achado elegivel tras endereço, a
+  // recursão de `baixa` cae no ramo COM URL, e pedido sem URL nunca nasce de
+  // rede. Se este descarte cahisse, a recursão tornaria ao laço da busca com o
+  // mesmo pedido, e o laço não teria fim.
+  const std::vector<nu::Achado> lidos = nu::le_achados(
+      "Sem endereço\nCanal\n213\n\nNA\nNA\nNA\nNA\n"
+      "Com endereço\nCanal\n214\nhttps://youtube/boa\nNA\nNA\nNA\nNA\n");
+  REQUIRE(lidos.size() == 1);
+  CHECK(lidos[0].titulo == "Com endereço");
+  for (const nu::Achado& achado : lidos) CHECK_FALSE(achado.url.empty());
+  // E o eleitor sem crivo elege este, que tras endereço: a baixa que se segue
+  // tem para onde ir.
+  const int qual = nu::achado_mais_proximo(lidos, 213);
+  REQUIRE(qual == 0);
+  CHECK_FALSE(nu::encommenda_do_achado(lidos[qual]).url.empty());
+}
+
 TEST_CASE("o ISRC ganha do titulo quando os dous discordam (aceite da issue)") {
   // A MESMA lista, dous eleitores, lado a lado. O cover tras o titulo do pedido
   // no seu e está a nove segundos do alvo; a art track da gravação tem titulo

@@ -504,10 +504,18 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     for (std::size_t i = 0; i < termos.size(); ++i) {
       const bool de_hoje = i + 1 == termos.size();  // o derradeiro é o de hoje
       std::vector<Achado> achados;
-      // E busca-se na fonte do PROPRIO pedido (issue #56), o termo de ISRC
-      // inclusive: quem pediu é quem sabe onde o audio d'elle se procura, e o
-      // ISRC é termo de busca como outro qualquer (RULINGS R12).
-      if (!busca_na_rede(termos[i], pedido.fonte, 10, &achados))
+      // A FONTE de cada termo, e a differença é de segurança, não de gosto. O
+      // termo de hoje vae na fonte do PROPRIO pedido, que é o invariante da
+      // issue #56: quem pediu é quem sabe onde o audio d'elle se procura. Os
+      // termos de ISRC vão no ytsearch, e SÓ n'elle, porque é a unica fonte em
+      // que a propriedade de que este caminho vive foi MEDIDA: ISRC não
+      // indexado devolve NADA. A busca do music.youtube.com é difusa e tende a
+      // devolver ALGO; como o caminho do ISRC não criva por duração (RULINGS
+      // R3, ordem do usuario), qualquer achado alheio seria eleito por
+      // proximidade e a faixa sahiria por Colhido, casada com confiança e
+      // errada. Pinar o ISRC aqui é o que torna essa via inexprimivel.
+      const Fonte onde = de_hoje ? pedido.fonte : Fonte::YouTube;
+      if (!busca_na_rede(termos[i], onde, 10, &achados))
         return Colheita::SemFerramenta;
       const int qual =
           de_hoje ? melhor_achado(achados, rico, TOLERANCIA_DO_CASAMENTO)
