@@ -258,6 +258,16 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
   return termos;
 }
 
+DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado) {
+  // O 429 vae com o 503: ambos são o servidor a pedir MENOS trafego, que é a
+  // condição em que gastar a consulta seguinte é errado. O 500 fica com o 404,
+  // que é falha do servidor e não pedido de recuo.
+  if (erro_do_curl != 0) return DesfechoMB::Falhou;
+  if (estado == 429 || estado == 503) return DesfechoMB::Recuo;
+  if (estado >= 200 && estado < 300) return DesfechoMB::Achado;
+  return DesfechoMB::Falhou;
+}
+
 // ── E AGORA O QUE TOCA O MUNDO. D'aqui para baixo não ha prova de bateria que
 // valha, fóra a do proprio acelerador, que toca relogio e não rede. ──────────
 

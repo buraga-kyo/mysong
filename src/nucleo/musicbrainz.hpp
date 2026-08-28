@@ -97,6 +97,21 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
 // a bateria o afira com relogio, sem rede alguma.
 void espera_a_vez_do_mb();
 
+// O DESFECHO de uma consulta. TRES, e não um booleano: o 404 e a rede muda
+// mandam ao caminho seguinte, mas o 503 e o 429 mandam PARAR, que gastar a
+// consulta seguinte contra quem pediu recuo engrossa a rajada que o acelerador
+// existe para impedir.
+enum class DesfechoMB {
+  Achado,  // 2xx, e o corpo está no logar
+  Falhou,  // 404, outra recusa, 5xx que não peça recuo, ou rede muda
+  Recuo,   // 429 ou 503: o servidor pediu menos trafego
+};
+
+// desfecho_da_resposta — a leitura do que a rede devolveu, PURA, para que a
+// bateria a afira sem rede. `erro_do_curl` é o codigo do libcurl (zero é o
+// «correu bem» d'elle), e `estado` é o codigo HTTP.
+DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
+
 // consulta_mb — pede a URL com o agente da obra, passando pelo acelerador, e
 // enche o corpo. Verdadeiro sómente no 2xx: o 404 («não temos») e o 503
 // («devagar») são falso sem re-tento, e mandam ao caminho seguinte.
