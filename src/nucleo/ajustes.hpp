@@ -80,6 +80,9 @@ struct Ajustes {
   std::filesystem::path arquivo;
   EstadoDoArquivo estado = EstadoDoArquivo::Ausente;
   std::vector<std::string> queixas;
+  // As que o tecto deixou de fóra, contadas. Vivem FÓRA do vector para que a
+  // marca d'ellas não entre na ordenação por linha e cahia no topo da lista.
+  std::size_t queixas_de_mais = 0;
 
   // queixa — accrescenta uma queixa, até o tecto. Passado o tecto, cala-se e
   // deixa UMA linha a dizer quantas ficaram de fóra.

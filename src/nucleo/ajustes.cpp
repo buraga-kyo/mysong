@@ -38,10 +38,9 @@ std::string_view nome_da_origem(Origem origem) {
 void Ajustes::queixa(std::string dito) {
   if (queixas.size() < QUEIXAS_NO_MAXIMO) {
     queixas.push_back(std::move(dito));
-  } else if (queixas.size() == QUEIXAS_NO_MAXIMO) {
-    queixas.push_back("e ha mais queixas, que o tecto de " +
-                      std::to_string(QUEIXAS_NO_MAXIMO) + " se alcançou");
+    return;
   }
+  ++queixas_de_mais;
 }
 
 // aparar — tira os brancos das DUAS pontas, e sómente das pontas: branco no
@@ -413,6 +412,13 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
                        return numero_da_linha(esta) < numero_da_linha(aquella);
                      });
     for (const std::string& queixa : queixas) texto += "    " + queixa + "\n";
+    // A marca do tecto vae no FIM, e por isso não é queixa nem entra no vector:
+    // ordenada com as demais, ella não começa por «linha N», cahia no topo, e
+    // resumia por cima as trinta e duas que vinham abaixo d'ella.
+    if (ajustes.queixas_de_mais > 0)
+      texto += "    e ha mais " + std::to_string(ajustes.queixas_de_mais) +
+               " queixas, que o tecto de " + std::to_string(QUEIXAS_NO_MAXIMO) +
+               " se alcançou\n";
   }
   return texto;
 }

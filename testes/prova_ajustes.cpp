@@ -183,8 +183,12 @@ TEST_CASE("as queixas têm tecto, e o lixo não afoga o diagnostico") {
   for (std::size_t volta = 0; volta < nu::QUEIXAS_NO_MAXIMO * 3; ++volta)
     lixo += "linha torta sem egual\n";
   nu::ler_pares(lixo, &ajustes);
-  CHECK(ajustes.queixas.size() == nu::QUEIXAS_NO_MAXIMO + 1);
-  CHECK(ajustes.queixas.back().find("mais queixas") != std::string::npos);
+  CHECK(ajustes.queixas.size() == nu::QUEIXAS_NO_MAXIMO);
+  CHECK(ajustes.queixas_de_mais == nu::QUEIXAS_NO_MAXIMO * 2);
+  // E a marca do tecto vem DEPOIS da ultima queixa de linha, e não no topo.
+  const std::string texto = nu::texto_dos_ajustes(ajustes);
+  CHECK(texto.find("e ha mais 64 queixas") != std::string::npos);
+  CHECK(texto.find("e ha mais 64 queixas") > texto.rfind("linha "));
 }
 
 TEST_CASE("byte nulo, e texto sem quebra no fim, não derrubam o leitor") {
