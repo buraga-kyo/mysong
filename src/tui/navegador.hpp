@@ -118,8 +118,9 @@ class Navegador {
   // alguma: é o que a tarefa pede quando manda devolver a lista para se conferir.
   void mostra_catalogo(nucleo::Catalogo catalogo);
 
-  // O nome da lista lida, que é o que vae por album nas etiquetas. Vazio fóra d'esta
-  // secção.
+  // O nome da lista lida, que é o que vae por album nas etiquetas. O catalogo
+  // FICA depois de se sahir da secção, de proposito: a busca da fonte Spotify
+  // (issue #56) lê-o de qualquer parte; vazio sómente antes de se importar.
   const std::string& nome_do_catalogo() const noexcept;
 
   // A faixa eleita do catalogo, e TODAS ellas. A eleita acha-se pelo indice que a
