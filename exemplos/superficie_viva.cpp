@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   nucleo::Tocador tocador(*motor);
-  for (int passo = 1; passo < argc; ++passo) tocador.fila().junta(argv[passo]);
+  for (int passo = 1; passo < argc; ++passo) tocador.junta(argv[passo]);
 
   // O socket DEGRADA e não aborta: faltando-lhe caminho ou estando o caminho tomado,
   // escreve-se a razão e o tocador segue a tocar. Superfície de commando que
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   else
     std::cerr << "superficie_viva: SEM socket de commando: " << razao_do_socket << "\n";
 
-  if (!tocador.fila().vazia() && !tocador.tocar_corrente())
+  if (tocador.retracto().tamanho > 0 && !tocador.tocar_corrente())
     std::cerr << "superficie_viva: o motor recusou a primeira faixa\n";
 
   std::signal(SIGINT, ao_sinal);

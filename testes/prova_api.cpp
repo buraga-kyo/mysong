@@ -222,7 +222,7 @@ TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
   CHECK(listada.find("\"du\\\"as.wav\"") != std::string::npos);
   CHECK(listada.find("tres音.wav") != std::string::npos);
   CHECK(duble.tocados.size() == tocados_antes);  // o passeio nao mandou tocar
-  CHECK(tocador.fila().indice() == 1);           // e o assento voltou
+  CHECK(tocador.retracto().indice == 1);         // e o assento voltou
 }
 TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   MotorDuble duble;

@@ -21,6 +21,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -30,6 +32,21 @@
 
 namespace mysong::nucleo {
 
+// O RETRACTO: o instante inteiro do tocador, colhido debaixo de UMA tomada da
+// tranca. Quem pergunta campo a campo colhe cada campo de um momento; quem
+// arma tela, pregão de barramento ou assignatura quer o MESMO momento, e é
+// para esses que o retracto existe. A faixa vae COPIADA: vista crua da fila
+// não atravessa a tranca.
+struct Retracto {
+  Estado estado = Estado::Parado;
+  std::string faixa;      // vazia quando nenhuma faixa está em curso
+  double posicao = 0.0;   // em segundos, contados do inicio da faixa
+  double duracao = 0.0;
+  int volume = 100;
+  std::size_t indice = 0;  // 0 tambem em fila vazia: pergunte-se ao tamanho
+  std::size_t tamanho = 0;
+};
+
 class Tocador {
  public:
   explicit Tocador(Motor& motor) noexcept;
@@ -37,9 +54,14 @@ class Tocador {
   Tocador(const Tocador&) = delete;
   Tocador& operator=(const Tocador&) = delete;
 
-  // A fila é do tocador, e o cliente a arma por esta porta.
-  Fila& fila() noexcept;
-  const Fila& fila() const noexcept;
+  // A fila é do tocador, e arma-se por estes punhos TRANCADOS. A referencia
+  // crua sahiu na issue #50: vista que atravessa a tranca ninguem guarda.
+  // Juntar devolve o tamanho novo, para que «juntei e é o ultimo» não vire
+  // duas perguntas com o mundo andando no meio. Nada d'isto desce ao motor:
+  // tocar é ordem á parte, como sempre foi.
+  std::size_t junta(std::string caminho);
+  bool ir_para(std::size_t alvo);
+  std::vector<std::string> faixas() const;
 
   // Registra quem escuta. Zero ouvintes é caso legitimo.
   void escuta(Ouvinte ouvinte);
@@ -62,6 +84,9 @@ class Tocador {
   double posicao() const;
   double duracao() const;
 
+  // O instante inteiro, de uma tomada só. Vide o tractado do Retracto acima.
+  Retracto retracto() const;
+
   // Uma batida do relogio: drena o motor e annuncia o que se moveu. Chama-se
   // de fóra, na cadencia de quem chama.
   void pulsa();
@@ -77,7 +102,13 @@ class Tocador {
  private:
   void annuncia(Aviso aviso, std::string razao = {});
   void assenta_estado(Estado novo);
+  bool tocar_corrente_trancado();
 
+  // A TRANCA (issue #50): todo punho publico a toma, e é ella que faz o
+  // tocador chamavel de mais de um fio sem corrida. O pregão sahe com ella
+  // tomada, donde o contracto: ouvinte NÃO chama o tocador de volta, que a
+  // tranca não é reentrante e a segunda tomada seria abraço de si mesma.
+  mutable std::mutex tranca_;
   Motor& motor_;
   Fila fila_;
   std::vector<Ouvinte> ouvintes_;
