@@ -95,6 +95,14 @@ bool Fila::embaralhado() const noexcept { return embaralhado_; }
 
 const std::vector<std::size_t>& Fila::ordem() const noexcept { return ordem_; }
 
+// O REPETIR. Punho secco: assenta o modo e mais nada. Não move o indice, não
+// toca na permutação, e não manda tocar cousa alguma; quem o lê é o andar da
+// fila, logo abaixo. Assim ligar o repetir no meio de uma faixa não a
+// interrompe, que é o que o operador espera de um modo.
+void Fila::repetir(Repeticao modo) noexcept { repeticao_ = modo; }
+
+Repeticao Fila::repeticao() const noexcept { return repeticao_; }
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
