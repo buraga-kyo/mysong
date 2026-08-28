@@ -150,13 +150,45 @@ cmake -B build -S .
 cmake --build build
 ```
 
+## Como se installa
+
+```sh
+cmake --install build --prefix ~/.local
+```
+
+O prefixo e o que o operador der; por omissao e `/usr/local`, que pede
+privilegio. As tres pecas vao para os logares que o padrao manda, e caminho
+algum delles esta escrito a mao: sahem todos do `GNUInstallDirs`.
+
+| Peca               | Onde cahe                                     |
+|--------------------|-----------------------------------------------|
+| o binario          | `<prefixo>/bin/mysong`                        |
+| a entrada de menu  | `<prefixo>/share/applications/mysong.desktop` |
+| a pagina de manual | `<prefixo>/share/man/man1/mysong.1`           |
+
+Installando em `~/.local`, ponha o `~/.local/bin` no `PATH`; o manual o `man`
+acha por si. Quem empacota usa o `DESTDIR`, e a obra nao pede cousa alguma
+para isso:
+
+```sh
+DESTDIR=/tmp/embrulho cmake --install build --prefix /usr
+```
+
 ## Como se roda
 
 ```sh
 ./build/mysong                          # abre com a fila vazia
 ./build/mysong faixa.mp3 outra.flac     # abre a tocar a primeira
 ./build/mysong --sonda                  # so o diagnostico, em texto
+./build/mysong --versao                 # diz o nome e o numero, e sahe
+./build/mysong --ajuda                  # diz as opcoes que existem, e sahe
+./build/mysong -- --faixa-com-traco.mp3 # o `--` encerra as opcoes
 ```
+
+O `--versao` e o `--version` fazem o mesmo, e o `--ajuda` e o `--help` tambem:
+o operador escreve em portuguez e o dedo escreve em inglez. Opcao que nao
+esteja nessa taboada e RECUSADA, com a razao pelo stderr e sahida differente
+de zero; ate aqui ella era tratada como caminho de faixa.
 
 A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
 acervo da corrida anterior, e o `r` manda varrer outra vez.
