@@ -297,6 +297,9 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
   // Milesimos a segundos, arredondando ao mais proximo: truncar perderia meio segundo
   // em cada faixa, e a tolerancia do casamento é de doze.
   pedido.duracao = (faixa.duracao_ms + 500) / 1000;
+  // A FONTE estampa-se (issue #56): pedido sem URL busca na fonte d'elle, e a do
+  // catalogo é o Spotify, que no nucleo mapeia para o ytsearch de sempre.
+  pedido.fonte = nucleo::Fonte::Spotify;
   return pedido;
 }
 
@@ -496,6 +499,25 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
   });
 
+  // A BUSCA DA FONTE SPOTIFY, e é SYNCHRONA de proposito: o catalogo é local
+  // (issue #13), rede alguma se toca, e responder no proprio quadro poupa o
+  // correio. Sem catalogo importado a vista fica como está: trocá-la por vazia
+  // apagaria achados uteis por um erro do fluxo, e não do termo. Corre no fio da
+  // tela, que é o unico que toca o navegador.
+  const auto busca_no_catalogo = [&](const std::string& termo) {
+    if (navegador.faixas_do_catalogo().empty()) {
+      aviso_da_rede = "importa uma lista do Spotify primeiro (I)";
+      return;
+    }
+    std::vector<nucleo::Achado> achados = nucleo::achados_do_catalogo(
+        {navegador.nome_do_catalogo(), navegador.faixas_do_catalogo()}, termo);
+    const std::string recado =
+        achados.empty() ? "nada se achou no catalogo"
+                        : std::to_string(achados.size()) + " achados no catalogo";
+    navegador.mostra_rede(std::move(achados));
+    aviso_da_rede = recado;
+  };
+
   auto pintor = ftxui::Renderer([&] {
     // Os achados da rede chegam AQUI, no fio da tela, que é o unico que pode tocar o
     // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
@@ -681,12 +703,18 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           }
         } else if (era == Digita::Procura) {
           if (!termo_em_curso.empty()) {
+            nucleo::Fonte fonte = nucleo::Fonte::YouTube;
             {
               std::lock_guard<std::mutex> chave(tranca_do_termo);
               termo_da_rede = termo_em_curso;
+              fonte = fonte_da_busca;
             }
-            pede_buscar.store(true);
-            aviso_da_rede = "a perguntar á rede...";
+            if (fonte == nucleo::Fonte::Spotify) {
+              busca_no_catalogo(termo_em_curso);
+            } else {
+              pede_buscar.store(true);
+              aviso_da_rede = "a perguntar á rede...";
+            }
           }
         } else if (!termo_em_curso.empty()) {
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
@@ -781,16 +809,21 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
           aviso_da_rede = "a fonte troca-se na secção da rede (s)";
           return true;
         }
-        bool ha_termo = false;
+        std::string termo;
+        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
         {
           std::lock_guard<std::mutex> chave(tranca_do_termo);
           fonte_da_busca = nucleo::proxima_fonte(fonte_da_busca);
-          ha_termo = !termo_da_rede.empty();
+          fonte = fonte_da_busca;
+          termo = termo_da_rede;
         }
         // Trocar de fonte NÃO apaga o termo: havendo um já buscado, re-busca-se
         // o MESMO na fonte nova, que é o que dá as tres listas para comparar.
         // Sem termo, muda só o cabeçalho, e busca alguma se dispara.
-        if (ha_termo) {
+        if (termo.empty()) return true;
+        if (fonte == nucleo::Fonte::Spotify) {
+          busca_no_catalogo(termo);
+        } else {
           pede_buscar.store(true);
           aviso_da_rede = "a perguntar á rede...";
         }
