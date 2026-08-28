@@ -110,6 +110,12 @@ std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes);
 // d'ella hão de morar n'um logar só.
 std::optional<Fonte> fonte_de(std::string_view texto);
 
+// volume_de e baixas_de — os dous numeros. Vazio quando o texto não é inteiro
+// INTEIRAMENTE consumido, ou quando cae fóra do que a chave admitte: o volume
+// de zero a cem, e as baixas de uma até o tecto.
+std::optional<int> volume_de(std::string_view texto);
+std::optional<std::size_t> baixas_de(std::string_view texto);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

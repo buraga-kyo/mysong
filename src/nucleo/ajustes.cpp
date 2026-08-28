@@ -11,7 +11,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/ajustes.hpp"
 
+#include <charconv>
 #include <string>
+#include <system_error>
 #include <utility>
 
 namespace mysong::nucleo {
@@ -123,6 +125,20 @@ bool egual_sem_caixa(std::string_view esta, std::string_view aquella) {
   return true;
 }
 
+// inteiro_de — o numero INTEIRAMENTE consumido, e nunca o prefixo d'elle: «70
+// lixo» não é setenta. Vae por from_chars, e não por stoi: aquelle accusa o
+// estouro em vez de o dobrar, e não lança; excepção pela borda d'este modulo
+// derrubaria a obra por causa de um erro de dedo no arquivo do operador.
+std::optional<int> inteiro_de(std::string_view texto) {
+  if (!texto.empty() && texto.front() == '+') texto.remove_prefix(1);
+  int valor = 0;
+  const char* const fim = texto.data() + texto.size();
+  const std::from_chars_result colhido =
+      std::from_chars(texto.data(), fim, valor);
+  if (colhido.ec != std::errc() || colhido.ptr != fim) return std::nullopt;
+  return valor;
+}
+
 }  // namespace
 
 // fonte_de — as tres da issue #56, e sómente ellas. Nome que não é nenhuma
@@ -133,6 +149,21 @@ std::optional<Fonte> fonte_de(std::string_view texto) {
   if (egual_sem_caixa(texto, "youtube-music")) return Fonte::YouTubeMusic;
   if (egual_sem_caixa(texto, "spotify")) return Fonte::Spotify;
   return std::nullopt;
+}
+
+std::optional<int> volume_de(std::string_view texto) {
+  const std::optional<int> numero = inteiro_de(texto);
+  if (!numero || *numero < 0 || *numero > VOLUME_DA_CASA) return std::nullopt;
+  return numero;
+}
+
+// baixas_de — de uma até o tecto, e zero recusa-se: obreiro nenhum é fila que
+// nunca anda, e o operador ficaria a ver a baixa «na espera» para sempre sem
+// entender por que. O tecto está no cabeçalho, com a razão d'elle.
+std::optional<std::size_t> baixas_de(std::string_view texto) {
+  const std::optional<int> numero = inteiro_de(texto);
+  if (!numero || *numero < 1 || *numero > BAIXAS_NO_MAXIMO) return std::nullopt;
+  return static_cast<std::size_t>(*numero);
 }
 
 }  // namespace mysong::nucleo
