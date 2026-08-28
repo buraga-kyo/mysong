@@ -300,16 +300,16 @@ emitte nem elle lê de volta. Os quatro têm sempre o mesmo comprimento, e elle 
 
 | Campo das faixas | Typo | |
 |---|---|---|
-| `numeros` | vector de numeros | O numero da faixa no album; 0 é «sem numero». |
+| `numeros` | vector de numeros | O numero da faixa no album. **Zero** quer dizer sem numero. |
 | `titulos` | vector de textos | O titulo. |
 | `caminhos` | vector de textos | O caminho no disco. É este que se passa ao `juntar`. |
-| `duracoes` | vector de numeros | Segundos; 0 é «não medida». |
+| `duracoes` | vector de numeros | Segundos. **Zero** quer dizer não medida. |
 
 Sahem em ordem de numero e, empatando, de titulo, que é a ordem que o índice dá.
 
 **Vector vazio não é erro.** Artista que não existe devolve `albuns` vazio com
 `ok` verdadeiro, e album que não existe devolve as quatro columnas vazias: no
-índice não ha artista sem album, donde «não tem» e «não existe» são a mesma cousa
+índice não ha artista sem album, donde não ter e não existir são a mesma cousa
 vista de fóra. E índice AUSENTE responde egual a índice vazio, que é o que a
 bibliotheca d'esta Casa já faz com banco que não existe.
 
@@ -334,7 +334,7 @@ ella o tocador, que bate na mesma linha de execução.
 |---|---|---|
 | `url` | texto | Obrigatorio, e não pode ser vazio. |
 | `artista`, `album`, `titulo` | texto | Opcionaes. O que o operador diz GANHA do que a rede disser. |
-| `numero` | inteiro | Opcional, de 0 a 9999. Zero é «sem numero». |
+| `numero` | inteiro | Opcional, de 0 a 9999. **Zero** quer dizer sem numero. |
 
 **Aceite não é promessa de arquivo.** O `ok` diz que a encommenda entrou na fila,
 e mais nada: yt-dlp que falte, URL que não se leia ou rede que caia apparecem
