@@ -92,7 +92,7 @@ Devolve o contracto, para que o cliente o possa exigir antes de confiar.
 
 ```
 → {"verbo":"versao"}
-← {"ok":true,"obra":"mysong","protocolo":1}
+← {"ok":true,"obra":"mysong","protocolo":2}
 ```
 
 | Campo | Typo | |
