@@ -48,6 +48,8 @@ std::vector<std::size_t> passeio(mysong::nucleo::Fila& fila) {
   return visitados;
 }
 
+using Repeticao = mysong::nucleo::Repeticao;
+
 }  // namespace
 
 TEST_CASE("embaralhada, a fila passa por todas as faixas sem repetir nenhuma") {
@@ -165,4 +167,31 @@ TEST_CASE("esgotada, a permutação não se re-sorteia") {
   CHECK(primeira == sorteada);
   CHECK(segunda == sorteada);
   CHECK(fila.ordem() == sorteada);
+}
+
+// «uma» prende o proxima() e devolve VERDADEIRO: o tocador manda tocar o que a
+// fila aponta, e a faixa recomeça. E o anterior() NÃO se prende, que a issue
+// nomeou sómente o proxima(): é a sahida do laço sem mexer no modo.
+TEST_CASE("uma prende o proxima na faixa corrente, e o anterior não") {
+  auto fila = com_cinco();
+  CHECK(fila.ir_para(2));
+  fila.repetir(Repeticao::Uma);
+  for (int volta = 0; volta < 3; ++volta) {
+    CHECK(fila.proxima());
+    CHECK(fila.indice() == 2);
+  }
+  CHECK(fila.anterior());
+  CHECK(fila.indice() == 1);
+}
+
+// «todas» gira nos DOUS sentidos: no MPRIS este modo chama-se Playlist, e girar
+// n'um sentido só é meio giro.
+TEST_CASE("todas faz a fila girar nos dous sentidos") {
+  auto fila = com_cinco();
+  fila.repetir(Repeticao::Todas);
+  CHECK(fila.ir_para(4));
+  CHECK(fila.proxima());
+  CHECK(fila.indice() == 0);
+  CHECK(fila.anterior());
+  CHECK(fila.indice() == 4);
 }
