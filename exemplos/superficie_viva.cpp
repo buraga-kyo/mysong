@@ -23,16 +23,28 @@
 //                   sua razão no stderr, e nenhuma d'ellas cala.
 // ══════════════════════════════════════════════════════════════════════════
 #include <csignal>
+#include <cstdlib>
+#include <filesystem>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include <ctime>
 
 #include "api/socket.hpp"
+#include "nucleo/biblioteca.hpp"
+#include "nucleo/estaleiro.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/tocador.hpp"
 
 namespace {
+
+// posto — o caminho que a variavel de ambiente disser, e vazio não a havendo.
+std::filesystem::path posto(const char* nome) {
+  const char* valor = std::getenv(nome);
+  if (valor == nullptr || valor[0] == '\0') return {};
+  return std::filesystem::path(valor);
+}
 
 // A bandeira do sinal. Volatil e de typo atomico do C, que é o que se pode tocar
 // dentro de um manejador de sinal sem entrar em terreno que a norma não define.
@@ -58,9 +70,37 @@ int main(int argc, char** argv) {
   // O socket DEGRADA e não aborta: faltando-lhe caminho ou estando o caminho tomado,
   // escreve-se a razão e o tocador segue a tocar. Superfície de commando que
   // derrubasse o tocador seria pior que superfície nenhuma.
+  // O ÍNDICE e o ACERVO entram por variavel de ambiente, e este exemplo NÃO os
+  // redescobre: quem sabe onde elles moram é a janella, e uma segunda descoberta
+  // aqui seria uma segunda verdade, que a que se corrigisse deixava a outra a
+  // errar. Faltando cada uma, diz-se a razão e o servidor sobe sem aquella peça:
+  // o protocolo sabe responder á falta, e é ahi que ella se prova.
+  api::Arredores arredores;
+  std::optional<nucleo::Biblioteca> livraria;
+  const std::filesystem::path indice = posto("MYSONG_INDICE");
+  if (indice.empty()) {
+    std::cerr << "superficie_viva: SEM indice de acervo: defina MYSONG_INDICE\n";
+  } else {
+    livraria.emplace(indice);
+    arredores.livraria = &*livraria;
+  }
+
+  std::optional<nucleo::Estaleiro> estaleiro;
+  const std::filesystem::path acervo = posto("MYSONG_ACERVO");
+  if (acervo.empty()) {
+    std::cerr << "superficie_viva: SEM fila de baixa: defina MYSONG_ACERVO\n";
+  } else {
+    estaleiro.emplace(nucleo::OBREIROS_DA_BAIXA,
+                      [acervo](const nucleo::Pedido& pedido,
+                               std::filesystem::path* ficou) {
+                        return nucleo::baixa(acervo, pedido, ficou);
+                      });
+    arredores.estaleiro = &*estaleiro;
+  }
+
   std::string razao_do_socket;
-  auto servidor =
-      api::Servidor::abrir(tocador, api::caminho_padrao_do_socket(), &razao_do_socket);
+  auto servidor = api::Servidor::abrir(
+      tocador, api::caminho_padrao_do_socket(), &razao_do_socket, arredores);
   if (servidor)
     std::cerr << "superficie_viva: socket de commando em " << servidor->caminho()
               << "\n";
