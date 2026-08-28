@@ -202,10 +202,11 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
   CHECK(campo(cheio, "tamanho") == "2.000");
 }
 
-// O passeio pela fila NÃO ha de tocar faixa alguma: anda-se na Fila, e não no
-// Tocador. Andar pelo Tocador faria soar duas faixas para listar dous nomes, e é
-// defeito que a prova de resultado não pegaria e a de CHAMADA pega.
-TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
+// Listar a fila NÃO ha de tocar faixa alguma, nem mover o assento. A primeira
+// lavra passeava com ir_para e restaurava o assento no fim; a issue #50 aposentou
+// o passeio pela copia trancada, donde hoje não ha o que restaurar. Quem guarda
+// a promessa é a prova de CHAMADA: a de resultado não pegaria a differença.
+TEST_CASE("a fila lista-se sem tocar nada, e sem mexer no assento") {
   MotorDuble duble;
   Tocador tocador(duble);
   // O pedido monta-se com o emissor da Casa, e NÃO por concatenação de aspas: a
@@ -221,8 +222,8 @@ TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
   CHECK(campo(listada, "indice") == "1.000");
   CHECK(listada.find("\"du\\\"as.wav\"") != std::string::npos);
   CHECK(listada.find("tres音.wav") != std::string::npos);
-  CHECK(duble.tocados.size() == tocados_antes);  // o passeio nao mandou tocar
-  CHECK(tocador.retracto().indice == 1);         // e o assento voltou
+  CHECK(duble.tocados.size() == tocados_antes);  // listar não mandou tocar
+  CHECK(tocador.retracto().indice == 1);         // e o assento não se moveu
 }
 TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   MotorDuble duble;
