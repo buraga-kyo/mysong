@@ -22,7 +22,10 @@ int main(int argc, char** argv) {
     if (fim != std::string::npos) id.resize(fim);
     consulta = nu::url_da_consulta_pelo_link(id);
   } else if (argc >= 3) {
-    if (argc >= 4) ms = std::atoi(argv[3]) * 1000;
+    if (argc >= 4) {
+      const int seg = std::atoi(argv[3]);  // cingido a um dia, como na baixa
+      ms = seg > 0 && seg <= 86400 ? seg * 1000 : 0;
+    }
     consulta = nu::url_da_consulta_pela_busca(alvo, argv[2], ms);
   }
   if (consulta.empty()) { std::fprintf(stderr, "alvo sem id nem titulo\n"); return 2; }

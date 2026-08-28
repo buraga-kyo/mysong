@@ -422,13 +422,18 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   if (pedido.url.empty()) {
     if (pedido.titulo.empty()) return Colheita::UrlRecusada;
     FichaMB ficha;
+    // A duração do catalogo cinge-se a UM DIA antes de virar milesimos: vinda
+    // da rede, um valor absurdo estouraria a conta por mil; cingida, vale «não
+    // disse», que é o que um numero d'esses de facto diz.
+    const int do_catalogo = pedido.duracao > 0 && pedido.duracao <= 86400
+                                ? pedido.duracao * 1000
+                                : 0;
     resolve_gravacao(pedido.id_spotify, pedido.artista, pedido.titulo,
-                     pedido.duracao * 1000, &ficha);
+                     do_catalogo, &ficha);
     // Não casando, a ficha fica vazia: o enriquecimento devolve o pedido tal e
     // qual e os termos reduzem-se ao de hoje, que é o caminho antigo inteiro.
     const Pedido rico = enriquece(pedido, ficha);
-    const int alvo_ms =
-        ficha.duracao_ms > 0 ? ficha.duracao_ms : pedido.duracao * 1000;
+    const int alvo_ms = ficha.duracao_ms > 0 ? ficha.duracao_ms : do_catalogo;
     const std::vector<std::string> termos =
         termos_de_busca(ficha, pedido.artista, pedido.titulo);
     for (std::size_t i = 0; i < termos.size(); ++i) {

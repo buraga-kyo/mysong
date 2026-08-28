@@ -149,7 +149,10 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   FichaMB ficha;
   ficha.titulo = api::texto_de_chave(corpo, "title");
   double valor = 0.0;
-  if (api::numero_de_chave(corpo, "length", &valor))
+  // A duração aceita-se até um dia: acima d'isso não é duração de faixa, e o
+  // numero absurdo estouraria as contas de quem a consome.
+  if (api::numero_de_chave(corpo, "length", &valor) && valor > 0 &&
+      valor <= 86400000.0)
     ficha.duracao_ms = static_cast<int>(valor);
   ficha.isrcs = api::textos_do_arranjo(api::recorta_arranjo(corpo, "isrcs"));
   // O credito do artista lê-se com as releases EXCISADAS do corpo. O recorte
