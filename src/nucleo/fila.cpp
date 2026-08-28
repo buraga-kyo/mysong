@@ -127,6 +127,12 @@ const std::vector<std::string>& Fila::todas() const noexcept { return faixas_; }
 // tocado». Cahindo ella no meio, as que ficassem atraz nunca tocariam n'aquella
 // passagem, e a permutação não esgotaria.
 void Fila::embaralhar(bool ligado) {
+  // LIGAR o que já está ligado não é sortear de novo: é nada. Sem esta guarda,
+  // um «playerctl shuffle on» com o modo já ligado, que todo cliente do MPRIS
+  // tem por inocuo, deitaria a permutação fóra, sortearia outra, e faria tornar
+  // faixa que já tocou; e é essa a invariante do centro da issue. Desligar e
+  // tornar a ligar segue a ser o modo de re-sortear, e é o unico.
+  if (embaralhado_ == ligado) return;
   embaralhado_ = ligado;
   ordem_.clear();
   passo_ = 0;
