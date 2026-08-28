@@ -362,8 +362,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       });
 
 
-  // O CORREIO da busca na rede, e o pedido que o fio d'ella espera.
-  tui::Correio correio;
+  // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
+  // ACHADOS do nucleo (issue #56): quem constroe linhas é o navegador, que é
+  // quem sabe guardar o achado inteiro para a encommenda.
+  tui::CorreioDe<nucleo::Achado> correio;
   std::mutex tranca_do_termo;
   std::string termo_da_rede;
   std::atomic<bool> pede_buscar{false};
@@ -447,17 +449,13 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
         std::vector<nucleo::Achado> achados;
         const bool falou = nucleo::busca_na_rede(
             termo, nucleo::Fonte::YouTube, ACHADOS_POR_BUSCA, &achados);
-        std::vector<tui::Linha> linhas;
-        linhas.reserve(achados.size());
-        for (const nucleo::Achado& achado : achados)
-          linhas.push_back(
-              {achado.titulo, achado.url, 0, achado.duracao, achado.canal});
         // Tres desfechos, e tres recados: a rede muda, a rede que nada achou, e os
         // achados. «Nada se achou» e «não respondeu» são cousas differentes, e dizer
         // a mesma palavra ás duas faria o operador buscar outra vez em vão.
-        correio.poe(std::move(linhas),
-                    !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
-                           : (achados.empty() ? "nada se achou" : "achados na rede"));
+        std::string recado =
+            !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
+                   : (achados.empty() ? "nada se achou" : "achados na rede");
+        correio.poe(std::move(achados), std::move(recado));
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
@@ -497,7 +495,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
     // na colheita, donde a lista se assenta UMA vez e o eleito não volta ao alto a
     // cada quadro.
-    std::vector<tui::Linha> achados;
+    std::vector<nucleo::Achado> achados;
     std::string recado;
     if (correio.colhe(&achados, &recado)) {
       navegador.mostra_rede(std::move(achados));
@@ -816,14 +814,14 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
               navegador.faixa_de_catalogo_eleita(), navegador.nome_do_catalogo()));
           return true;
         }
-        // Na REDE, entrar é BAIXAR, e a URL vem por punho proprio: caminho_eleito é
-        // vazio n'esta secção de proposito, para que endereço algum cahia na fila do
-        // motor. Quem baixa é o estaleiro, o mesmo que a URL collada á mão usa.
-        const std::string url = navegador.url_eleita();
-        if (!url.empty()) {
-          nucleo::Pedido pedido;
-          pedido.url = url;
-          estaleiro.encommenda(pedido);
+        // Na REDE, entrar é BAIXAR o achado eleito, pela encommenda que elle dá:
+        // a URL e o que a fonte soube dizer (artista, album, titulo canonico,
+        // ano, fonte). O achado comum dá o pedido só de URL, que é o de hoje; o
+        // caminho_eleito segue vazio n'esta secção, para que endereço algum
+        // cahia na fila do motor. Quem baixa é o estaleiro, como sempre.
+        if (navegador.ha_achado()) {
+          estaleiro.encommenda(
+              nucleo::encommenda_do_achado(navegador.achado_eleito()));
           return true;
         }
         // Dentro de uma lista, entrar enche a fila com a lista TODA na ordem
