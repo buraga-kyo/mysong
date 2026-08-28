@@ -360,6 +360,17 @@ sem pôr nada n'ella. O tecto existe porque a fila do nucleo não tem limite, e 
 este socket um cliente a encheria até a memoria acabar: é a mesma guarda que o
 tamanho da linha e o numero de clientes já têm.
 
+E ha um servidor que NÃO baixa: o que foi erguido sem acervo. Esse responde
+`indisponivel`, que é codigo novo da versão 2 e que sómente este verbo produz.
+Não é `recusado`, que manda olhar o estado do nucleo, nem `argumento_invalido`,
+que manda olhar a mensagem: mensagem alguma vae funccionar n'esse servidor, e o
+remedio é de quem o ergueu.
+
+```
+→ {"verbo":"baixar","url":"https://www.youtube.com/watch?v=ccccccccccc"}
+← {"ok":false,"erro":"indisponivel","razao":"esta instancia do servidor nao ergueu a fila de baixa"}
+```
+
 ## 7. As bordas
 
 | O que o cliente faz | O que o servidor faz |
