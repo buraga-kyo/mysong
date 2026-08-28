@@ -116,3 +116,8 @@ target_sources(mysong_testes PRIVATE prova_video.cpp)
 # Sem rede: a pagina de embutir vae escripta á mão, com o embrulho e os objectos
 # aninhados conservados, que são as duas cousas que um leitor plano erraria.
 target_sources(mysong_testes PRIVATE prova_catalogo.cpp)
+
+# ─── A PROVA DO MUSICBRAINZ (issue #57) ─────────────────────────────────────
+# Sem rede: os corpos são recortes verbatim das respostas vivas de 2026-08-27.
+# O unico caso que toca o mundo toca RELOGIO (o acelerador), e não rede.
+target_sources(mysong_testes PRIVATE prova_musicbrainz.cpp)
