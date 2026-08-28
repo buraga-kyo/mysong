@@ -203,7 +203,8 @@ TEST_CASE("os argumentos do download não embutem etiqueta, e não sobrescrevem"
 }
 
 TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
-  const std::vector<std::string> ditos = nu::argumentos_da_busca("bach", 5);
+  const std::vector<std::string> ditos =
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube);
   CHECK(ditos.back() == "ytsearch5:bach");
   CHECK(ditos[ditos.size() - 2] == "--");
   const auto tem = [&ditos](const std::string& q) {
@@ -215,9 +216,12 @@ TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
   // Oito campos, e nem um a mais: a ordem d'elles é o contracto de le_achados.
   CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 8);
   // A aparadura pelas duas pontas. Zero não é pedido, e cem não cabe na tabella.
-  CHECK(nu::argumentos_da_busca("x", 0).back() == "ytsearch1:x");
-  CHECK(nu::argumentos_da_busca("x", -3).back() == "ytsearch1:x");
-  CHECK(nu::argumentos_da_busca("x", 100).back() == "ytsearch20:x");
+  CHECK(nu::argumentos_da_busca("x", 0, nu::Fonte::YouTube).back() ==
+        "ytsearch1:x");
+  CHECK(nu::argumentos_da_busca("x", -3, nu::Fonte::YouTube).back() ==
+        "ytsearch1:x");
+  CHECK(nu::argumentos_da_busca("x", 100, nu::Fonte::YouTube).back() ==
+        "ytsearch20:x");
 }
 
 TEST_CASE("os achados lêem-se por LINHA, e titulo com barra não os parte") {
@@ -288,7 +292,7 @@ TEST_CASE("as tres chamadas ao yt-dlp carregam o motor de JS") {
   const std::vector<std::vector<std::string>> tres = {
       nu::argumentos_da_sonda("https://exemplo/x"),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
-      nu::argumentos_da_busca("bach", 5)};
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube)};
   for (const std::vector<std::string>& ditos : tres) {
     // O nome do programa continua a ser o primeiro: as bandeiras entram DEPOIS
     // d'elle, que ninguem corre `--js-runtimes` como se fosse executavel.
@@ -305,7 +309,7 @@ TEST_CASE("o cookie NAO entra sem que se peca") {
   const std::vector<std::vector<std::string>> tres = {
       nu::argumentos_da_sonda("https://exemplo/x"),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T"),
-      nu::argumentos_da_busca("bach", 5)};
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube)};
   for (const std::vector<std::string>& ditos : tres) {
     CHECK_FALSE(menciona(ditos, "--cookies-from-browser"));
     CHECK_FALSE(menciona(ditos, nu::kNavegadorDoCookie));
@@ -316,7 +320,7 @@ TEST_CASE("o cookie entra nas tres quando se pede") {
   const std::vector<std::vector<std::string>> tres = {
       nu::argumentos_da_sonda("https://exemplo/x", true),
       nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T", true),
-      nu::argumentos_da_busca("bach", 5, true)};
+      nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube, true)};
   for (const std::vector<std::string>& ditos : tres)
     CHECK(tem(ditos, "--cookies-from-browser", nu::kNavegadorDoCookie));
 }

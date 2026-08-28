@@ -387,7 +387,8 @@ bool busca_no_youtube(const std::string& termo, int quantos,
                       std::vector<Achado>* achados) {
   if (termo.empty()) return false;
   std::string colhido;
-  if (corre(argumentos_da_busca(termo, quantos), &colhido) != 0) return false;
+  if (corre(argumentos_da_busca(termo, quantos, Fonte::YouTube), &colhido) != 0)
+    return false;
   if (achados != nullptr) *achados = le_achados(colhido);
   return true;
 }
@@ -474,10 +475,13 @@ std::string codifica_para_url(std::string_view crua) {
 }
 
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
-                                             int quantos, bool com_cookie) {
+                                             int quantos, Fonte fonte,
+                                             bool com_cookie) {
   // Apara-se em vinte: busca maior gasta rede e não cabe na tabella. E em um pelo
-  // baixo, que buscar zero é pedido sem sentido.
-  const int quantas = quantos < 1 ? 1 : (quantos > 20 ? 20 : quantos);
+  // baixo, que buscar zero é pedido sem sentido. A MUSICA apara em dez, e AQUI,
+  // para o tecto valer em todo caminho: o da tela e o da baixa sem URL.
+  const int tecto = fonte == Fonte::YouTubeMusic ? ACHADOS_DA_MUSICA : 20;
+  const int quantas = quantos < 1 ? 1 : (quantos > tecto ? tecto : quantos);
   std::vector<std::string> ditos{"yt-dlp"};
   const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
   ditos.insert(ditos.end(), motor.begin(), motor.end());

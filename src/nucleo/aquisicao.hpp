@@ -184,11 +184,15 @@ struct Achado {
 // cortaria a consulta ao meio, que o fragmento da URL da musica é nosso.
 std::string codifica_para_url(std::string_view crua);
 
+// O TECTO da fonte da MUSICA. Dez, e não os vinte da comum: sem o flat cada
+// achado é uma sonda de rede (~1,3 s medidos), e dez respondem em ~17 s.
+inline constexpr int ACHADOS_DA_MUSICA = 10;
+
 // argumentos_da_busca — o que se corre. O `ytsearchN:` é o pseudo-endereço do yt-dlp
 // para busca, e o `--flat-playlist` impede que elle abra cada resultado para lhe ler os
 // fórmatos: sem elle, buscar dez faixas custa dez sondas de rede.
 std::vector<std::string> argumentos_da_busca(const std::string& termo,
-                                             int quantos,
+                                             int quantos, Fonte fonte,
                                              bool com_cookie = false);
 
 // le_achados — as linhas que a busca imprimiu, OITO por achado e nessa ordem. Lê-se
