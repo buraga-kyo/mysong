@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include "api/protocolo.hpp"
 #include "nucleo/tocador.hpp"
 
 namespace mysong::api {
@@ -50,9 +51,13 @@ class Servidor {
 
   // Vazio se não se pudo abrir; a razão, se se pedir, sahe legivel por olho. Não
   // ha construtor publico: servidor invalido não é exprimivel.
+  // Os ARREDORES entram por omissão, e no fim: servidor que os não receba é
+  // servidor sem índice e sem fila de baixa, que é caso legitimo e o protocolo
+  // sabe responder. Guardam-se por COPIA, que são dous ponteiros.
   static std::optional<Servidor> abrir(nucleo::Tocador& tocador,
                                        const std::string& caminho,
-                                       std::string* razao = nullptr);
+                                       std::string* razao = nullptr,
+                                       const Arredores& arredores = {});
 
   ~Servidor();
   Servidor(const Servidor&) = delete;
@@ -75,13 +80,15 @@ class Servidor {
     std::string sahida;   // o que se deve escrever e ainda não cabeu
   };
 
-  Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho) noexcept;
+  Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho,
+           const Arredores& arredores) noexcept;
   void aceita();
   void colhe(Cliente& cliente);
   void escoa(Cliente& cliente);
   void encerra(Cliente& cliente) noexcept;
 
   nucleo::Tocador* tocador_ = nullptr;
+  Arredores arredores_;
   int escuta_ = -1;
   std::string caminho_;
   std::vector<Cliente> clientes_;
