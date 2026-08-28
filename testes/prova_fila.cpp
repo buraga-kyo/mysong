@@ -248,3 +248,35 @@ TEST_CASE("os dous modos não se atropelam") {
   CHECK(fila.embaralhado());
   CHECK(fila.repeticao() == Repeticao::Uma);
 }
+
+// LIGAR o que já está ligado é NADA. Sem a guarda, o pedido que todo cliente do
+// MPRIS tem por inocuo re-sorteava a permutação no meio da passagem, e faixa que
+// já tocara tornava a tocar antes de todas terem tocado. O caso anda METADE da
+// permutação de proposito: é no meio d'ella que o defeito se vê, e nunca no
+// principio, que é onde a estructura continua sã em qualquer das duas lavras.
+TEST_CASE("ligar o embaralhar que já está ligado não move nada") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  const std::vector<std::size_t> sorteada = fila.ordem();
+  REQUIRE(sorteada.size() == 5);
+  REQUIRE(fila.proxima());
+  REQUIRE(fila.proxima());
+  const std::size_t meio = fila.indice();
+
+  fila.embaralhar(true);            // o pedido que se tem por inocuo
+  CHECK(fila.ordem() == sorteada);  // a MESMA permutação
+  CHECK(fila.indice() == meio);     // e o mesmo assento d'ella
+
+  // E o resto da passagem esgota sem tornar ao que já tocou.
+  std::vector<std::size_t> restam;
+  while (fila.proxima()) restam.push_back(fila.indice());
+  REQUIRE(restam.size() == 2);
+  CHECK(restam[0] == sorteada[3]);
+  CHECK(restam[1] == sorteada[4]);
+
+  // Desligar e tornar a ligar RE-SORTEIA, e é o unico modo de o fazer: a faixa
+  // corrente volta ao principio da permutação nova.
+  fila.embaralhar(false);
+  fila.embaralhar(true);
+  CHECK(fila.ordem().front() == fila.indice());
+}
