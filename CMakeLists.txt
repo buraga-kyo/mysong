@@ -308,3 +308,7 @@ target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
 configure_file(src/nucleo/versao.hpp.in
   "${CMAKE_CURRENT_BINARY_DIR}/gerado/nucleo/versao.hpp" @ONLY)
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/gerado")
+
+# ─── A LEITURA DA LINHA DE COMMANDO (issue #66) ─────────────────────────────
+# Entra por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
+target_sources(mysong_core PRIVATE src/nucleo/linha.cpp)
