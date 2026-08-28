@@ -195,3 +195,28 @@ TEST_CASE("todas faz a fila girar nos dous sentidos") {
   CHECK(fila.anterior());
   CHECK(fila.indice() == 4);
 }
+
+// As duas bordas onde a conta estoura: sortear permutação de vector vazio, e
+// tomar `ordem_.size() - 1` n'um vector sem elementos. Fila de uma faixa é a
+// vizinha d'ellas, e é onde «todas» gira sobre si mesma sem sahir do logar.
+TEST_CASE("os dous modos respondem em fila vazia e em fila de uma faixa") {
+  mysong::nucleo::Fila vazia;
+  vazia.embaralhar(true);
+  CHECK(vazia.ordem().empty());
+  CHECK_FALSE(vazia.proxima());
+  CHECK_FALSE(vazia.anterior());
+  vazia.repetir(Repeticao::Todas);
+  CHECK_FALSE(vazia.proxima());
+  CHECK_FALSE(vazia.anterior());
+
+  mysong::nucleo::Fila uma;
+  uma.junta("so.wav");
+  uma.embaralhar(true);
+  CHECK(uma.ordem().size() == 1);
+  CHECK_FALSE(uma.proxima());
+  uma.repetir(Repeticao::Todas);
+  CHECK(uma.proxima());
+  CHECK(uma.indice() == 0);
+  CHECK(uma.anterior());
+  CHECK(uma.indice() == 0);
+}
