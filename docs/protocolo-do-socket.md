@@ -287,6 +287,31 @@ nunca saberia que errou o nome.
 A resposta ecoa o `corte` e os argumentos que a recortaram, para que uma resposta
 lida fóra de contexto se saiba explicar. O `tamanho` é quantos itens vieram.
 
+Nas **faixas**, quatro vectores sahem PARALELOS, e não um vector de objectos: o
+JSON d'este contracto é plano de um nivel, e objecto dentro de objecto nem elle
+emitte nem elle lê de volta. Os quatro têm sempre o mesmo comprimento, e elle é o
+`tamanho`: a linha `i` dos quatro é a mesma faixa.
+
+| Campo das faixas | Typo | |
+|---|---|---|
+| `numeros` | vector de numeros | O numero da faixa no album; 0 é «sem numero». |
+| `titulos` | vector de textos | O titulo. |
+| `caminhos` | vector de textos | O caminho no disco. É este que se passa ao `juntar`. |
+| `duracoes` | vector de numeros | Segundos; 0 é «não medida». |
+
+Sahem em ordem de numero e, empatando, de titulo, que é a ordem que o índice dá.
+
+**Vector vazio não é erro.** Artista que não existe devolve `albuns` vazio com
+`ok` verdadeiro, e album que não existe devolve as quatro columnas vazias: no
+índice não ha artista sem album, donde «não tem» e «não existe» são a mesma cousa
+vista de fóra. E índice AUSENTE responde egual a índice vazio, que é o que a
+bibliotheca d'esta Casa já faz com banco que não existe.
+
+```
+→ {"verbo":"biblioteca","corte":"albuns","artista":"Ninguem"}
+← {"ok":true,"corte":"albuns","artista":"Ninguem","albuns":[],"tamanho":0}
+```
+
 ## 7. As bordas
 
 | O que o cliente faz | O que o servidor faz |
