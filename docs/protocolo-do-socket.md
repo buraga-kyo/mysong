@@ -236,6 +236,31 @@ chegando a feição, o nome não mudaria. As tres issues fecharam. A versão 2 c
 promettido: **os nomes são os mesmos**, e quem escreveu cliente contra elles não
 muda uma letra, sómente passa a receber resposta em logar de recusa.
 
+### `espectro`
+
+As bandas correntes, e a ESCALA em que ellas estão. A escala vae junto porque quem
+lê de fóra não tem a tela para adivinhar como as bandas se espaçam nem como a
+magnitude foi comprimida: bandas sem escala são vinte e quatro numeros que não se
+sabem pintar. Sem argumento algum.
+
+```
+→ {"verbo":"espectro"}
+← {"ok":true,"bandas":[0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.850,0.312,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000],"quantas":24,"escala":"logarithmica","hertz_minimo":40.000,"hertz_maximo":16000.000,"magnitude":"decibeis","piso_decibeis":-60.000}
+```
+
+Acima, um tom de 440 Hz a tocar: acende a banda 9, que é onde ella ha de acender,
+porque 24 * ln(440/40) / ln(16000/40) = 9,6. Em escala linear, 440 Hz cahiria na
+banda 0. A escala que a resposta declara é a que a resposta cumpre.
+
+| Campo | Typo | |
+|---|---|---|
+| `bandas` | vector de numeros | `quantas` magnitudes em [0,1], da mais grave para a mais aguda. Com nada a tocar vêm todas em zero, e a resposta é `ok`: silencio não é erro. |
+| `quantas` | inteiro | Quantas bandas ha. Vinte e quatro hoje; leia-o, e não o presuma. |
+| `escala` | texto | `"logarithmica"`: as bordas espaçam-se no logarithmo da frequencia, que é como o ouvido as separa. Linear daria vinte bandas de agudo e nenhuma de baixo. |
+| `hertz_minimo`, `hertz_maximo` | duplo | A faixa que se pinta: de 40 a 16000. |
+| `magnitude` | texto | `"decibeis"`: a magnitude vem comprimida, com 0 no piso e 1 na escala cheia. |
+| `piso_decibeis` | duplo | O piso: -60. |
+
 ## 7. As bordas
 
 | O que o cliente faz | O que o servidor faz |
