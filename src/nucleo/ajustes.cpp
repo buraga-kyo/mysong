@@ -39,6 +39,28 @@ void Ajustes::queixa(std::string dito) {
   }
 }
 
+// aparar — tira os brancos das DUAS pontas, e sómente das pontas: branco no
+// MEIO do valor é do valor, que caminho com espaço é caminho legitimo.
+std::string_view aparar(std::string_view texto) {
+  const auto branco = [](char letra) {
+    return letra == ' ' || letra == '\t' || letra == '\r' || letra == '\v' ||
+           letra == '\f';
+  };
+  while (!texto.empty() && branco(texto.front())) texto.remove_prefix(1);
+  while (!texto.empty() && branco(texto.back())) texto.remove_suffix(1);
+  return texto;
+}
+
+// corta_commentario — o `#` abre commentario até o fim da linha, em QUALQUER
+// ponto, e não ha aspas nem escape que o façam literal. O limite é DECLARADO, e
+// não descuido: caminho que traga cerquilha fica inexprimivel, e regra com
+// excepção seria regra que o operador não adivinha olhando o proprio arquivo.
+std::string_view corta_commentario(std::string_view linha) {
+  const std::size_t cerquilha = linha.find('#');
+  if (cerquilha == std::string_view::npos) return linha;
+  return linha.substr(0, cerquilha);
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

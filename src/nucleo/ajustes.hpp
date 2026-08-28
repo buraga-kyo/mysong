@@ -84,6 +84,21 @@ struct Ajustes {
   void queixa(std::string dito);
 };
 
+// Um PAR do arquivo: o numero da linha, a chave e o valor, já aparados. O
+// numero guarda-se porque queixa que não diz a linha é queixa que o operador
+// não sabe onde corrigir.
+struct Par {
+  std::size_t linha = 0;
+  std::string chave;
+  std::string valor;
+};
+
+// aparar e corta_commentario — as duas partidas de uma linha. Sahem do namespace
+// anonymo por serem DECLARADAS aqui, pela razão do nomeado_na_forcagem da sonda:
+// a bateria prova-as uma a uma, e não sómente por dentro do leitor.
+std::string_view aparar(std::string_view texto);
+std::string_view corta_commentario(std::string_view linha);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
