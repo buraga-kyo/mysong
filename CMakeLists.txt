@@ -349,5 +349,14 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1"
 # de trabalho ergueria o binario sem terminal algum, e o operador veria uma
 # janella piscar e morrer. Icone não vae: a obra não traz nenhum, e chave Icon
 # apontando para o que não existe dá quadricula vazia no menu, que é peor.
-install(FILES installacao/mysong.desktop
+#
+# O Exec leva o caminho ABSOLUTO, e não o nome nú: a sessão graphica não herda
+# o PATH do shell de login em boa parte dos ambientes, e a entrada nasceria
+# morta justamente na installação que o README recommenda, a de ~/.local. O
+# TryExec não serve de remedio, que elle resolve contra o MESMO PATH: trocaria
+# entrada morta por entrada ausente, que é peor de diagnosticar por não deixar
+# rasto. O preço é o prefixo se fixar no CONFIGURE, e o README diz como.
+configure_file(installacao/mysong.desktop.in
+  "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
