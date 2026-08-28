@@ -207,6 +207,47 @@ TEST_CASE("a busca escapa a aspa do Lucene e apara o piso da janella no zero") {
   CHECK(nu::url_da_consulta_pela_busca("Rick", "", 213000).empty());
 }
 
+TEST_CASE("o 404 e o 503 não se confundem, e o 429 vae com o segundo") {
+  // O defeito da issue #63 era o booleano: os dous davam falso, e quem chamava
+  // não sabia se o servidor não tinha a gravação ou se pedia recuo.
+  CHECK(nu::desfecho_da_resposta(0, 200) == nu::DesfechoMB::Achado);
+  CHECK(nu::desfecho_da_resposta(0, 404) == nu::DesfechoMB::Falhou);
+  CHECK(nu::desfecho_da_resposta(0, 503) == nu::DesfechoMB::Recuo);
+  CHECK(nu::desfecho_da_resposta(0, 404) != nu::desfecho_da_resposta(0, 503));
+  // O 429 pede menos trafego, como o 503; o 500 é falha do servidor, como o 404.
+  CHECK(nu::desfecho_da_resposta(0, 429) == nu::DesfechoMB::Recuo);
+  CHECK(nu::desfecho_da_resposta(0, 500) == nu::DesfechoMB::Falhou);
+  // Rede muda é falha, ainda que o estado venha em zero ou em duzentos.
+  CHECK(nu::desfecho_da_resposta(7, 0) == nu::DesfechoMB::Falhou);
+  CHECK(nu::desfecho_da_resposta(28, 200) == nu::DesfechoMB::Falhou);
+}
+
+TEST_CASE("o recuo do servidor não gasta a consulta seguinte") {
+  // A consulta de mentira REGISTRA as URLs pedidas: é por ellas que se conta o
+  // que a resolução gastou, e rede alguma se toca.
+  std::vector<std::string> pedidas;
+  nu::DesfechoMB devolve = nu::DesfechoMB::Recuo;
+  const nu::Consulta de_mentira = [&](const std::string& url, std::string*) {
+    pedidas.push_back(url);
+    return devolve;
+  };
+  nu::FichaMB ficha;
+  // 503 no caminho do link: UMA consulta, e a busca nem se tenta.
+  CHECK_FALSE(nu::resolve_gravacao("1Ojc3QD0dfJ5HG8uzLsfTg", "Rick", "Never",
+                                   213000, &ficha, de_mentira));
+  REQUIRE(pedidas.size() == 1);
+  CHECK(pedidas[0].find("/url?resource=") != std::string::npos);
+
+  // 404 no mesmo logar: DUAS, e a segunda é a da busca. É o caminho que o
+  // recuo corta, e a differença entre os dous estados vê-se na contagem.
+  pedidas.clear();
+  devolve = nu::DesfechoMB::Falhou;
+  CHECK_FALSE(nu::resolve_gravacao("1Ojc3QD0dfJ5HG8uzLsfTg", "Rick", "Never",
+                                   213000, &ficha, de_mentira));
+  REQUIRE(pedidas.size() == 2);
+  CHECK(pedidas[1].find("/recording?query=") != std::string::npos);
+}
+
 TEST_CASE("duas passagens pelo acelerador distam um segundo, de fios distinctos") {
   // Os dous obreiros do estaleiro chegam em rajada; a promessa é UMA requisição
   // por segundo somados todos os fios. Toca RELOGIO, e não rede: o segundo que
