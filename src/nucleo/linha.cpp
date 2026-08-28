@@ -78,3 +78,6 @@ O manual inteiro: man mysong
 }
 
 }  // namespace mysong::nucleo
+
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
