@@ -175,7 +175,7 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
   MotorDuble duble;
   Tocador tocador(duble);
 
-  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "1.000");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "2.000");
   CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "obra") == "mysong");
 
   // Fila vazia é retracto legitimo, e não erro.
