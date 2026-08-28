@@ -35,6 +35,15 @@ namespace {
 
 using nucleo::Tocador;
 
+// O TECTO da fila de baixa, e a razão de elle morar AQUI. A fila do nucleo é uma
+// deque sem limite, e a tecla da tela enche-a de uma em uma, á velocidade de quem
+// digita. O socket não: um cliente encommenda mil por segundo, e a memoria cresce
+// até acabar. É a mesma guarda que este transporte já tem no tamanho da linha e
+// no numero de clientes, agora numa terceira frente. Sessenta e quatro, e não
+// dez: com dous obreiros e baixa de minutos, sessenta e quatro á espera já são
+// horas de fila, e quem pede mais que isso não está a pedir musica.
+constexpr std::size_t kTectoDaFilaDeBaixa = 64;
+
 // A moldura do ACERTO abre-se sempre por «ok», que é o que o cliente lê primeiro.
 Objecto abre_acerto() {
   Objecto obra;
@@ -313,6 +322,11 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
     if (onde == nullptr) return falta("url", "texto");
     if (onde->texto.empty())
       return erro("argumento_invalido", "a url da faixa vem vazia");
+    const nucleo::Andamento antes = arredores.estaleiro->andamento();
+    if (antes.na_espera >= kTectoDaFilaDeBaixa)
+      return erro("recusado", "a fila de baixa esta cheia: " +
+                                  std::to_string(antes.na_espera) +
+                                  " pedidos a espera");
     nucleo::Pedido pedido;
     pedido.url = onde->texto;
     // O que o operador DIZ ganha do que a rede disser, que é a regra que o
