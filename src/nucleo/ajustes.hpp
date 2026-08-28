@@ -167,6 +167,12 @@ std::filesystem::path padrao_do_acervo();
 // ambiente com fios a correr é corrida, e os consumidores recebem cópia.
 Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento);
 
+// texto_dos_ajustes — o que o --sonda accrescenta ao relatorio dos requisitos:
+// uma linha por chave, com o valor em vigor e a ORIGEM d'elle, mais o arquivo
+// considerado e as queixas. Funcção PURA, e por isso vive aqui e não na tela,
+// pelo precedente do texto_do_andamento. Escape algum sahe d'aqui.
+std::string texto_dos_ajustes(const Ajustes& ajustes);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

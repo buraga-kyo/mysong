@@ -317,6 +317,39 @@ Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
   return ajustes;
 }
 
+namespace {
+
+// linha_do_ajuste — a chave guarnecida á largura da maior, o valor, e a origem
+// entre parenthesis. O valor NÃO se trunca: caminho cortado n'um diagnostico é
+// o defeito, e não o remedio.
+void linha_do_ajuste(std::string* texto, std::string_view chave,
+                     const std::string& valor, Origem origem) {
+  *texto += "  ";
+  texto->append(chave);
+  texto->append(chave.size() < 20 ? 20 - chave.size() : 1, ' ');
+  *texto += valor;
+  *texto += "  (";
+  texto->append(nome_da_origem(origem));
+  *texto += ")\n";
+}
+
+}  // namespace
+
+std::string texto_dos_ajustes(const Ajustes& ajustes) {
+  std::string texto = "\nmysong: os ajustes em vigor, e de onde vieram\n\n";
+  linha_do_ajuste(&texto, "acervo", ajustes.acervo.valor.string(),
+                  ajustes.acervo.origem);
+  linha_do_ajuste(&texto, "volume", std::to_string(ajustes.volume.valor),
+                  ajustes.volume.origem);
+  linha_do_ajuste(&texto, "fonte_da_busca",
+                  std::string(chave_da_fonte(ajustes.fonte_da_busca.valor)),
+                  ajustes.fonte_da_busca.origem);
+  linha_do_ajuste(&texto, "baixas_simultaneas",
+                  std::to_string(ajustes.baixas_simultaneas.valor),
+                  ajustes.baixas_simultaneas.origem);
+  return texto;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
