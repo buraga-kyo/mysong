@@ -295,6 +295,9 @@ bool escreve_etiqueta(const std::filesystem::path& arquivo,
     etiqueta->setAlbum(TagLib::String(pedido.album, utf8));
   if (pedido.numero > 0)
     etiqueta->setTrack(static_cast<unsigned>(pedido.numero));
+  // O anno vem do MusicBrainz (issue #57), quando a gravação casou; zero é «não
+  // se soube», e etiqueta de anno zero seria mentira gravada.
+  if (pedido.ano > 0) etiqueta->setYear(static_cast<unsigned>(pedido.ano));
   return punho.save();
 }
 

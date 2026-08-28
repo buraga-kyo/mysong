@@ -42,6 +42,13 @@ struct Pedido {
   // casando o achado pela duração. Sem ella não ha casamento de que se possa
   // confiar, e a faixa sahe por duvidosa em vez de baixar cousa errada calada.
   int duracao = 0;
+  // O ID do track no Spotify (issue #57), vindo do catalogo: é por elle que o
+  // MusicBrainz acha a GRAVAÇÃO exacta, e não uma parecida. Vazio quando a
+  // faixa não veio do catalogo, e ahi a resolução tenta a busca por titulo.
+  std::string id_spotify;
+  // O ANNO da release canonica, que o MusicBrainz dá e a etiqueta grava. Zero é
+  // «não se soube», e anno algum se escreve.
+  int ano = 0;
 };
 
 // saneia_nome — o nome que se ha de pôr no systema de arquivos. Tira a barra, o
