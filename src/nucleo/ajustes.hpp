@@ -133,9 +133,11 @@ struct Degraus {
 using Aferidor = std::function<bool(const std::filesystem::path&)>;
 
 // resolver — a ESCADA. Puro quanto ao mundo: não abre arquivo, não lê ambiente.
-Ajustes resolver(const Degraus& degraus,
-                 const std::filesystem::path& padrao_do_acervo,
-                 const Aferidor& ha_directorio);
+// Escreve no MESMO vaso em que o leitor lavrou as queixas d'elle, para que a
+// lista sahia n'uma ordem só e o tecto d'ella conte a somma, e não uma parcella.
+void resolver(const Degraus& degraus,
+              const std::filesystem::path& padrao_do_acervo,
+              const Aferidor& ha_directorio, Ajustes* ajustes);
 
 }  // namespace mysong::nucleo
 

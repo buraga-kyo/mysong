@@ -170,39 +170,38 @@ std::optional<std::size_t> baixas_de(std::string_view texto) {
 // arquivo a escrever por cima. Percorrer os pares na ORDEM em que vieram é o
 // que faz a chave repetida valer a ultima, sem regra propria para isso: a
 // segunda occorrencia sobrescreve a primeira, e é tudo.
-Ajustes resolver(const Degraus& degraus,
-                 const std::filesystem::path& padrao_do_acervo,
-                 const Aferidor& ha_directorio) {
-  Ajustes ajustes;
-  ajustes.acervo = {padrao_do_acervo, Origem::Padrao};
+void resolver(const Degraus& degraus,
+              const std::filesystem::path& padrao_do_acervo,
+              const Aferidor& ha_directorio, Ajustes* ajustes) {
+  ajustes->acervo = {padrao_do_acervo, Origem::Padrao};
   for (const Par& par : degraus.arquivo) {
     const std::string onde = "linha " + std::to_string(par.linha) + ": ";
     if (par.chave == "acervo") {
       if (ha_directorio(par.valor))
-        ajustes.acervo = {std::filesystem::path(par.valor), Origem::Arquivo};
+        ajustes->acervo = {std::filesystem::path(par.valor), Origem::Arquivo};
       else
-        ajustes.queixa(onde + "acervo «" + par.valor +
+        ajustes->queixa(onde + "acervo «" + par.valor +
                        "» não é directorio que exista; vale o de baixo");
     } else if (par.chave == "volume") {
       if (const auto numero = volume_de(par.valor))
-        ajustes.volume = {*numero, Origem::Arquivo};
+        ajustes->volume = {*numero, Origem::Arquivo};
       else
-        ajustes.queixa(onde + "volume «" + par.valor +
+        ajustes->queixa(onde + "volume «" + par.valor +
                        "» não é numero de zero a cem; vale o degrau de baixo");
     } else if (par.chave == "fonte_da_busca") {
       if (const auto fonte = fonte_de(par.valor))
-        ajustes.fonte_da_busca = {*fonte, Origem::Arquivo};
+        ajustes->fonte_da_busca = {*fonte, Origem::Arquivo};
       else
-        ajustes.queixa(onde + "fonte_da_busca «" + par.valor +
+        ajustes->queixa(onde + "fonte_da_busca «" + par.valor +
                        "» não é youtube, youtube-music nem spotify");
     } else if (par.chave == "baixas_simultaneas") {
       if (const auto quantas = baixas_de(par.valor))
-        ajustes.baixas_simultaneas = {*quantas, Origem::Arquivo};
+        ajustes->baixas_simultaneas = {*quantas, Origem::Arquivo};
       else
-        ajustes.queixa(onde + "baixas_simultaneas «" + par.valor +
+        ajustes->queixa(onde + "baixas_simultaneas «" + par.valor +
                        "» não é numero de um a oito");
     } else {
-      ajustes.queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
+      ajustes->queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
     }
   }
   // O AMBIENTE, e vae CRÚ: quem poz a variavel no perfil do shell manda, e o
@@ -210,19 +209,18 @@ Ajustes resolver(const Degraus& degraus,
   // pés de quem aponta para monte de rede que ainda não montou, e a variavel
   // existe justamente para esse caso.
   if (degraus.acervo_do_ambiente)
-    ajustes.acervo = {std::filesystem::path(*degraus.acervo_do_ambiente),
+    ajustes->acervo = {std::filesystem::path(*degraus.acervo_do_ambiente),
                       Origem::Ambiente};
   // O ARGUMENTO, que é o degrau de cima, e este AFERE-SE: quem o digita está a
   // olhar para a tela agora, e ha de saber já que errou o caminho.
   if (degraus.acervo_do_argumento) {
     if (ha_directorio(*degraus.acervo_do_argumento))
-      ajustes.acervo = {std::filesystem::path(*degraus.acervo_do_argumento),
+      ajustes->acervo = {std::filesystem::path(*degraus.acervo_do_argumento),
                         Origem::Argumento};
     else
-      ajustes.queixa("--acervo «" + *degraus.acervo_do_argumento +
+      ajustes->queixa("--acervo «" + *degraus.acervo_do_argumento +
                      "» não é directorio que exista; vale o de baixo");
   }
-  return ajustes;
 }
 
 }  // namespace mysong::nucleo
