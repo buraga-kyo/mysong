@@ -326,21 +326,10 @@ nucleo::FaixaDoCatalogo Navegador::faixa_de_catalogo_eleita() const {
   return catalogo_.faixas[static_cast<std::size_t>(vista_[eleito_].numero - 1)];
 }
 
-void Navegador::mostra_rede(std::vector<Linha> achados) {
-  rede_ = std::move(achados);
-  secao_ = Secao::Rede;
-  // A trilha vae-se: ella dizia por onde se andou no acervo, e a rede não está no
-  // acervo. Deixá-la de pé faria o titulo da tabella mentir sobre a origem da lista.
-  trilha_.clear();
-  termo_.clear();
-  eleito_ = 0;
-  refaz_vista();
-}
-
 void Navegador::mostra_rede(std::vector<nucleo::Achado> achados) {
   achados_ = std::move(achados);
-  std::vector<Linha> linhas;
-  linhas.reserve(achados_.size());
+  rede_.clear();
+  rede_.reserve(achados_.size());
   for (std::size_t i = 0; i < achados_.size(); ++i) {
     const nucleo::Achado& achado = achados_[i];
     Linha linha;
@@ -352,9 +341,15 @@ void Navegador::mostra_rede(std::vector<nucleo::Achado> achados) {
     linha.duracao = achado.duracao;
     linha.autor = achado.artista.empty() ? achado.canal : achado.artista;
     linha.origem = static_cast<int>(i);
-    linhas.push_back(std::move(linha));
+    rede_.push_back(std::move(linha));
   }
-  mostra_rede(std::move(linhas));
+  secao_ = Secao::Rede;
+  // A trilha vae-se: ella dizia por onde se andou no acervo, e a rede não está no
+  // acervo. Deixá-la de pé faria o titulo da tabella mentir sobre a origem da lista.
+  trilha_.clear();
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
 }
 
 bool Navegador::ha_achado() const {
@@ -366,11 +361,6 @@ bool Navegador::ha_achado() const {
 nucleo::Achado Navegador::achado_eleito() const {
   if (!ha_achado()) return {};
   return achados_[static_cast<std::size_t>(vista_[eleito_].origem)];
-}
-
-std::string Navegador::url_eleita() const {
-  if (secao_ != Secao::Rede || vista_.empty()) return {};
-  return vista_[eleito_].chave;
 }
 
 bool Navegador::entra() {
