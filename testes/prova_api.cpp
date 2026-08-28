@@ -23,7 +23,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <condition_variable>
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -33,6 +35,7 @@
 #include "api/jsonzinho.hpp"
 #include "api/protocolo.hpp"
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/estaleiro.hpp"
 
 namespace {
 using mysong::api::analysa;
@@ -454,6 +457,47 @@ TEST_CASE("a ordem que o nucleo recusa volta como recusado, e nunca como ok") {
   CHECK(duble.tocados.size() == antes);
   CHECK(tocador.estado() == Estado::Tocando);
 }
+TEST_CASE("a baixa encommenda-se, e a resposta nao espera pelo desfecho") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  // A CANCELLA: a obra de mentira para n'ella, e a resposta do socket ha de
+  // voltar com a obra ainda presa. É assim que o «não espera» se afere por
+  // construcção, e não por relogio, que relogio a machina carregada perde.
+  std::mutex tranca;
+  std::condition_variable sino;
+  bool solta = false;
+  std::vector<mysong::nucleo::Pedido> encommendados;
+  mysong::nucleo::Estaleiro estaleiro(
+      1, [&](const mysong::nucleo::Pedido& pedido, std::filesystem::path*) {
+        std::unique_lock<std::mutex> chave(tranca);
+        encommendados.push_back(pedido);
+        sino.notify_all();
+        sino.wait(chave, [&solta] { return solta; });
+        return mysong::nucleo::Colheita::Colhido;
+      });
+  mysong::api::Arredores arredores;
+  arredores.estaleiro = &estaleiro;
+
+  const std::string aceite = mysong::api::responde(
+      tocador, arredores,
+      "{\"verbo\":\"baixar\",\"url\":\"https://ha.de/ser\",\"artista\":\"Bach\","
+      "\"numero\":3}");
+  CHECK(campo(aceite, "ok") == "true");
+  CHECK(campo(aceite, "colhidas") == "0.000");
+  CHECK(campo(aceite, "ultima").empty());
+  {
+    std::unique_lock<std::mutex> chave(tranca);
+    sino.wait(chave, [&] { return !encommendados.empty(); });
+    // O que o operador DISSE chega inteiro á obra, e não sómente a URL.
+    CHECK(encommendados[0].url == "https://ha.de/ser");
+    CHECK(encommendados[0].artista == "Bach");
+    CHECK(encommendados[0].numero == 3);
+    solta = true;
+  }
+  sino.notify_all();
+  estaleiro.espera_a_fila();
+}
+
 // A prova de que verbo algum sae MUDO, e de que as quatro recusas se distinguem.
 // Distinguir importa porque o remedio de cada uma é differente: «recusado» manda
 // olhar o estado do tocador, «argumento_invalido» manda olhar a mensagem,
