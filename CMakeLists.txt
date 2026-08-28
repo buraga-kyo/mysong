@@ -299,3 +299,9 @@ target_link_libraries(espia_catalogo PRIVATE mysong_core)
 add_executable(espia_musicbrainz exemplos/espia_musicbrainz.cpp)
 target_compile_options(espia_musicbrainz PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
+
+# ─── O CURL GLOBAL (issue #63) ──────────────────────────────────────────────
+# O main ergue o libcurl uma vez, antes de fio algum, e por isso o alvo da tela
+# passa a pedir o cabeçalho do curl: o nucleo liga-o em PRIVATE, donde os
+# caminhos de inclusão não lhe chegavam. ACRESCENTA linha, como manda a regra.
+target_link_libraries(mysong PRIVATE PkgConfig::CURL)
