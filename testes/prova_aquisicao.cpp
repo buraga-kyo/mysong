@@ -378,6 +378,38 @@ TEST_CASE("a art track chega com artista, album, faixa e ano") {
   CHECK(torto[0].ano == 0);
 }
 
+TEST_CASE("a busca da musica vae por URL codificada, sem flat e com recorte") {
+  const std::vector<std::string> ditos =
+      nu::argumentos_da_busca("karma police", 5, nu::Fonte::YouTubeMusic);
+  // O alvo escripto á mão: termo codificado por cento, e o fragmento #songs no
+  // fim, que é o que segura a prateleira só nas musicas.
+  CHECK(ditos.back() ==
+        "https://music.youtube.com/search?q=karma%20police#songs");
+  CHECK(ditos[ditos.size() - 2] == "--");
+  const auto tem = [&ditos](const std::string& q) {
+    return std::find(ditos.begin(), ditos.end(), q) != ditos.end();
+  };
+  // SEM o flat, que com elle os campos da musica vêm NA (medido); o custo
+  // paga-se com o recorte da playlist.
+  CHECK_FALSE(tem("--flat-playlist"));
+  CHECK(tem("--playlist-items"));
+  CHECK(tem("1:5"));
+  // Os mesmos oito campos da comum: o contracto de le_achados é UM.
+  CHECK(std::count(ditos.begin(), ditos.end(), std::string("--print")) == 8);
+  // O TECTO proprio da musica: cem pedidos aparam-se em DEZ, e não nos vinte da
+  // comum. O dez vae escripto á mão, que é o numero que o custo medido fixou.
+  const std::vector<std::string> cem =
+      nu::argumentos_da_busca("x", 100, nu::Fonte::YouTubeMusic);
+  CHECK(std::find(cem.begin(), cem.end(), std::string("1:10")) != cem.end());
+}
+
+TEST_CASE("a fonte Spotify busca no YouTube, argumento por argumento") {
+  // O audio do catalogo vem do YouTube (fronteira da issue #13): pedido sem URL
+  // com fonte Spotify ha de correr a MESMA busca de hoje, byte a byte.
+  CHECK(nu::argumentos_da_busca("bach", 5, nu::Fonte::Spotify) ==
+        nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube));
+}
+
 TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
   const nu::Achado nada;
   CHECK(nada.artista.empty());
