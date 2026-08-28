@@ -268,6 +268,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::AbreVideo:
     case tui::Verbo::AbreCatalogo:
     case tui::Verbo::BaixaTudo:
+    case tui::Verbo::TrocaFonte:
       break;
   }
 }

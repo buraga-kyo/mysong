@@ -57,6 +57,9 @@ enum class Verbo {
   // O CATALOGO DO SPOTIFY (issue #13). Dous: ler a lista, e baixá-la toda. Baixar a
   // eleita é o Entra, que na secção do catalogo quer dizer baixar.
   AbreCatalogo, BaixaTudo,
+  // A FONTE DA BUSCA (issue #56): cicla YouTube, YouTube Music, Spotify. Verbo
+  // puro, como o BaixaTudo: quem guarda a fonte e a secção é a janella.
+  TrocaFonte,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

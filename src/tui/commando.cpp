@@ -129,6 +129,10 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   if (tecla == ftxui::Event::Character('I')) return {Verbo::AbreCatalogo, 0.0};
   if (tecla == ftxui::Event::Character('T')) return {Verbo::BaixaTudo, 0.0};
 
+  // O `f` de fonte (issue #56): cicla de onde a busca vem. Minuscula, que trocar
+  // de fonte não estraga cousa gravada; a guarda da secção fica na janella.
+  if (tecla == ftxui::Event::Character('f')) return {Verbo::TrocaFonte, 0.0};
+
   return {Verbo::Nada, 0.0};
 }
 

@@ -79,6 +79,7 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('t'), ftxui::Event::Character('K'),
       ftxui::Event::Character('J'), ftxui::Event::Character('v'),
       ftxui::Event::Character('I'), ftxui::Event::Character('T'),
+      ftxui::Event::Character('f'),
       ftxui::Event::ArrowUp,
       ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
@@ -141,6 +142,9 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   // E a minuscula d'ellas continua a ser a do vi: `k` e `j` andam, e não movem.
   CHECK(verbo(ftxui::Event::Character('k')) == tui::Verbo::Sobe);
   CHECK(verbo(ftxui::Event::Character('j')) == tui::Verbo::Desce);
+  // O `f` da fonte (issue #56). MINUSCULA: ciclar a fonte não estraga cousa
+  // gravada, e a guarda da secção vive na janella, como a do BaixaTudo.
+  CHECK(verbo(ftxui::Event::Character('f')) == tui::Verbo::TrocaFonte);
 }
 
 // Os alvos aqui vão escriptos á mão em SEGUNDOS, e não em passos: dizer «posicao mais
