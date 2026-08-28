@@ -52,6 +52,14 @@ constexpr int kVersaoDoProtocolo = 2;
 // Tocador não conhece. Emprestadas, e ANNULAVEIS, que quem ergue o servidor
 // pode não ter índice nem fila de baixa; o protocolo diz a falta em vez de a
 // calar. Quem as empresta ha de mantê-las vivas mais tempo que o servidor.
+//
+// E ha uma SEGUNDA metade d'esse dever, que se escreve aqui porque é aqui que
+// quem empresta olha: a Bibliotheca NÃO tem tranca propria, e o reabre() d'ella
+// troca o punho do banco. Quem a emprestar a este servidor não a ha de reabrir
+// n'outro fio enquanto o socket bate, sob pena de o protocolo lêr um punho que
+// já se fechou. Hoje ninguem o faz (a superficie viva não varre, e o
+// Servidor::pulsa() bate na MESMA linha do Tocador::pulsa()); quem ligar este
+// socket á janella, que varre em fio proprio, ha de resolvê-lo primeiro.
 struct Arredores {
   const nucleo::Biblioteca* livraria = nullptr;
   nucleo::Estaleiro* estaleiro = nullptr;
