@@ -84,6 +84,30 @@ inline std::string duplo(double v) {
   return cifra;
 }
 
+// Os vectores de NUMERO, irmãos do de textos. Nascem porque as bandas do
+// espectro, os numeros de faixa e as durações do acervo SÃO numero: emitti-los
+// como texto obrigaria quem lê a converter de volta o que já era conta, e
+// abriria a porta a duas escriptas do mesmo valor.
+inline std::string vector_de_duplos(const std::vector<float>& itens) {
+  std::string obra = "[";
+  for (std::size_t i = 0; i < itens.size(); ++i) {
+    if (i != 0) obra += ',';
+    obra += duplo(static_cast<double>(itens[i]));
+  }
+  obra += ']';
+  return obra;
+}
+
+inline std::string vector_de_inteiros(const std::vector<long long>& itens) {
+  std::string obra = "[";
+  for (std::size_t i = 0; i < itens.size(); ++i) {
+    if (i != 0) obra += ',';
+    obra += inteiro(itens[i]);
+  }
+  obra += ']';
+  return obra;
+}
+
 inline std::string vector_de_textos(const std::vector<std::string>& itens) {
   std::string obra = "[";
   for (std::size_t i = 0; i < itens.size(); ++i) {
