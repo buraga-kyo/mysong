@@ -368,6 +368,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   tui::CorreioDe<nucleo::Achado> correio;
   std::mutex tranca_do_termo;
   std::string termo_da_rede;
+  // A FONTE vigente da busca (issue #56): pegajosa na sessão, YouTube de saida.
+  // Vive sob a MESMA tranca do termo, e o fio da busca copia os dous n'um golpe:
+  // assim não ha quadro em que o termo seja de uma fonte e a busca de outra.
+  nucleo::Fonte fonte_da_busca = nucleo::Fonte::YouTube;
   std::atomic<bool> pede_buscar{false};
 
   // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
@@ -442,13 +446,15 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     while (!sahir.load()) {
       if (pede_buscar.exchange(false)) {
         std::string termo;
+        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
         {
           std::lock_guard<std::mutex> chave(tranca_do_termo);
           termo = termo_da_rede;
+          fonte = fonte_da_busca;
         }
         std::vector<nucleo::Achado> achados;
-        const bool falou = nucleo::busca_na_rede(
-            termo, nucleo::Fonte::YouTube, ACHADOS_POR_BUSCA, &achados);
+        const bool falou =
+            nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
         // Tres desfechos, e tres recados: a rede muda, a rede que nada achou, e os
         // achados. «Nada se achou» e «não respondeu» são cousas differentes, e dizer
         // a mesma palavra ás duas faria o operador buscar outra vez em vão.
@@ -548,7 +554,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
-    if (navegador.secao() == tui::Secao::Rede) trilha = "NET";
+    // A fonte no titulo da secção, SEMPRE: a lista pode ser da fonte anterior por
+    // um instante (a busca é assynchrona), e o cabeçalho é a verdade da vigente.
+    if (navegador.secao() == tui::Secao::Rede)
+      trilha = "NET · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
     if (navegador.secao() == tui::Secao::Lista) {
       trilha = "SPOTIFY";
       if (!navegador.nome_do_catalogo().empty())
@@ -562,7 +571,10 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     }
     if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
     else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
-    else if (digita == Digita::Procura) trilha = "BUSCA NA REDE: " + termo_em_curso;
+    else if (digita == Digita::Procura)
+      trilha = "BUSCA NA REDE (" +
+               std::string(nucleo::nome_da_fonte(fonte_da_busca)) +
+               "): " + termo_em_curso;
     else if (digita == Digita::Lista) trilha = "PLAYLIST DO SPOTIFY: " + termo_em_curso;
     else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
     else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
@@ -613,7 +625,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
-                           " · b baixa por URL · r varre · l letra · espaço pausa"
+                           " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
                            " · K/J move · R renomeia · D apaga · v video"
                            " · I spotify · T baixa todas · q sahe") |
