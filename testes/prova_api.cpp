@@ -365,6 +365,34 @@ TEST_CASE("os quatro vectores da faixa sahem paralelos") {
   CHECK(campo(ninguem, "tamanho") == "0.000");
 }
 
+TEST_CASE("o corte da bibliotheca é obrigatorio, e o índice ausente é vazio") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  // SEM arredores: índice ausente responde como índice VAZIO, e não como erro.
+  const std::string vazio =
+      fala(tocador, "{\"verbo\":\"biblioteca\",\"corte\":\"artistas\"}");
+  CHECK(campo(vazio, "ok") == "true");
+  CHECK(campo(vazio, "tamanho") == "0.000");
+
+  const char* tortos[] = {
+      "{\"verbo\":\"biblioteca\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":7}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"artistaa\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\",\"artista\":\"\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"faixas\",\"artista\":\"Bach\"}",
+  };
+  for (const char* torto : tortos) {
+    CHECK(campo(fala(tocador, torto), "erro") == "argumento_invalido");
+    CHECK_FALSE(campo(fala(tocador, torto), "razao").empty());
+  }
+  // O corte inventado accusa o CORTE, e não o artista que elle nem chegou a
+  // pedir: mandar olhar o argumento errado é pior que não mandar olhar nada.
+  CHECK(campo(fala(tocador, "{\"verbo\":\"biblioteca\",\"corte\":\"artistaa\"}"),
+              "razao")
+            .find("corte") != std::string::npos);
+}
+
 TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   MotorDuble duble;
   Tocador tocador(duble);
