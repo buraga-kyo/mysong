@@ -556,8 +556,34 @@ TEST_CASE("do catalogo nascem achados: filtro sem caixa, e a lista por album") {
   CHECK(nu::achados_do_catalogo(catalogo, "").size() == 3);
 }
 
+TEST_CASE("o id do track atravessa o achado do catalogo até a encommenda") {
+  // A COSTURA das duas tarefas: a fonte Spotify da tela (issue #56) faz o
+  // achado no catalogo e a encommenda sahe d'elle, e não do encommenda_do
+  // _catalogo da secção Lista. Sem o id atravessar aqui, a faixa perdia o
+  // casamento pelo LINK e cahia na busca por titulo dentro do MusicBrainz.
+  nu::Catalogo catalogo;
+  catalogo.nome = "Minha Lista";
+  nu::FaixaDoCatalogo faixa;
+  faixa.titulo = "Never Gonna Give You Up";
+  faixa.artista = "Rick Astley";
+  faixa.numero = 1;
+  faixa.duracao_ms = 213000;
+  faixa.id_do_track = "1Ojc3QD0dfJ5HG8uzLsfTg";
+  catalogo.faixas = {faixa};
+  const std::vector<nu::Achado> achados =
+      nu::achados_do_catalogo(catalogo, "never");
+  REQUIRE(achados.size() == 1);
+  CHECK(achados[0].id_spotify == "1Ojc3QD0dfJ5HG8uzLsfTg");
+  CHECK(nu::encommenda_do_achado(achados[0]).id_spotify ==
+        "1Ojc3QD0dfJ5HG8uzLsfTg");
+  // Achado de busca na rede não tras id, e ahi o pedido sahe sem elle: é o
+  // caminho segundo do MusicBrainz, e não engano.
+  CHECK(nu::encommenda_do_achado(nu::Achado{}).id_spotify.empty());
+}
+
 TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
   const nu::Achado nada;
+  CHECK(nada.id_spotify.empty());  // o id do track (issue #57) tambem
   CHECK(nada.artista.empty());
   CHECK(nada.album.empty());
   CHECK(nada.faixa.empty());

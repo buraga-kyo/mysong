@@ -430,6 +430,7 @@ Pedido encommenda_do_achado(const Achado& achado) {
   pedido.numero = achado.numero;
   pedido.ano = achado.ano;
   pedido.fonte = achado.fonte;
+  pedido.id_spotify = achado.id_spotify;  // o link do MusicBrainz (issue #57)
   // A duração sómente no pedido sem URL, onde ella criva o casamento. Com URL,
   // pô-la mudaria o pedido de hoje sem lhe mudar o desfecho.
   if (achado.url.empty()) pedido.duracao = achado.duracao;
@@ -456,6 +457,7 @@ std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
     // faixa, e a tolerancia do casamento conta-os.
     achado.duracao = (faixa.duracao_ms + 500) / 1000;
     achado.fonte = Fonte::Spotify;
+    achado.id_spotify = faixa.id_do_track;  // por onde o MusicBrainz acha a gravação
     achados.push_back(achado);
   }
   return achados;

@@ -197,6 +197,10 @@ struct Achado {
   int numero = 0;
   // A FONTE de que o achado veio, para que a encommenda a carregue adiante.
   Fonte fonte = Fonte::YouTube;
+  // O ID do track no Spotify (issue #57), quando o achado sahiu do catalogo: sem
+  // elle a encommenda perderia o casamento pelo LINK e cahiria na busca por
+  // titulo dentro do MusicBrainz, que é o caminho segundo e não o primeiro.
+  std::string id_spotify;
 };
 
 // codifica_para_url — o termo como pedaço de URL: todo byte fóra de
