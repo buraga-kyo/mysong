@@ -76,3 +76,45 @@ l             troca o espectro pela letra
 v             abre a faixa eleita em janella de video
 q             sahe
 .fi
+.SH ARQUIVOS
+.TP
+.I $XDG_DATA_HOME/mysong/indice.sqlite3
+O indice do acervo, refeito a cada varredura. Sem a variavel, o directorio e
+.IR ~/.local/share/mysong/ ,
+creado com modo 0700.
+.TP
+.I rol.sqlite3
+As listas do operador, ao lado do indice e NAO dentro delle: o indice e refeito
+a cada varredura, e taboa de lista la dentro sahiria com ella.
+.TP
+.I $XDG_RUNTIME_DIR/mysong.sock
+O soquete de commando. Sem a variavel, soquete algum se ergue.
+.SH AMBIENTE
+.TP
+.B MYSONG_ACERVO
+A raiz do acervo. Sem ella,
+.IR ~/Música .
+.TP
+.B MYSONG_SONDA_FORCA
+Finge a falta dos requisitos que se nomearem, por chave curta e virgula:
+.IR fonte ,
+.IR libmpv ,
+.IR yt-dlp ,
+.IR chafa .
+Serve para ver a tela das faltas sem se mexer no systema.
+.SH EXIGE INSTALLADO
+Uma fonte remendada de Nerd Font, que e onde moram os glifos de seta U+E0B0 e
+U+E0B2; um terminal de truecolor; o PipeWire; e a libmpv, que toca. Faltando a
+fonte ou a libmpv, o programa RECUSA abrir e diz o que falta.
+.PP
+O
+.BR chafa (1)
+desenha a capa do album e o
+.BR yt-dlp (1)
+busca na rede. Sem elles perde-se a feicao, e o resto toca igual.
+.SH VEJA TAMBEM
+.BR mpv (1),
+.BR yt-dlp (1),
+.BR chafa (1)
+.SH AUCTOR
+Braga Us.
