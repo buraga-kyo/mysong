@@ -296,6 +296,42 @@ TEST_CASE("a fila lista-se sem tocar nada, e o assento volta ao logar") {
   CHECK(duble.tocados.size() == tocados_antes);  // o passeio nao mandou tocar
   CHECK(tocador.retracto().indice == 1);         // e o assento voltou
 }
+TEST_CASE("a bibliotheca navega os tres cortes do índice") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  const Cova cova;
+  cova.semeia();
+  const mysong::nucleo::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.aberta());
+  mysong::api::Arredores arredores;
+  arredores.livraria = &livraria;
+  const auto pergunta = [&](const std::string& linha) {
+    return mysong::api::responde(tocador, arredores, linha);
+  };
+
+  const std::string quem =
+      pergunta("{\"verbo\":\"biblioteca\",\"corte\":\"artistas\"}");
+  CHECK(campo(quem, "corte") == "artistas");
+  CHECK(campo(quem, "tamanho") == "2.000");
+  CHECK(quem.find("\"Bach\"") != std::string::npos);
+  CHECK(quem.find("\"Coltrane\"") != std::string::npos);
+
+  const std::string quaes = pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\",\"artista\":\"Bach\"}");
+  CHECK(campo(quaes, "corte") == "albuns");
+  CHECK(campo(quaes, "artista") == "Bach");
+  CHECK(campo(quaes, "tamanho") == "2.000");
+
+  const std::string faixas = pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"faixas\",\"artista\":\"Bach\","
+      "\"album\":\"Cantatas\"}");
+  CHECK(campo(faixas, "corte") == "faixas");
+  CHECK(campo(faixas, "tamanho") == "2.000");
+  // A faixa com aspa sae ESCAPADA, e a resposta continua a ser UMA linha.
+  CHECK(faixas.find("Cor\\\"o") != std::string::npos);
+  CHECK(faixas.find('\n') == std::string::npos);
+}
+
 TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   MotorDuble duble;
   Tocador tocador(duble);
