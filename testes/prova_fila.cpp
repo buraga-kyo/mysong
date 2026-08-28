@@ -17,6 +17,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <algorithm>
+
 #include "nucleo/fila.hpp"
 
 namespace {
@@ -30,7 +32,50 @@ mysong::nucleo::Fila com_tres() {
   return fila;
 }
 
+// Cinco faixas, que é o numero com que o aceite da issue #62 está escripto.
+mysong::nucleo::Fila com_cinco() {
+  mysong::nucleo::Fila fila;
+  for (const char* nome : {"a.wav", "b.wav", "c.wav", "d.wav", "e.wav"})
+    fila.junta(nome);
+  return fila;
+}
+
+// O passeio inteiro para deante, colhendo o assento por onde se passa. Colhe-se
+// o de partida tambem: elle é uma das faixas por que se passou.
+std::vector<std::size_t> passeio(mysong::nucleo::Fila& fila) {
+  std::vector<std::size_t> visitados{fila.indice()};
+  while (fila.proxima()) visitados.push_back(fila.indice());
+  return visitados;
+}
+
 }  // namespace
+
+TEST_CASE("embaralhada, a fila passa por todas as faixas sem repetir nenhuma") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  std::vector<std::size_t> visitados = passeio(fila);
+  REQUIRE(visitados.size() == 5);      // cinco passos, e não quatro nem seis
+  CHECK(visitados.front() == 0);       // a corrente vae ao principio
+  std::sort(visitados.begin(), visitados.end());
+  const std::vector<std::size_t> todos = {0, 1, 2, 3, 4};
+  CHECK(visitados == todos);           // as cinco, e nenhuma duas vezes
+}
+
+TEST_CASE("desligar o embaralhar restitue a ordem e conserva a faixa") {
+  auto fila = com_cinco();
+  CHECK(fila.ir_para(2));
+  fila.embaralhar(true);
+  CHECK(fila.corrente() == "c.wav");  // ligar não troca a faixa
+  REQUIRE(fila.proxima());
+  REQUIRE(fila.proxima());
+  const std::string tocando(fila.corrente());
+  fila.embaralhar(false);
+  CHECK(fila.corrente() == tocando);  // desligar tambem não
+  const std::vector<std::string> chegada = {"a.wav", "b.wav", "c.wav", "d.wav",
+                                            "e.wav"};
+  CHECK(fila.todas() == chegada);
+  CHECK(fila.ordem().empty());
+}
 
 TEST_CASE("a fila guarda a ordem que o cliente definiu") {
   auto fila = com_tres();
