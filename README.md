@@ -919,4 +919,4 @@ Por que essas pessoas estão me seguindo?
 Apagando memórias
 Criaturas no meu quarto
 Olhe para si mesmo, é essa a vida que você quer viver?
-Po
+Por que se importar? Você me te
