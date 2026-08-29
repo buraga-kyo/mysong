@@ -17,6 +17,7 @@
 namespace {
 
 using mysong::nucleo::Estado;
+using mysong::nucleo::Evento;
 using mysong::nucleo::Retracto;
 using mysong::nucleo::Tocador;
 
@@ -58,8 +59,18 @@ constexpr int VOLTAS = 1000;
 // fila ha de ter as duas faixas de partida mais uma por volta de juntada, e o
 // motor ha de ter sido bombeado uma vez por batida, nem mais nem menos.
 TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
+  // O OUVINTE entra para que o PREGÃO entre na prova. Não havendo nenhum
+  // registrado, o laço de annuncia() corre sobre vector vazio, e o caminho fica
+  // de fóra do que o sanitizador varre logo elle, que sahe com a tranca TOMADA.
+  // Conta, e mais nada: o contracto do tocador diz que ouvinte não o chama de
+  // volta, que a tranca não é reentrante. E o contador vae NÚ, sem atomico
+  // proprio, pela mesma razão dos campos do motor surdo: é a tranca que o ha de
+  // serializar, e falhando ella um punho que seja, é aqui que o sanitizador
+  // aponta.
+  unsigned long pregoes = 0;
   MotorSurdo motor;
   Tocador tocador(motor);
+  tocador.escuta([&pregoes](const Evento&) { ++pregoes; });
   tocador.junta("uma.wav");
   tocador.junta("duas.wav");
   CHECK(tocador.tocar_corrente());
@@ -97,6 +108,7 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
   CHECK(fim.tamanho == 2 + VOLTAS / 10);
   CHECK(motor.bombeadas() == static_cast<unsigned long>(VOLTAS));
   CHECK((fim.volume >= 0 && fim.volume <= 100));
+  CHECK(pregoes > 0);  // o pregão chegou: o laço não correu sobre vector vazio
 }
 
 // O barramento de verdade corre hoje no fio do relogio, que é quem drena as

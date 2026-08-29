@@ -14,10 +14,11 @@
 //
 // DOMÍNIO ......... os caminhos de faixa que vierem na linha de commando.
 // CONTRA-DOMÍNIO .. som na saída de áudio, e um socket que responde.
-// INVARIANTE ...... UMA linha de execução, e uma só. O tocador não é seguro a
-//                   threads, e o socket bate na MESMA linha que elle: ordem alguma
-//                   se intercala no meio de uma transição do nucleo, e a garantia é
-//                   estructural e não vigilancia.
+// INVARIANTE ...... UMA linha de execução, e uma só. O socket bate na MESMA linha
+//                   que o tocador: ordem alguma se intercala no meio de uma
+//                   transição do nucleo, e a garantia é estructural e não
+//                   vigilancia. Escolha d'este instrumento, e não falta do
+//                   tocador, que tem tranca propria desde a issue #50.
 // Q.E.D. .......... o que falta degrada e não aborta: sem faixa alguma, o socket
 //                   sobe e responde; sem socket, o som toca. Cada falta escreve a
 //                   sua razão no stderr, e nenhuma d'ellas cala.
@@ -126,7 +127,8 @@ int main(int argc, char** argv) {
 
   // O LAÇO. Bate os dous na MESMA linha de execução, a vinte por segundo. A cadencia
   // é parâmetro d'este laço e não constante enterrada em parte alguma: se um dia
-  // faltar, baixa-se aqui, e não se ergue thread, que exigiria mutex no tocador.
+  // faltar, baixa-se aqui, e não se ergue thread: um fio só basta a quem pulsa
+  // dous punhos, e o segundo não teria que fazer.
   const ::timespec cadencia{0, 50L * 1000L * 1000L};
   while (pedido_de_sahida == 0) {
     tocador.pulsa();
