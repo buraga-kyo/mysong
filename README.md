@@ -945,4 +945,5 @@ Você vai se acostumar, como eu
 Não tenha medo
 Conecte-se hoje mesmo!
 Está se sentindo desplugado?
-Não p
+Não precisa se preocupar
+Opiniões 
