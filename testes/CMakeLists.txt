@@ -154,3 +154,7 @@ target_sources(mysong_testes PRIVATE prova_musicbrainz.cpp)
 target_sources(mysong_testes PRIVATE prova_linha.cpp)
 # ─── A PROVA DOS AJUSTES (issue #67) ────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_ajustes.cpp)
+
+# ─── Prova do prompt em linha propria (issue #79) ───────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
+target_sources(mysong_testes PRIVATE prova_prompt.cpp)
