@@ -24,6 +24,7 @@
 #include <doctest/doctest.h>
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -71,10 +72,35 @@ class DirectorioTemporario {
   DirectorioTemporario& operator=(const DirectorioTemporario&) = delete;
 
   bool valido() const { return !caminho_.empty(); }
+  const std::string& raiz() const { return caminho_; }
   std::string dentro(const std::string& nome) const { return caminho_ + "/" + nome; }
 
  private:
   std::string caminho_;
+};
+// A GUARDA do ambiente. O caminho de fabrica sahe de $XDG_RUNTIME_DIR, e prova
+// que muta variavel de ambiente ha de a repor, senão o caso seguinte herda o que
+// este poz. Repõe tambem o caso de a variavel não existir antes, que apagar o que
+// não havia é cousa diversa de repor o que havia.
+class Ambiente {
+ public:
+  Ambiente(std::string nome, const std::string& valor) : nome_(std::move(nome)) {
+    const char* antigo = ::getenv(nome_.c_str());
+    havia_ = antigo != nullptr;
+    if (havia_) antigo_ = antigo;
+    ::setenv(nome_.c_str(), valor.c_str(), 1);
+  }
+  ~Ambiente() {
+    if (havia_) ::setenv(nome_.c_str(), antigo_.c_str(), 1);
+    else ::unsetenv(nome_.c_str());
+  }
+  Ambiente(const Ambiente&) = delete;
+  Ambiente& operator=(const Ambiente&) = delete;
+
+ private:
+  std::string nome_;
+  std::string antigo_;
+  bool havia_ = false;
 };
 // UM CLIENTE DE VERDADE, e não dublê: socket AF_UNIX, connect, send e recv. É por
 // elle que se prova o que só o transporte pode errar.
