@@ -915,4 +915,5 @@ Já não parecia mais importante
 Relaxe
 Abra esses seus olhos
 Bem abertos
-Por que essas pessoas es
+Por que essas pessoas estão me seguindo?
+Apagando mem
