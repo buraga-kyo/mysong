@@ -36,6 +36,8 @@
 
 #include <unistd.h>
 
+#include <curl/curl.h>
+
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/screen/terminal.hpp>
@@ -1024,9 +1026,23 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
   return 1;
 }
 
+// O CURL DA CASA. O libcurl ergue-se UMA vez, antes de fio algum: sem esta
+// chamada a inicialização implicita corre dentro do primeiro curl_easy_init, e
+// os dous obreiros da baixa podem chegar lá juntos. Que o curl de hoje tolere
+// isso é accidente, e não garantia. Ergue-se AQUI, e não n'um dos tres modulos
+// que o usam, porque aqui é que a Casa ergue o que é do processo inteiro; e por
+// objecto, porque main() tem quatro sahidas e esquecer uma seria vasamento.
+struct CurlDaCasa {
+  CurlDaCasa() { (void)curl_global_init(CURL_GLOBAL_DEFAULT); }
+  ~CurlDaCasa() { curl_global_cleanup(); }
+  CurlDaCasa(const CurlDaCasa&) = delete;
+  CurlDaCasa& operator=(const CurlDaCasa&) = delete;
+};
+
 }  // namespace
 
 int main(int argc, char** argv) {
+  const CurlDaCasa curl_da_casa;
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
 

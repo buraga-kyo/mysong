@@ -80,8 +80,8 @@ std::string retracto(Tocador& tocador) {
 // AS FAIXAS DA FILA, pela copia trancada do tocador. A issue #50 aposentou o
 // passeio que andava com ir_para e restaurava o assento: era mexida onde se
 // queria leitura, e mexida sem tranca com o relogio a bater n'outro fio.
-std::vector<std::string> faixas_da_fila(Tocador& tocador) {
-  return tocador.faixas();
+std::vector<std::string> faixas_da_fila(Tocador& tocador, std::size_t* indice) {
+  return tocador.faixas(indice);
 }
 
 // «nao_implementado» é nome que a Casa TEM e cujo subsystema ainda não chegou. A
@@ -138,11 +138,14 @@ std::string responde(Tocador& tocador, std::string_view linha) {
   if (verbo == "estado") return retracto(tocador);
 
   if (verbo == "fila") {
-    const std::vector<std::string> faixas = faixas_da_fila(tocador);
+    // UMA tomada da tranca (issue #63): as faixas e o assento vêm do mesmo
+    // instante. Com duas, entre ellas o mundo andava, e o indice podia apontar
+    // fóra da lista que sahiu.
+    std::size_t indice = 0;
+    const std::vector<std::string> faixas = faixas_da_fila(tocador, &indice);
     Objecto obra = abre_acerto();
     obra.par("faixas", vector_de_textos(faixas));
-    obra.par("indice",
-             inteiro(static_cast<long long>(tocador.retracto().indice)));
+    obra.par("indice", inteiro(static_cast<long long>(indice)));
     obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
     return obra.fecha();
   }
