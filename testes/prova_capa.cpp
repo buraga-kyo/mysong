@@ -194,7 +194,11 @@ TEST_CASE("com capa ao lado e na etiqueta ganha a do lado") {
 // contra uma excepção quando o operador põe um video no acervo.
 TEST_CASE("arquivo que não é mp3 não dá capa alguma nem lança") {
   const Cova cova;
-  cova.poe("video.mkv");
+  // Um `.mkv` de VERDADE, pelos quatro octetos do cabeçalho EBML, e não prosa com
+  // nome de video: foi sobre arquivo assim que a medição correu, e um arquivo de
+  // texto provaria sómente que a taglib recusa texto, que é affirmação mais fraca.
+  std::ofstream(cova.raiz() / "video.mkv", std::ios::binary)
+      << "\x1A\x45\xDF\xA3";
   cova.poe("lixo.mp3");
   std::ofstream(cova.raiz() / "vazio.mp3", std::ios::binary);
   CHECK(nu::arte_embutida(cova.raiz() / "video.mkv").empty());
