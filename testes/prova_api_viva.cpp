@@ -378,6 +378,41 @@ TEST_CASE("o socket sobe no caminho de fabrica e some quando o programa fecha") 
   CHECK(::stat(caminho.c_str(), &marca) != 0);
 }
 
+// O DITO do diagnostico nos TRES estados que o operador pode encontrar. Sem este
+// caso, a linha do --sonda seria a unica parte d'esta obra que só o olho afere.
+TEST_CASE("o dito do socket diz o caminho e quem escute n'elle") {
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+
+  SUBCASE("sem a variavel: diz que caminho nao ha e nomeia a variavel") {
+    // Vazia e ausente entram pelo mesmo galho da fabrica, e a guarda repõe.
+    const Ambiente posto("XDG_RUNTIME_DIR", "");
+    const std::string dito = mysong::api::texto_do_socket();
+    CHECK(dito.find("XDG_RUNTIME_DIR") != std::string::npos);
+    CHECK(dito.find("nao ha") != std::string::npos);
+  }
+
+  SUBCASE("com a variavel e sem servidor: diz o caminho e que ninguem escuta") {
+    const DirectorioTemporario casa;
+    REQUIRE(casa.valido());
+    const Ambiente posto("XDG_RUNTIME_DIR", casa.raiz());
+    const std::string dito = mysong::api::texto_do_socket();
+    CHECK(dito.find(casa.dentro("mysong.sock")) != std::string::npos);
+    CHECK(dito.find("ninguem escuta") != std::string::npos);
+  }
+
+  SUBCASE("com o servidor de pe: diz que ha quem escute") {
+    const DirectorioTemporario casa;
+    REQUIRE(casa.valido());
+    const Ambiente posto("XDG_RUNTIME_DIR", casa.raiz());
+    std::string razao;
+    auto servidor = Servidor::abrir(tocador, casa.dentro("mysong.sock"), &razao);
+    REQUIRE_MESSAGE(servidor.has_value(), razao);
+    CHECK(mysong::api::texto_do_socket().find("ha quem escute") !=
+          std::string::npos);
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
