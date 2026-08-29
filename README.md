@@ -893,4 +893,5 @@ Sombras de rostos esquecidos
 Sinto que já vivi exatamente este momento mil vezes
 Sombras me assombram
 Quando perdi minha sombra?
-E
+Eu existo?
+Posso te ouvir, apa
