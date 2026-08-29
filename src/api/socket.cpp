@@ -83,6 +83,15 @@ bool ha_quem_escute(const std::string& caminho) {
   return veredicto == 0;
 }
 
+// O ORÇAMENTO de uma batida, por cliente. O laço da colheita corre na linha do
+// relogio desde que a issue #69 ligou o socket ao binario, e sem tecto elle prende
+// a batida emquanto houver byte a chegar: cliente que escreva linhas inteiras mais
+// depressa do que se drenam parava a posição e congelava a tela, e o tecto da
+// LINHA não o apanha, que elle só dispara quando não ha \n. Colhe-se até aqui, e o
+// resto fica para a batida seguinte, que vem em cincoenta milesimos. Quatro linhas
+// cheias, para que mensagem alguma do tamanho maximo se parta por causa d'isto.
+constexpr std::size_t kTetoDaBatida = 4u * Servidor::kTetoDaLinha;
+
 }  // namespace
 
 std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
@@ -216,6 +225,7 @@ void Servidor::colhe(Cliente& cliente) {
   // a culpa cahiria na ferramenta. Donde se marca o fim, se drena o que chegou, se
   // responde, e só depois se fecha.
   bool fim_da_entrada = false;
+  std::size_t colhidos = 0;
   for (;;) {
     const ::ssize_t lidos = ::recv(cliente.fd, balde, sizeof(balde), 0);
     if (lidos == 0) { fim_da_entrada = true; break; }
@@ -226,6 +236,7 @@ void Servidor::colhe(Cliente& cliente) {
       return;
     }
     cliente.entrada.append(balde, static_cast<std::size_t>(lidos));
+    colhidos += static_cast<std::size_t>(lidos);
     // O teto conta a linha SEM o \n: acumulado que já tenha \n é mensagem pronta,
     // e não cliente mudo a crescer memoria.
     if (cliente.entrada.size() > kTetoDaLinha &&
@@ -237,6 +248,7 @@ void Servidor::colhe(Cliente& cliente) {
       encerra(cliente);
       return;
     }
+    if (colhidos >= kTetoDaBatida) break;  // o resto vae na batida seguinte
   }
   for (std::size_t corte; (corte = cliente.entrada.find('\n')) != std::string::npos;) {
     const std::string linha = cliente.entrada.substr(0, corte);
