@@ -926,4 +926,6 @@ Vá lá fora, respire
 Eu estava cercado por estranhos
 Não conheço essas pessoas
 Acorde!
-É 
+É hora de acordar.
+Eu sou
+Emoçõ
