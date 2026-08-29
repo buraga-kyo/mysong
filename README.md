@@ -932,4 +932,5 @@ Emoções humanas
 Isso parece vazio
 Acordando pela primeira vez
 Pare de receber comandos
-Despl
+Desplugue-se, você precisa disso
+T
