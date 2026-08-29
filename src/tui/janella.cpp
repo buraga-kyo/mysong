@@ -125,9 +125,20 @@ constexpr int ACHADOS_POR_BUSCA = 15;
 //
 // Sem isto, medido n'um pty de quarenta por cento e vinte: cento e trinta e oito KiB por
 // segundo com a fila VAZIA e nada a tocar. São sete KiB por quadro a vinte quadros por
-// segundo, a tela inteira, repintada porque o relogio bateu. Dentro de tmux é o cursor do
-// operador a piscar, porque o tmux ha de reparsear e reposicionar vinte vezes por segundo
-// para sempre.
+// segundo, a tela inteira, repintada porque o relogio bateu.
+//
+// DO PISCAR, e do que a medida achou (issue #78). Esta linha dizia, sem qualificar, que
+// «dentro de tmux é o cursor do operador a piscar»; foi-se medir, e é falso para o painel
+// que tem o foco. O FTXUI manda «ESC[?25l» na cabeça de CADA quadro, e só torna a mostrar
+// o cursor quando algum nó do documento pede foco; esta obra só o pede no caret do campo
+// de digitar. Cinco segundos de musica dão cem quadros, cem «ESC[?25l» e «ESC[?25h»
+// nenhum, e o tmux não manda escape de cursor algum ao terminal de fóra.
+//
+// O que pisca é o cursor de OUTRO painel. Tocando o mysong n'um painel e trabalhando o
+// operador n'outro, o tmux manda «cnorm» quarenta vezes por segundo ao terminal de fóra e
+// arrasta o cursor VISIVEL do painel d'elle por dous mil e quinhentos reposicionamentos em
+// cinco segundos. Aquelle cursor é do painel activo, e o mysong não é dono d'elle:
+// esconder mais o nosso não apaga o alheio. Tem issue propria.
 //
 // A posição entra em SEGUNDOS inteiros, e não em decimos: a barra e o relogio mostram
 // segundos, e a fracção mudaria a assignatura sem mudar um pixel.
