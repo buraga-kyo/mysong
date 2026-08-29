@@ -34,6 +34,26 @@ std::string rabo(const std::string& crua, std::size_t largura) {
   return crua;
 }
 
+// O CARET: a cella de UMA collunha onde o cursor do terminal pousa, na posição
+// logo a seguir ao ultimo caractere digitado. Barra QUIETA, e não a piscar: a
+// queixa que abriu a issue irmã #78 foi «o meu cursor fica piscando», e dar-lhe
+// caret que pisca seria responder á queixa com a propria queixa.
+//
+// É o UNICO nó d'esta obra que pede foco, e ha de continuar a ser: o `Render` do
+// FTXUI elege UM nó focado por quadro e cala os outros sem aviso, donde dous
+// pedidos seriam um pedido a perder-se em silencio.
+//
+// Espaço, e não cadeia vazia: o cursor pousa no `x_min` da caixa d'este nó, e nó
+// de largura zero não tem caixa que sirva de endereço. E pinta-se tambem, que o
+// terminal que não mostre cursor deixaria o campo mudo.
+//
+// Mergeada a #78, o corpo d'esta funcção passa a ser `tui::caret_do_campo()`,
+// que é a mesma cella e o mesmo decorador: a forma do cursor decide-se n'um
+// logar só, e o merge não escolhe ao acaso qual das duas versões fica.
+ftxui::Element caret(ftxui::Color fundo) {
+  return ftxui::text(" ") | ftxui::bgcolor(fundo) | ftxui::focusCursorBar;
+}
+
 }  // namespace
 
 bool aceita_letra(Modo modo) noexcept {
@@ -84,16 +104,9 @@ ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
   const tokens::Triade viva = tokens::rgb(tokens::v500);
   ftxui::Elements campo{pinta("\u258c ", tokens::v500),
                         pinta(rabo(junto, cabe), tokens::text_bright)};
-  // O CARET, na cella logo a seguir ao ultimo caractere digitado. Pinta-se E
-  // pede-se o cursor do terminal para a mesma cella: o `focusCursorBar` é o no
-  // de foco que o FTXUI lê no fim da montagem, e sem no algum o cursor vae para
-  // o canto e esconde-se. Os dous juntos porque o terminal que não mostre
-  // cursor deixaria o campo mudo, e o bloco pintado continua a dizer onde se
-  // digita. O Confirma não leva caret: n'elle não se digita, responde-se.
+  // O Confirma não leva caret: n'elle não se digita, responde-se com uma tecla.
   if (aceita_letra(modo))
-    campo.push_back(ftxui::text(" ") |
-                    ftxui::bgcolor(ftxui::Color::RGB(viva.r, viva.g, viva.b)) |
-                    ftxui::focusCursorBar);
+    campo.push_back(caret(ftxui::Color::RGB(viva.r, viva.g, viva.b)));
   campo.push_back(ftxui::filler());
   return ftxui::vbox(
       {a_trilha, ftxui::hbox(std::move(campo)) |
