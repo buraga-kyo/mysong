@@ -897,4 +897,5 @@ Eu existo?
 Posso te ouvir, apareça
 Quem é ele?
 Pessoas e pessoas
-Quando foi que eu esque
+Quando foi que eu esqueci?
+Lembrar é mais difícil do
