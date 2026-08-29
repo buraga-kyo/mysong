@@ -947,4 +947,4 @@ Conecte-se hoje mesmo!
 Está se sentindo desplugado?
 Não precisa se preocupar
 Opiniões não valem nada
-Parece que não
+Parece que não consigo encontrar uma saída 
