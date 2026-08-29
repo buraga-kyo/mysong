@@ -18,7 +18,7 @@
 //                   Erro que volta como silêncio é o que a issue proibiu com
 //                   essas palavras.
 // Q.E.D. .......... sendo funcção pura de cadeia para cadeia sobre um Tocador
-//                   que já se prova por dublê, os treze verbos provam-se em
+//                   que já se prova por dublê, os quinze verbos provam-se em
 //                   machina surda, sem abrir socket algum; e é d'ahi que sobram
 //                   cinco casos, e não trinta, para a bateria que precisa de
 //                   estado global do systema.
@@ -34,7 +34,9 @@ namespace mysong::api {
 
 // A VERSÃO do contracto. Sobe quando a mudança pode quebrar cliente que já
 // exista; o verbo «versao» a devolve, para que o outro lado a possa exigir.
-constexpr int kVersaoDoProtocolo = 1;
+// A 2 trouxe os verbos «embaralhar» e «repetir», e mais dous campos no retracto
+// do «estado» (issue #62). Nome algum dos campos velhos mudou.
+constexpr int kVersaoDoProtocolo = 2;
 
 // Uma linha entra, uma linha sahe. Cadeia vazia é «nada a responder».
 std::string responde(nucleo::Tocador& tocador, std::string_view linha);

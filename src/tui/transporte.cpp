@@ -92,6 +92,21 @@ ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
   return ftxui::hbox(std::move(partes));
 }
 
+// rotulo_dos_modos — o que a fita diz dos dous modos, e cadeia VAZIA quando os
+// dous estão desligados. ASCII curto, e não o glifo bonito: a Fita conta
+// CODEPOINTS, e os emoji de embaralhar e de repetir occupam DUAS collunhas no
+// terminal; a linha transbordaria sem que conta alguma o accusasse.
+std::string rotulo_dos_modos(const Retracto& retracto) {
+  std::string dito;
+  if (retracto.embaralhado) dito = "emb";
+  if (retracto.repeticao != nucleo::Repeticao::Nenhuma) {
+    if (!dito.empty()) dito += ' ';
+    dito += "rep ";
+    dito += nucleo::nome_da_repeticao(retracto.repeticao);
+  }
+  return dito;
+}
+
 }  // namespace
 
 // A fita dos botões e do estado. Sentido DEXTRA sómente: misturar os dous
@@ -101,7 +116,7 @@ ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
 //
 // Devolve a FITA, e não o elemento: quem compõe precisa da largura que ella pede
 // ANTES de repartir o que sobra, e a fita é quem a sabe dizer.
-Fita fita_dos_botoes(const Retracto& retracto) {
+Fita fita_dos_botoes(const Retracto& retracto, bool com_modos) {
   const bool tocando = retracto.estado == nucleo::Estado::Tocando;
   Fita fita(Sentido::Dextra);
   fita.junta({" " + std::string(tocando ? "\u23f8" : "\u25b6") + " ",
@@ -109,6 +124,12 @@ Fita fita_dos_botoes(const Retracto& retracto) {
   fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
   fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
               tokens::v900, tokens::text_bright});
+  // Os dous modos, e SÓMENTE quando ha modo ligado: fita que dissesse «emb:
+  // não» gastaria collunhas para dizer que nada ha. Com os dous desligados a
+  // fita sae egual á de sempre, byte a byte, e a prova que já existe o afere.
+  const std::string modos = com_modos ? rotulo_dos_modos(retracto) : std::string();
+  if (!modos.empty())
+    fita.junta({" " + modos + " ", tokens::v950, tokens::text_primary});
   return fita;
 }
 
@@ -136,9 +157,17 @@ ftxui::Element elemento_do_transporte(const Retracto& retracto,
   // pede vinte e uma: a linha transbordava, o FTXUI aparava o fim, e o que se
   // perdia era o espaço entre o relogio e o volume. Numero chumbado alli é o
   // defeito, e não a sua magnitude; quem sabe a largura é quem a compõe.
-  const Fita fita = fita_dos_botoes(retracto);
-  const std::size_t reservado =
+  // Os dous modos CEDEM O LOGAR quando a linha não cabe, e sahem inteiros. Foi
+  // medido: o FTXUI não apara sómente a barra, encolhe todo elemento da linha, e
+  // a trinta collunhas a fita sahia «Toc emb r». «emb r» diz menos que nada, e o
+  // que fica sem elle é a fita que o operador já conhece.
+  Fita fita = fita_dos_botoes(retracto, true);
+  std::size_t reservado =
       fita.largura_exigida() + 1 + relogio.size() + som.size();
+  if (largura <= reservado) {
+    fita = fita_dos_botoes(retracto, false);
+    reservado = fita.largura_exigida() + 1 + relogio.size() + som.size();
+  }
   const std::size_t larg_barra = largura > reservado ? largura - reservado : 1;
   const std::size_t cheias =
       enchimento(retracto.posicao, retracto.duracao, larg_barra);

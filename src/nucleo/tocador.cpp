@@ -167,6 +167,8 @@ Retracto Tocador::retracto() const {
   obra.volume = volume_;
   obra.indice = fila_.vazia() ? 0 : fila_.indice();
   obra.tamanho = fila_.tamanho();
+  obra.embaralhado = fila_.embaralhado();
+  obra.repeticao = fila_.repeticao();
   return obra;
 }
 
@@ -195,6 +197,40 @@ void Tocador::pulsa() {
   // quem já chama pulsa() ganha o relogio de guarda do espectro de graça, e não
   // ha uma segunda cadencia para alguem esquecer de bater.
   if (fonte_ != nullptr) fonte_->pulsa();
+}
+
+// ── OS DOUS MODOS (issue #62), trancados como todo o resto.
+void Tocador::embaralhar(bool ligado) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  fila_.embaralhar(ligado);
+}
+
+// Alternar de UMA tomada. Fosse o chamador a ler e depois escrever, outro fio
+// caberia no meio, e a tecla assentaria o contrario do que o operador viu.
+bool Tocador::alterna_embaralhar() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  const bool novo = !fila_.embaralhado();
+  fila_.embaralhar(novo);
+  return novo;
+}
+
+void Tocador::repetir(Repeticao modo) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  fila_.repetir(modo);
+}
+
+// O ciclo da tecla: nenhuma, uma, todas, e torna ao principio. O switch é
+// exhaustivo de proposito: valor novo no enum accende aviso aqui, e não silencio.
+Repeticao Tocador::cicla_repetir() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  Repeticao novo = Repeticao::Nenhuma;
+  switch (fila_.repeticao()) {
+    case Repeticao::Nenhuma: novo = Repeticao::Uma; break;
+    case Repeticao::Uma: novo = Repeticao::Todas; break;
+    case Repeticao::Todas: novo = Repeticao::Nenhuma; break;
+  }
+  fila_.repetir(novo);
+  return novo;
 }
 
 void Tocador::observa(FonteDeBandas& fonte) noexcept {
