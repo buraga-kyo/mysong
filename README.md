@@ -900,4 +900,8 @@ Pessoas e pessoas
 Quando foi que eu esqueci?
 Lembrar é mais difícil do que parece
 Eu posso ver!
-Son
+Sonho
+Eu me perdi
+Sono
+Fugir
+Par
