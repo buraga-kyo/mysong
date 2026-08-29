@@ -976,6 +976,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   std::thread relogio([&] {
     while (!sahir.load()) {
       tocador.pulsa();
+      // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
+      // manda, e a razão é que ordem alguma se intercale no meio de uma
+      // transição do nucleo. Batida alguma se bloqueia (o poll espera zero),
+      // donde cliente mudo não trava nem o tocador nem os outros clientes.
+      if (servidor) servidor->pulsa();
       // Colheu-se faixa nova: pede-se varredura. A bandeira do estaleiro CONSOME-SE
       // na leitura, donde isto sahe uma vez por colheita, e não a cada quadro.
       if (estaleiro.colheu()) pede_varrer.store(true);
