@@ -883,4 +883,5 @@ Tudo o que consigo ouvir é ruído
 Roncando das máquinas do homem
 
 Você se esqueceu?
-Fugindo da
+Fugindo da realidade
+Você está conectad
