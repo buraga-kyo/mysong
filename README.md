@@ -924,4 +924,6 @@ Você está imaginando coisas de novo
 Imagine-se
 Vá lá fora, respire
 Eu estava cercado por estranhos
-Não con
+Não conheço essas pessoas
+Acorde!
+É 
