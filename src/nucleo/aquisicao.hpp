@@ -11,6 +11,12 @@
 // acervo passa a estar organizado por canal de YouTube. Esta Casa não aceita
 // isso: o operador diz o artista, e o que se grava é o que elle disse.
 //
+// A MINIATURA, porem, aceita-se, e a distincção não é capricho (issue #81). O que
+// se recusa ao yt-dlp é o TEXTO da etiqueta, que elle inventa mal; a arte da capa
+// elle a colhe da propria pagina, e n'isso não ha o que inventar. Pedi-la é o unico
+// modo de a Casa ter capa alguma: sem ella, nada de arte se grava, nem em arquivo
+// nem em quadro APIC, e o painel NOW PLAYING fica com o marcador para sempre.
+//
 // DOMÍNIO ......... uma URL, e o que o operador quiser dizer sobre a faixa.
 // CONTRA-DOMÍNIO .. um arquivo de audio no logar certo, com as etiquetas certas.
 // INVARIANTE ...... nome algum vindo da rede chega ao systema de arquivos sem
@@ -155,6 +161,7 @@ std::vector<std::string> argumentos_da_sonda(const std::string& url,
 // argumentos_do_download — o que se corre para BAIXAR. `--no-overwrites` está lá
 // de proposito, e é a segunda guarda: a primeira é a checagem do destino, e ter
 // as duas quer dizer que uma corrida entre duas aquisições não perde arquivo.
+// Traz tambem a miniatura, convertida e embutida; a razão está no corpo.
 std::vector<std::string> argumentos_do_download(
     const std::string& url, const std::filesystem::path& molde,
     bool com_cookie = false);
