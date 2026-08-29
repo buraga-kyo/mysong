@@ -36,9 +36,14 @@ const std::vector<std::string>& nomes_de_capa();
 // vive junto das faixas d'elle, e ir buscá-la mais longe traria a do album vizinho.
 std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa);
 
-// arte_embutida — os OCTETOS da capa que vive DENTRO da etiqueta, no quadro APIC.
-// Vazio quando a faixa não tem etiqueta, não tem APIC, ou não é MP3 de todo: arquivo
-// que a taglib não reconheça sahe vazio, e não lança.
+// arte_embutida — os OCTETOS do PRIMEIRO quadro APIC da etiqueta. Vazio quando a
+// faixa não tem etiqueta, não tem APIC, ou não é MP3 de todo: arquivo que a taglib
+// não reconheça sahe vazio, e não lança.
+//
+// O PRIMEIRO, e não «a capa da frente»: o typo do quadro não se consulta. Para o que
+// esta Casa baixa é o mesmo, que o yt-dlp grava um APIC só; mas faixa vinda de
+// ripador traz ás vezes dous (capa e contra-capa, ou foto do artista), e ahi sahe o
+// que estiver á frente na etiqueta. Preferir o `FrontCover` é emenda de outra issue.
 //
 // Devolve os octetos, e não um caminho, de proposito (issue #81): assim a bateria
 // afere-a contra uma etiqueta lavrada á mão, sem chafa, sem rede e sem temporario

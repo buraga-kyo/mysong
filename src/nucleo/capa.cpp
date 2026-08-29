@@ -94,6 +94,8 @@ std::string arte_embutida(const std::filesystem::path& faixa) {
   // ponteiro nulo, e é por ella que a busca sahe quieta em logar de lançar.
   TagLib::MPEG::File arquivo(faixa.c_str());
   if (!arquivo.isValid() || arquivo.ID3v2Tag() == nullptr) return {};
+  // O PRIMEIRO quadro, e não o da frente: o typo não se consulta. Vindo a faixa de
+  // ripador que gravou capa E contra-capa, sahe o que estiver á frente na etiqueta.
   const auto& quadros = arquivo.ID3v2Tag()->frameListMap()["APIC"];
   if (quadros.isEmpty()) return {};
   const auto* arte =
