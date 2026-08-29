@@ -36,8 +36,9 @@ bool Tocador::ir_para(std::size_t alvo) {
 }
 
 // A copia sahe INTEIRA debaixo da chave: vista crua não atravessa a tranca.
-std::vector<std::string> Tocador::faixas() const {
+std::vector<std::string> Tocador::faixas(std::size_t* indice) const {
   std::lock_guard<std::mutex> chave(tranca_);
+  if (indice != nullptr) *indice = fila_.vazia() ? 0 : fila_.indice();
   return fila_.todas();
 }
 

@@ -121,6 +121,29 @@ TEST_CASE("fila vazia não faz o tocador mandar nada") {
   CHECK(tocador.estado() == Estado::Parado);
 }
 
+TEST_CASE("o assento sahe com as faixas, da mesma tomada") {
+  // A issue #63: o verbo «fila» do protocolo lia as faixas n'uma tomada da
+  // tranca e o indice n'outra, e entre ellas o mundo andava. Este punho devolve
+  // os dous do MESMO instante, que é o que fecha a janella.
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav", "tres.wav"})
+    tocador.junta(faixa);
+  REQUIRE(tocador.ir_para(1));
+  std::size_t assento = 99;
+  const std::vector<std::string> faixas = tocador.faixas(&assento);
+  CHECK(faixas.size() == 3);
+  CHECK(assento == 1);
+  // Sem o parametro, o punho é o de sempre: quem só quer a lista não muda.
+  CHECK(tocador.faixas().size() == 3);
+  // Fila vazia dá assento ZERO, e não o lixo que estivesse na variavel.
+  MotorDuble outro;
+  Tocador nova(outro);
+  std::size_t nada = 77;
+  CHECK(nova.faixas(&nada).empty());
+  CHECK(nada == 0);
+}
+
 TEST_CASE("as transições de estado, todas quatro") {
   MotorDuble duble;
   Tocador tocador(duble);

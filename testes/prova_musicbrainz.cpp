@@ -117,6 +117,47 @@ constexpr char kCorpoDaBusca[] =
 
 }  // namespace
 
+namespace {
+
+// O lançamento de DOUS DISCOS, na fórma que o MusicBrainz serializa: cada midia
+// vem com formato, posição e conta de faixas, e sómente a que tras a gravação
+// consultada vem com `tracks`. Aqui a faixa está no SEGUNDO disco. MODELADA
+// sobre essa fórma, e não recortada do vivo como as demais d'este arquivo.
+constexpr char kCorpoDeDousDiscos[] =
+    R"({"length":300000,"title":"Fuga","id":"aaaaaaaa-0000-4000-8000-000000000001",)"
+    R"("releases":[{"title":"Obra Completa","date":"1990-01-01",)"
+    R"("status":"Official","release-group":{"primary-type":"Album",)"
+    R"("secondary-types":[]},"media":[{"format":"CD","position":1,)"
+    R"("track-count":12},{"format":"CD","position":2,"track-count":9,)"
+    R"("tracks":[{"number":"4","position":4,"length":300000}]}]}],)"
+    R"("artist-credit":[{"name":"Bach"}]})";
+
+}  // namespace
+
+TEST_CASE("o lançamento de dous discos dá o numero da faixa, e não zero") {
+  // A issue #63: lia-se sómente a primeira midia, e a faixa que morasse na
+  // segunda dava numero zero, donde a etiqueta sahia sem numero.
+  const nu::FichaMB ficha = nu::le_ficha_da_gravacao(kCorpoDeDousDiscos);
+  CHECK(ficha.album == "Obra Completa");
+  CHECK(ficha.ano == 1990);
+  CHECK(ficha.numero == 4);
+
+  // Tres midias com a faixa na TERCEIRA: a varredura não pára na segunda.
+  std::string tres(kCorpoDeDousDiscos);
+  const std::string primeira = R"({"format":"CD","position":1,"track-count":12},)";
+  tres.replace(tres.find(primeira), primeira.size(), primeira + primeira);
+  CHECK(nu::le_ficha_da_gravacao(tres).numero == 4);
+
+  // Lançamento SEM midia nenhuma: numero zero, que é «o MB não disse», e laço
+  // algum corre. Era o comportamento de antes, e continua a ser.
+  std::string sem(kCorpoDeDousDiscos);
+  const std::size_t abre = sem.find(R"("media":[)");
+  sem.erase(abre, sem.find("}]}]") + 4 - abre);
+  const nu::FichaMB nua = nu::le_ficha_da_gravacao(sem);
+  CHECK(nua.album == "Obra Completa");
+  CHECK(nua.numero == 0);
+}
+
 TEST_CASE("a eleição da busca criva score e duração, e elege a mais antiga") {
   // A de 1987 vence: as de 1998 e 2008 passam os crivos mas são mais novas; a
   // de 1970 tem score 85, e a de 1960 está a 27 segundos do pedido. Se qualquer
@@ -205,6 +246,47 @@ TEST_CASE("a busca escapa a aspa do Lucene e apara o piso da janella no zero") {
         "https://musicbrainz.org/ws/2/recording?query=recording%3A%22Waltz%22"
         "%20AND%20dur%3A%5B0%20TO%2017000%5D&limit=8&fmt=json");
   CHECK(nu::url_da_consulta_pela_busca("Rick", "", 213000).empty());
+}
+
+TEST_CASE("o 404 e o 503 não se confundem, e o 429 vae com o segundo") {
+  // O defeito da issue #63 era o booleano: os dous davam falso, e quem chamava
+  // não sabia se o servidor não tinha a gravação ou se pedia recuo.
+  CHECK(nu::desfecho_da_resposta(0, 200) == nu::DesfechoMB::Achado);
+  CHECK(nu::desfecho_da_resposta(0, 404) == nu::DesfechoMB::Falhou);
+  CHECK(nu::desfecho_da_resposta(0, 503) == nu::DesfechoMB::Recuo);
+  CHECK(nu::desfecho_da_resposta(0, 404) != nu::desfecho_da_resposta(0, 503));
+  // O 429 pede menos trafego, como o 503; o 500 é falha do servidor, como o 404.
+  CHECK(nu::desfecho_da_resposta(0, 429) == nu::DesfechoMB::Recuo);
+  CHECK(nu::desfecho_da_resposta(0, 500) == nu::DesfechoMB::Falhou);
+  // Rede muda é falha, ainda que o estado venha em zero ou em duzentos.
+  CHECK(nu::desfecho_da_resposta(7, 0) == nu::DesfechoMB::Falhou);
+  CHECK(nu::desfecho_da_resposta(28, 200) == nu::DesfechoMB::Falhou);
+}
+
+TEST_CASE("o recuo do servidor não gasta a consulta seguinte") {
+  // A consulta de mentira REGISTRA as URLs pedidas: é por ellas que se conta o
+  // que a resolução gastou, e rede alguma se toca.
+  std::vector<std::string> pedidas;
+  nu::DesfechoMB devolve = nu::DesfechoMB::Recuo;
+  const nu::Consulta de_mentira = [&](const std::string& url, std::string*) {
+    pedidas.push_back(url);
+    return devolve;
+  };
+  nu::FichaMB ficha;
+  // 503 no caminho do link: UMA consulta, e a busca nem se tenta.
+  CHECK_FALSE(nu::resolve_gravacao("1Ojc3QD0dfJ5HG8uzLsfTg", "Rick", "Never",
+                                   213000, &ficha, de_mentira));
+  REQUIRE(pedidas.size() == 1);
+  CHECK(pedidas[0].find("/url?resource=") != std::string::npos);
+
+  // 404 no mesmo logar: DUAS, e a segunda é a da busca. É o caminho que o
+  // recuo corta, e a differença entre os dous estados vê-se na contagem.
+  pedidas.clear();
+  devolve = nu::DesfechoMB::Falhou;
+  CHECK_FALSE(nu::resolve_gravacao("1Ojc3QD0dfJ5HG8uzLsfTg", "Rick", "Never",
+                                   213000, &ficha, de_mentira));
+  REQUIRE(pedidas.size() == 2);
+  CHECK(pedidas[1].find("/recording?query=") != std::string::npos);
 }
 
 TEST_CASE("duas passagens pelo acelerador distam um segundo, de fios distinctos") {

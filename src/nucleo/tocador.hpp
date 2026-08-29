@@ -63,7 +63,11 @@ class Tocador {
   // tocar é ordem á parte, como sempre foi.
   std::size_t junta(std::string caminho);
   bool ir_para(std::size_t alvo);
-  std::vector<std::string> faixas() const;
+  // O `indice` opcional sahe da MESMA tomada da tranca que as faixas: quem
+  // lista para armar tela quer o assento do MESMO momento, e duas tomadas dão
+  // indice que pode apontar fóra da lista que sahiu. É a razão do Retracto
+  // acima, applicada á fila.
+  std::vector<std::string> faixas(std::size_t* indice = nullptr) const;
 
   // ── OS DOUS MODOS (issue #62). Alternar e ciclar são punhos PROPRIOS, e não
   // «ler de fóra e depois escrever»: entre a leitura e a escripta caberia outro
