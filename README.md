@@ -941,4 +941,5 @@ Relaxamento
 Onde você foi? O que você viu?
 Você não parece entender
 Estou faminto
-Você vai se acos
+Você vai se acostumar, como eu
+Não tenha medo
