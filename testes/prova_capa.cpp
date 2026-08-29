@@ -188,6 +188,23 @@ TEST_CASE("com capa ao lado e na etiqueta ganha a do lado") {
   CHECK(galeria.capa(faixa, 10, 5).achada);
 }
 
+// O `.mkv` do video, e todo arquivo que a taglib não leia como MP3. Medido: ella dá
+// `isValid()` verdadeiro e etiqueta NÃO nula para todos estes, que a cria a pedido;
+// o que vem vazio é a lista de quadros. Sahem quietos, e é isso que segura o pintor
+// contra uma excepção quando o operador põe um video no acervo.
+TEST_CASE("arquivo que não é mp3 não dá capa alguma nem lança") {
+  const Cova cova;
+  cova.poe("video.mkv");
+  cova.poe("lixo.mp3");
+  std::ofstream(cova.raiz() / "vazio.mp3", std::ios::binary);
+  CHECK(nu::arte_embutida(cova.raiz() / "video.mkv").empty());
+  CHECK(nu::arte_embutida(cova.raiz() / "lixo.mp3").empty());
+  CHECK(nu::arte_embutida(cova.raiz() / "vazio.mp3").empty());
+  // E o que nem existe sahe quieto tambem, que o pintor pergunta por faixa que o
+  // acervo pode ter perdido entre a varredura e o quadro.
+  CHECK(nu::arte_embutida(cova.raiz() / "nao-existe.mp3").empty());
+}
+
 TEST_CASE("album sem capa devolve a ausencia, e guarda-a") {
   const Cova cova;
   nu::Galeria galeria;
