@@ -911,4 +911,5 @@ Brilhe sobre mim
 Tomando banho de luz solar
 É estranho falar sobre si mesmo
 Medo do desconhecido
-Já não pa
+Já não parecia mais importante
+Relaxe
