@@ -916,4 +916,5 @@ Relaxe
 Abra esses seus olhos
 Bem abertos
 Por que essas pessoas estão me seguindo?
-Apagando mem
+Apagando memórias
+Criaturas no meu quarto
