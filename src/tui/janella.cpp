@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "api/mpris.hpp"
+#include "api/socket.hpp"
 
 #include "nucleo/analisador.hpp"
 #include "nucleo/capa.hpp"
@@ -339,6 +340,18 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   api::CasaDoMpris mpris(tocador);
   if (!mpris.viva())
     std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
+
+  // O SOCKET DE COMMANDO (issue #69). Ergue-se depois de o tocador estar de pé,
+  // e vive n'esta pilha: declarado ANTES dos fios, o destructor d'elle corre
+  // DEPOIS de todos se juntarem, e é elle quem fecha os clientes e desliga o
+  // arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o tocador
+  // sobe do mesmo modo, que é o padrão do MPRIS acima e do analisador da issue
+  // #5: porta que não abriu não cala musica que já toca.
+  std::string razao_do_socket;
+  std::optional<api::Servidor> servidor = api::Servidor::abrir(
+      tocador, api::caminho_padrao_do_socket(), &razao_do_socket);
+  if (!servidor)
+    std::cerr << "mysong: sem socket de commando: " << razao_do_socket << "\n";
 
   for (const std::string& faixa : faixas) tocador.junta(faixa);
   if (!faixas.empty()) tocador.tocar_corrente();
