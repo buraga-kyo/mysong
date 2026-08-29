@@ -889,4 +889,5 @@ A Jornada
 Já estive aqui antes?
 
 Vejo pessoas no canto dos meus olhos
-Sombras de ros
+Sombras de rostos esquecidos
+Sinto que já v
