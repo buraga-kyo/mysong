@@ -9,6 +9,7 @@
 #include <doctest/doctest.h>
 
 #include <cstddef>
+#include <string>
 #include <vector>
 #include "tui/prompt.hpp"
 
@@ -43,4 +44,23 @@ TEST_CASE("a novidade de fundo so assenta com o campo fechado") {
   CHECK(tui::assenta_novidade(tui::Modo::Nada));
   for (const tui::Modo modo : kTodos)
     if (modo != tui::Modo::Nada) CHECK_FALSE(tui::assenta_novidade(modo));
+}
+
+TEST_CASE("cada modo que captura tecla diz o seu rotulo") {
+  CHECK(tui::rotulo_do_prompt(tui::Modo::Busca, "") == "FILTRO:");
+  CHECK(tui::rotulo_do_prompt(tui::Modo::Url, "") == "URL:");
+  CHECK(tui::rotulo_do_prompt(tui::Modo::Procura, "YouTube") ==
+        "BUSCA NA REDE (YouTube):");
+  CHECK(tui::rotulo_do_prompt(tui::Modo::Lista, "") == "PLAYLIST DO SPOTIFY:");
+  CHECK(tui::rotulo_do_prompt(tui::Modo::NomeNovo, "") == "LISTA NOVA:");
+  CHECK(tui::rotulo_do_prompt(tui::Modo::NomeOutro, "") == "NOME:");
+  CHECK(tui::rotulo_do_prompt(tui::Modo::Confirma, "roque") ==
+        "apagar «roque»? s/n");
+  // O Nada não leva rotulo: não ha campo aberto para o carregar.
+  CHECK(tui::rotulo_do_prompt(tui::Modo::Nada, "qualquer").empty());
+  // E rotulo algum sahe vazio nos que capturam tecla: campo mudo seria o mesmo
+  // defeito por outra porta, que o operador não saberia o que se lhe pergunta.
+  for (const tui::Modo modo : kTodos)
+    if (modo != tui::Modo::Nada)
+      CHECK_FALSE(tui::rotulo_do_prompt(modo, "x").empty());
 }
