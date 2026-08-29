@@ -940,4 +940,5 @@ Pare e escute
 Relaxamento
 Onde você foi? O que você viu?
 Você não parece entender
-E
+Estou faminto
+Você vai se acos
