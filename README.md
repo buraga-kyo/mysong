@@ -943,3 +943,5 @@ Você não parece entender
 Estou faminto
 Você vai se acostumar, como eu
 Não tenha medo
+Conecte-se hoje mesmo!
+Está 
