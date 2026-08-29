@@ -336,8 +336,19 @@ std::string texto_do_socket() {
   const std::string caminho = caminho_padrao_do_socket();
   if (caminho.empty())
     return "\nSocket de commando: nao ha, que XDG_RUNTIME_DIR nao esta definido\n";
-  return "\nSocket de commando: " + caminho +
-         (ha_quem_escute(caminho) ? " (ha quem escute)\n" : " (ninguem escuta)\n");
+  // NÃO se usa aqui o ha_quem_escute: elle affirma que ha na duvida, e diagnostico
+  // que affirma o que não sondou manda o operador caçar processo que não existe.
+  int erro = 0;
+  switch (quem_escuta(caminho, &erro)) {
+    case Escuta::Ha:
+      return "\nSocket de commando: " + caminho + " (ha quem escute)\n";
+    case Escuta::Ninguem:
+      return "\nSocket de commando: " + caminho + " (ninguem escuta)\n";
+    case Escuta::NaoSeSondou:
+      break;
+  }
+  return "\nSocket de commando: " + caminho + " (nao se pudo sondar: " +
+         std::strerror(erro) + ")\n";
 }
 
 }  // namespace mysong::api
