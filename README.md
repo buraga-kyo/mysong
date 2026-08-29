@@ -389,3 +389,8 @@ ctest --test-dir build --output-on-failure
 ## Licenca
 
 MIT. Veja o arquivo LICENSE.
+
+
+## Plano artístico
+
+```text
