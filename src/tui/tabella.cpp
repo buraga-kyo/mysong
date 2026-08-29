@@ -69,6 +69,16 @@ ftxui::Element caret_do_campo() {
   return ftxui::text(" ") | ftxui::focusCursorBar;
 }
 
+ftxui::Element elemento_da_trilha(const std::string& trilha, bool digitando,
+                                  std::size_t largura) {
+  if (!digitando) return ftxui::text(trilha) | ftxui::dim;
+  // Uma collunha se guarda para o caret, e a trilha corta-se no que sobra. Sem
+  // este corte, o texto comprido levaria o caret para lá da ultima collunha.
+  const std::size_t cabe = largura > 1 ? largura - 1 : 0;
+  return ftxui::hbox(
+      {ftxui::text(cortar(trilha, cabe)) | ftxui::dim, caret_do_campo()});
+}
+
 ftxui::Element elemento_da_barra(const Navegador& navegador) {
   // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
   // faz o dedo do operador errar o alvo que já sabia de memoria.

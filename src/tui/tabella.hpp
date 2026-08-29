@@ -60,6 +60,15 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
 // não tem `frame` algum, e quem puser um ha de saber que herda esta linha.
 ftxui::Element caret_do_campo();
 
+// elemento_da_trilha — a linha do topo. Digitando-se, leva o caret no fim do
+// texto, que é a unica hora em que o cursor ha de apparecer; parada, não pede
+// foco algum, e ahi o FTXUI põe `Hidden` e o cursor some. `largura` é a que o
+// pintor tem, e a trilha corta-se em `largura - 1` collunhas para que o caret
+// caiba DENTRO da tela: caret fóra d'ella faria o FTXUI mandar deslocamento
+// negativo ao terminal do operador, que é escape mal formado.
+ftxui::Element elemento_da_trilha(const std::string& trilha, bool digitando,
+                                  std::size_t largura);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
