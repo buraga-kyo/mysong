@@ -879,4 +879,5 @@ EU sou ruído
 
 Encare-se
 Éter
-Tudo o
+Tudo o que consigo ouvir é ruído
+Ro
