@@ -35,9 +35,16 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "api/protocolo.hpp"
 #include "api/socket.hpp"
 
 namespace {
+
+// A versão sae da CONSTANTE, e não de um numero escripto aqui: prova presa ao
+// numero rompe-se toda vez que o contracto sobe, e ahi accusa a subida em vez
+// de accusar o transporte, que é o que este arquivo existe para provar.
+const std::string kVersaoDita =
+    "\"protocolo\":" + std::to_string(mysong::api::kVersaoDoProtocolo);
 
 using mysong::api::Servidor;
 using mysong::nucleo::Estado;
@@ -191,13 +198,13 @@ TEST_CASE("duas mensagens numa leitura so produzem DUAS linhas, na ordem") {
   cliente.manda("{\"verbo\":\"versao\"}\n{\"verbo\":\"estado\"}\n");
   const std::vector<std::string> linhas = cliente.colhe(*servidor, 2);
   REQUIRE(linhas.size() == 2);
-  CHECK(linhas[0].find("\"protocolo\":2") != std::string::npos);
+  CHECK(linhas[0].find(kVersaoDita) != std::string::npos);
   CHECK(linhas[1].find("\"volume\":100") != std::string::npos);
   // E a linha em branco no meio não produz resposta alguma, nem linha vazia.
   cliente.manda("\n   \n{\"verbo\":\"versao\"}\n");
   const std::vector<std::string> depois = cliente.colhe(*servidor, 1);
   REQUIRE(depois.size() == 1);
-  CHECK(depois[0].find("\"protocolo\":2") != std::string::npos);
+  CHECK(depois[0].find(kVersaoDita) != std::string::npos);
 }
 
 // O caso que só existe por causa do MSG_NOSIGNAL. Sem elle, o send em descriptor cujo

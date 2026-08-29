@@ -3,6 +3,12 @@
 > **Versão do protocolo: 2.** Este documento é CONTRACTO com quem escrever o outro
 > lado. Foi escripto para que se implemente um cliente sem perguntar nada a ninguem,
 > e todo exemplo aqui foi copiado verbatim de uma corrida de verdade.
+>
+> **O que a 2 mudou da 1**: os verbos `espectro`, `biblioteca` e `baixar` deixaram
+> de ser reservados e passaram a responder de verdade (secção 6); o codigo de erro
+> `nao_implementado` sahiu da taboada, porque verbo algum o pode produzir; e entrou
+> `indisponivel`, para a peça que existe na obra e que a instancia não ergueu.
+> Verbo algum mudou de nome, e resposta alguma perdeu campo.
 
 **O que mudou da 1 para a 2**: dous verbos NOVOS, `embaralhar` e `repetir`, e dous
 campos NOVOS no retracto do `estado`, `embaralhado` e `repetir`. Campo algum dos
@@ -80,15 +86,15 @@ protocolo suba. Não ramifique pela `razao`.
 | `json_malformado` | A linha não é um objecto JSON do subconjunto que se aceita. | A linha que se mandou. |
 | `verbo_ausente` | Falta a chave `verbo`, ou ella não é texto. | A mensagem. |
 | `verbo_desconhecido` | O `verbo` não existe neste protocolo. | O nome que se digitou. |
-| `nao_implementado` | O verbo EXISTE e está reservado; o seu subsystema ainda não chegou. Vem com a chave `issue`. | A issue que a resposta nomeia. |
+| `indisponivel` | O verbo existe e o seu subsystema tambem; ESTA instancia do servidor não o ergueu. | Quem ergueu o servidor. |
 | `argumento_invalido` | Um argumento falta, é do typo errado, ou está fóra de faixa. | A mensagem. |
-| `recusado` | O nucleo disse não a uma ordem legitima (pausar o que está parado, `proxima` na borda da fila). | O ESTADO do tocador. |
+| `recusado` | O nucleo disse não a uma ordem legitima (pausar o que está parado, `proxima` na borda da fila, `baixar` com a fila de baixa cheia). | O ESTADO do nucleo. |
 | `linha_longa` | A linha passou de 64 KiB sem terminar em `\n`. A connexão fecha-se. | O cliente. |
 | `lotado` | Ha 16 clientes ao mesmo tempo. A connexão fecha-se depois d'esta resposta. | Tente outra vez. |
 
 A differença entre `recusado` e `argumento_invalido` importa, e é d'esta taboa que
-ella se lê: `recusado` manda olhar o estado do tocador, `argumento_invalido` manda
-olhar a mensagem que se escreveu.
+ella se lê: `recusado` manda olhar o estado do nucleo (o do tocador, ou o da fila
+de baixa), `argumento_invalido` manda olhar a mensagem que se escreveu.
 
 ## 4. Os verbos de leitura
 
@@ -300,26 +306,142 @@ Resposta: `repetir` (texto), o valor que ficou. Nome fóra dos tres devolve
 > declarada e não esquecimento: arquivo de estado algum se escreve, e abrir o
 > tocador outra vez dá os dous desligados.
 
-## 6. Os verbos RESERVADOS
+## 6. Os verbos que a versão 1 reservava
 
-Estes tres nomes **existem** no protocolo e o seu subsystema **ainda não chegou**.
-Respondem sempre `nao_implementado`, com a issue que os trará:
+Na versão 1 estes tres nomes existiam e respondiam `nao_implementado`, com a issue
+que os traria; e este documento dizia que se podia codar contra elles porque,
+chegando a feição, o nome não mudaria. As tres issues fecharam. A versão 2 cumpre o
+promettido: **os nomes são os mesmos**, e quem escreveu cliente contra elles não
+muda uma letra, sómente passa a receber resposta em logar de recusa.
+
+### `espectro`
+
+As bandas correntes, e a ESCALA em que ellas estão. A escala vae junto porque quem
+lê de fóra não tem a tela para adivinhar como as bandas se espaçam nem como a
+magnitude foi comprimida: bandas sem escala são vinte e quatro numeros que não se
+sabem pintar. Sem argumento algum.
 
 ```
 → {"verbo":"espectro"}
-← {"ok":false,"erro":"nao_implementado","razao":"o verbo \"espectro\" esta reservado e o seu subsystema ainda nao existe","issue":5}
+← {"ok":true,"bandas":[0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.850,0.312,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000],"quantas":24,"escala":"logarithmica","hertz_minimo":40.000,"hertz_maximo":16000.000,"magnitude":"decibeis","piso_decibeis":-60.000}
 ```
 
-| Verbo | Para que ha de servir | Issue |
-|---|---|---|
-| `espectro` | Ler as bandas do espectro. | 5 |
-| `biblioteca` | Navegar a bibliotheca de músicas. | 8 |
-| `baixar` | Disparar um download. | 11 |
+Acima, um tom de 440 Hz a tocar: acende a banda 9, que é onde ella ha de acender,
+porque 24 * ln(440/40) / ln(16000/40) = 9,6. Em escala linear, 440 Hz cahiria na
+banda 0. A escala que a resposta declara é a que a resposta cumpre.
 
-Estão reservados de proposito, e não deixados fóra. Deixados fóra, dariam
-`verbo_desconhecido`, que é a MESMA resposta de um erro de digitação, e ahi quem
-escreve o cliente não saberia se errou o nome ou se a feição não chegou. Pode codar
-contra estes nomes hoje: quando a feição chegar, o nome não muda.
+| Campo | Typo | |
+|---|---|---|
+| `bandas` | vector de numeros | `quantas` magnitudes em [0,1], da mais grave para a mais aguda. Com nada a tocar vêm todas em zero, e a resposta é `ok`: silencio não é erro. |
+| `quantas` | inteiro | Quantas bandas ha. Vinte e quatro hoje; leia-o, e não o presuma. |
+| `escala` | texto | `"logarithmica"`: as bordas espaçam-se no logarithmo da frequencia, que é como o ouvido as separa. Linear daria vinte bandas de agudo e nenhuma de baixo. |
+| `hertz_minimo`, `hertz_maximo` | duplo | A faixa que se pinta: de 40 a 16000. |
+| `magnitude` | texto | `"decibeis"`: a magnitude vem comprimida, com 0 no piso e 1 na escala cheia. |
+| `piso_decibeis` | duplo | O piso: -60. |
+
+### `biblioteca`
+
+Navega o índice do acervo. O **`corte`** é obrigatorio, e é elle que diz o que se
+quer: tres cortes, e mais nenhum. Deduzir o corte dos argumentos que viessem seria
+mais curto de escrever e falharia em silencio, que é o que este contracto não faz:
+quem digitasse `artistaa` receberia a lista dos artistas com `ok` verdadeiro e
+nunca saberia que errou o nome.
+
+```
+→ {"verbo":"biblioteca","corte":"artistas"}
+← {"ok":true,"corte":"artistas","artistas":["Bach","Coltrane"],"tamanho":2}
+→ {"verbo":"biblioteca","corte":"albuns","artista":"Bach"}
+← {"ok":true,"corte":"albuns","artista":"Bach","albuns":["Cantatas","Suites"],"tamanho":2}
+→ {"verbo":"biblioteca","corte":"faixas","artista":"Bach","album":"Cantatas"}
+← {"ok":true,"corte":"faixas","artista":"Bach","album":"Cantatas","numeros":[1,2],"titulos":["Aria","Coro 音楽"],"caminhos":["/tmp/pa-s4-prova/acervo/Bach/Cantatas/01 - Aria.flac","/tmp/pa-s4-prova/acervo/Bach/Cantatas/02 - Coro 音楽.flac"],"duracoes":[210,187],"tamanho":2}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `corte` | texto | Obrigatorio. `"artistas"`, `"albuns"` ou `"faixas"`. Outro valor devolve `argumento_invalido` nomeando os tres. |
+| `artista` | texto | Obrigatorio em `albuns` e em `faixas`, e não pode ser vazio. Em `artistas` ignora-se. |
+| `album` | texto | Obrigatorio em `faixas`, e não pode ser vazio. |
+
+A resposta ecoa o `corte` e os argumentos que a recortaram, para que uma resposta
+lida fóra de contexto se saiba explicar. O `tamanho` é quantos itens vieram.
+
+Nas **faixas**, quatro vectores sahem PARALELOS, e não um vector de objectos: o
+JSON d'este contracto é plano de um nivel, e objecto dentro de objecto nem elle
+emitte nem elle lê de volta. Os quatro têm sempre o mesmo comprimento, e elle é o
+`tamanho`: a linha `i` dos quatro é a mesma faixa.
+
+| Campo das faixas | Typo | |
+|---|---|---|
+| `numeros` | vector de numeros | O numero da faixa no album. **Zero** quer dizer sem numero. |
+| `titulos` | vector de textos | O titulo. |
+| `caminhos` | vector de textos | O caminho no disco. É este que se passa ao `juntar`. |
+| `duracoes` | vector de numeros | Segundos. **Zero** quer dizer não medida. |
+
+Sahem em ordem de numero e, empatando, de titulo, que é a ordem que o índice dá.
+
+**Vector vazio não é erro.** Artista que não existe devolve `albuns` vazio com
+`ok` verdadeiro, e album que não existe devolve as quatro columnas vazias: no
+índice não ha artista sem album, donde não ter e não existir são a mesma cousa
+vista de fóra. E índice AUSENTE responde egual a índice vazio, que é o que a
+bibliotheca d'esta Casa já faz com banco que não existe.
+
+```
+→ {"verbo":"biblioteca","corte":"albuns","artista":"Ninguem"}
+← {"ok":true,"corte":"albuns","artista":"Ninguem","albuns":[],"tamanho":0}
+```
+
+### `baixar`
+
+Encommenda uma baixa á mesma fila que a tecla `s` da tela usa, e responde na HORA.
+**Não espera a baixa acabar**, e é de proposito: este socket responde por linha, e
+uma baixa leva minutos; esperar por ella prenderia a batida do servidor, e com
+ella o tocador, que bate na mesma linha de execução.
+
+```
+→ {"verbo":"baixar","url":"https://www.youtube.com/watch?v=aaaaaaaaaaa","artista":"Bach","album":"Cantatas","titulo":"Aria","numero":1}
+← {"ok":true,"em_curso":0,"na_espera":1,"colhidas":0,"falhadas":0,"duvidosas":0,"ultima":""}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `url` | texto | Obrigatorio, e não pode ser vazio. |
+| `artista`, `album`, `titulo` | texto | Opcionaes. O que o operador diz GANHA do que a rede disser. |
+| `numero` | inteiro | Opcional, de 0 a 9999. **Zero** quer dizer sem numero. |
+
+**Aceite não é promessa de arquivo.** O `ok` diz que a encommenda entrou na fila,
+e mais nada: yt-dlp que falte, URL que não se leia ou rede que caia apparecem
+DEPOIS, nas contas da proxima resposta. Foi o que succedeu abaixo, com a URL
+inventada do exemplo acima:
+
+```
+→ {"verbo":"baixar","url":"https://www.youtube.com/watch?v=bbbbbbbbbbb"}
+← {"ok":true,"em_curso":0,"na_espera":1,"colhidas":0,"falhadas":1,"duvidosas":0,"ultima":"o yt-dlp não leu essa URL"}
+```
+
+| Campo | Typo | |
+|---|---|---|
+| `em_curso` | inteiro | Quantas baixas correm agora. Não passa de 2, que é o limite de obreiros. |
+| `na_espera` | inteiro | Quantas esperam vez. |
+| `colhidas` | inteiro | Quantas já ficaram no disco. |
+| `falhadas` | inteiro | Quantas falharam. |
+| `duvidosas` | inteiro | Quantas pedem olho humano: não falharam, casaram mal. |
+| `ultima` | texto | A razão do ultimo desfecho. Vazia quando nada acabou ainda. |
+
+Com **64 ou mais** á espera, a fila está cheia e a encommenda devolve `recusado`
+sem pôr nada n'ella. O tecto existe porque a fila do nucleo não tem limite, e por
+este socket um cliente a encheria até a memoria acabar: é a mesma guarda que o
+tamanho da linha e o numero de clientes já têm.
+
+E ha um servidor que NÃO baixa: o que foi erguido sem acervo. Esse responde
+`indisponivel`, que é codigo novo da versão 2 e que sómente este verbo produz.
+Não é `recusado`, que manda olhar o estado do nucleo, nem `argumento_invalido`,
+que manda olhar a mensagem: mensagem alguma vae funccionar n'esse servidor, e o
+remedio é de quem o ergueu.
+
+```
+→ {"verbo":"baixar","url":"https://www.youtube.com/watch?v=ccccccccccc"}
+← {"ok":false,"erro":"indisponivel","razao":"esta instancia do servidor nao ergueu a fila de baixa"}
+```
 
 ## 7. As bordas
 
