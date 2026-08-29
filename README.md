@@ -884,4 +884,6 @@ Roncando das máquinas do homem
 
 Você se esqueceu?
 Fugindo da realidade
-Você está conectad
+Você está conectado?
+A Jornada
+Já estive aqui a
