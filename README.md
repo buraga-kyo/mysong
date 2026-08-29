@@ -904,4 +904,6 @@ Sonho
 Eu me perdi
 Sono
 Fugir
-Par
+Pare de falar
+Está alto demais
+L
