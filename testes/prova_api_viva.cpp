@@ -348,6 +348,36 @@ TEST_CASE("o caminho recusa-se por nome quando falta o XDG ou quando nao cabe") 
   CHECK(razao.find("108") != std::string::npos);
   CHECK(razao.find(std::to_string(comprido.size())) != std::string::npos);
 }
+// O CAMINHO DE FABRICA, ponta a ponta: é o que a issue #69 pede por escripto, e é
+// por onde o operador entra de verdade. Sem este caso a bateria provaria o
+// transporte n'um caminho injectado, e nunca aquelle que a janella usa.
+TEST_CASE("o socket sobe no caminho de fabrica e some quando o programa fecha") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  const Ambiente posto("XDG_RUNTIME_DIR", casa.raiz());
+  const std::string caminho = mysong::api::caminho_padrao_do_socket();
+  REQUIRE(caminho == casa.dentro("mysong.sock"));
+
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+  {
+    std::string razao;
+    auto servidor = Servidor::abrir(tocador, caminho, &razao);
+    REQUIRE_MESSAGE(servidor.has_value(), razao);
+    Cliente cliente(caminho);
+    REQUIRE(cliente.ligado());
+    cliente.manda("{\"verbo\":\"versao\"}\n");
+    const std::vector<std::string> linhas = cliente.colhe(*servidor, 1);
+    REQUIRE(linhas.size() == 1);
+    CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
+    CHECK(linhas[0].find("\"obra\":\"mysong\"") != std::string::npos);
+  }
+  // Fechado o programa, o arquivo sahe do disco: é a segunda metade do aceite, e
+  // é o que impede o orphao de envenenar a corrida seguinte.
+  struct ::stat marca {};
+  CHECK(::stat(caminho.c_str(), &marca) != 0);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
