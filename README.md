@@ -909,4 +909,5 @@ Está alto demais
 Luz bonita
 Brilhe sobre mim
 Tomando banho de luz solar
-É es
+É estranho falar sobre si mesmo
+M
