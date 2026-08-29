@@ -928,4 +928,5 @@ Não conheço essas pessoas
 Acorde!
 É hora de acordar.
 Eu sou
-Emoçõ
+Emoções humanas
+Isso parece vazio
