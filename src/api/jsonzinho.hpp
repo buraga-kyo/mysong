@@ -84,6 +84,30 @@ inline std::string duplo(double v) {
   return cifra;
 }
 
+// Os vectores de NUMERO, irmãos do de textos. Nascem porque as bandas do
+// espectro, os numeros de faixa e as durações do acervo SÃO numero: emitti-los
+// como texto obrigaria quem lê a converter de volta o que já era conta, e
+// abriria a porta a duas escriptas do mesmo valor.
+inline std::string vector_de_duplos(const std::vector<float>& itens) {
+  std::string obra = "[";
+  for (std::size_t i = 0; i < itens.size(); ++i) {
+    if (i != 0) obra += ',';
+    obra += duplo(static_cast<double>(itens[i]));
+  }
+  obra += ']';
+  return obra;
+}
+
+inline std::string vector_de_inteiros(const std::vector<long long>& itens) {
+  std::string obra = "[";
+  for (std::size_t i = 0; i < itens.size(); ++i) {
+    if (i != 0) obra += ',';
+    obra += inteiro(itens[i]);
+  }
+  obra += ']';
+  return obra;
+}
+
 inline std::string vector_de_textos(const std::vector<std::string>& itens) {
   std::string obra = "[";
   for (std::size_t i = 0; i < itens.size(); ++i) {
@@ -114,10 +138,12 @@ class Objecto {
 
 // ─── A LEITURA. Quatro typos, e não mais: é o que o contracto promette ──────
 
-// «Vector» é o vector de TEXTOS, e sómente d'elles: é o unico valor não escalar
-// que este contracto emitte (as faixas da fila), e admitti-lo na leitura é o que
-// faz a nossa propria sahida voltar a entrar. Assymetria entre o que se emitte e
-// o que se lê é armadilha para quem escrever cliente com esta mesma peça.
+// «Vector» é o vector de textos OU o de numeros, e nunca os dous no mesmo: são
+// os unicos valores não escalares que este contracto emitte (as faixas da fila,
+// as bandas do espectro, os numeros e as durações do acervo), e admitti-los na
+// leitura é o que faz a nossa propria sahida voltar a entrar. Assymetria entre o
+// que se emitte e o que se lê é armadilha para quem escrever cliente com esta
+// mesma peça, e por isso a leitura do numero entrou junto com a emissão d'elle.
 enum class Typo { Texto, Numero, Booleano, Nulo, Vector };
 
 struct Valor {
@@ -125,7 +151,8 @@ struct Valor {
   std::string texto;      // já DESESCAPADO, e em UTF-8
   double numero = 0.0;
   bool booleano = false;
-  std::vector<std::string> itens;  // sómente quando typo == Typo::Vector
+  std::vector<std::string> itens;    // sómente quando typo == Typo::Vector
+  std::vector<double> numeros;       // idem, e o vector é HOMOGENEO: ou um, ou outro
 };
 
 // A mensagem lida. Ou é valida, ou traz a RAZÃO por que não é: não há terceiro
@@ -313,14 +340,27 @@ inline bool le_valor(Leitor* leitor, Valor* fora, std::string* razao) {
     fora->typo = Typo::Vector;
     leitor->toma();  // o [ de abertura
     leitor->come_brancos();
+    // O vector é HOMOGENEO: ou de textos, ou de numeros. Mistura RECUSA-SE, e
+    // não se acolhe em silêncio: vector misto não é cousa que este contracto
+    // emitta, e acceitá-lo na leitura seria acceitar o que nós não produzimos.
+    bool primeiro = true;
     while (leitor->olha() != ']') {
-      if (!fora->itens.empty()) {
+      if (!primeiro) {
         if (leitor->toma() != ',') { *razao = "esperava-se , ou ] no vector"; return false; }
         leitor->come_brancos();
       }
-      std::string item;
-      if (!leitor->cadeia(&item, razao)) return false;
-      fora->itens.push_back(std::move(item));
+      primeiro = false;
+      if (leitor->olha() == '"') {
+        if (!fora->numeros.empty()) { *razao = "vector de texto e numero misturados"; return false; }
+        std::string item;
+        if (!leitor->cadeia(&item, razao)) return false;
+        fora->itens.push_back(std::move(item));
+      } else {
+        if (!fora->itens.empty()) { *razao = "vector de texto e numero misturados"; return false; }
+        double item = 0.0;
+        if (!leitor->numero(&item, razao)) return false;
+        fora->numeros.push_back(item);
+      }
       leitor->come_brancos();
     }
     leitor->toma();  // o ] de fecho

@@ -52,6 +52,22 @@ std::string_view estado_do_mpris(nucleo::Estado estado) {
   return "Stopped";
 }
 
+std::string_view repeticao_do_mpris(nucleo::Repeticao modo) {
+  switch (modo) {
+    case nucleo::Repeticao::Uma: return "Track";
+    case nucleo::Repeticao::Todas: return "Playlist";
+    case nucleo::Repeticao::Nenhuma: break;
+  }
+  return "None";
+}
+
+std::optional<nucleo::Repeticao> repeticao_do_nome(std::string_view nome) {
+  if (nome == "None") return nucleo::Repeticao::Nenhuma;
+  if (nome == "Track") return nucleo::Repeticao::Uma;
+  if (nome == "Playlist") return nucleo::Repeticao::Todas;
+  return std::nullopt;
+}
+
 std::string caminho_da_faixa(std::size_t indice, bool ha_faixa) {
   // O `NoTrack` da especificação, e não um caminho inventado.
   if (!ha_faixa) return "/org/mpris/MediaPlayer2/TrackList/NoTrack";

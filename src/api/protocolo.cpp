@@ -9,8 +9,8 @@
 // CONTRA-DOMÍNIO .. uma linha de JSON, sempre.
 // INVARIANTE ...... tres recusas, e tres codigos que NÃO se confundem:
 //                   «verbo_desconhecido» é nome que a Casa não tem;
-//                   «nao_implementado» é nome que a Casa TEM e cujo subsystema
-//                   ainda não chegou, e vae com a issue que o trará; e
+//                   «indisponivel» é nome que a Casa tem, com o subsystema em
+//                   pé, e que ESTA instancia do servidor não ergueu; e
 //                   «recusado» é o nucleo a dizer não a ordem legitima. Quem
 //                   depura do outro lado precisa de as distinguir, porque o
 //                   remedio de cada uma é differente.
@@ -23,11 +23,26 @@
 #include <vector>
 
 #include "api/jsonzinho.hpp"
+// Sómente pelas CONSTANTES da escala. Este cabeçalho declara o plano da fftw
+// adiante e não arrasta a fftw3 consigo, do mesmo modo que a prova da
+// mathematica já o inclue sem os directorios de inclusão d'ella.
+#include "nucleo/espectro.hpp"
+#include "nucleo/biblioteca.hpp"
+#include "nucleo/estaleiro.hpp"
 
 namespace mysong::api {
 namespace {
 
 using nucleo::Tocador;
+
+// O TECTO da fila de baixa, e a razão de elle morar AQUI. A fila do nucleo é uma
+// deque sem limite, e a tecla da tela enche-a de uma em uma, á velocidade de quem
+// digita. O socket não: um cliente encommenda mil por segundo, e a memoria cresce
+// até acabar. É a mesma guarda que este transporte já tem no tamanho da linha e
+// no numero de clientes, agora numa terceira frente. Sessenta e quatro, e não
+// dez: com dous obreiros e baixa de minutos, sessenta e quatro á espera já são
+// horas de fila, e quem pede mais que isso não está a pedir musica.
+constexpr std::size_t kTectoDaFilaDeBaixa = 64;
 
 // A moldura do ACERTO abre-se sempre por «ok», que é o que o cliente lê primeiro.
 Objecto abre_acerto() {
@@ -61,7 +76,7 @@ std::string conforme(bool foi, std::string_view ordem) {
   return foi ? feito() : recusado(ordem);
 }
 
-// O RETRACTO. Sete campos, e os sete SEMPRE, colhidos de UMA tomada da tranca
+// O RETRACTO. Nove campos, e os nove SEMPRE, colhidos de UMA tomada da tranca
 // do tocador: cliente que tenha de perguntar duas vezes para armar uma tela é
 // cliente que verá a segunda resposta não casar com a primeira, porque entre
 // as duas o mundo andou.
@@ -75,27 +90,31 @@ std::string retracto(Tocador& tocador) {
   obra.par("volume", inteiro(agora.volume));
   obra.par("indice", inteiro(static_cast<long long>(agora.indice)));
   obra.par("tamanho", inteiro(static_cast<long long>(agora.tamanho)));
+  // Os dous modos (issue #62), colhidos da MESMA tomada que os sete de cima:
+  // quem arma tela com este retracto não ha de ver modo de um momento ao lado
+  // de faixa de outro. Campo NOVO, e nome nenhum dos velhos muda: cliente
+  // escripto contra a versão 1 segue a ler o que já lia.
+  obra.par("embaralhado", booleano(agora.embaralhado));
+  obra.par("repetir", texto(nucleo::nome_da_repeticao(agora.repeticao)));
   return obra.fecha();
 }
 // AS FAIXAS DA FILA, pela copia trancada do tocador. A issue #50 aposentou o
 // passeio que andava com ir_para e restaurava o assento: era mexida onde se
 // queria leitura, e mexida sem tranca com o relogio a bater n'outro fio.
-std::vector<std::string> faixas_da_fila(Tocador& tocador) {
-  return tocador.faixas();
+std::vector<std::string> faixas_da_fila(Tocador& tocador, std::size_t* indice) {
+  return tocador.faixas(indice);
 }
 
-// «nao_implementado» é nome que a Casa TEM e cujo subsystema ainda não chegou. A
-// issue vae na resposta, para que o implementador do outro lado saiba ONDE
-// procurar quando aquillo passar a funccionar, em vez de ficar a supor se errou o
-// nome ou se a feição não veio.
-std::string reservado(std::string_view verbo, int issue) {
-  Objecto obra;
-  obra.par("ok", booleano(false));
-  obra.par("erro", texto("nao_implementado"));
-  obra.par("razao", texto("o verbo \"" + std::string(verbo) +
-                          "\" esta reservado e o seu subsystema ainda nao existe"));
-  obra.par("issue", inteiro(issue));
-  return obra.fecha();
+// «indisponivel» é a peça que EXISTE na obra e que ESTA INSTANCIA do servidor
+// não ergueu: quem abriu o socket sem índice de acervo, ou sem fila de baixa.
+// Não é «nao_implementado», que dizia «a feição não existe em parte alguma» e
+// passou a ser mentira quando as issues #5, #8 e #11 fecharam; nem é «recusado»,
+// que manda olhar o ESTADO do nucleo, quando aqui não ha estado que mudar de
+// ordem para ordem. O remedio é de quem ERGUEU o servidor, e não de quem manda a
+// ordem, e é por isso que leva codigo proprio.
+std::string indisponivel(std::string_view peca) {
+  return erro("indisponivel",
+              "esta instancia do servidor nao ergueu " + std::string(peca));
 }
 // OS ARGUMENTOS. Argumento ausente ou de typo errado é «argumento_invalido», e
 // jamais «recusado». A differença importa a quem depura do outro lado, e importa
@@ -107,6 +126,16 @@ const Valor* argumento(const Mensagem& msg, std::string_view nome, Typo typo) {
   return (achado != nullptr && achado->typo == typo) ? achado : nullptr;
 }
 
+// O argumento OPCIONAL, e a differença que importa n'elle: chave AUSENTE é caso
+// legitimo, e chave PRESENTE com o typo errado NÃO é. O argumento() de cima
+// devolve nullo nos dous casos, donde tratá-los por egual faria o pedido seguir
+// com o campo em branco e sem uma palavra, que é o silêncio que este tractado
+// prohibe pelo nome.
+bool typo_torto(const Mensagem& msg, std::string_view nome, Typo typo) {
+  return msg.acha(std::string(nome)) != nullptr &&
+         argumento(msg, nome, typo) == nullptr;
+}
+
 std::string falta(std::string_view nome, std::string_view typo) {
   return erro("argumento_invalido",
               "o argumento \"" + std::string(nome) + "\" falta ou nao e do typo " +
@@ -114,6 +143,11 @@ std::string falta(std::string_view nome, std::string_view typo) {
 }
 }  // namespace
 std::string responde(Tocador& tocador, std::string_view linha) {
+  return responde(tocador, Arredores{}, linha);
+}
+
+std::string responde(Tocador& tocador, const Arredores& arredores,
+                     std::string_view linha) {
   // Linha em branco não é pergunta e não é erro: nada se responde a ella. É o
   // UNICO caminho d'esta obra que devolve cadeia vazia, e é por isso que o
   // cliente que abra e feche sem falar não recebe erro algum.
@@ -138,14 +172,38 @@ std::string responde(Tocador& tocador, std::string_view linha) {
   if (verbo == "estado") return retracto(tocador);
 
   if (verbo == "fila") {
-    const std::vector<std::string> faixas = faixas_da_fila(tocador);
+    // UMA tomada da tranca (issue #63): as faixas e o assento vêm do mesmo
+    // instante. Com duas, entre ellas o mundo andava, e o indice podia apontar
+    // fóra da lista que sahiu.
+    std::size_t indice = 0;
+    const std::vector<std::string> faixas = faixas_da_fila(tocador, &indice);
     Objecto obra = abre_acerto();
     obra.par("faixas", vector_de_textos(faixas));
-    obra.par("indice",
-             inteiro(static_cast<long long>(tocador.retracto().indice)));
+    obra.par("indice", inteiro(static_cast<long long>(indice)));
     obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
     return obra.fecha();
   }
+  // O ESPECTRO (issue #5), pelo mesmo punho que a tela usa. Vae a ESCALA junto
+  // com as bandas, e não sómente ellas: quem lê de fóra não tem tela para
+  // adivinhar que as bordas se espaçam em logarithmo entre 40 e 16000 Hz, nem
+  // que a magnitude vem comprimida em decibeis com o piso a valer zero. Bandas
+  // sem escala são vinte e quatro numeros que o cliente não sabe pintar.
+  //
+  // Sem fonte de bandas, o tocador devolve QUANTAS_BANDAS zeros, e não erro: o
+  // silencio é resposta legitima, e a escala vae na mesma.
+  if (verbo == "espectro") {
+    const std::vector<float> bandas = tocador.bandas();
+    Objecto obra = abre_acerto();
+    obra.par("bandas", vector_de_duplos(bandas));
+    obra.par("quantas", inteiro(static_cast<long long>(bandas.size())));
+    obra.par("escala", texto("logarithmica"));
+    obra.par("hertz_minimo", duplo(nucleo::HERTZ_MINIMO));
+    obra.par("hertz_maximo", duplo(nucleo::HERTZ_MAXIMO));
+    obra.par("magnitude", texto("decibeis"));
+    obra.par("piso_decibeis", duplo(nucleo::PISO_EM_DECIBEIS));
+    return obra.fecha();
+  }
+
   if (verbo == "juntar") {
     const Valor* caminho = argumento(msg, "caminho", Typo::Texto);
     if (caminho == nullptr) return falta("caminho", "texto");
@@ -203,13 +261,158 @@ std::string responde(Tocador& tocador, std::string_view linha) {
     return obra.fecha();
   }
 
+  // ── OS DOUS MODOS (issue #62). Os nomes são os d'esta Casa, e não os do
+  // MPRIS: o documento inteiro fala «Tocando» e nunca «Playing», e mudar de
+  // lingua no meio obrigaria o cliente a saber duas taboadas. A correspondencia
+  // com o barramento mora em api/unidades.cpp, e é lá que ella se prova.
+  if (verbo == "embaralhar") {
+    const Valor* liga = argumento(msg, "ligado", Typo::Booleano);
+    if (liga == nullptr) return falta("ligado", "booleano");
+    tocador.embaralhar(liga->booleano);
+    Objecto obra = abre_acerto();
+    obra.par("embaralhado", booleano(liga->booleano));
+    return obra.fecha();
+  }
+  if (verbo == "repetir") {
+    const Valor* modo = argumento(msg, "modo", Typo::Texto);
+    if (modo == nullptr) return falta("modo", "texto");
+    nucleo::Repeticao qual = nucleo::Repeticao::Nenhuma;
+    if (modo->texto == "uma") {
+      qual = nucleo::Repeticao::Uma;
+    } else if (modo->texto == "todas") {
+      qual = nucleo::Repeticao::Todas;
+    } else if (modo->texto != "nenhuma") {
+      // Nome que não ha é a MENSAGEM errada, e não o nucleo a recusar: por isso
+      // «argumento_invalido», que manda olhar o que se escreveu.
+      return erro("argumento_invalido",
+                  "o modo de repetir e \"nenhuma\", \"uma\" ou \"todas\"");
+    }
+    tocador.repetir(qual);
+    Objecto obra = abre_acerto();
+    obra.par("repetir", texto(nucleo::nome_da_repeticao(qual)));
+    return obra.fecha();
+  }
+
   // Os RESERVADOS. Existem no contracto e ainda não no nucleo. Deixá-los fóra
   // lhes daria «verbo_desconhecido», que é a MESMA resposta de um erro de
   // digitação, e ahi o cliente não saberia se errou o nome ou se a feição não
   // chegou. Com a issue na resposta, elle sabe as duas cousas de uma vez.
-  if (verbo == "biblioteca") return reservado(verbo, 8);
-  if (verbo == "espectro")   return reservado(verbo, 5);
-  if (verbo == "baixar")     return reservado(verbo, 11);
+
+  // Os dous que faltam. O NOME existe e o subsystema tambem, donde a falta é
+  // sómente d'esta instancia, e é isso que a resposta diz.
+  // A BIBLIOTHECA (issue #8). O CORTE é obrigatorio: tres cortes, e mais nenhum.
+  // Deduzi-lo dos argumentos que viessem seria mais curto e falharia em
+  // SILENCIO, que é o que esta Casa prohibe: quem digitasse «artistaa» receberia
+  // a lista dos artistas com ok verdadeiro e nunca saberia que errou o nome.
+  // Índice ausente responde como índice VAZIO, e não como erro: é o que a
+  // Bibliotheca já faz com banco que não existe, e de fóra as duas são a mesma.
+  if (verbo == "biblioteca") {
+    const nucleo::Biblioteca* livraria = arredores.livraria;
+    const Valor* corte = argumento(msg, "corte", Typo::Texto);
+    if (corte == nullptr) return falta("corte", "texto");
+    if (corte->texto != "artistas" && corte->texto != "albuns" &&
+        corte->texto != "faixas")
+      return erro("argumento_invalido",
+                  "o corte \"" + corte->texto +
+                      "\" nao existe: ha \"artistas\", \"albuns\" e \"faixas\"");
+    if (corte->texto == "artistas") {
+      const std::vector<std::string> nomes =
+          livraria == nullptr ? std::vector<std::string>{} : livraria->artistas();
+      Objecto obra = abre_acerto();
+      obra.par("corte", texto("artistas"));
+      obra.par("artistas", vector_de_textos(nomes));
+      obra.par("tamanho", inteiro(static_cast<long long>(nomes.size())));
+      return obra.fecha();
+    }
+    const Valor* quem = argumento(msg, "artista", Typo::Texto);
+    if (quem == nullptr) return falta("artista", "texto");
+    if (quem->texto.empty())
+      return erro("argumento_invalido", "o nome do artista vem vazio");
+    if (corte->texto == "albuns") {
+      const std::vector<std::string> nomes =
+          livraria == nullptr ? std::vector<std::string>{}
+                              : livraria->albuns(quem->texto);
+      Objecto obra = abre_acerto();
+      obra.par("corte", texto("albuns"));
+      obra.par("artista", texto(quem->texto));
+      obra.par("albuns", vector_de_textos(nomes));
+      obra.par("tamanho", inteiro(static_cast<long long>(nomes.size())));
+      return obra.fecha();
+    }
+    const Valor* qual = argumento(msg, "album", Typo::Texto);
+    if (qual == nullptr) return falta("album", "texto");
+    if (qual->texto.empty())
+      return erro("argumento_invalido", "o nome do album vem vazio");
+    // Os QUATRO vectores sahem PARALELOS e do mesmo comprimento, que é o
+    // «tamanho»: objecto dentro de objecto sae do subconjunto PLANO do jsonzinho.
+    std::vector<nucleo::Faixa> achadas;
+    if (livraria != nullptr)
+      achadas = livraria->faixas_do_album(quem->texto, qual->texto);
+    std::vector<long long> numeros, duracoes;
+    std::vector<std::string> titulos, caminhos;
+    for (const nucleo::Faixa& faixa : achadas) {
+      numeros.push_back(faixa.numero);
+      duracoes.push_back(faixa.duracao);
+      titulos.push_back(faixa.titulo);
+      caminhos.push_back(faixa.caminho);
+    }
+    Objecto obra = abre_acerto();
+    obra.par("corte", texto("faixas"));
+    obra.par("artista", texto(quem->texto));
+    obra.par("album", texto(qual->texto));
+    obra.par("numeros", vector_de_inteiros(numeros));
+    obra.par("titulos", vector_de_textos(titulos));
+    obra.par("caminhos", vector_de_textos(caminhos));
+    obra.par("duracoes", vector_de_inteiros(duracoes));
+    obra.par("tamanho", inteiro(static_cast<long long>(achadas.size())));
+    return obra.fecha();
+  }
+  // A BAIXA (issue #11), pela MESMA fila que a tecla «s» da tela usa. NÃO se
+  // espera pelo desfecho: o socket responde por linha, e uma baixa leva minutos;
+  // esperar por ella prenderia a batida do servidor, e com ella o tocador, que
+  // bate na mesma linha de execução. Aceite não é promessa de arquivo, e o que
+  // acontecer depois lê-se nas contas que a proxima resposta trouxer.
+  if (verbo == "baixar") {
+    if (arredores.estaleiro == nullptr) return indisponivel("a fila de baixa");
+    const Valor* onde = argumento(msg, "url", Typo::Texto);
+    if (onde == nullptr) return falta("url", "texto");
+    if (onde->texto.empty())
+      return erro("argumento_invalido", "a url da faixa vem vazia");
+    // Os OPCIONAES: faltar é legitimo, vir com o typo torto não é. Vide typo_torto.
+    for (const char* nome : {"artista", "album", "titulo"})
+      if (typo_torto(msg, nome, Typo::Texto)) return falta(nome, "texto");
+    if (typo_torto(msg, "numero", Typo::Numero)) return falta("numero", "numero");
+    const nucleo::Andamento antes = arredores.estaleiro->andamento();
+    if (antes.na_espera >= kTectoDaFilaDeBaixa)
+      return erro("recusado", "a fila de baixa esta cheia: " +
+                                  std::to_string(antes.na_espera) +
+                                  " pedidos a espera");
+    nucleo::Pedido pedido;
+    pedido.url = onde->texto;
+    // O que o operador DIZ ganha do que a rede disser, que é a regra que o
+    // resolve() da aquisição já lavra. Campo que elle não diga fica vazio.
+    if (const Valor* v = argumento(msg, "artista", Typo::Texto))
+      pedido.artista = v->texto;
+    if (const Valor* v = argumento(msg, "album", Typo::Texto))
+      pedido.album = v->texto;
+    if (const Valor* v = argumento(msg, "titulo", Typo::Texto))
+      pedido.titulo = v->texto;
+    if (const Valor* v = argumento(msg, "numero", Typo::Numero)) {
+      if (!(v->numero >= 0.0 && v->numero <= 9999.0))
+        return erro("argumento_invalido", "o numero da faixa esta fora de faixa");
+      pedido.numero = static_cast<int>(v->numero);
+    }
+    arredores.estaleiro->encommenda(std::move(pedido));
+    const nucleo::Andamento agora = arredores.estaleiro->andamento();
+    Objecto obra = abre_acerto();
+    obra.par("em_curso", inteiro(static_cast<long long>(agora.em_curso)));
+    obra.par("na_espera", inteiro(static_cast<long long>(agora.na_espera)));
+    obra.par("colhidas", inteiro(static_cast<long long>(agora.colhidas)));
+    obra.par("falhadas", inteiro(static_cast<long long>(agora.falhadas)));
+    obra.par("duvidosas", inteiro(static_cast<long long>(agora.duvidosas)));
+    obra.par("ultima", texto(agora.ultima));
+    return obra.fecha();
+  }
 
   return erro("verbo_desconhecido",
               "esta Casa nao conhece o verbo \"" + verbo + "\"");

@@ -1,0 +1,130 @@
+.\" Pagina de manual do mysong, escripta a mao em troff. Ferramenta alguma a
+.\" gera: o CMake toca-lhe n'um logar so, que e o numero da linha do .TH.
+.TH MYSONG 1 "2026-08-28" "mysong @PROJECT_VERSION@" "Manual do operador"
+.SH NOME
+mysong \- tocador de musicas para o terminal
+.SH SYNOPSE
+.B mysong
+.RI [ opcao "]... [" faixa ]...
+.SH DESCRIPCAO
+O
+.B mysong
+e um tocador de musicas que mora na janella do terminal, gratuito e local:
+nao ha nuvem, nao ha conta e nao ha telemetria. A musica esta no disco de quem
+o corre, e a tela desenha-se com a estetica arrowline do RADICAL\-OS.
+.PP
+Ao arrancar elle SONDA os seus requisitos, e faltando a fonte com os glifos de
+seta pinta a tela das faltas, diz o que falta, e sahe sem erguer o tocador. A
+recusa e activa, e nao apenas politica.
+.SH OPCOES
+.TP
+.BR \-\-versao ", " \-\-version
+Escreve o nome e o numero, e sahe com zero. Escreve-o ainda que falte requisito
+que impeca o tocador de abrir, porque quem pergunta a versao nao esta a abrir
+o tocador.
+.TP
+.BR \-\-ajuda ", " \-\-help
+Escreve as opcoes que existem, e sahe com zero.
+.TP
+.B \-\-sonda
+Escreve o diagnostico dos requisitos, em texto puro e sem tela alguma, e sahe
+com codigo differente de zero havendo impedimento. Serve de guarda em script.
+.TP
+.B \-\-
+Encerra as opcoes: o que vier depois e caminho de faixa, ainda que principie
+por traco. Traco sozinho tambem e caminho.
+.PP
+Opcao que nao esteja nesta taboada e RECUSADA: a razao vae pelo stderr, e a
+sahida e 2. Opcao curta alguma existe, e escreve-se a longa.
+.PP
+A opcao vale em qualquer logar da linha, e nao so antes das faixas:
+.B mysong faixa.mp3 \-\-versao
+diz a versao. Apparecendo mais de uma, a recusa manda em todas; depois della
+manda a
+.BR \-\-ajuda ,
+depois a
+.BR \-\-versao ,
+e por fim o
+.BR \-\-sonda .
+.SH TECLAS
+A taboada esta inteira, e vae dividida pelo que cada grupo governa.
+.SS Transporte
+.nf
+espaco        pausa tocando, retoma pausado
+n, p          faixa seguinte, faixa anterior
+\&. e ,         busca cinco segundos no som, para deante ou para tras
++, \-          volume, por degrau de cinco
+.fi
+.SS Navegacao
+.nf
+j, k          anda na lista; as setas de cima e de baixo fazem o mesmo
+Enter         entra em artista, album ou faixa; a seta direita idem
+Escape        volta um degrau; Backspace e a seta esquerda idem
+/             filtra a lista que esta a vista, sem tocar a rede
+.fi
+.SS Acervo e rede
+.nf
+r             varre o acervo outra vez
+s             busca na rede pelo yt-dlp; Enter no achado baixa-o
+b             baixa por URL
+I             le uma playlist publica do Spotify por catalogo
+T             baixa TODAS as faixas da lista lida
+.fi
+.SS Listas
+.nf
+P             abre as listas
+c             cria lista, e pede o nome
+R             renomeia a lista
+D             apaga a lista, e pede confirmacao
+a             junta a faixa eleita a lista alvo
+t             retira o item eleito da lista
+K, J          move o item para cima, para baixo
+.fi
+.SS Tela
+.nf
+l             troca o espectro pela letra
+v             abre a faixa eleita em janella de video
+q             sahe
+.fi
+.SH ARQUIVOS
+.TP
+.I $XDG_DATA_HOME/mysong/indice.sqlite3
+O indice do acervo, refeito a cada varredura. Sem a variavel, o directorio e
+.IR ~/.local/share/mysong/ ,
+creado com modo 0700.
+.TP
+.I rol.sqlite3
+As listas do operador, ao lado do indice e NAO dentro delle: o indice e refeito
+a cada varredura, e taboa de lista la dentro sahiria com ella.
+.TP
+.I $XDG_RUNTIME_DIR/mysong.sock
+O soquete de commando. Sem a variavel, soquete algum se ergue.
+.SH AMBIENTE
+.TP
+.B MYSONG_ACERVO
+A raiz do acervo. Sem ella,
+.IR ~/Música .
+.TP
+.B MYSONG_SONDA_FORCA
+Finge a falta dos requisitos que se nomearem, por chave curta e virgula:
+.IR fonte ,
+.IR libmpv ,
+.IR yt-dlp ,
+.IR chafa .
+Serve para ver a tela das faltas sem se mexer no systema.
+.SH EXIGE INSTALLADO
+Uma fonte remendada de Nerd Font, que e onde moram os glifos de seta U+E0B0 e
+U+E0B2; um terminal de truecolor; o PipeWire; e a libmpv, que toca. Faltando a
+fonte ou a libmpv, o programa RECUSA abrir e diz o que falta.
+.PP
+O
+.BR chafa (1)
+desenha a capa do album e o
+.BR yt-dlp (1)
+busca na rede. Sem elles perde-se a feicao, e o resto toca igual.
+.SH VEJA TAMBEM
+.BR mpv (1),
+.BR yt-dlp (1),
+.BR chafa (1)
+.SH AUCTOR
+Braga Us.

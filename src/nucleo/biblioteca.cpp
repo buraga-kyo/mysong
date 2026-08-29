@@ -17,6 +17,7 @@
 
 #include <cstdio>
 #include <functional>
+#include <mutex>
 #include <utility>
 
 namespace mysong::nucleo {
@@ -161,15 +162,20 @@ Biblioteca::~Biblioteca() { sqlite3_close(punho_); }
 // um caminho que já não existe deixaria o velho aberto e a Casa a ler o inode
 // antigo sem o saber, que é justamente o defeito que esta funcção veio corrigir.
 void Biblioteca::reabre() {
+  const std::lock_guard<std::mutex> chave(tranca_);
   sqlite3_close(punho_);
   punho_ = abre_para_ler(banco_);
 }
 
-bool Biblioteca::aberta() const noexcept { return punho_ != nullptr; }
+bool Biblioteca::aberta() const noexcept {
+  const std::lock_guard<std::mutex> chave(tranca_);
+  return punho_ != nullptr;
+}
 
 // Sem corre(), e de proposito: esta funcção é noexcept, e o corre() aloca
 // vector e std::function, que podem lançar. Aqui não se aloca nada.
 int Biblioteca::versao() const noexcept {
+  const std::lock_guard<std::mutex> chave(tranca_);
   if (punho_ == nullptr) return 0;
   sqlite3_stmt* passo = nullptr;
   if (sqlite3_prepare_v2(punho_, "SELECT versao FROM esquema LIMIT 1;", -1,
@@ -182,6 +188,7 @@ int Biblioteca::versao() const noexcept {
 }
 
 std::size_t Biblioteca::total() const {
+  const std::lock_guard<std::mutex> chave(tranca_);
   std::size_t quantas = 0;
   corre(punho_, "SELECT COUNT(*) FROM faixas;", {},
         [&quantas](sqlite3_stmt* passo) {
@@ -220,6 +227,7 @@ constexpr char kColumnas[] =
 }  // namespace
 
 std::vector<std::string> Biblioteca::artistas() const {
+  const std::lock_guard<std::mutex> chave(tranca_);
   std::vector<std::string> nomes;
   corre(punho_,
         "SELECT DISTINCT artista FROM faixas ORDER BY artista;", {},
@@ -228,6 +236,7 @@ std::vector<std::string> Biblioteca::artistas() const {
 }
 
 std::vector<std::string> Biblioteca::albuns(std::string_view artista) const {
+  const std::lock_guard<std::mutex> chave(tranca_);
   std::vector<std::string> nomes;
   corre(punho_,
         "SELECT DISTINCT album FROM faixas WHERE artista = ?1"
@@ -239,6 +248,7 @@ std::vector<std::string> Biblioteca::albuns(std::string_view artista) const {
 
 std::vector<Faixa> Biblioteca::faixas_do_album(std::string_view artista,
                                                std::string_view album) const {
+  const std::lock_guard<std::mutex> chave(tranca_);
   std::vector<Faixa> faixas;
   const std::string sql = std::string("SELECT ") + kColumnas +
                           " FROM faixas WHERE artista = ?1 AND album = ?2"
@@ -251,6 +261,7 @@ std::vector<Faixa> Biblioteca::faixas_do_album(std::string_view artista,
 }
 
 std::vector<Faixa> Biblioteca::busca_faixa(std::string_view termo) const {
+  const std::lock_guard<std::mutex> chave(tranca_);
   std::vector<Faixa> faixas;
   const std::string sql = std::string("SELECT ") + kColumnas +
                           " FROM faixas WHERE titulo LIKE '%' || ?1 || '%'"
@@ -266,6 +277,7 @@ std::vector<Faixa> Biblioteca::busca_faixa(std::string_view termo) const {
 
 bool Biblioteca::acha_por_caminho(std::string_view caminho,
                                   Faixa& sahida) const {
+  const std::lock_guard<std::mutex> chave(tranca_);
   const std::string sql = std::string("SELECT ") + kColumnas +
                           " FROM faixas WHERE caminho = ?1;";
   bool achou = false;

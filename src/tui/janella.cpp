@@ -32,9 +32,10 @@
 #include <thread>
 #include <vector>
 #include <string>
-#include <string_view>
 
 #include <unistd.h>
+
+#include <curl/curl.h>
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
@@ -44,6 +45,7 @@
 #include <algorithm>
 
 #include "api/mpris.hpp"
+#include "api/socket.hpp"
 
 #include "nucleo/ajustes.hpp"
 #include "nucleo/analisador.hpp"
@@ -53,6 +55,7 @@
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
+#include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/rol.hpp"
@@ -152,6 +155,12 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += ':';
   marca += std::to_string(agora.tamanho);
   marca += ':';
+  // Os DOUS MODOS (issue #62). Sem elles aqui, teclar `z` com a musica pausada
+  // mudava o modo e a fita ficava como estava até o operador carregar n'outra
+  // tecla por acaso: é o defeito que a issue #49 já apanhou uma vez n'esta Casa.
+  marca += agora.embaralhado ? 'E' : '.';
+  marca += static_cast<char>('0' + static_cast<int>(agora.repeticao));
+  marca += ':';
   marca += agora.faixa;
   marca += ':';
   // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
@@ -194,6 +203,8 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   retracto.duracao = agora.duracao;
   retracto.volume = agora.volume;
   retracto.tamanho = agora.tamanho;
+  retracto.embaralhado = agora.embaralhado;
+  retracto.repeticao = agora.repeticao;
   if (agora.tamanho > 0) {
     retracto.indice = agora.indice;
     retracto.titulo = agora.faixa;
@@ -235,6 +246,11 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
       else tocador.volume(static_cast<int>(ordem.alvo));
       break;
     case tui::Verbo::Sahir: sahir.store(true); break;
+    // Os DOUS MODOS (issue #62). Alternar e ciclar são punhos do tocador, e não
+    // «ler o retracto e depois escrever»: entre a leitura e a escripta caberia o
+    // socket ou o barramento, e a tecla assentaria o contrario do que se viu.
+    case tui::Verbo::Embaralhar: tocador.alterna_embaralhar(); break;
+    case tui::Verbo::Repetir: tocador.cicla_repetir(); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
     // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
@@ -337,6 +353,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   if (!mpris.viva())
     std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
 
+  // O SOCKET DE COMMANDO (issue #69). Ergue-se depois de o tocador estar de pé,
+  // e vive n'esta pilha: declarado ANTES dos fios, o destructor d'elle corre
+  // DEPOIS de todos se juntarem, e é elle quem fecha os clientes e desliga o
+  // arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o tocador
+  // sobe do mesmo modo, que é o padrão do MPRIS acima e do analisador da issue
+  // #5: porta que não abriu não cala musica que já toca.
+  // O bloco desceu para depois da livraria e do estaleiro; veja abaixo.
+
   for (const std::string& faixa : faixas) tocador.junta(faixa);
   if (!faixas.empty()) tocador.tocar_corrente();
 
@@ -365,6 +389,25 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       [acervo](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
         return nucleo::baixa(acervo, pedido, ficou);
       });
+
+  // O SOCKET DE COMMANDO (issue #69), e elle assenta AQUI, e não acima, por duas
+  // razões que se somam. A primeira: os Arredores que a issue #65 lhe deu
+  // apontam a livraria e o estaleiro, e acima d'esta linha elles ainda não
+  // existem. A segunda, que é a que morde: quem empresta ha de morrer DEPOIS de
+  // quem toma emprestado, e em C++ destroe-se ao contrario de como se declara,
+  // donde o servidor declarado abaixo d'elles é o primeiro dos tres a cahir.
+  //
+  // Continua declarado ANTES dos fios, que é o que faz o destructor d'elle
+  // correr DEPOIS de todos se juntarem: é elle quem fecha os clientes e desliga
+  // o arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o
+  // tocador sobe do mesmo modo, que é o padrão do MPRIS e do analisador: porta
+  // que não abriu não cala musica que já toca.
+  std::string razao_do_socket;
+  const api::Arredores arredores{&livraria, &estaleiro};
+  std::optional<api::Servidor> servidor = api::Servidor::abrir(
+      tocador, api::caminho_padrao_do_socket(), &razao_do_socket, arredores);
+  if (!servidor)
+    std::cerr << "mysong: sem socket de commando: " << razao_do_socket << "\n";
 
 
   // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
@@ -960,6 +1003,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::thread relogio([&] {
     while (!sahir.load()) {
       tocador.pulsa();
+      // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
+      // manda, e a razão é que ordem alguma se intercale no meio de uma
+      // transição do nucleo. Batida alguma se bloqueia (o poll espera zero),
+      // donde cliente mudo não trava nem o tocador nem os outros clientes.
+      if (servidor) servidor->pulsa();
       // Colheu-se faixa nova: pede-se varredura. A bandeira do estaleiro CONSOME-SE
       // na leitura, donde isto sahe uma vez por colheita, e não a cada quadro.
       if (estaleiro.colheu()) pede_varrer.store(true);
@@ -1021,9 +1069,43 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
   return 1;
 }
 
+// O CURL DA CASA. O libcurl ergue-se UMA vez, antes de fio algum: sem esta
+// chamada a inicialização implicita corre dentro do primeiro curl_easy_init, e
+// os dous obreiros da baixa podem chegar lá juntos. Que o curl de hoje tolere
+// isso é accidente, e não garantia. Ergue-se AQUI, e não n'um dos tres modulos
+// que o usam, porque aqui é que a Casa ergue o que é do processo inteiro; e por
+// objecto, porque main() tem quatro sahidas e esquecer uma seria vasamento.
+struct CurlDaCasa {
+  CurlDaCasa() { (void)curl_global_init(CURL_GLOBAL_DEFAULT); }
+  ~CurlDaCasa() { curl_global_cleanup(); }
+  CurlDaCasa(const CurlDaCasa&) = delete;
+  CurlDaCasa& operator=(const CurlDaCasa&) = delete;
+};
+
 }  // namespace
 
 int main(int argc, char** argv) {
+  const CurlDaCasa curl_da_casa;
+  // A linha lê-se ANTES de a sonda correr. Quem pergunta a versão ou a ajuda
+  // não está a abrir o tocador, e a recusa dos requisitos não lhe cabe: é o
+  // que faz `mysong --versao` responder na machina sem a Nerd Font.
+  const nucleo::Invocacao invocacao = nucleo::ler_linha(argc, argv);
+  if (invocacao.modo == nucleo::Modo::Ajuda) {
+    std::cout << nucleo::texto_da_ajuda();
+    return 0;
+  }
+  if (invocacao.modo == nucleo::Modo::Versao) {
+    std::cout << nucleo::texto_da_versao();
+    return 0;
+  }
+  // DOUS, e não um: o codigo 1 já é o do impedimento de requisito, e dar o
+  // mesmo aqui tiraria a script alguma o meio de distinguir a falta da fonte
+  // do erro de escripta na opção.
+  if (invocacao.modo == nucleo::Modo::Recusa) {
+    std::cerr << invocacao.razao;
+    return 2;
+  }
+
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
 
@@ -1041,9 +1123,10 @@ int main(int argc, char** argv) {
   // O modo de diagnostico: texto puro, tela nenhuma, e codigo differente de
   // zero havendo impedimento, para que sirva de guarda em script. Queixa de
   // configuração NÃO muda esse codigo: arquivo velho não é requisito ausente.
-  if (argc > 1 && std::string_view(argv[1]) == "--sonda") {
-    std::cout << tui::texto_do_relatorio(relatorio)
-              << nucleo::texto_dos_ajustes(ajustes);
+  if (invocacao.modo == nucleo::Modo::Sonda) {
+    std::cout << tui::texto_do_relatorio(relatorio);
+    std::cout << api::texto_do_socket();
+    std::cout << nucleo::texto_dos_ajustes(ajustes);
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
@@ -1064,7 +1147,9 @@ int main(int argc, char** argv) {
   const std::string avisos = tui::texto_dos_avisos(relatorio);
   if (!avisos.empty()) std::cerr << avisos;
 
-  return erguer_tocador(faixas, ajustes);
+  // A fila vem da linha de commando, que ler_linha já separou das opções: é
+  // assim que uma faixa entra por `mysong caminho.mp3 outro.mp3`.
+  return erguer_tocador(invocacao.faixas, ajustes);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

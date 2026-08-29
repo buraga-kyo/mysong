@@ -150,14 +150,83 @@ cmake -B build -S .
 cmake --build build
 ```
 
+O aviso do compilador vale por ERRO nos alvos d'esta Casa: `-Wall -Wextra` sahe
+com `-Werror`, e por isso esquecer um ramo n'um `switch` novo faz a compilacao
+RECUSAR, em vez de imprimir um aviso que a rolagem come. O FTXUI e o doctest
+ficam de fora da regra, que vem por FetchContent e nao sao obra d'esta Casa.
+
+Quem topar com compilador ou versao que traga aviso inedito desliga a recusa, e
+os avisos continuam a imprimir-se:
+
+```sh
+cmake -B build -S . -DMYSONG_WERROR=OFF
+```
+
+A opcao guarda-se no cache d'aquelle directorio de build: uma vez configurado
+com `OFF`, assim fica ate se dizer `-DMYSONG_WERROR=ON` ou se deitar fora o
+`build/`.
+## Como se installa
+
+```sh
+cmake -B build -S . -DCMAKE_INSTALL_PREFIX=~/.local
+cmake --install build
+```
+
+O prefixo e o que o operador der; por omissao e `/usr/local`, que pede
+privilegio. As tres pecas vao para os logares que o padrao manda, e caminho
+algum delles esta escrito a mao: sahem todos do `GNUInstallDirs`.
+
+O prefixo vae no CONFIGURE, e nao no `--prefix` do install, e a razao e a
+entrada de menu: o `Exec` della leva o caminho ABSOLUTO do binario, porque a
+sessao graphica nao herda o `PATH` do shell de login em boa parte dos
+ambientes, e pelo nome nu a entrada nascia morta. Esse caminho fixa-se quando
+se configura. Passando `--prefix` ao install, as tres pecas cahem no logar
+pedido, mas o `Exec` continua a apontar para o prefixo do configure, e a
+entrada de menu fica a apontar para onde o binario nao esta.
+
+| Peca               | Onde cahe                                     |
+|--------------------|-----------------------------------------------|
+| o binario          | `<prefixo>/bin/mysong`                        |
+| a entrada de menu  | `<prefixo>/share/applications/mysong.desktop` |
+| a pagina de manual | `<prefixo>/share/man/man1/mysong.1`           |
+
+Installando em `~/.local`, ponha o `~/.local/bin` no `PATH` para poder chamar
+o `mysong` pelo nome no terminal; o menu nao precisa disso, que elle ja leva o
+caminho inteiro, e o manual o `man` acha por si.
+
+**Limitacao declarada**: a arvore installada nao se pode MOVER de logar. O
+`Exec` da entrada de menu e o caminho absoluto do binario, e mudando o
+directorio de logar elle passa a apontar para o vazio. Querendo outro prefixo,
+configure outra vez e installe outra vez, que e barato.
+
+Quem empacota usa o `DESTDIR` com o prefixo FINAL no configure, e e justamente
+o caso que funcciona: o `Exec` diz o prefixo final, e os arquivos pousam
+debaixo do embrulho.
+
+```sh
+cmake -B build -S . -DCMAKE_INSTALL_PREFIX=/usr
+DESTDIR=/tmp/embrulho cmake --install build
+```
+
 ## Como se roda
 
 ```sh
 ./build/mysong                          # abre com a fila vazia
 ./build/mysong faixa.mp3 outra.flac     # abre a tocar a primeira
 ./build/mysong --sonda                  # so o diagnostico, em texto
+./build/mysong --versao                 # diz o nome e o numero, e sahe
+./build/mysong --ajuda                  # diz as opcoes que existem, e sahe
+./build/mysong -- --faixa-com-traco.mp3 # o `--` encerra as opcoes
 ./build/mysong --acervo=/mnt/musica     # o acervo so d'esta corrida
 ```
+
+O `--versao` e o `--version` fazem o mesmo, e o `--ajuda` e o `--help` tambem:
+o operador escreve em portuguez e o dedo escreve em inglez. Opcao que nao
+esteja nessa taboada e RECUSADA, com a razao pelo stderr e sahida differente
+de zero; ate aqui ella era tratada como caminho de faixa. A opcao vale em
+qualquer logar da linha, e nao so antes das faixas: `mysong faixa.mp3 --versao`
+diz a versao. Apparecendo mais de uma, a recusa manda em todas; depois della
+manda a `--ajuda`, depois a `--versao`, e por fim o `--sonda`.
 
 A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
 acervo da corrida anterior, e o `r` manda varrer outra vez.
@@ -170,6 +239,8 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
+| `z` | liga e desliga o embaralhar |
+| `x` | cicla o repetir: nenhuma, uma, todas |
 | `j` / `k` ou `↑` / `↓` | anda na lista |
 | Enter ou `→` | entra (artista, album, faixa) |
 | Escape, Backspace ou `←` | volta um degrau |
@@ -243,6 +314,32 @@ ao acervo, elege-se a faixa e tecla-se `a`. Dentro da lista, `K` e `J` movem o
 item, `t` retira-o, e Enter enche a fila do nucleo com a lista TODA na ordem
 gravada, comecando na faixa eleita.
 
+### O socket de commando
+
+Com o mysong aberto ha um socket Unix em `$XDG_RUNTIME_DIR/mysong.sock`, por onde
+se governa o tocador de fora: uma linha de JSON entra, uma linha de JSON sahe.
+
+```sh
+printf '{"verbo":"estado"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+printf '{"verbo":"pausar"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+```
+
+O `-q 1` importa: sem elle o `nc` pode sahir antes de ler a resposta. O arquivo
+nasce em modo `0600` dentro do `$XDG_RUNTIME_DIR`, que e `0700`, e essa e a
+proteccao inteira: nao ha senha nem cifra. Fechado o programa, o arquivo sahe do
+disco.
+
+Sem `$XDG_RUNTIME_DIR` o socket nao sobe, e o mysong diz por que no stderr; a
+tela abre e a musica toca do mesmo jeito. Nao ha recuo a `/tmp`, que e escripta
+de todos: socket de commando la deixaria qualquer usuario da machina governar o
+tocador alheio.
+
+Havendo outro mysong ja a servir naquelle caminho, o segundo NAO lhe rouba o
+socket: corre sem elle e diz por que. `./build/mysong --sonda` diz o caminho e se
+ha quem escute nelle.
+
+Os verbos todos, a forma das respostas e os codigos de erro estao em
+[`docs/protocolo-do-socket.md`](docs/protocolo-do-socket.md).
 ## A configuracao
 
 O que se ajustava so por variavel de ambiente cabe agora n'um arquivo que o
