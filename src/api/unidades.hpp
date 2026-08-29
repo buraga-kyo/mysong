@@ -24,9 +24,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
+#include "nucleo/fila.hpp"
 #include "nucleo/motor.hpp"
 
 namespace mysong::api {
@@ -58,6 +60,17 @@ int volume_para_porcento(double volume);
 // estado_do_mpris — as cadeias que a especificação fixa, e essas exactas. Não são
 // nomes de gosto: cliente que leia «Tocando» não sabe o que fazer com ella.
 std::string_view estado_do_mpris(nucleo::Estado estado);
+
+// repeticao_do_mpris — o nome que a especificação fixa para o `LoopStatus`, e esse
+// exacto: None, Track e Playlist. Como os do estado, não são nomes de gosto; é aqui
+// que a correspondencia com os tres valores d'esta Casa fica lavrada.
+std::string_view repeticao_do_mpris(nucleo::Repeticao modo);
+
+// repeticao_do_nome — o caminho de volta, para o `Set` que chega pelo barramento.
+// Nome que a especificação não tem devolve VAZIO, e quem chama devolve erro nomeado:
+// assentar «nenhuma» por defeito faria a Casa DESLIGAR o modo em resposta a um pedido
+// que ella não entendeu, que é peior que recusar.
+std::optional<nucleo::Repeticao> repeticao_do_nome(std::string_view nome);
 
 // caminho_da_faixa — o `mpris:trackid`, que é caminho de objecto D-Bus e não cadeia
 // livre: sómente letras, digitos e sublinhado nos segmentos, e ha de principiar por

@@ -121,6 +121,29 @@ TEST_CASE("fila vazia não faz o tocador mandar nada") {
   CHECK(tocador.estado() == Estado::Parado);
 }
 
+TEST_CASE("o assento sahe com as faixas, da mesma tomada") {
+  // A issue #63: o verbo «fila» do protocolo lia as faixas n'uma tomada da
+  // tranca e o indice n'outra, e entre ellas o mundo andava. Este punho devolve
+  // os dous do MESMO instante, que é o que fecha a janella.
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav", "tres.wav"})
+    tocador.junta(faixa);
+  REQUIRE(tocador.ir_para(1));
+  std::size_t assento = 99;
+  const std::vector<std::string> faixas = tocador.faixas(&assento);
+  CHECK(faixas.size() == 3);
+  CHECK(assento == 1);
+  // Sem o parametro, o punho é o de sempre: quem só quer a lista não muda.
+  CHECK(tocador.faixas().size() == 3);
+  // Fila vazia dá assento ZERO, e não o lixo que estivesse na variavel.
+  MotorDuble outro;
+  Tocador nova(outro);
+  std::size_t nada = 77;
+  CHECK(nova.faixas(&nada).empty());
+  CHECK(nada == 0);
+}
+
 TEST_CASE("as transições de estado, todas quatro") {
   MotorDuble duble;
   Tocador tocador(duble);
@@ -258,6 +281,38 @@ TEST_CASE("ao fim natural da faixa, pregão algum sahe com retracto composto") {
   CHECK(estados == 1);
   CHECK(posicoes == 1);
   CHECK(compostos == 0);
+}
+
+// ── OS DOUS MODOS (issue #62) ────────────────────────────────────────────────
+// A tecla `x` cicla por tres valores, e é o TOCADOR que cicla: a tela sómente
+// pede o verbo. Aferir a volta inteira, e não um passo só, é o que apanha o
+// ciclo que anda mas não fecha.
+TEST_CASE("o repetir cicla por nenhuma, uma, todas e torna ao principio") {
+  using mysong::nucleo::Repeticao;
+  MotorDuble duble;
+  Tocador tocador(duble);
+  CHECK(tocador.retracto().repeticao == Repeticao::Nenhuma);
+  CHECK(tocador.cicla_repetir() == Repeticao::Uma);
+  CHECK(tocador.retracto().repeticao == Repeticao::Uma);
+  CHECK(tocador.cicla_repetir() == Repeticao::Todas);
+  CHECK(tocador.cicla_repetir() == Repeticao::Nenhuma);
+  CHECK(tocador.retracto().repeticao == Repeticao::Nenhuma);
+  // E o punho que assenta o valor directo, que é o do socket e o do barramento.
+  tocador.repetir(Repeticao::Todas);
+  CHECK(tocador.retracto().repeticao == Repeticao::Todas);
+}
+
+TEST_CASE("o embaralhar alterna, e o retracto o diz do mesmo momento") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav"}) tocador.junta(faixa);
+  CHECK_FALSE(tocador.retracto().embaralhado);
+  CHECK(tocador.alterna_embaralhar());
+  CHECK(tocador.retracto().embaralhado);
+  CHECK_FALSE(tocador.alterna_embaralhar());
+  CHECK_FALSE(tocador.retracto().embaralhado);
+  tocador.embaralhar(true);
+  CHECK(tocador.retracto().embaralhado);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

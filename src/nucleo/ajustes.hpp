@@ -1,0 +1,195 @@
+// ══════════════════════════════════════════════════════════════════════════
+//   TRACTADO DOS AJUSTES — src/nucleo/ajustes.hpp
+// ══════════════════════════════════════════════════════════════════════════
+// O que o operador ajusta n'esta obra, e de ONDE cada ajuste veio. O arquivo
+// d'elle entra aqui, e d'aqui sahe RESOLVIDO: quem consome não pergunta ao
+// ambiente, não abre arquivo e não escolhe padrão algum.
+//
+// O PROGRAMA NUNCA ESCREVE O ARQUIVO: o commentario que o operador poz lá não
+// morre n'uma reescrita nossa.
+//
+// DOMÍNIO ......... o TEXTO do arquivo, o que o ambiente diz, e o que a linha
+//                   de commando trouxe. Nunca o disco directamente.
+// CONTRA-DOMÍNIO .. os quatro ajustes, cada um com a sua ORIGEM, mais a lista
+//                   das queixas que o --sonda mostra.
+// INVARIANTE ...... valor e origem vivem no MESMO typo, donde não podem
+//                   divergir; e queixa alguma tranca a porta da obra.
+// Q.E.D. .......... a origem acompanha o valor, donde o --sonda diz de onde
+//                   veio cada ajuste, e o arquivo depura-se sem se ler codigo.
+// ══════════════════════════════════════════════════════════════════════════
+#pragma once
+
+#include <cstddef>
+#include <filesystem>
+#include <functional>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "nucleo/estaleiro.hpp"  // OBREIROS_DA_BAIXA, e por elle o Fonte
+
+namespace mysong::nucleo {
+
+// A ORIGEM de um ajuste, na ordem em que vencem: o argumento da linha de
+// commando ganha da variavel de ambiente, que ganha do arquivo, que ganha do
+// padrão da Casa. A ordem da declaração É a da precedencia.
+enum class Origem { Argumento, Ambiente, Arquivo, Padrao };
+
+// nome_da_origem — a palavra que o --sonda escreve. Vive aqui, e não na tela,
+// pela razão do nome_da_fonte: origem nova sem nome não compila.
+std::string_view nome_da_origem(Origem origem);
+
+// UM ajuste: o valor, e de onde elle veio, no mesmo typo. Em campos separados,
+// alguem poria o valor e esqueceria a origem, e o --sonda mentiria.
+template <class T>
+struct Ajuste {
+  T valor{};
+  Origem origem = Origem::Padrao;
+};
+
+// O ESTADO do arquivo. Ausente e Illegivel NÃO são o mesmo caso: ausente é o
+// caso normal e cala-se; presente que se não lê é queixa.
+enum class EstadoDoArquivo { Ausente, Lido, Illegivel };
+
+// O VOLUME de fabrica. Applica-se SEMPRE ao abrir, donde é este o numero que
+// vale, e não o do tocador: uma verdade, e não duas a divergirem com o tempo.
+inline constexpr int VOLUME_DA_CASA = 100;
+
+// O TECTO das baixas simultaneas. Oito, e não sem tecto: zero obreiro é fila
+// que nunca anda, e o tractado do estaleiro já declara que a rede é uma só;
+// numero sem tecto seria fio de systema por conta de erro de dedo.
+inline constexpr int BAIXAS_NO_MAXIMO = 8;
+
+// Os tectos do ARQUIVO, que existem para que lixo não vire relatorio infinito:
+// arquivo binario passado por engano, linha de um megabyte, queixa por byte.
+inline constexpr std::size_t LINHA_NO_MAXIMO = 4096;
+inline constexpr std::size_t ARQUIVO_NO_MAXIMO = 1024 * 1024;
+inline constexpr std::size_t QUEIXAS_NO_MAXIMO = 32;
+
+// E o tecto dos PARES, que guarda a busca da chave repetida: ella olha os pares
+// que já vieram, e sem tecto um arquivo de um megabyte denso em «k=v» daria
+// duzentos e sessenta mil pares e trinta bilhões de comparações, isto é, minutos
+// de gelo ANTES de a tela abrir. Arquivo de ajustes com mais de duzentos e
+// cincoenta e seis linhas de ajuste não é arquivo de ajustes.
+inline constexpr std::size_t PARES_NO_MAXIMO = 256;
+
+// OS AJUSTES em vigor, já resolvidos: os quatro que o operador governa, o
+// caminho do arquivo que se considerou (ainda que ausente), o estado d'elle, e
+// as queixas. O acervo nasce vazio porque o padrão d'elle depende do HOME, que
+// é do mundo e não d'este cabeçalho.
+struct Ajustes {
+  Ajuste<std::filesystem::path> acervo;
+  Ajuste<int> volume{VOLUME_DA_CASA, Origem::Padrao};
+  Ajuste<Fonte> fonte_da_busca{Fonte::YouTube, Origem::Padrao};
+  Ajuste<std::size_t> baixas_simultaneas{OBREIROS_DA_BAIXA, Origem::Padrao};
+
+  std::filesystem::path arquivo;
+  EstadoDoArquivo estado = EstadoDoArquivo::Ausente;
+  std::vector<std::string> queixas;
+  // As que o tecto deixou de fóra, contadas. Vivem FÓRA do vector para que a
+  // marca d'ellas não entre na ordenação por linha e cahia no topo da lista.
+  std::size_t queixas_de_mais = 0;
+
+  // queixa — accrescenta uma queixa, até o tecto. Passado o tecto, cala-se e
+  // deixa UMA linha a dizer quantas ficaram de fóra.
+  void queixa(std::string dito);
+};
+
+// Um PAR do arquivo: o numero da linha, a chave e o valor, já aparados. O
+// numero guarda-se porque queixa que não diz a linha é queixa que o operador
+// não sabe onde corrigir.
+struct Par {
+  std::size_t linha = 0;
+  std::string chave;
+  std::string valor;
+};
+
+// aparar e corta_commentario — as duas partidas de uma linha. Sahem do namespace
+// anonymo por serem DECLARADAS aqui, pela razão do nomeado_na_forcagem da sonda:
+// a bateria prova-as uma a uma, e não sómente por dentro do leitor.
+std::string_view aparar(std::string_view texto);
+std::string_view corta_commentario(std::string_view linha);
+
+// ler_pares — o LEITOR. Recebe o TEXTO do arquivo, e nunca um caminho: é d'isto
+// que vem a bateria provar o formato inteiro sem tocar em disco. Devolve os
+// pares na ORDEM em que vieram, e as queixas ficam nos ajustes.
+std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes);
+
+// fonte_de — a fonte da busca pelo nome que o operador escreve. Vazio quando o
+// nome não é uma das tres, e a QUEIXA fica com quem chama: a recusa e a razão
+// d'ella hão de morar n'um logar só.
+std::optional<Fonte> fonte_de(std::string_view texto);
+
+// chave_da_fonte — o INVERSO do fonte_de: a palavra tal como se escreve no
+// arquivo, e não o nome de mostrar da aquisição. O --sonda ha de dizer o que o
+// operador digitaria, para que elle possa copiar do diagnostico para o arquivo.
+std::string_view chave_da_fonte(Fonte fonte);
+
+// volume_de e baixas_de — os dous numeros. Vazio quando o texto não é inteiro
+// INTEIRAMENTE consumido, ou quando cae fóra do que a chave admitte: o volume
+// de zero a cem, e as baixas de uma até o tecto.
+std::optional<int> volume_de(std::string_view texto);
+std::optional<std::size_t> baixas_de(std::string_view texto);
+
+// Os DEGRAUS colhidos, crus, como cada um os deu. Entram todos de uma vez, e
+// não um a um, porque a precedencia ha de se resolver n'um logar só: espalhada
+// por quatro chamadas, seriam quatro regras, e nenhuma d'ellas visivel.
+struct Degraus {
+  std::optional<std::string> acervo_do_argumento;
+  std::optional<std::string> acervo_do_ambiente;
+  std::vector<Par> arquivo;
+};
+
+// O AFERIDOR do acervo: a pergunta «isto é directorio que existe?», que entra
+// por parametro e não por chamada directa, pela razão do Inquerito da sonda. É
+// ella que conserva o resolvedor puro quanto ao mundo, e que deixa a bateria
+// provar o caminho da recusa sem creçar directorio algum em disco.
+using Aferidor = std::function<bool(const std::filesystem::path&)>;
+
+// resolver — a ESCADA. Puro quanto ao mundo: não abre arquivo, não lê ambiente.
+// Escreve no MESMO vaso em que o leitor lavrou as queixas d'elle, para que a
+// lista sahia n'uma ordem só e o tecto d'ella conte a somma, e não uma parcella.
+void resolver(const Degraus& degraus,
+              const std::filesystem::path& padrao_do_acervo,
+              const Aferidor& ha_directorio, Ajustes* ajustes);
+
+// caminho_da_configuracao — `$XDG_CONFIG_HOME/mysong/mysong.conf`, e sem a
+// variavel `~/.config/mysong/mysong.conf`, pelo precedente exacto do
+// caminho_do_indice. Directorio algum se cria e arquivo algum se escreve: este
+// arquivo é do operador, e a obra sómente o lê. Sem HOME, devolve vazio, que se
+// trata como arquivo ausente.
+std::filesystem::path caminho_da_configuracao();
+
+// ler_o_arquivo — a UNICA porta de disco d'este modulo, e ella SÓ LÊ. Ausente
+// cala-se, que é o caso normal e a issue manda que seja calado; presente que se
+// não deixa ler lavra queixa, que não é o mesmo caso.
+EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
+                              std::string* texto, Ajustes* ajustes);
+
+// padrao_do_acervo — `~/Música`, o chão da escada. Vive aqui, e não na janella,
+// para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
+std::filesystem::path padrao_do_acervo();
+
+// eh_acervo — diz se o argumento é o `--acervo=<caminho>` e, sendo-o, põe o
+// caminho no destino. Devolvendo verdadeiro, o argumento NÃO é faixa. Vive
+// aqui, e não no main, por duas razões: prova-se sem se armar vector de char*,
+// e a janella fica com duas linhas em vez de um bloco de leitura de bandeira.
+bool eh_acervo(std::string_view argumento, std::optional<std::string>* acervo);
+
+// ajustes_do_systema — a MONTAGEM, e a unica funcção d'este modulo que toca o
+// mundo: lê o ambiente, abre o arquivo, e afere o directorio com o filesystem
+// de verdade. Chama-se UMA vez, no main, antes de fio algum se erguer: ler
+// ambiente com fios a correr é corrida, e os consumidores recebem cópia.
+Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento);
+
+// texto_dos_ajustes — o que o --sonda accrescenta ao relatorio dos requisitos:
+// uma linha por chave, com o valor em vigor e a ORIGEM d'elle, mais o arquivo
+// considerado e as queixas. Funcção PURA, e por isso vive aqui e não na tela,
+// pelo precedente do texto_do_andamento. Escape algum sahe d'aqui.
+std::string texto_dos_ajustes(const Ajustes& ajustes);
+
+}  // namespace mysong::nucleo
+
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════

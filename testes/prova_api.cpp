@@ -2,7 +2,7 @@
 //   TRACTADO DA PROVA DA API, BANDA PURA — testes/prova_api.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o jsonzinho e o protocolo em MACHINA SURDA: sem socket, sem barramento,
-// sem placa de som e sem arquivo em disco. É onde treze verbos e todo o
+// sem placa de som e sem arquivo em disco. É onde dezeseis verbos e todo o
 // enquadramento se provam de graça; o que de facto precisa de socket mora em
 // prova_api_viva.cpp, e são cinco casos, não trinta.
 //
@@ -23,11 +23,19 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <condition_variable>
+#include <filesystem>
+#include <mutex>
 #include <string>
+#include <system_error>
 #include <vector>
+
+#include <unistd.h>
 
 #include "api/jsonzinho.hpp"
 #include "api/protocolo.hpp"
+#include "nucleo/biblioteca.hpp"
+#include "nucleo/estaleiro.hpp"
 
 namespace {
 using mysong::api::analysa;
@@ -98,6 +106,49 @@ std::string campo(const std::string& resposta, const std::string& chave) {
   }
   return "null";
 }
+
+// Uma COVA com um índice lavrado á mão: dous artistas, dous albuns de um
+// d'elles, duas faixas n'um album, e titulo com aspa e com UTF-8, que é o que o
+// mundo tem. O banco entra por parametro, e é por isso que a prova não pode
+// tocar o índice do operador.
+class Cova {
+ public:
+  Cova() {
+    static int conta = 0;
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-api-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++conta));
+    std::error_code erro;
+    std::filesystem::create_directories(caminho_, erro);
+  }
+  ~Cova() { std::error_code erro; std::filesystem::remove_all(caminho_, erro); }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+
+  std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+
+  void semeia() const {
+    mysong::nucleo::Escriba escriba(banco());
+    const struct { const char* quem; const char* qual; const char* titulo; } acervo[] = {
+        {"Bach", "Cantatas", "Aria"},   {"Bach", "Cantatas", "Cor\"o"},
+        {"Bach", "Suites", "Prelude"},  {"Coltrane", "Blue", "音楽"}};
+    int numero = 0;
+    for (const auto& linha : acervo) {
+      mysong::nucleo::Faixa faixa;
+      faixa.artista = linha.quem;
+      faixa.album = linha.qual;
+      faixa.titulo = linha.titulo;
+      faixa.caminho = std::string("/acervo/") + linha.titulo + ".flac";
+      faixa.numero = ++numero;
+      faixa.duracao = 200 + numero;
+      escriba.grava(faixa);
+    }
+    escriba.conclui();
+  }
+
+ private:
+  std::filesystem::path caminho_;
+};
 
 std::string fala(Tocador& tocador, const std::string& linha) {
   return mysong::api::responde(tocador, linha);
@@ -175,7 +226,7 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
   MotorDuble duble;
   Tocador tocador(duble);
 
-  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "1.000");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "protocolo") == "2.000");
   CHECK(campo(fala(tocador, "{\"verbo\":\"versao\"}"), "obra") == "mysong");
 
   // Fila vazia é retracto legitimo, e não erro.
@@ -202,6 +253,34 @@ TEST_CASE("os verbos de leitura devolvem o contracto e o retracto") {
   CHECK(campo(cheio, "tamanho") == "2.000");
 }
 
+TEST_CASE("o espectro responde as bandas, e diz em que escala ellas estao") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  const std::string resposta = fala(tocador, "{\"verbo\":\"espectro\"}");
+  CHECK(campo(resposta, "ok") == "true");
+  CHECK(campo(resposta, "escala") == "logarithmica");
+  CHECK(campo(resposta, "magnitude") == "decibeis");
+  CHECK(campo(resposta, "hertz_minimo") == "40.000");
+  CHECK(campo(resposta, "hertz_maximo") == "16000.000");
+  CHECK(campo(resposta, "piso_decibeis") == "-60.000");
+  CHECK(campo(resposta, "quantas") == "24.000");
+  // As bandas voltam a ENTRAR pelo nosso proprio leitor, e é por isso que se
+  // aferem por VALOR, em vez de se procurarem por texto dentro da resposta.
+  const Mensagem lida = analysa(resposta);
+  REQUIRE(lida.valida);
+  REQUIRE(lida.acha("bandas") != nullptr);
+  REQUIRE(lida.acha("bandas")->typo == Typo::Vector);
+  const std::vector<double>& bandas = lida.acha("bandas")->numeros;
+  CHECK(bandas.size() == mysong::nucleo::QUANTAS_BANDAS);
+  // Sem fonte de bandas o tocador dá zeros, e o silencio é resposta e não erro.
+  for (const double banda : bandas) CHECK(banda == doctest::Approx(0.0));
+  CHECK(resposta.find('\n') == std::string::npos);
+}
+
+// O passeio pela fila NÃO ha de tocar faixa alguma: anda-se na Fila, e não no
+// Tocador. Andar pelo Tocador faria soar duas faixas para listar dous nomes, e é
+// defeito que a prova de resultado não pegaria e a de CHAMADA pega.
+
 // Listar a fila NÃO ha de tocar faixa alguma, nem mover o assento. A primeira
 // lavra passeava com ir_para e restaurava o assento no fim; a issue #50 aposentou
 // o passeio pela copia trancada, donde hoje não ha o que restaurar. Quem guarda
@@ -225,6 +304,103 @@ TEST_CASE("a fila lista-se sem tocar nada, e sem mexer no assento") {
   CHECK(duble.tocados.size() == tocados_antes);  // listar não mandou tocar
   CHECK(tocador.retracto().indice == 1);         // e o assento não se moveu
 }
+TEST_CASE("a bibliotheca navega os tres cortes do índice") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  const Cova cova;
+  cova.semeia();
+  const mysong::nucleo::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.aberta());
+  mysong::api::Arredores arredores;
+  arredores.livraria = &livraria;
+  const auto pergunta = [&](const std::string& linha) {
+    return mysong::api::responde(tocador, arredores, linha);
+  };
+
+  const std::string quem =
+      pergunta("{\"verbo\":\"biblioteca\",\"corte\":\"artistas\"}");
+  CHECK(campo(quem, "corte") == "artistas");
+  CHECK(campo(quem, "tamanho") == "2.000");
+  CHECK(quem.find("\"Bach\"") != std::string::npos);
+  CHECK(quem.find("\"Coltrane\"") != std::string::npos);
+
+  const std::string quaes = pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\",\"artista\":\"Bach\"}");
+  CHECK(campo(quaes, "corte") == "albuns");
+  CHECK(campo(quaes, "artista") == "Bach");
+  CHECK(campo(quaes, "tamanho") == "2.000");
+
+  const std::string faixas = pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"faixas\",\"artista\":\"Bach\","
+      "\"album\":\"Cantatas\"}");
+  CHECK(campo(faixas, "corte") == "faixas");
+  CHECK(campo(faixas, "tamanho") == "2.000");
+  // A faixa com aspa sae ESCAPADA, e a resposta continua a ser UMA linha.
+  CHECK(faixas.find("Cor\\\"o") != std::string::npos);
+  CHECK(faixas.find('\n') == std::string::npos);
+}
+
+TEST_CASE("os quatro vectores da faixa sahem paralelos") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  const Cova cova;
+  cova.semeia();
+  const mysong::nucleo::Biblioteca livraria(cova.banco());
+  mysong::api::Arredores arredores;
+  arredores.livraria = &livraria;
+  const auto pergunta = [&](const std::string& linha) {
+    return mysong::api::responde(tocador, arredores, linha);
+  };
+  const Mensagem lida = analysa(pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"faixas\",\"artista\":\"Bach\","
+      "\"album\":\"Cantatas\"}"));
+  REQUIRE(lida.valida);
+  REQUIRE(lida.acha("numeros") != nullptr);
+  // Os quatro têm SEMPRE o mesmo comprimento, e elle é o «tamanho»: a posição i
+  // dos quatro é a mesma faixa, e é n'isso que o cliente de fóra se apoia.
+  REQUIRE(lida.acha("numeros")->numeros.size() == 2);
+  CHECK(lida.acha("duracoes")->numeros.size() == 2);
+  CHECK(lida.acha("titulos")->itens.size() == 2);
+  CHECK(lida.acha("caminhos")->itens.size() == 2);
+  CHECK(lida.acha("numeros")->numeros[0] == doctest::Approx(1.0));
+  CHECK(lida.acha("caminhos")->itens[0] == "/acervo/Aria.flac");
+
+  // Artista que não existe dá vector VAZIO e ok verdadeiro: no índice não ha
+  // artista sem album, donde as duas cousas são a mesma vistas de fóra.
+  const std::string ninguem = pergunta(
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\",\"artista\":\"Ninguem\"}");
+  CHECK(campo(ninguem, "ok") == "true");
+  CHECK(campo(ninguem, "tamanho") == "0.000");
+}
+
+TEST_CASE("o corte da bibliotheca é obrigatorio, e o índice ausente é vazio") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  // SEM arredores: índice ausente responde como índice VAZIO, e não como erro.
+  const std::string vazio =
+      fala(tocador, "{\"verbo\":\"biblioteca\",\"corte\":\"artistas\"}");
+  CHECK(campo(vazio, "ok") == "true");
+  CHECK(campo(vazio, "tamanho") == "0.000");
+
+  const char* tortos[] = {
+      "{\"verbo\":\"biblioteca\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":7}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"artistaa\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"albuns\",\"artista\":\"\"}",
+      "{\"verbo\":\"biblioteca\",\"corte\":\"faixas\",\"artista\":\"Bach\"}",
+  };
+  for (const char* torto : tortos) {
+    CHECK(campo(fala(tocador, torto), "erro") == "argumento_invalido");
+    CHECK_FALSE(campo(fala(tocador, torto), "razao").empty());
+  }
+  // O corte inventado accusa o CORTE, e não o artista que elle nem chegou a
+  // pedir: mandar olhar o argumento errado é pior que não mandar olhar nada.
+  CHECK(campo(fala(tocador, "{\"verbo\":\"biblioteca\",\"corte\":\"artistaa\"}"),
+              "razao")
+            .find("corte") != std::string::npos);
+}
+
 TEST_CASE("os verbos de commando descem ao motor, e prova-se a CHAMADA") {
   MotorDuble duble;
   Tocador tocador(duble);
@@ -286,23 +462,138 @@ TEST_CASE("a ordem que o nucleo recusa volta como recusado, e nunca como ok") {
   CHECK(duble.tocados.size() == antes);
   CHECK(tocador.estado() == Estado::Tocando);
 }
+TEST_CASE("a baixa encommenda-se, e a resposta nao espera pelo desfecho") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  // A CANCELLA: a obra de mentira para n'ella, e a resposta do socket ha de
+  // voltar com a obra ainda presa. É assim que o «não espera» se afere por
+  // construcção, e não por relogio, que relogio a machina carregada perde.
+  std::mutex tranca;
+  std::condition_variable sino;
+  bool solta = false;
+  std::vector<mysong::nucleo::Pedido> encommendados;
+  mysong::nucleo::Estaleiro estaleiro(
+      1, [&](const mysong::nucleo::Pedido& pedido, std::filesystem::path*) {
+        std::unique_lock<std::mutex> chave(tranca);
+        encommendados.push_back(pedido);
+        sino.notify_all();
+        sino.wait(chave, [&solta] { return solta; });
+        return mysong::nucleo::Colheita::Colhido;
+      });
+  mysong::api::Arredores arredores;
+  arredores.estaleiro = &estaleiro;
+
+  const std::string aceite = mysong::api::responde(
+      tocador, arredores,
+      "{\"verbo\":\"baixar\",\"url\":\"https://ha.de/ser\",\"artista\":\"Bach\","
+      "\"numero\":3}");
+  CHECK(campo(aceite, "ok") == "true");
+  CHECK(campo(aceite, "colhidas") == "0.000");
+  CHECK(campo(aceite, "ultima").empty());
+  {
+    std::unique_lock<std::mutex> chave(tranca);
+    sino.wait(chave, [&] { return !encommendados.empty(); });
+    // O que o operador DISSE chega inteiro á obra, e não sómente a URL.
+    CHECK(encommendados[0].url == "https://ha.de/ser");
+    CHECK(encommendados[0].artista == "Bach");
+    CHECK(encommendados[0].numero == 3);
+    solta = true;
+  }
+  sino.notify_all();
+  estaleiro.espera_a_fila();
+}
+
+TEST_CASE("a baixa recusa a mensagem torta antes de encommendar") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  mysong::nucleo::Estaleiro estaleiro(
+      1, [](const mysong::nucleo::Pedido&, std::filesystem::path*) {
+        return mysong::nucleo::Colheita::SemFerramenta;
+      });
+  mysong::api::Arredores arredores;
+  arredores.estaleiro = &estaleiro;
+  const char* tortos[] = {
+      "{\"verbo\":\"baixar\"}",
+      "{\"verbo\":\"baixar\",\"url\":\"\"}",
+      "{\"verbo\":\"baixar\",\"url\":7}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":-1}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":1e9}",
+      // O typo TORTO no opcional. Presente e errado NÃO é o mesmo que ausente:
+      // calado, encommendaria a baixa com o campo em branco, e o operador que
+      // pediu a faixa 3 receberia faixa sem numero sem nada lhe dizer por que.
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"numero\":\"tres\"}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"artista\":7}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"album\":true}",
+      "{\"verbo\":\"baixar\",\"url\":\"https://x\",\"titulo\":[\"a\"]}",
+  };
+  for (const char* torto : tortos) {
+    const std::string resposta = mysong::api::responde(tocador, arredores, torto);
+    CHECK(campo(resposta, "erro") == "argumento_invalido");
+    CHECK_FALSE(campo(resposta, "razao").empty());
+  }
+  // E NADA se encommendou: a mensagem torta não deixa resto na fila.
+  estaleiro.espera_a_fila();
+  CHECK(estaleiro.andamento().colhidas == 0);
+  CHECK(estaleiro.andamento().falhadas == 0);
+  // E FALTAR continua legitimo: sem opcional algum, a baixa encommenda-se.
+  CHECK(campo(mysong::api::responde(
+                  tocador, arredores,
+                  "{\"verbo\":\"baixar\",\"url\":\"https://x\"}"),
+              "ok") == "true");
+}
+
+TEST_CASE("a fila de baixa cheia recusa, e nao cresce sem fim") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  std::mutex tranca;
+  std::condition_variable sino;
+  bool solta = false;
+  mysong::nucleo::Estaleiro estaleiro(
+      1, [&](const mysong::nucleo::Pedido&, std::filesystem::path*) {
+        std::unique_lock<std::mutex> chave(tranca);
+        sino.wait(chave, [&solta] { return solta; });
+        return mysong::nucleo::Colheita::Colhido;
+      });
+  mysong::api::Arredores arredores;
+  arredores.estaleiro = &estaleiro;
+  // Oitenta encommendas com a obra presa: passa do tecto de sessenta e quatro
+  // com folga, donde a ultima é recusa CERTA, e não sorteada pelo escalonador.
+  std::string ultima;
+  for (int i = 0; i < 80; ++i)
+    ultima = mysong::api::responde(
+        tocador, arredores, "{\"verbo\":\"baixar\",\"url\":\"https://x\"}");
+  CHECK(campo(ultima, "erro") == "recusado");
+  CHECK_FALSE(campo(ultima, "razao").empty());
+  CHECK(estaleiro.andamento().na_espera <= 64);
+  {
+    std::lock_guard<std::mutex> chave(tranca);
+    solta = true;
+  }
+  sino.notify_all();
+}
+
 // A prova de que verbo algum sae MUDO, e de que as quatro recusas se distinguem.
 // Distinguir importa porque o remedio de cada uma é differente: «recusado» manda
 // olhar o estado do tocador, «argumento_invalido» manda olhar a mensagem,
-// «nao_implementado» manda olhar a issue, e «verbo_desconhecido» manda olhar o
-// nome que se escreveu.
+// «indisponivel» manda olhar quem ergueu o servidor, e «verbo_desconhecido»
+// manda olhar o nome que se escreveu.
 TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
   MotorDuble duble;
   Tocador tocador(duble);
 
-  const struct { const char* verbo; const char* issue; } reservados[] = {
-      {"biblioteca", "8.000"}, {"espectro", "5.000"}, {"baixar", "11.000"}};
-  for (const auto& caso : reservados) {
-    const std::string resposta =
-        fala(tocador, std::string("{\"verbo\":\"") + caso.verbo + "\"}");
-    CHECK(campo(resposta, "erro") == "nao_implementado");
-    CHECK(campo(resposta, "issue") == caso.issue);
-  }
+  // Os tres nomes que a issue #65 honrou. Nenhum d'elles responde mais
+  // «nao_implementado», e o emissor já nem sabe escrever essa palavra. Sem
+  // arredores: o espectro responde as suas bandas, que o tocador as dá em zero
+  // sem fonte; a bibliotheca responde como índice vazio; e a baixa, que não tem
+  // como fingir fila, diz «indisponivel», que manda olhar quem ergueu o
+  // servidor. Tres respostas differentes, e nenhuma d'ellas silencio.
+  CHECK(campo(fala(tocador, "{\"verbo\":\"espectro\"}"), "ok") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"biblioteca\",\"corte\":\"artistas\"}"),
+              "ok") == "true");
+  const std::string sem_fila =
+      fala(tocador, "{\"verbo\":\"baixar\",\"url\":\"https://ha.de/ser\"}");
+  CHECK(campo(sem_fila, "erro") == "indisponivel");
+  CHECK_FALSE(campo(sem_fila, "razao").empty());
 
   CHECK(campo(fala(tocador, "{\"verbo\":\"voar\"}"), "erro") == "verbo_desconhecido");
   CHECK(campo(fala(tocador, "{\"nada\":1}"), "erro") == "verbo_ausente");
@@ -317,6 +608,12 @@ TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
       "{\"verbo\":\"ir_para\",\"indice\":-1}",
       "{\"verbo\":\"ir_para\",\"indice\":1e30}",
       "{\"verbo\":\"buscar\"}",
+      // Os dous modos (issue #62): argumento que falta, argumento de typo
+      // errado, e nome de modo que não ha. Os tres são a MENSAGEM errada.
+      "{\"verbo\":\"embaralhar\"}",
+      "{\"verbo\":\"embaralhar\",\"ligado\":1}",
+      "{\"verbo\":\"repetir\"}",
+      "{\"verbo\":\"repetir\",\"modo\":\"sempre\"}",
   };
   for (const char* torto : tortos)
     CHECK(campo(fala(tocador, torto), "erro") == "argumento_invalido");
@@ -328,6 +625,37 @@ TEST_CASE("verbo algum sae mudo, e as quatro recusas nao se confundem") {
   CHECK(fala(tocador, "{\"verbo\":\"estado\"}").find('\n') == std::string::npos);
   CHECK(fala(tocador, "{\"verbo\":\"voar\"}").find('\n') == std::string::npos);
 }
+// Os DOUS MODOS pelo socket (issue #62). O retracto é o que o cliente lê para
+// armar tela, e por isso os dous campos se aferem d'elle, e não sómente da
+// resposta do verbo que os assentou.
+TEST_CASE("os dous modos assentam-se pelo socket, e sahem no retracto") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  for (const char* faixa : {"uma.wav", "duas.wav", "tres.wav"})
+    fala(tocador, "{\"verbo\":\"juntar\",\"caminho\":" + mysong::api::texto(faixa) + "}");
+
+  // O retracto nasce com os dous desligados: é o que o programa recem-aberto vê.
+  const std::string cru = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(cru, "embaralhado") == "false");
+  CHECK(campo(cru, "repetir") == "nenhuma");
+
+  CHECK(campo(fala(tocador, "{\"verbo\":\"embaralhar\",\"ligado\":true}"),
+              "embaralhado") == "true");
+  CHECK(campo(fala(tocador, "{\"verbo\":\"repetir\",\"modo\":\"todas\"}"),
+              "repetir") == "todas");
+  const std::string posto = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(posto, "embaralhado") == "true");
+  CHECK(campo(posto, "repetir") == "todas");
+  CHECK(posto.find('\n') == std::string::npos);  // UMA linha, como as outras
+
+  // E desligar volta os dous, que modo que não se desliga não é modo.
+  fala(tocador, "{\"verbo\":\"embaralhar\",\"ligado\":false}");
+  fala(tocador, "{\"verbo\":\"repetir\",\"modo\":\"nenhuma\"}");
+  const std::string quieto = fala(tocador, "{\"verbo\":\"estado\"}");
+  CHECK(campo(quieto, "embaralhado") == "false");
+  CHECK(campo(quieto, "repetir") == "nenhuma");
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.

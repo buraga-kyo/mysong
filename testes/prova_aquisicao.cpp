@@ -282,6 +282,43 @@ TEST_CASE("achado meio não se mostra, e duração que não é numero não vira 
   CHECK(um[0].duracao == 0);
 }
 
+TEST_CASE("a tolerancia de doze segundos declara-se n'um logar só") {
+  // A issue #63: os doze moravam em duas constantes, e duas verdades dão a que
+  // se corrige e a que fica a errar. A fonte é a do musicbrainz.hpp, e esta
+  // deriva d'ella; o `grep` do numero acha UMA declaração, e não duas.
+  CHECK(nu::kToleranciaSeg == 12);
+  CHECK(nu::kJanellaMs == 12000);
+  CHECK(nu::TOLERANCIA_DO_CASAMENTO == nu::kToleranciaSeg);
+}
+
+TEST_CASE("o anno absurdo da rede não estoura as contas") {
+  // A issue #63: o campo do anno vem de linha do yt-dlp, e a leitura antiga era
+  // comportamento INDEFINIDO em transbordo. Vinte digitos são o caso que ella
+  // errava; agora dão zero, que é «não se soube», e a conta segue.
+  const std::vector<nu::Achado> vasto = nu::le_achados(
+      "T\nC\n100\nhttps://y/1\nNA\nNA\nNA\n99999999999999999999\n");
+  REQUIRE(vasto.size() == 1);
+  CHECK(vasto[0].ano == 0);
+  // O que passa do tecto de um dia tambem cae, e o anno de quatro digitos passa.
+  const std::vector<nu::Achado> alto = nu::le_achados(
+      "T\nC\n999999\nhttps://y/2\nNA\nNA\nNA\n1987\n");
+  REQUIRE(alto.size() == 1);
+  CHECK(alto[0].duracao == 0);
+  CHECK(alto[0].ano == 1987);
+  // Anno negativo e anno com letras cahem no crivo dos digitos, como sempre.
+  const std::vector<nu::Achado> torto = nu::le_achados(
+      "T\nC\n100\nhttps://y/3\nNA\nNA\nNA\n-1987\n"
+      "T\nC\n100\nhttps://y/4\nNA\nNA\nNA\n19a7\n");
+  REQUIRE(torto.size() == 2);
+  CHECK(torto[0].ano == 0);
+  CHECK(torto[1].ano == 0);
+  // E a sonda da URL lê pela MESMA conta: vinte digitos na duração dão zero.
+  const nu::EtiquetaRemota remota =
+      nu::le_etiqueta_remota("T\nC\nA\nB\n7\n99999999999999999999\n");
+  CHECK(remota.numero == 7);
+  CHECK(remota.duracao == 0);
+}
+
 // ── AS BANDEIRAS DO MOTOR (issue #55) ───────────────────────────────────────
 // Estas provas existem porque a falta d'estas bandeiras deixou a Casa sem colher
 // uma unica faixa. A prova afere as QUATRO chamadas juntas (a busca da musica
