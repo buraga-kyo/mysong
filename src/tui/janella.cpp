@@ -47,6 +47,7 @@
 #include "api/mpris.hpp"
 #include "api/socket.hpp"
 
+#include "nucleo/ajustes.hpp"
 #include "nucleo/analisador.hpp"
 #include "nucleo/capa.hpp"
 #include "nucleo/catalogo.hpp"
@@ -114,17 +115,6 @@ std::filesystem::path raiz_do_soquete() {
   if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
   return std::filesystem::path("/tmp");
 }
-
-// raiz_do_acervo — `$MYSONG_ACERVO`, e sem ella `~/Música`. A variavel existe para
-// que o operador com monte de rede não tenha de mover o acervo para casa.
-std::filesystem::path raiz_do_acervo() {
-  const char* posto = std::getenv("MYSONG_ACERVO");
-  if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
-  const char* casa = std::getenv("HOME");
-  if (casa == nullptr) return {};
-  return std::filesystem::path(casa) / "Música";
-}
-
 
 // QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
 // rolar muito, e o `--flat-playlist` faz d'isso uma sonda de rede só.
@@ -329,7 +319,11 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
 // o espectro por cima. Esta funcção NÃO se prova em bateria: ella abre terminal,
 // abre som e depende de relogio. O que se prova são as duas peças que ella usa,
 // e é por isso que ellas vivem fóra d'aqui.
-int erguer_tocador(const std::vector<std::string>& faixas) {
+int erguer_tocador(const std::vector<std::string>& faixas,
+                   const nucleo::Ajustes& ajustes) {
+  // O acervo em cópia: dous fios o lêem, e a cópia n'esta pilha vive mais que
+  // elles, que se juntam antes de esta funcção voltar.
+  const std::filesystem::path acervo = ajustes.acervo.valor;
   std::string razao;
   std::optional<nucleo::MotorMpv> motor = nucleo::MotorMpv::abrir(&razao);
   if (!motor) {
@@ -341,6 +335,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   }
 
   nucleo::Tocador tocador(*motor);
+  // O volume dos ajustes entra ANTES da primeira faixa: posto depois, ella já
+  // teria arrancado no volume de fabrica, e ouvir-se-ia o salto.
+  tocador.volume(ajustes.volume.valor);
   nucleo::Analisador analisador;
   if (analisador.vivo()) {
     tocador.observa(analisador);
@@ -388,9 +385,9 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // MESMA para a URL colada á mão e para o achado eleito na rede: o caminho
   // reaproveita-se inteiro, em vez de se duplicar.
   nucleo::Estaleiro estaleiro(
-      nucleo::OBREIROS_DA_BAIXA,
-      [](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
-        return nucleo::baixa(raiz_do_acervo(), pedido, ficou);
+      ajustes.baixas_simultaneas.valor,
+      [acervo](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
+        return nucleo::baixa(acervo, pedido, ficou);
       });
 
   // O SOCKET DE COMMANDO (issue #69), e elle assenta AQUI, e não acima, por duas
@@ -422,7 +419,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // A FONTE vigente da busca (issue #56): pegajosa na sessão, YouTube de saida.
   // Vive sob a MESMA tranca do termo, e o fio da busca copia os dous n'um golpe:
   // assim não ha quadro em que o termo seja de uma fonte e a busca de outra.
-  nucleo::Fonte fonte_da_busca = nucleo::Fonte::YouTube;
+  nucleo::Fonte fonte_da_busca = ajustes.fonte_da_busca.valor;
   std::atomic<bool> pede_buscar{false};
 
   // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
@@ -480,7 +477,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
     while (!sahir.load()) {
       if (pede_varrer.exchange(false)) {
         varrida.store(false);
-        nucleo::Varredura varredura(banco, {raiz_do_acervo()});
+        nucleo::Varredura varredura(banco, {acervo});
         while (!sahir.load() && varredura.passo()) {
         }
         varrida.store(true);
@@ -1112,11 +1109,24 @@ int main(int argc, char** argv) {
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
 
+  // OS AJUSTES, colhidos antes de tudo e UMA vez só: aqui não ha fio algum
+  // erguido ainda, e ler variavel de ambiente com fios a correr é corrida. A
+  // fila da linha de commando colhe-se no mesmo laço, que a bandeira do acervo
+  // não é faixa e não ha de cahir na fila do tocador.
+  std::vector<std::string> faixas;
+  std::optional<std::string> acervo_pedido;
+  for (int i = 1; i < argc; ++i)
+    if (!nucleo::eh_acervo(argv[i], &acervo_pedido))
+      faixas.emplace_back(argv[i]);
+  const nucleo::Ajustes ajustes = nucleo::ajustes_do_systema(acervo_pedido);
+
   // O modo de diagnostico: texto puro, tela nenhuma, e codigo differente de
-  // zero havendo impedimento, para que sirva de guarda em script.
+  // zero havendo impedimento, para que sirva de guarda em script. Queixa de
+  // configuração NÃO muda esse codigo: arquivo velho não é requisito ausente.
   if (invocacao.modo == nucleo::Modo::Sonda) {
     std::cout << tui::texto_do_relatorio(relatorio);
     std::cout << api::texto_do_socket();
+    std::cout << nucleo::texto_dos_ajustes(ajustes);
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
@@ -1139,7 +1149,7 @@ int main(int argc, char** argv) {
 
   // A fila vem da linha de commando, que ler_linha já separou das opções: é
   // assim que uma faixa entra por `mysong caminho.mp3 outro.mp3`.
-  return erguer_tocador(invocacao.faixas);
+  return erguer_tocador(invocacao.faixas, ajustes);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

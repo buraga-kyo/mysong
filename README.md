@@ -217,6 +217,7 @@ DESTDIR=/tmp/embrulho cmake --install build
 ./build/mysong --versao                 # diz o nome e o numero, e sahe
 ./build/mysong --ajuda                  # diz as opcoes que existem, e sahe
 ./build/mysong -- --faixa-com-traco.mp3 # o `--` encerra as opcoes
+./build/mysong --acervo=/mnt/musica     # o acervo so d'esta corrida
 ```
 
 O `--versao` e o `--version` fazem o mesmo, e o `--ajuda` e o `--help` tambem:
@@ -339,6 +340,42 @@ ha quem escute nelle.
 
 Os verbos todos, a forma das respostas e os codigos de erro estao em
 [`docs/protocolo-do-socket.md`](docs/protocolo-do-socket.md).
+## A configuracao
+
+O que se ajustava so por variavel de ambiente cabe agora n'um arquivo que o
+senhor escreve UMA vez, em `$XDG_CONFIG_HOME/mysong/mysong.conf` e, na falta da
+variavel, em `~/.config/mysong/mysong.conf`.
+
+O programa LE esse arquivo e NUNCA o escreve: o commentario que o senhor puser
+la dentro nao morre. Arquivo ausente nao e erro, e nada se diz: valem os
+padroes. Ha um exemplo commentado em `exemplos/mysong.conf`, e o caminho de
+saber e copia-lo para o logar acima: copiado tal e qual elle nao muda cousa
+alguma, que as linhas activas trazem os proprios padroes. O `~` nao se expande
+dentro do arquivo, e o caminho do acervo escreve-se inteiro.
+
+O formato e uma linha por ajuste, `chave = valor`. Linha vazia ignora-se, os
+brancos das pontas aparam-se e os do meio ficam, donde caminho com espaco vale
+inteiro; e o `#` abre commentario ATE O FIM DA LINHA, em qualquer ponto, donde
+caminho que traga `#` no nome nao se escreve aqui, e isso e limite declarado.
+Chave repetida vale a ultima.
+
+| chave | valor que acceita | padrao |
+|---|---|---|
+| `acervo` | caminho de um directorio que exista | `~/Música` |
+| `volume` | inteiro de 0 a 100 | `100` |
+| `fonte_da_busca` | `youtube`, `youtube-music` ou `spotify` | `youtube` |
+| `baixas_simultaneas` | inteiro de 1 a 8 | `2` |
+
+A PRECEDENCIA, do mais forte para o mais fraco: o argumento da linha de
+commando, a variavel de ambiente, este arquivo, e o padrao da Casa. O
+`MYSONG_ACERVO` continua a valer, e continua a ganhar do arquivo; e vae CRU,
+sem se aferir, que quem o poz no perfil do shell manda, e o acervo nao ha de
+mudar debaixo dos pes de quem aponta para monte de rede que ainda nao montou.
+
+Chave desconhecida e valor que nao presta NAO derrubam cousa alguma: cae-se no
+degrau de baixo e a queixa apparece no `mysong --sonda`, que diz tambem de ONDE
+veio cada ajuste que esta valendo. E o que faz o arquivo depuravel sem se ler o
+codigo.
 
 ## Como se roda a bateria de testes
 

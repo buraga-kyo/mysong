@@ -152,3 +152,5 @@ target_sources(mysong_testes PRIVATE prova_musicbrainz.cpp)
 
 # ─── A PROVA DA LINHA DE COMMANDO (issue #66) ───────────────────────────────
 target_sources(mysong_testes PRIVATE prova_linha.cpp)
+# ─── A PROVA DOS AJUSTES (issue #67) ────────────────────────────────────────
+target_sources(mysong_testes PRIVATE prova_ajustes.cpp)

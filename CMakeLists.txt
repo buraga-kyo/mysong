@@ -385,3 +385,7 @@ configure_file(installacao/mysong.desktop.in
   "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+# ─── OS AJUSTES DO OPERADOR (issue #67) ─────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Dependencia
+# nova alguma se cobra: o arquivo lê-se por ifstream.
+target_sources(mysong_core PRIVATE src/nucleo/ajustes.cpp)
