@@ -394,3 +394,5 @@ MIT. Veja o arquivo LICENSE.
 ## Plano artístico
 
 ```text
+
+                             
