@@ -894,4 +894,6 @@ Sinto que já vivi exatamente este momento mil vezes
 Sombras me assombram
 Quando perdi minha sombra?
 Eu existo?
-Posso te ouvir, apa
+Posso te ouvir, apareça
+Quem é ele?
+Pessoas e pe
