@@ -362,16 +362,7 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o tocador
   // sobe do mesmo modo, que é o padrão do MPRIS acima e do analisador da issue
   // #5: porta que não abriu não cala musica que já toca.
-  //
-  // A QUEM MOVER ISTO: o bloco assenta aqui porque hoje o servidor só toca o
-  // tocador. Ganhando o abrir os Arredores (a bibliotheca e o estaleiro), elle
-  // ha de DESCER para depois da livraria e do estaleiro, que nascem abaixo: é
-  // d'elles que o argumento novo aponta, e aqui elles ainda não existem.
-  std::string razao_do_socket;
-  std::optional<api::Servidor> servidor = api::Servidor::abrir(
-      tocador, api::caminho_padrao_do_socket(), &razao_do_socket);
-  if (!servidor)
-    std::cerr << "mysong: sem socket de commando: " << razao_do_socket << "\n";
+  // O bloco desceu para depois da livraria e do estaleiro; veja abaixo.
 
   for (const std::string& faixa : faixas) tocador.junta(faixa);
   if (!faixas.empty()) tocador.tocar_corrente();
@@ -401,6 +392,25 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
       [](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
         return nucleo::baixa(raiz_do_acervo(), pedido, ficou);
       });
+
+  // O SOCKET DE COMMANDO (issue #69), e elle assenta AQUI, e não acima, por duas
+  // razões que se somam. A primeira: os Arredores que a issue #65 lhe deu
+  // apontam a livraria e o estaleiro, e acima d'esta linha elles ainda não
+  // existem. A segunda, que é a que morde: quem empresta ha de morrer DEPOIS de
+  // quem toma emprestado, e em C++ destroe-se ao contrario de como se declara,
+  // donde o servidor declarado abaixo d'elles é o primeiro dos tres a cahir.
+  //
+  // Continua declarado ANTES dos fios, que é o que faz o destructor d'elle
+  // correr DEPOIS de todos se juntarem: é elle quem fecha os clientes e desliga
+  // o arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o
+  // tocador sobe do mesmo modo, que é o padrão do MPRIS e do analisador: porta
+  // que não abriu não cala musica que já toca.
+  std::string razao_do_socket;
+  const api::Arredores arredores{&livraria, &estaleiro};
+  std::optional<api::Servidor> servidor = api::Servidor::abrir(
+      tocador, api::caminho_padrao_do_socket(), &razao_do_socket, arredores);
+  if (!servidor)
+    std::cerr << "mysong: sem socket de commando: " << razao_do_socket << "\n";
 
 
   // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
