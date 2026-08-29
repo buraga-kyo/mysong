@@ -910,4 +910,5 @@ Luz bonita
 Brilhe sobre mim
 Tomando banho de luz solar
 É estranho falar sobre si mesmo
-M
+Medo do desconhecido
+Já não pa
