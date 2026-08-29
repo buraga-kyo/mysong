@@ -89,6 +89,17 @@ target_link_libraries(mysong_core PRIVATE PkgConfig::FONTCONFIG ${CMAKE_DL_LIBS}
 # que elle diz, em vez de o julgar pelo olho de quem o abriu.
 target_link_libraries(mysong_core PUBLIC ftxui::dom ftxui::screen)
 
+# ─── O QUE O DOCTEST NÃO HA DE INSTALLAR (issue #66) ────────────────────────
+# Vae ANTES do MakeAvailable, e é a unica lavra da #66 fóra do fim do arquivo:
+# o doctest declara DOCTEST_NO_INSTALL como opção DESLIGADA, e entrando elle
+# por subdirectorio as sete chamadas de install() d'elle passariam a ser
+# nossas, e ellas dão SEIS regras de file(INSTALL) no script gerado, que é o
+# numero que eu medi tirando esta linha: quem installasse o mysong levaria
+# junto os cabeçalhos, o pacote de CMake e o de pkg-config de uma bibliotheca
+# de PROVA. Depois do MakeAvailable já não ha como as desfazer, e por isso
+# esta linha não pôde ir com as outras.
+set(DOCTEST_NO_INSTALL ON CACHE BOOL "" FORCE)
+
 # doctest: a bateria. Cabecalho unico, presa a etiqueta como a janella.
 FetchContent_Declare(doctest
   GIT_REPOSITORY https://github.com/doctest/doctest
@@ -325,3 +336,52 @@ target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
 # passa a pedir o cabeçalho do curl: o nucleo liga-o em PRIVATE, donde os
 # caminhos de inclusão não lhe chegavam. ACRESCENTA linha, como manda a regra.
 target_link_libraries(mysong PRIVATE PkgConfig::CURL)
+# ─── O NUMERO DA VERSÃO (issue #66) ─────────────────────────────────────────
+# O numero mora n'um logar só, que é o project() lá em cima, e chega ao C++ por
+# cabeçalho CONFIGURADO. Constante copiada no codigo envelheceria á parte, e a
+# obra passaria a mentir sobre a sua propria versão no dia em que o numero
+# subisse. Vae para a arvore de compilação, que é onde cousa gerada mora.
+configure_file(src/nucleo/versao.hpp.in
+  "${CMAKE_CURRENT_BINARY_DIR}/gerado/nucleo/versao.hpp" @ONLY)
+target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/gerado")
+
+# ─── A LEITURA DA LINHA DE COMMANDO (issue #66) ─────────────────────────────
+# Entra por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
+target_sources(mysong_core PRIVATE src/nucleo/linha.cpp)
+
+# ─── A INSTALLAÇÃO (issue #66) ──────────────────────────────────────────────
+# Os destinos vêm do GNUInstallDirs, e NUNCA de caminho escripto á mão: sendo
+# relativos, o prefixo continua a ser o que o operador der, e o DESTDIR de quem
+# empacota funcciona sem se pedir cousa alguma á obra.
+#
+# Installa-se o BINARIO, e nada mais do que esta arvore produz: a bibliotheca
+# do núcleo, os espias e a bateria são ferramenta de dentro d'esta Casa, e o
+# systema de quem toca musica não tem que as carregar.
+include(GNUInstallDirs)
+install(TARGETS mysong RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+# ─── A PAGINA DE MANUAL (issue #66) ─────────────────────────────────────────
+# Escripta á mão em troff, e ferramenta nova alguma se cobra por ella. O
+# configure_file não a gera: substitue-lhe o numero na linha do .TH, para que a
+# versão que o manual annuncia não envelheça á parte da do binario.
+configure_file(installacao/mysong.1.in
+  "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.1"
+  DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+
+# ─── A ENTRADA DE MENU (issue #66) ──────────────────────────────────────────
+# A obra é de terminal, e a entrada leva Terminal=true: sem essa chave, a area
+# de trabalho ergueria o binario sem terminal algum, e o operador veria uma
+# janella piscar e morrer. Icone não vae: a obra não traz nenhum, e chave Icon
+# apontando para o que não existe dá quadricula vazia no menu, que é peor.
+#
+# O Exec leva o caminho ABSOLUTO, e não o nome nú: a sessão graphica não herda
+# o PATH do shell de login em boa parte dos ambientes, e a entrada nasceria
+# morta justamente na installação que o README recommenda, a de ~/.local. O
+# TryExec não serve de remedio, que elle resolve contra o MESMO PATH: trocaria
+# entrada morta por entrada ausente, que é peor de diagnosticar por não deixar
+# rasto. O preço é o prefixo se fixar no CONFIGURE, e o README diz como.
+configure_file(installacao/mysong.desktop.in
+  "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop"
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")

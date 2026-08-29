@@ -1,0 +1,26 @@
+// ══════════════════════════════════════════════════════════════════════════
+//   TRACTADO DO NUMERO — src/nucleo/versao.hpp.in
+// ══════════════════════════════════════════════════════════════════════════
+// Arquivo GERADO. O CMake substitue @PROJECT_VERSION@ pelo numero que o
+// project() declara e escreve o resultado na arvore de compilação, que é logar
+// de cousa gerada e não se versiona.
+//
+// INVARIANTE ...... o numero da obra escreve-se n'UM logar só, que é a linha do
+//                   project(). Quem o quiser, chame versao(); quem o copiar
+//                   para literal proprio, quebra a invariante, e a copia
+//                   envelhece á parte no dia em que o numero subir.
+// ══════════════════════════════════════════════════════════════════════════
+#pragma once
+
+#include <string_view>
+
+namespace mysong::nucleo {
+
+// O numero da versão, tal como o project() do CMake o declara.
+constexpr std::string_view versao() noexcept { return "@PROJECT_VERSION@"; }
+
+}  // namespace mysong::nucleo
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════

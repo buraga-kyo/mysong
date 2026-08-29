@@ -32,7 +32,6 @@
 #include <thread>
 #include <vector>
 #include <string>
-#include <string_view>
 
 #include <unistd.h>
 
@@ -55,6 +54,7 @@
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
+#include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
 #include "nucleo/rol.hpp"
@@ -1089,12 +1089,32 @@ struct CurlDaCasa {
 
 int main(int argc, char** argv) {
   const CurlDaCasa curl_da_casa;
+  // A linha lê-se ANTES de a sonda correr. Quem pergunta a versão ou a ajuda
+  // não está a abrir o tocador, e a recusa dos requisitos não lhe cabe: é o
+  // que faz `mysong --versao` responder na machina sem a Nerd Font.
+  const nucleo::Invocacao invocacao = nucleo::ler_linha(argc, argv);
+  if (invocacao.modo == nucleo::Modo::Ajuda) {
+    std::cout << nucleo::texto_da_ajuda();
+    return 0;
+  }
+  if (invocacao.modo == nucleo::Modo::Versao) {
+    std::cout << nucleo::texto_da_versao();
+    return 0;
+  }
+  // DOUS, e não um: o codigo 1 já é o do impedimento de requisito, e dar o
+  // mesmo aqui tiraria a script alguma o meio de distinguir a falta da fonte
+  // do erro de escripta na opção.
+  if (invocacao.modo == nucleo::Modo::Recusa) {
+    std::cerr << invocacao.razao;
+    return 2;
+  }
+
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
 
   // O modo de diagnostico: texto puro, tela nenhuma, e codigo differente de
   // zero havendo impedimento, para que sirva de guarda em script.
-  if (argc > 1 && std::string_view(argv[1]) == "--sonda") {
+  if (invocacao.modo == nucleo::Modo::Sonda) {
     std::cout << tui::texto_do_relatorio(relatorio);
     std::cout << api::texto_do_socket();
     return relatorio.ha_impedimento() ? 1 : 0;
@@ -1117,11 +1137,9 @@ int main(int argc, char** argv) {
   const std::string avisos = tui::texto_dos_avisos(relatorio);
   if (!avisos.empty()) std::cerr << avisos;
 
-  // A fila vem da linha de commando. Não ha varredura de acervo ainda (issue
-  // #34), e por isso é assim que uma faixa entra: `mysong caminho.mp3 outro.mp3`.
-  std::vector<std::string> faixas;
-  for (int i = 1; i < argc; ++i) faixas.emplace_back(argv[i]);
-  return erguer_tocador(faixas);
+  // A fila vem da linha de commando, que ler_linha já separou das opções: é
+  // assim que uma faixa entra por `mysong caminho.mp3 outro.mp3`.
+  return erguer_tocador(invocacao.faixas);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
