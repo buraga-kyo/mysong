@@ -923,4 +923,5 @@ Por que se importar? Você me tem, afinal
 Você está imaginando coisas de novo
 Imagine-se
 Vá lá fora, respire
-Eu estava 
+Eu estava cercado por estranhos
+Não con
