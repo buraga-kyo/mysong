@@ -908,4 +908,5 @@ Pare de falar
 Está alto demais
 Luz bonita
 Brilhe sobre mim
-To
+Tomando banho de luz solar
+É es
