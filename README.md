@@ -890,4 +890,5 @@ Já estive aqui antes?
 
 Vejo pessoas no canto dos meus olhos
 Sombras de rostos esquecidos
-Sinto que já vivi exatamente este momento m
+Sinto que já vivi exatamente este momento mil vezes
+Sombras me assombram
