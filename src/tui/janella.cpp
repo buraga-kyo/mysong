@@ -347,6 +347,11 @@ int erguer_tocador(const std::vector<std::string>& faixas) {
   // arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o tocador
   // sobe do mesmo modo, que é o padrão do MPRIS acima e do analisador da issue
   // #5: porta que não abriu não cala musica que já toca.
+  //
+  // A QUEM MOVER ISTO: o bloco assenta aqui porque hoje o servidor só toca o
+  // tocador. Ganhando o abrir os Arredores (a bibliotheca e o estaleiro), elle
+  // ha de DESCER para depois da livraria e do estaleiro, que nascem abaixo: é
+  // d'elles que o argumento novo aponta, e aqui elles ainda não existem.
   std::string razao_do_socket;
   std::optional<api::Servidor> servidor = api::Servidor::abrir(
       tocador, api::caminho_padrao_do_socket(), &razao_do_socket);
