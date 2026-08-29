@@ -36,6 +36,19 @@ const std::vector<std::string>& nomes_de_capa();
 // vive junto das faixas d'elle, e ir buscá-la mais longe traria a do album vizinho.
 std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa);
 
+// arte_embutida — os OCTETOS da capa que vive DENTRO da etiqueta, no quadro APIC.
+// Vazio quando a faixa não tem etiqueta, não tem APIC, ou não é MP3 de todo: arquivo
+// que a taglib não reconheça sahe vazio, e não lança.
+//
+// Devolve os octetos, e não um caminho, de proposito (issue #81): assim a bateria
+// afere-a contra uma etiqueta lavrada á mão, sem chafa, sem rede e sem temporario
+// para limpar. Quem precisa de arquivo é o chafa, que lê disco e não memoria, e
+// essa gravação fica do lado de cá, na Galeria.
+//
+// A ORDEM está declarada e é esta: o arquivo ao lado GANHA da etiqueta. É o que o
+// operador pode trocar sem reescrever o MP3, e por isso é o que elle manda.
+std::string arte_embutida(const std::filesystem::path& faixa);
+
 // chave_do_cache — o que identifica um render. É a PASTA da faixa mais o tamanho,
 // e não o caminho da faixa: as faixas de um album partilham a capa, e usar o
 // caminho faria converter uma vez por faixa em vez de uma por album.

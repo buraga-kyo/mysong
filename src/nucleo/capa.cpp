@@ -86,22 +86,35 @@ std::vector<std::string> argumentos_do_chafa(
           imagem.string()};
 }
 
-namespace {
-
-// extrahe_embutida — a arte que está DENTRO da etiqueta, gravada n'um temporario
-// para que o chafa a possa abrir. O chafa lê arquivo, e não memoria.
-//
-// Grava-se em `$XDG_RUNTIME_DIR`, e não em `/tmp`: arte de album é dado do
-// operador, e o directorio de corrida é privado d'elle por construcção.
-std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
+std::string arte_embutida(const std::filesystem::path& faixa) {
+  // Cada guarda cobre um caso MEDIDO, e não um receio. Arquivo que não é MP3 (o
+  // `.mkv` do video, um `.webm`, lixo, arquivo vazio) faz a taglib dar `isValid()`
+  // verdadeiro e etiqueta NÃO nula, que ella a cria a pedido; o que vem vazio é a
+  // lista de quadros. D'onde a guarda que importa é a do APIC vazio, e não a do
+  // ponteiro nulo, e é por ella que a busca sahe quieta em logar de lançar.
   TagLib::MPEG::File arquivo(faixa.c_str());
   if (!arquivo.isValid() || arquivo.ID3v2Tag() == nullptr) return {};
-  const auto& quadros =
-      arquivo.ID3v2Tag()->frameListMap()["APIC"];
+  const auto& quadros = arquivo.ID3v2Tag()->frameListMap()["APIC"];
   if (quadros.isEmpty()) return {};
   const auto* arte =
       dynamic_cast<const TagLib::ID3v2::AttachedPictureFrame*>(quadros.front());
   if (arte == nullptr || arte->picture().isEmpty()) return {};
+  return std::string(arte->picture().data(),
+                     static_cast<std::size_t>(arte->picture().size()));
+}
+
+namespace {
+
+// extrahe_embutida — a mesma arte, posta n'um temporario para que o chafa a possa
+// abrir. O chafa lê arquivo, e não memoria, e é só por isso que este passo existe.
+//
+// Grava-se em `$XDG_RUNTIME_DIR`, e não em `/tmp`: arte de album é dado do
+// operador, e o directorio de corrida é privado d'elle por construcção. A extensão
+// `.bin` não engana ferramenta alguma: o chafa conhece a imagem pelo CONTEUDO, e
+// medi-o sobre PNG, JPEG e WebP com esse mesmo nome.
+std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
+  const std::string arte = arte_embutida(faixa);
+  if (arte.empty()) return {};
 
   const char* corrida = std::getenv("XDG_RUNTIME_DIR");
   std::filesystem::path onde =
@@ -111,7 +124,7 @@ std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
   onde /= "mysong-capa.bin";
   std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
   if (!sahida) return {};
-  sahida.write(arte->picture().data(), arte->picture().size());
+  sahida.write(arte.data(), static_cast<std::streamsize>(arte.size()));
   return sahida.good() ? onde : std::filesystem::path();
 }
 
