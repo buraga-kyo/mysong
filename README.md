@@ -888,4 +888,5 @@ Você está conectado?
 A Jornada
 Já estive aqui antes?
 
-Vejo pessoas no canto 
+Vejo pessoas no canto dos meus olhos
+Sombras de ros
