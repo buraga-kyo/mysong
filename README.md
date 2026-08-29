@@ -933,4 +933,6 @@ Isso parece vazio
 Acordando pela primeira vez
 Pare de receber comandos
 Desplugue-se, você precisa disso
-T
+Tema-me
+Eu sou a morte
+Conecte
