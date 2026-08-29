@@ -898,4 +898,6 @@ Posso te ouvir, apareça
 Quem é ele?
 Pessoas e pessoas
 Quando foi que eu esqueci?
-Lembrar é mais difícil do
+Lembrar é mais difícil do que parece
+Eu posso ver!
+Son
