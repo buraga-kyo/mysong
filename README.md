@@ -914,4 +914,5 @@ Medo do desconhecido
 Já não parecia mais importante
 Relaxe
 Abra esses seus olhos
-Bem abe
+Bem abertos
+Por que essas pessoas es
