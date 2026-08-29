@@ -913,3 +913,5 @@ Tomando banho de luz solar
 Medo do desconhecido
 Já não parecia mais importante
 Relaxe
+Abra esses seus olhos
+Bem abe
