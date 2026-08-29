@@ -896,4 +896,5 @@ Quando perdi minha sombra?
 Eu existo?
 Posso te ouvir, apareça
 Quem é ele?
-Pessoas e pe
+Pessoas e pessoas
+Quando foi que eu esque
