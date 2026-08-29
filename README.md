@@ -150,6 +150,22 @@ cmake -B build -S .
 cmake --build build
 ```
 
+O aviso do compilador vale por ERRO nos alvos d'esta Casa: `-Wall -Wextra` sahe
+com `-Werror`, e por isso esquecer um ramo n'um `switch` novo faz a compilacao
+RECUSAR, em vez de imprimir um aviso que a rolagem come. O FTXUI e o doctest
+ficam de fora da regra, que vem por FetchContent e nao sao obra d'esta Casa.
+
+Quem topar com compilador ou versao que traga aviso inedito desliga a recusa, e
+os avisos continuam a imprimir-se:
+
+```sh
+cmake -B build -S . -DMYSONG_WERROR=OFF
+```
+
+A opcao guarda-se no cache d'aquelle directorio de build: uma vez configurado
+com `OFF`, assim fica ate se dizer `-DMYSONG_WERROR=ON` ou se deitar fora o
+`build/`.
+
 ## Como se roda
 
 ```sh
@@ -169,6 +185,8 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
+| `z` | liga e desliga o embaralhar |
+| `x` | cicla o repetir: nenhuma, uma, todas |
 | `j` / `k` ou `↑` / `↓` | anda na lista |
 | Enter ou `→` | entra (artista, album, faixa) |
 | Escape, Backspace ou `←` | volta um degrau |

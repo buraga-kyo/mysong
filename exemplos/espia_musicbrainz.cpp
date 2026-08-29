@@ -30,7 +30,10 @@ int main(int argc, char** argv) {
   }
   if (consulta.empty()) { std::fprintf(stderr, "alvo sem id nem titulo\n"); return 2; }
   std::printf("consulta: %s\n", consulta.c_str());
-  if (!nu::consulta_mb(consulta, &corpo)) { std::puts("não achou"); return 1; }
+  if (nu::consulta_mb(consulta, &corpo) != nu::DesfechoMB::Achado) {
+    std::puts("não achou");
+    return 1;
+  }
   const std::string mbid = marca != std::string::npos
                                ? nu::le_gravacao_da_url(corpo)
                                : nu::le_eleita_da_busca(corpo, ms);
@@ -38,7 +41,8 @@ int main(int argc, char** argv) {
   if (mbid.empty()) return 1;
   std::printf("ficha:    %s\n", nu::url_da_ficha(mbid).c_str());
   corpo.clear();
-  if (!nu::consulta_mb(nu::url_da_ficha(mbid), &corpo)) return 1;
+  if (nu::consulta_mb(nu::url_da_ficha(mbid), &corpo) != nu::DesfechoMB::Achado)
+    return 1;
   const nu::FichaMB ficha = nu::le_ficha_da_gravacao(corpo);
   for (const std::string& isrc : ficha.isrcs) std::printf("isrc:     %s\n", isrc.c_str());
   std::printf("%s | %s | %d ms\nalbum: %s (%d) faixa %d\n", ficha.artista.c_str(),

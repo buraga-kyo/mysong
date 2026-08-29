@@ -10,6 +10,18 @@
 > `indisponivel`, para a peça que existe na obra e que a instancia não ergueu.
 > Verbo algum mudou de nome, e resposta alguma perdeu campo.
 
+**O que mudou da 1 para a 2**: dous verbos NOVOS, `embaralhar` e `repetir`, e dous
+campos NOVOS no retracto do `estado`, `embaralhado` e `repetir`. Campo algum dos
+velhos mudou de nome ou de typo, e verbo algum sahiu: cliente escripto contra a 1
+segue a funccionar contra a 2 sem lhe tocar uma letra.
+
+Uma cousa, porém, elle ha de saber, e é por ella que a versão sobe: com um dos
+modos ligado, **a borda do `proxima` e do `anterior` deixa de ser o ultimo e o
+primeiro assento**. Quem tenha chumbado essa borda no seu codigo leia a nota da
+secção 5, ao pé da taboa dos verbos que mandam. Quem a não tenha chumbado nada
+tem a fazer: os modos nascem desligados, e enquanto ninguem os ligar a fila é a
+crua de sempre.
+
 ## 1. Onde, e com que permissão
 
 O servidor escuta num socket Unix de FLUXO (`AF_UNIX`, `SOCK_STREAM`) em:
@@ -98,17 +110,17 @@ Devolve o contracto, para que o cliente o possa exigir antes de confiar.
 | Campo | Typo | |
 |---|---|---|
 | `obra` | texto | Sempre `"mysong"`. |
-| `protocolo` | inteiro | A versão d'este documento. |
+| `protocolo` | inteiro | A versão d'este documento. Hoje 2. |
 
 ### `estado`
 
-O retracto inteiro, num instante só. **Os sete campos vêm sempre**, e é de proposito:
+O retracto inteiro, num instante só. **Os nove campos vêm sempre**, e é de proposito:
 cliente que tenha de perguntar duas vezes para armar uma tela veria a segunda resposta
 não casar com a primeira, porque entre as duas o mundo andou.
 
 ```
 → {"verbo":"estado"}
-← {"ok":true,"estado":"Tocando","faixa":"/tmp/pa-s1-prova/01 - Canção 音楽.wav","posicao":1.275,"duracao":20.000,"volume":100,"indice":0,"tamanho":3}
+← {"ok":true,"estado":"Tocando","faixa":"/tmp/pa-s1-prova/01 - Canção 音楽.wav","posicao":0.780,"duracao":20.000,"volume":100,"indice":0,"tamanho":3,"embaralhado":false,"repetir":"nenhuma"}
 ```
 
 | Campo | Typo | |
@@ -120,6 +132,8 @@ não casar com a primeira, porque entre as duas o mundo andou.
 | `volume` | inteiro | De 0 a 100. É o volume do MOTOR, e nunca o do systema. |
 | `indice` | inteiro | O assento da faixa corrente na fila, contado de zero. |
 | `tamanho` | inteiro | Quantas faixas ha na fila. |
+| `embaralhado` | booleano | `true` quando a fila anda por permutação. Ver o verbo `embaralhar`. |
+| `repetir` | texto | `"nenhuma"`, `"uma"` ou `"todas"`. Ver o verbo `repetir`. |
 
 ### `fila`
 
@@ -203,9 +217,25 @@ E a recusa, que tem a mesma forma para os seis:
 | `tocar` | Toca a faixa do assento corrente. | Fila vazia, ou o motor recusou o arquivo. |
 | `pausar` | Pausa. | Quando não está a tocar. |
 | `retomar` | Retoma. | Quando não está pausado. |
-| `proxima` | Anda para a frente **e toca**. | No ultimo assento. Ahi **nada** desce ao motor e a faixa em curso segue. |
-| `anterior` | Anda para tras **e toca**. | No primeiro assento, do mesmo modo. |
+| `proxima` | Anda para a frente **e toca**. | Na PONTA da passagem, e ver a nota abaixo: com o repetir em `nenhuma` e o embaralhar desligado, é o ultimo assento. Ahi **nada** desce ao motor e a faixa em curso segue. |
+| `anterior` | Anda para tras **e toca**. | Na outra ponta, do mesmo modo. |
 | `parar` | **Hoje PAUSA.** Ver a nota abaixo. | Quando não está a tocar. |
+
+> **Onde é a ponta depende dos dous modos, desde a versão 2.** A linha do
+> `proxima` acima descreve a fila crua, que é como ella nasce; ligados os modos,
+> a borda muda, e muda de tres maneiras:
+>
+> - com `repetir` em `todas`, **não ha recusa**: a ultima leva á primeira, e a
+>   primeira á ultima;
+> - com `repetir` em `uma`, o `proxima` **não recusa nunca**, e devolve `ok`
+>   sem andar: prende-se na faixa corrente, e ella recomeça. O `anterior`
+>   **não** se prende, e anda como sempre;
+> - com `embaralhar` ligado, a ponta é o fim da PERMUTAÇÃO, e não o ultimo
+>   assento da fila: a recusa chega n'um `indice` qualquer, e não no maior.
+>
+> Cliente que precise de saber onde está a ponta ha de ler `embaralhado` e
+> `repetir` do verbo `estado`. Cliente que os não leia continua a funccionar, e
+> vê a fila crua enquanto ninguem ligar modo algum.
 
 > **`parar` pausa, hoje, e digo-o em vez de o esconder.** O nucleo do `mysong` não tem
 > parada distincta da pausa, e alargar-lhe a interface não cabia nesta tarefa. O NOME
@@ -233,6 +263,48 @@ E a recusa, que tem a mesma forma para os seis:
 | Argumento | Typo | |
 |---|---|---|
 | `porcento` | inteiro | De 0 a 100. Fóra d'ahi **apara-se**, e a resposta diz o valor aparado: quem manda 150 lê 100. É o volume do MOTOR, e nunca o do systema. |
+
+### `embaralhar`
+
+Liga e desliga a permutação da fila. Ligar sorteia UMA ordem de toda a fila, com a
+faixa corrente no principio d'ella, e anda-se por essa ordem: faixa alguma torna
+antes de todas terem tocado. Esgotada, a permutação **não se re-sorteia**. Desligar
+volta á ordem de chegada, e **a faixa corrente não troca**.
+
+```
+→ {"verbo":"embaralhar","ligado":true}
+← {"ok":true,"embaralhado":true}
+```
+
+| Argumento | Typo | |
+|---|---|---|
+| `ligado` | booleano | Obrigatorio. Ausente, ou de outro typo, devolve `argumento_invalido`. |
+
+Resposta: `embaralhado` (booleano), o valor que ficou.
+
+### `repetir`
+
+Assenta o modo de repetição. Tres valores, e sómente tres.
+
+```
+→ {"verbo":"repetir","modo":"todas"}
+← {"ok":true,"repetir":"todas"}
+→ {"verbo":"repetir","modo":"sempre"}
+← {"ok":false,"erro":"argumento_invalido","razao":"o modo de repetir e \"nenhuma\", \"uma\" ou \"todas\""}
+```
+
+| `modo` | Que faz | Nome no MPRIS |
+|---|---|---|
+| `nenhuma` | A borda recusa, como sempre. | `None` |
+| `uma` | `proxima` prende na faixa corrente, e ella recomeça. `anterior` **não** se prende. | `Track` |
+| `todas` | A ultima leva á primeira, e a primeira á ultima. | `Playlist` |
+
+Resposta: `repetir` (texto), o valor que ficou. Nome fóra dos tres devolve
+`argumento_invalido`, e o modo fica como estava.
+
+> **Os dous modos não sobrevivem ao fechar o programa**, e isso é decisão
+> declarada e não esquecimento: arquivo de estado algum se escreve, e abrir o
+> tocador outra vez dá os dous desligados.
 
 ## 6. Os verbos que a versão 1 reservava
 

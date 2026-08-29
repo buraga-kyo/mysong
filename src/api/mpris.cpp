@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <filesystem>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -155,6 +156,16 @@ bool escreve_propriedade(DBusMessageIter* pae, const std::string& interface,
     escreve_variante_duplo(pae, porcento_para_volume(tocador.volume()));
     return true;
   }
+  // Os DOUS MODOS (issue #62). Sahem do retracto, que é UMA tomada da tranca.
+  if (nome == "Shuffle") {
+    escreve_variante_bool(pae, tocador.retracto().embaralhado);
+    return true;
+  }
+  if (nome == "LoopStatus") {
+    escreve_variante_texto(
+        pae, std::string(repeticao_do_mpris(tocador.retracto().repeticao)));
+    return true;
+  }
   if (nome == "Rate" || nome == "MinimumRate" || nome == "MaximumRate") {
     escreve_variante_duplo(pae, 1.0);  // esta Casa não muda a velocidade
     return true;
@@ -261,6 +272,8 @@ constexpr const char* kIntrospecção =
     "<property name='Metadata' type='a{sv}' access='read'/>"
     "<property name='Position' type='x' access='read'/>"
     "<property name='Volume' type='d' access='readwrite'/>"
+    "<property name='Shuffle' type='b' access='readwrite'/>"
+    "<property name='LoopStatus' type='s' access='readwrite'/>"
     "<property name='CanGoNext' type='b' access='read'/>"
     "<property name='CanGoPrevious' type='b' access='read'/>"
     "<property name='CanPlay' type='b' access='read'/>"
@@ -284,13 +297,16 @@ void responde_get_all(DBusMessage* resposta, const std::string& interface,
   static const char* kDoTocador[] = {
       "PlaybackStatus", "Metadata",   "Position",  "Volume",     "Rate",
       "MinimumRate",    "MaximumRate", "CanGoNext", "CanGoPrevious",
-      "CanPlay",        "CanPause",   "CanSeek",   "CanControl"};
+      "CanPlay",        "CanPause",   "CanSeek",   "CanControl",
+      "Shuffle",        "LoopStatus"};
 
   DBusMessageIter fóra, mapa;
   dbus_message_iter_init_append(resposta, &fóra);
   dbus_message_iter_open_container(&fóra, DBUS_TYPE_ARRAY, "{sv}", &mapa);
   const bool raiz = interface == kRaiz;
-  const std::size_t quantas = raiz ? 5u : 13u;
+  // A contagem sae do PROPRIO arranjo. Estava chumbada, e propriedade nova com o
+  // numero esquecido faria o playerctl ler menos do que ha, sem erro algum.
+  const std::size_t quantas = raiz ? std::size(kDaRaiz) : std::size(kDoTocador);
   for (std::size_t i = 0; i < quantas; ++i) {
     const char* nome = raiz ? kDaRaiz[i] : kDoTocador[i];
     DBusMessageIter entrada;
@@ -307,7 +323,7 @@ void responde_get_all(DBusMessage* resposta, const std::string& interface,
 
 namespace {
 
-// annuncia_mudanca — o `PropertiesChanged` das tres que podem mudar. `Position` NÃO
+// annuncia_mudanca — o `PropertiesChanged` das cinco que podem mudar. `Position` NÃO
 // entra: é decreto da especificação do MPRIS, porque ella muda a todo instante e um
 // pregão por instante afogaria o barramento. Quem quer a posição chama `Get`.
 void annuncia_mudanca(DBusConnection* ligacao, nucleo::Tocador& tocador) {
@@ -319,7 +335,8 @@ void annuncia_mudanca(DBusConnection* ligacao, nucleo::Tocador& tocador) {
   const char* interface = kTocador;
   dbus_message_iter_append_basic(&fóra, DBUS_TYPE_STRING, &interface);
   dbus_message_iter_open_container(&fóra, DBUS_TYPE_ARRAY, "{sv}", &mapa);
-  for (const char* nome : {"PlaybackStatus", "Metadata", "Volume"}) {
+  for (const char* nome :
+       {"PlaybackStatus", "Metadata", "Volume", "Shuffle", "LoopStatus"}) {
     DBusMessageIter entrada;
     dbus_message_iter_open_container(&mapa, DBUS_TYPE_DICT_ENTRY, nullptr,
                                      &entrada);
@@ -349,6 +366,8 @@ struct CasaDoMpris::Punho {
   nucleo::Estado ultimo_estado = nucleo::Estado::Parado;
   int ultimo_volume = -1;
   std::string ultima_faixa = "\x01";  // valor impossivel, para forçar o primeiro
+  bool ultimo_embaralhado = false;
+  nucleo::Repeticao ultima_repeticao = nucleo::Repeticao::Nenhuma;
 
   explicit Punho(nucleo::Tocador& t) : tocador(t) {}
 };
@@ -401,6 +420,53 @@ const std::string& CasaDoMpris::razao() const noexcept { return punho_->razao; }
 
 namespace {
 
+// assenta_propriedade — o miolo do `Set`, já dentro da variante. Sae á parte para
+// que cada propriedade que se ponha traga a sua guarda de typo ao lado do seu
+// effeito, em vez de as guardas todas se empilharem antes do primeiro effeito.
+DBusMessage* assenta_propriedade(CasaDoMpris::Punho& punho, DBusMessage* pedido,
+                                 const std::string& nome,
+                                 DBusMessageIter* dentro) {
+  const int typo = dbus_message_iter_get_arg_type(dentro);
+  if (nome == "Volume") {
+    if (typo != DBUS_TYPE_DOUBLE)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o volume é um duplo de zero a um");
+    double valor = 0.0;
+    dbus_message_iter_get_basic(dentro, &valor);
+    punho.tocador.volume(volume_para_porcento(valor));
+    return dbus_message_new_method_return(pedido);
+  }
+  // Os DOUS MODOS (issue #62). Typo que não casa com a introspecção, e nome de
+  // LoopStatus que a especificação não tem, recebem erro NOMEADO e o modo fica
+  // COMO ESTAVA: assentar valor por defeito em resposta a pedido que a Casa não
+  // entendeu seria ella desligar o modo por sua conta.
+  if (nome == "Shuffle") {
+    if (typo != DBUS_TYPE_BOOLEAN)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o Shuffle é um booleano");
+    dbus_bool_t valor = FALSE;
+    dbus_message_iter_get_basic(dentro, &valor);
+    punho.tocador.embaralhar(valor != FALSE);
+    return dbus_message_new_method_return(pedido);
+  }
+  if (nome == "LoopStatus") {
+    if (typo != DBUS_TYPE_STRING)
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o LoopStatus é uma cadeia");
+    const char* cru = nullptr;
+    dbus_message_iter_get_basic(dentro, &cru);
+    const std::optional<nucleo::Repeticao> modo =
+        repeticao_do_nome(cru != nullptr ? cru : "");
+    if (!modo.has_value())
+      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
+                                    "o LoopStatus é None, Track ou Playlist");
+    punho.tocador.repetir(*modo);
+    return dbus_message_new_method_return(pedido);
+  }
+  return dbus_message_new_error(pedido, DBUS_ERROR_PROPERTY_READ_ONLY,
+                                "essa propriedade não se põe");
+}
+
 // responde_propriedades — o `Get`, o `GetAll` e o `Set` da interface de propriedades.
 DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedido,
                                    const std::string& membro) {
@@ -443,24 +509,18 @@ DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedid
   }
 
   if (membro == "Set") {
-    // SÓMENTE o volume se põe, que é o unico `readwrite` da introspecção. Aceitar
-    // outro faria a Casa mentir sobre o que a introspecção promette.
-    if (interface != kTocador || nome != "Volume")
+    // As TRES `readwrite` da introspecção, e sómente ellas: o punho abaixo recusa
+    // o resto. Acceitar outra faria a Casa mentir sobre o que ella annuncia.
+    if (interface != kTocador)
       return dbus_message_new_error(pedido, DBUS_ERROR_PROPERTY_READ_ONLY,
-                                    "sómente o volume se põe");
+                                    "esta Casa não serve essa interface");
     dbus_message_iter_next(&leitor);
     DBusMessageIter dentro;
     if (dbus_message_iter_get_arg_type(&leitor) != DBUS_TYPE_VARIANT)
       return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
-                                    "o volume ha de vir n'uma variante");
+                                    "o valor ha de vir n'uma variante");
     dbus_message_iter_recurse(&leitor, &dentro);
-    if (dbus_message_iter_get_arg_type(&dentro) != DBUS_TYPE_DOUBLE)
-      return dbus_message_new_error(pedido, DBUS_ERROR_INVALID_ARGS,
-                                    "o volume é um duplo de zero a um");
-    double valor = 0.0;
-    dbus_message_iter_get_basic(&dentro, &valor);
-    punho.tocador.volume(volume_para_porcento(valor));
-    return dbus_message_new_method_return(pedido);
+    return assenta_propriedade(punho, pedido, nome, &dentro);
   }
   return dbus_message_new_error(pedido, DBUS_ERROR_UNKNOWN_METHOD,
                                 "esta Casa não conhece esse metodo");
@@ -514,15 +574,19 @@ void CasaDoMpris::pulsa() {
     dbus_message_unref(pedido);
   }
 
-  // E o pregão, sómente quando muda. A comparação é dos TRES: estado, volume e
-  // faixa, colhidos de UMA tomada da tranca do tocador.
+  // E o pregão, sómente quando muda. A comparação é dos CINCO: estado, volume,
+  // faixa e os dous modos, colhidos de UMA tomada da tranca do tocador.
   const nucleo::Retracto agora = punho_->tocador.retracto();
   if (agora.estado != punho_->ultimo_estado ||
       agora.volume != punho_->ultimo_volume ||
-      agora.faixa != punho_->ultima_faixa) {
+      agora.faixa != punho_->ultima_faixa ||
+      agora.embaralhado != punho_->ultimo_embaralhado ||
+      agora.repeticao != punho_->ultima_repeticao) {
     punho_->ultimo_estado = agora.estado;
     punho_->ultimo_volume = agora.volume;
     punho_->ultima_faixa = agora.faixa;
+    punho_->ultimo_embaralhado = agora.embaralhado;
+    punho_->ultima_repeticao = agora.repeticao;
     annuncia_mudanca(punho_->ligacao, punho_->tocador);
   }
   dbus_connection_flush(punho_->ligacao);

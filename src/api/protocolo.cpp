@@ -76,7 +76,7 @@ std::string conforme(bool foi, std::string_view ordem) {
   return foi ? feito() : recusado(ordem);
 }
 
-// O RETRACTO. Sete campos, e os sete SEMPRE, colhidos de UMA tomada da tranca
+// O RETRACTO. Nove campos, e os nove SEMPRE, colhidos de UMA tomada da tranca
 // do tocador: cliente que tenha de perguntar duas vezes para armar uma tela é
 // cliente que verá a segunda resposta não casar com a primeira, porque entre
 // as duas o mundo andou.
@@ -90,13 +90,19 @@ std::string retracto(Tocador& tocador) {
   obra.par("volume", inteiro(agora.volume));
   obra.par("indice", inteiro(static_cast<long long>(agora.indice)));
   obra.par("tamanho", inteiro(static_cast<long long>(agora.tamanho)));
+  // Os dous modos (issue #62), colhidos da MESMA tomada que os sete de cima:
+  // quem arma tela com este retracto não ha de ver modo de um momento ao lado
+  // de faixa de outro. Campo NOVO, e nome nenhum dos velhos muda: cliente
+  // escripto contra a versão 1 segue a ler o que já lia.
+  obra.par("embaralhado", booleano(agora.embaralhado));
+  obra.par("repetir", texto(nucleo::nome_da_repeticao(agora.repeticao)));
   return obra.fecha();
 }
 // AS FAIXAS DA FILA, pela copia trancada do tocador. A issue #50 aposentou o
 // passeio que andava com ir_para e restaurava o assento: era mexida onde se
 // queria leitura, e mexida sem tranca com o relogio a bater n'outro fio.
-std::vector<std::string> faixas_da_fila(Tocador& tocador) {
-  return tocador.faixas();
+std::vector<std::string> faixas_da_fila(Tocador& tocador, std::size_t* indice) {
+  return tocador.faixas(indice);
 }
 
 // «indisponivel» é a peça que EXISTE na obra e que ESTA INSTANCIA do servidor
@@ -166,11 +172,14 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
   if (verbo == "estado") return retracto(tocador);
 
   if (verbo == "fila") {
-    const std::vector<std::string> faixas = faixas_da_fila(tocador);
+    // UMA tomada da tranca (issue #63): as faixas e o assento vêm do mesmo
+    // instante. Com duas, entre ellas o mundo andava, e o indice podia apontar
+    // fóra da lista que sahiu.
+    std::size_t indice = 0;
+    const std::vector<std::string> faixas = faixas_da_fila(tocador, &indice);
     Objecto obra = abre_acerto();
     obra.par("faixas", vector_de_textos(faixas));
-    obra.par("indice",
-             inteiro(static_cast<long long>(tocador.retracto().indice)));
+    obra.par("indice", inteiro(static_cast<long long>(indice)));
     obra.par("tamanho", inteiro(static_cast<long long>(faixas.size())));
     return obra.fecha();
   }
@@ -251,6 +260,43 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
     obra.par("volume", inteiro(tocador.volume()));
     return obra.fecha();
   }
+
+  // ── OS DOUS MODOS (issue #62). Os nomes são os d'esta Casa, e não os do
+  // MPRIS: o documento inteiro fala «Tocando» e nunca «Playing», e mudar de
+  // lingua no meio obrigaria o cliente a saber duas taboadas. A correspondencia
+  // com o barramento mora em api/unidades.cpp, e é lá que ella se prova.
+  if (verbo == "embaralhar") {
+    const Valor* liga = argumento(msg, "ligado", Typo::Booleano);
+    if (liga == nullptr) return falta("ligado", "booleano");
+    tocador.embaralhar(liga->booleano);
+    Objecto obra = abre_acerto();
+    obra.par("embaralhado", booleano(liga->booleano));
+    return obra.fecha();
+  }
+  if (verbo == "repetir") {
+    const Valor* modo = argumento(msg, "modo", Typo::Texto);
+    if (modo == nullptr) return falta("modo", "texto");
+    nucleo::Repeticao qual = nucleo::Repeticao::Nenhuma;
+    if (modo->texto == "uma") {
+      qual = nucleo::Repeticao::Uma;
+    } else if (modo->texto == "todas") {
+      qual = nucleo::Repeticao::Todas;
+    } else if (modo->texto != "nenhuma") {
+      // Nome que não ha é a MENSAGEM errada, e não o nucleo a recusar: por isso
+      // «argumento_invalido», que manda olhar o que se escreveu.
+      return erro("argumento_invalido",
+                  "o modo de repetir e \"nenhuma\", \"uma\" ou \"todas\"");
+    }
+    tocador.repetir(qual);
+    Objecto obra = abre_acerto();
+    obra.par("repetir", texto(nucleo::nome_da_repeticao(qual)));
+    return obra.fecha();
+  }
+
+  // Os RESERVADOS. Existem no contracto e ainda não no nucleo. Deixá-los fóra
+  // lhes daria «verbo_desconhecido», que é a MESMA resposta de um erro de
+  // digitação, e ahi o cliente não saberia se errou o nome ou se a feição não
+  // chegou. Com a issue na resposta, elle sabe as duas cousas de uma vez.
 
   // Os dous que faltam. O NOME existe e o subsystema tambem, donde a falta é
   // sómente d'esta instancia, e é isso que a resposta diz.

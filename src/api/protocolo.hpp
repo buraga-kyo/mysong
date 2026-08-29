@@ -18,7 +18,7 @@
 //                   Erro que volta como silêncio é o que a issue proibiu com
 //                   essas palavras.
 // Q.E.D. .......... sendo funcção pura de cadeia para cadeia sobre um Tocador
-//                   que já se prova por dublê, os dezeseis verbos provam-se em
+//                   que já se prova por dublê, os dezoito verbos provam-se em
 //                   machina surda, sem abrir socket algum; e é d'ahi que sobram
 //                   cinco casos, e não trinta, para a bateria que precisa de
 //                   estado global do systema.
@@ -42,10 +42,13 @@ namespace mysong::api {
 // A VERSÃO do contracto. Sobe quando a mudança pode quebrar cliente que já
 // exista; o verbo «versao» a devolve, para que o outro lado a possa exigir.
 //
-// Dous, desde a issue #65: os tres nomes que a versão 1 reservava passaram a
-// responder de verdade, e o codigo «nao_implementado» sahiu da taboada, que
-// verbo algum o pode mais produzir. Cliente que ramificasse por elle quebra, e
-// é por isso que a versão sobe em vez de a mudança entrar calada.
+// Dous, por duas razões que chegaram no mesmo lote. A issue #62 trouxe os verbos
+// «embaralhar» e «repetir», e mais dous campos no retracto do «estado». A issue
+// #65 fez os tres nomes que a versão 1 reservava responderem de verdade, e o
+// codigo «nao_implementado» sahiu da taboada, que verbo algum o pode mais
+// produzir. Nome algum dos campos velhos mudou; cliente que ramificasse pelo
+// «nao_implementado» é que quebra, e é por isso que a versão sobe em vez de a
+// mudança entrar calada.
 constexpr int kVersaoDoProtocolo = 2;
 
 // OS ARREDORES: as peças do nucleo que os verbos da issue #65 pedem e que o
