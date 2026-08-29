@@ -210,5 +210,32 @@ TEST_CASE("a trilha parada não pede cursor algum") {
   CHECK(parada.shape == ftxui::Screen::Cursor::Shape::Hidden);
 }
 
+TEST_CASE("a trilha a digitar põe a barra logo a seguir ao texto") {
+  // «/ção» tem quatro collunhas e cinco bytes: contando bytes, o caret cahiria
+  // uma collunha á direita do que se escreveu.
+  const ftxui::Screen::Cursor caret = cursor_da_trilha("/ção", true, 40, false);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x == 4);
+  CHECK(caret.y == 0);
+}
+
+TEST_CASE("o caret sobrevive ao vbox e á orla que a tela lhe põe á volta") {
+  // O foco propaga-se de filho para pae; a tela real embrulha a trilha, e sem
+  // esta prova a propagação ficaria por conta da leitura do codigo alheio.
+  const ftxui::Screen::Cursor caret = cursor_da_trilha("/ção", true, 40, true);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x == 5);
+  CHECK(caret.y == 1);
+}
+
+TEST_CASE("o caret não sae da tela com termo mais comprido que ella") {
+  // Caret á direita da ultima collunha faz o FTXUI mandar deslocamento
+  // NEGATIVO, que é escape mal formado a sahir para o terminal do operador.
+  const ftxui::Screen::Cursor caret =
+      cursor_da_trilha(std::string(80, 'x'), true, 20, false);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x < 20);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
