@@ -269,6 +269,13 @@ tocar a rede; o `s` PERGUNTA ao YouTube. Na secção NET, Enter encommenda a bai
 do achado eleito, e duas baixas correm ao mesmo tempo no maximo: as demais
 esperam, e a linha do titulo diz quantas correm e quantas esperam.
 
+O cursor do terminal so aparece havendo prompt aberto, e aparece como barra
+QUIETA na collunha logo a seguir ao que se digitou; fechado o prompt, ele some.
+Fora dai a tela nao mostra cursor algum: a vinte quadros por segundo, um cursor
+que se reposiciona e o que o olho le por piscar. Morrendo o mysong por sinal
+brutal (o `kill -9`), o terminal fica sem cursor, e `tput cnorm` o traz de
+volta.
+
 ### O video
 
 Faixa de video abre em janella PROPRIA do systema, e não dentro do terminal: a
