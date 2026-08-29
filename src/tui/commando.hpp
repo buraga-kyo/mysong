@@ -60,6 +60,9 @@ enum class Verbo {
   // A FONTE DA BUSCA (issue #56): cicla YouTube, YouTube Music, Spotify. Verbo
   // puro, como o BaixaTudo: quem guarda a fonte e a secção é a janella.
   TrocaFonte,
+  // OS DOUS MODOS de reprodução (issue #62). Verbos puros, como o TrocaFonte:
+  // quem alterna e quem cicla é o TOCADOR, de uma tomada só da sua tranca.
+  Embaralhar, Repetir,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

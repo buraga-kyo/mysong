@@ -25,6 +25,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -34,6 +35,17 @@ namespace mysong::nucleo {
 // O AGENTE. O MusicBrainz exige `nome/versão (contato)` e recusa o anonymo.
 inline constexpr char kAgenteDoMB[] =
     "mysong/0.1 (https://github.com/bragaus/mysong)";
+
+// A TOLERANCIA do casamento por duração, em SEGUNDOS, e a FONTE do numero
+// (issue #63). Doze: o mesmo audio costuma trazer um ou dous segundos de
+// silencio nas pontas, e a versão ao vivo ou a estendida differe de muito mais
+// que isso. Mora AQUI, e não na aquisição, por razão de dependencia e não de
+// gosto: `aquisicao.hpp` inclue este cabeçalho, e o contrario seria cyclo.
+inline constexpr int kToleranciaSeg = 12;
+
+// A MESMA tolerancia em milesimos, que é como o MusicBrainz fala de duração.
+// DERIVA, e não se declara: quem mudar os doze muda UM logar.
+inline constexpr int kJanellaMs = kToleranciaSeg * 1000;
 
 // A FICHA de uma gravação. Campo vazio ou zero é «o MusicBrainz não disse».
 struct FichaMB {
@@ -97,17 +109,38 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
 // a bateria o afira com relogio, sem rede alguma.
 void espera_a_vez_do_mb();
 
+// O DESFECHO de uma consulta. TRES, e não um booleano: o 404 e a rede muda
+// mandam ao caminho seguinte, mas o 503 e o 429 mandam PARAR, que gastar a
+// consulta seguinte contra quem pediu recuo engrossa a rajada que o acelerador
+// existe para impedir.
+enum class DesfechoMB {
+  Achado,  // 2xx, e o corpo está no logar
+  Falhou,  // 404, outra recusa, 5xx que não peça recuo, ou rede muda
+  Recuo,   // 429 ou 503: o servidor pediu menos trafego
+};
+
+// desfecho_da_resposta — a leitura do que a rede devolveu, PURA, para que a
+// bateria a afira sem rede. `erro_do_curl` é o codigo do libcurl (zero é o
+// «correu bem» d'elle), e `estado` é o codigo HTTP.
+DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
+
 // consulta_mb — pede a URL com o agente da obra, passando pelo acelerador, e
-// enche o corpo. Verdadeiro sómente no 2xx: o 404 («não temos») e o 503
-// («devagar») são falso sem re-tento, e mandam ao caminho seguinte.
-bool consulta_mb(const std::string& url, std::string* corpo);
+// enche o corpo. Re-tento algum se faz aqui: uma fila de faixas a re-tentar
+// amplificaria a rajada que o acelerador impede.
+DesfechoMB consulta_mb(const std::string& url, std::string* corpo);
+
+// A CONSULTA por parametro: é a junta do dublê, a mesma do Estaleiro. Entrando
+// a rede por parametro, a bateria põe no logar d'ella uma consulta de mentira e
+// afere QUANTAS e QUAES consultas a resolução gasta, sem tocar a rede.
+using Consulta = std::function<DesfechoMB(const std::string&, std::string*)>;
 
 // resolve_gravacao — a resolução inteira: pelo link do track quando o ha, pela
 // busca quando não; e a ficha da gravação eleita. Duração em MILESIMOS, como o
-// MB fala. Falso quando nada casou, e ahi quem chama confessa a duvida.
+// MB fala. Falso quando nada casou, e ahi quem chama confessa a duvida. Pedindo
+// o servidor RECUO no primeiro caminho, o segundo NÃO se gasta.
 bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
-                      const std::string& titulo, int duracao_ms,
-                      FichaMB* ficha);
+                      const std::string& titulo, int duracao_ms, FichaMB* ficha,
+                      const Consulta& consulta = consulta_mb);
 
 }  // namespace mysong::nucleo
 

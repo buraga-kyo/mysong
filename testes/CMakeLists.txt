@@ -33,6 +33,29 @@ target_sources(mysong_testes PRIVATE prova_fila.cpp prova_tocador.cpp)
 # editar. Linha nova não collide onde linha alterada collidiria.
 target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 
+# ─── Nota do caso dos DOUS FIOS da bibliotheca (issue #69) ──────────────────
+# O caso «ler a bibliotheca emquanto outro fio a reabre não a parte», em
+# prova_biblioteca.cpp, é INERTE n'esta compilação: tirada a tranca da
+# bibliotheca, as tres asserções d'elle continuam a passar, e a bateria fica
+# verde com a corrida de pé. Quem o julga é o sanitizador de fios, e sómente
+# elle. Correndo assim, e o -tc com o nome INTEIRO, que nome de caso não leva
+# ponto e vírgula (parte a lista do CMake) nem vírgula (separa os filtros do
+# doctest, e o binario salta tudo e sahe com successo):
+#
+#   setarch "$(uname -m)" -R cmake -B build-tsan -S . \
+#     -DCMAKE_CXX_FLAGS='-fsanitize=thread -g -O1' \
+#     -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=thread'
+#   setarch "$(uname -m)" -R cmake --build build-tsan --target mysong_testes
+#   setarch "$(uname -m)" -R ./build-tsan/testes/mysong_testes \
+#     -tc='ler a bibliotheca emquanto outro fio a reabre não a parte'
+#
+# O setarch é d'esta machina: sem elle o sanitizador morre no mapeamento.
+#
+# E medido: CINCO casos do prova_api_viva.cpp, da issue #4, já levam vírgula no
+# nome. Pelo ctest correm todos, que elle cita o nome inteiro; pelo -tc á mão,
+# pedem curinga («-tc='*byte a byte'»), senão o binario salta os 269 e sahe com
+# successo.
+
 # ══════════════════════════════════════════════════════════════════════════
 # ─── Prova do espectro (issue #5) ───────────────────────────────────────────
 # Por target_sources, e não na lista do add_executable: linha nova não collide.

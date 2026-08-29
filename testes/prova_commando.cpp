@@ -51,8 +51,9 @@ TEST_CASE("as tres teclas de verbo simples chegam por si") {
 TEST_CASE("tecla sem officio dá ordem nenhuma") {
   const tui::Retracto retracto = tocando();
   // O `a` e o `P` sahiram d'esta lista na issue #10, que lhes deu officio: o `a`
-  // junta á lista, e o `P` abre as listas. Ficam as que ainda não têm nenhum.
-  for (const char letra : {'z', 'w', 'y', 'N', 'Q', '1', '*'})
+  // junta á lista, e o `P` abre as listas. O `z` sahiu na issue #62, que lhe deu
+  // o embaralhar. Ficam as que ainda não têm officio nenhum.
+  for (const char letra : {'w', 'y', 'N', 'Q', '1', '*'})
     CHECK(tui::ordem_da_tecla(ftxui::Event::Character(letra), retracto).verbo ==
           tui::Verbo::Nada);
   CHECK(tui::ordem_da_tecla(ftxui::Event::Tab, retracto).verbo ==
@@ -80,6 +81,7 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('J'), ftxui::Event::Character('v'),
       ftxui::Event::Character('I'), ftxui::Event::Character('T'),
       ftxui::Event::Character('f'),
+      ftxui::Event::Character('z'), ftxui::Event::Character('x'),
       ftxui::Event::ArrowUp,
       ftxui::Event::ArrowDown,
       ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
@@ -92,6 +94,22 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
             tui::Verbo::Nada);
     CHECK(tui::ordem_da_tecla(tecla, retracto, true).verbo == tui::Verbo::Nada);
   }
+}
+
+// As duas teclas do modo (issue #62). Verbo PURO, e sem alvo: quem alterna e quem
+// cicla é o tocador, de uma tomada só da sua tranca; a taboada sómente diz qual
+// verbo a tecla pede, e é o que este caso afere.
+TEST_CASE("as duas teclas do modo dão os seus verbos") {
+  const tui::Retracto retracto = tocando();
+  const tui::Ordem z = tui::ordem_da_tecla(ftxui::Event::Character('z'), retracto);
+  const tui::Ordem x = tui::ordem_da_tecla(ftxui::Event::Character('x'), retracto);
+  CHECK(z.verbo == tui::Verbo::Embaralhar);
+  CHECK(x.verbo == tui::Verbo::Repetir);
+  // Ordem que não tem alvo carrega zero, e não numero que alguem possa vir a ler.
+  CHECK(z.alvo == 0.0);
+  CHECK(x.alvo == 0.0);
+  CHECK_FALSE(z.relativo);
+  CHECK_FALSE(x.relativo);
 }
 
 // As teclas da navegação, e as duas fórmas de cada uma: seta e letra do vi.

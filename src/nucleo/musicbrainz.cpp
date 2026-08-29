@@ -45,11 +45,6 @@ std::size_t recolhe(char* pedaco, std::size_t tamanho, std::size_t quantos,
   return bytes;
 }
 
-// A janella da busca por duração, em milesimos: os MESMOS doze segundos da
-// TOLERANCIA_DO_CASAMENTO, e pela mesma medida (silencio nas pontas fica dentro,
-// versão ao vivo e estendida ficam fóra).
-constexpr int kJanellaMs = 12000;
-
 // aspas_seguras — o texto dentro de aspas da consulta Lucene. Aspa e
 // contra-barra escapam-se; sem isto, um titulo com aspa partiria a frase e o
 // resto do titulo viraria operador de busca.
@@ -199,15 +194,19 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   ficha.album = api::texto_de_chave(da_vez, "title");
   const std::string data = api::texto_de_chave(da_vez, "date");
   if (data.size() >= 4) ficha.ano = std::atoi(data.substr(0, 4).c_str());
-  // O numero é `position` da faixa na primeira midia, que é inteiro; o
-  // `number` impresso vem «A3» no vinil, e não serve á etiqueta.
-  const std::vector<std::string> midias =
-      api::objectos_do_arranjo(api::recorta_arranjo(da_vez, "media"));
-  if (!midias.empty()) {
+  // O numero é `position` da faixa, que é inteiro; o `number` impresso vem «A3»
+  // no vinil, e não serve á etiqueta. Varrem-se as midias TODAS, e não a
+  // primeira: o MusicBrainz devolve cada midia do lançamento, e sómente a que
+  // tem a gravação vem com `tracks`, donde um lançamento de dous discos com a
+  // faixa no segundo dava numero zero. Vale a primeira midia que traga faixa.
+  for (const std::string& midia :
+       api::objectos_do_arranjo(api::recorta_arranjo(da_vez, "media"))) {
     const std::vector<std::string> faixas =
-        api::objectos_do_arranjo(api::recorta_arranjo(midias[0], "tracks"));
-    if (!faixas.empty() && api::numero_de_chave(faixas[0], "position", &valor))
-      ficha.numero = static_cast<int>(valor);
+        api::objectos_do_arranjo(api::recorta_arranjo(midia, "tracks"));
+    if (faixas.empty() || !api::numero_de_chave(faixas[0], "position", &valor))
+      continue;
+    ficha.numero = static_cast<int>(valor);
+    break;
   }
   return ficha;
 }
@@ -258,6 +257,16 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
   return termos;
 }
 
+DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado) {
+  // O 429 vae com o 503: ambos são o servidor a pedir MENOS trafego, que é a
+  // condição em que gastar a consulta seguinte é errado. O 500 fica com o 404,
+  // que é falha do servidor e não pedido de recuo.
+  if (erro_do_curl != 0) return DesfechoMB::Falhou;
+  if (estado == 429 || estado == 503) return DesfechoMB::Recuo;
+  if (estado >= 200 && estado < 300) return DesfechoMB::Achado;
+  return DesfechoMB::Falhou;
+}
+
 // ── E AGORA O QUE TOCA O MUNDO. D'aqui para baixo não ha prova de bateria que
 // valha, fóra a do proprio acelerador, que toca relogio e não rede. ──────────
 
@@ -276,30 +285,31 @@ void espera_a_vez_do_mb() {
   ultima = std::chrono::steady_clock::now();
 }
 
-bool consulta_mb(const std::string& url, std::string* corpo) {
-  if (url.empty() || corpo == nullptr) return false;
+DesfechoMB consulta_mb(const std::string& url, std::string* corpo) {
+  if (url.empty() || corpo == nullptr) return DesfechoMB::Falhou;
   espera_a_vez_do_mb();
   CURL* punho = curl_easy_init();
-  if (punho == nullptr) return false;
+  if (punho == nullptr) return DesfechoMB::Falhou;
   curl_easy_setopt(punho, CURLOPT_URL, url.c_str());
   curl_easy_setopt(punho, CURLOPT_WRITEFUNCTION, recolhe);
   curl_easy_setopt(punho, CURLOPT_WRITEDATA, corpo);
   curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(punho, CURLOPT_TIMEOUT, 15L);
+  // O SIGNAL cala-se: sem isto o resolvedor do curl arma alarm() e sae do
+  // tractador por longjmp, e n'um processo de mais de um fio o signal cae no fio
+  // errado. É opção DE PUNHO, e por isso repete-se em cada um dos tres.
+  curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(punho, CURLOPT_USERAGENT, kAgenteDoMB);
   const CURLcode desfecho = curl_easy_perform(punho);
   long estado = 0;
   curl_easy_getinfo(punho, CURLINFO_RESPONSE_CODE, &estado);
   curl_easy_cleanup(punho);
-  // Sómente o 2xx se lê. O 404 é «não temos» e o 503 é «devagar»: ambos mandam
-  // quem chama ao caminho seguinte, e NENHUM se re-tenta aqui, que uma fila de
-  // faixas re-tentando amplificaria a rajada que o acelerador impede.
-  return desfecho == CURLE_OK && estado >= 200 && estado < 300;
+  return desfecho_da_resposta(static_cast<int>(desfecho), estado);
 }
 
 bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
-                      const std::string& titulo, int duracao_ms,
-                      FichaMB* ficha) {
+                      const std::string& titulo, int duracao_ms, FichaMB* ficha,
+                      const Consulta& consulta) {
   // Os dous caminhos com rede, na ordem da issue: o LINK primeiro, que é
   // casamento que o proprio MB declarou; a BUSCA depois. Consulta que falhe
   // (404, 503, rede morta, corpo alheio) cae ao passo seguinte, e o falso
@@ -308,18 +318,24 @@ bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
   std::string mbid;
   if (!id_spotify.empty()) {
     std::string corpo;
-    if (consulta_mb(url_da_consulta_pelo_link(id_spotify), &corpo))
-      mbid = le_gravacao_da_url(corpo);
+    const DesfechoMB pelo_link =
+        consulta(url_da_consulta_pelo_link(id_spotify), &corpo);
+    // O RECUO pára aqui. Gastar a busca contra um servidor que acabou de pedir
+    // menos trafego é engrossar a rajada que o acelerador impede, e a faixa
+    // sahe por duvidosa, que é o que ella seria uma consulta mais tarde.
+    if (pelo_link == DesfechoMB::Recuo) return false;
+    if (pelo_link == DesfechoMB::Achado) mbid = le_gravacao_da_url(corpo);
   }
   if (mbid.empty() && !titulo.empty()) {
     std::string corpo;
-    if (consulta_mb(url_da_consulta_pela_busca(artista, titulo, duracao_ms),
-                    &corpo))
+    if (consulta(url_da_consulta_pela_busca(artista, titulo, duracao_ms),
+                 &corpo) == DesfechoMB::Achado)
       mbid = le_eleita_da_busca(corpo, duracao_ms);
   }
   if (mbid.empty()) return false;
   std::string corpo;
-  if (!consulta_mb(url_da_ficha(mbid), &corpo)) return false;
+  if (consulta(url_da_ficha(mbid), &corpo) != DesfechoMB::Achado)
+    return false;
   FichaMB lida = le_ficha_da_gravacao(corpo);
   if (lida.titulo.empty()) return false;  // ficha sem titulo não é gravação
   if (ficha != nullptr) *ficha = std::move(lida);

@@ -124,6 +124,9 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
   // Oito segundos, e não sem prazo: quem baixa uma faixa não ha de esperar por um
   // serviço de letra mais do que isso, e serviço mudo pendura o download inteiro.
   curl_easy_setopt(punho, CURLOPT_TIMEOUT, 8L);
+  // O signal cala-se, pela razão que o tractado do musicbrainz escreve por
+  // extenso: o resolvedor do curl arma alarm(), e a obra tem mais de um fio.
+  curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(punho, CURLOPT_USERAGENT, "mysong/0.1 (+github.com/bragaus/mysong)");
   const CURLcode desfecho = curl_easy_perform(punho);
   curl_easy_cleanup(punho);

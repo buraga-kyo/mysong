@@ -66,13 +66,22 @@ void assenta_endereco(::sockaddr_un* endereco, const std::string& caminho) {
   std::memcpy(endereco->sun_path, caminho.c_str(), caminho.size());
 }
 
-// HA QUEM ESCUTE? O socket é a propria prova de vida: tenta-se connectar, e quem
+// QUEM ESCUTA? O socket é a propria prova de vida: tenta-se connectar, e quem
 // responde está vivo. PID algum se consulta e arquivo de tranca algum se escreve,
-// que ambos mentem quando o processo morre de morte matada. Na duvida (nem se pudo
-// abrir a sonda) responde-se SIM, que é o lado seguro: não se desliga o alheio.
-bool ha_quem_escute(const std::string& caminho) {
+// que ambos mentem quando o processo morre de morte matada.
+//
+// TRES desfechos, e não dous, porque os dous consumidores lêem a duvida ao
+// contrario um do outro: quem vae ABRIR recúa na duvida, que desligar o alheio é
+// peor que não abrir; quem vae DIZER no diagnostico não pode affirmar o que não
+// sondou, que o modo --sonda existe para acabar com a adivinhação.
+enum class Escuta { Ha, Ninguem, NaoSeSondou };
+
+Escuta quem_escuta(const std::string& caminho, int* erro = nullptr) {
   const int sonda = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (sonda < 0) return true;
+  if (sonda < 0) {
+    if (erro != nullptr) *erro = errno;
+    return Escuta::NaoSeSondou;
+  }
   ::sockaddr_un endereco{};
   assenta_endereco(&endereco, caminho);
   const int veredicto = ::connect(
@@ -80,14 +89,29 @@ bool ha_quem_escute(const std::string& caminho) {
   const int guardado = errno;
   ::close(sonda);
   errno = guardado;
-  return veredicto == 0;
+  return veredicto == 0 ? Escuta::Ha : Escuta::Ninguem;
 }
+
+// Na duvida, SIM: é o lado seguro de quem vae abrir, e o alheio não se desliga.
+bool ha_quem_escute(const std::string& caminho) {
+  return quem_escuta(caminho) != Escuta::Ninguem;
+}
+
+// O ORÇAMENTO de uma batida, por cliente. O laço da colheita corre na linha do
+// relogio desde que a issue #69 ligou o socket ao binario, e sem tecto elle prende
+// a batida emquanto houver byte a chegar: cliente que escreva linhas inteiras mais
+// depressa do que se drenam parava a posição e congelava a tela, e o tecto da
+// LINHA não o apanha, que elle só dispara quando não ha \n. Colhe-se até aqui, e o
+// resto fica para a batida seguinte, que vem em cincoenta milesimos. Quatro linhas
+// cheias, para que mensagem alguma do tamanho maximo se parta por causa d'isto.
+constexpr std::size_t kTetoDaBatida = 4u * Servidor::kTetoDaLinha;
 
 }  // namespace
 
 std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
                                         const std::string& caminho,
-                                        std::string* razao) {
+                                        std::string* razao,
+                                        const Arredores& arredores) {
   const auto recusa = [razao](std::string dito) {
     if (razao != nullptr) *razao = std::move(dito);
     return std::optional<Servidor>{};
@@ -138,17 +162,22 @@ std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
     return recusa("nao se pudo escutar em " + caminho + ": " +
                   std::strerror(erro_da_escuta));
   }
-  return Servidor(tocador, escuta, caminho);
+  return Servidor(tocador, escuta, caminho, arredores);
 }
 
-Servidor::Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho) noexcept
-    : tocador_(&tocador), escuta_(escuta), caminho_(std::move(caminho)) {}
+Servidor::Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho,
+                   const Arredores& arredores) noexcept
+    : tocador_(&tocador),
+      arredores_(arredores),
+      escuta_(escuta),
+      caminho_(std::move(caminho)) {}
 
 // O MOVE esvazia a fonte, e é por isso que elle é seguro: o destructor da fonte
 // corre de todo modo, e sem esvaziar ella desligaria o arquivo que o destino
 // acabou de herdar.
 Servidor::Servidor(Servidor&& outro) noexcept
     : tocador_(outro.tocador_),
+      arredores_(outro.arredores_),
       escuta_(outro.escuta_),
       caminho_(std::move(outro.caminho_)),
       clientes_(std::move(outro.clientes_)) {
@@ -216,6 +245,7 @@ void Servidor::colhe(Cliente& cliente) {
   // a culpa cahiria na ferramenta. Donde se marca o fim, se drena o que chegou, se
   // responde, e só depois se fecha.
   bool fim_da_entrada = false;
+  std::size_t colhidos = 0;
   for (;;) {
     const ::ssize_t lidos = ::recv(cliente.fd, balde, sizeof(balde), 0);
     if (lidos == 0) { fim_da_entrada = true; break; }
@@ -226,6 +256,7 @@ void Servidor::colhe(Cliente& cliente) {
       return;
     }
     cliente.entrada.append(balde, static_cast<std::size_t>(lidos));
+    colhidos += static_cast<std::size_t>(lidos);
     // O teto conta a linha SEM o \n: acumulado que já tenha \n é mensagem pronta,
     // e não cliente mudo a crescer memoria.
     if (cliente.entrada.size() > kTetoDaLinha &&
@@ -237,11 +268,12 @@ void Servidor::colhe(Cliente& cliente) {
       encerra(cliente);
       return;
     }
+    if (colhidos >= kTetoDaBatida) break;  // o resto vae na batida seguinte
   }
   for (std::size_t corte; (corte = cliente.entrada.find('\n')) != std::string::npos;) {
     const std::string linha = cliente.entrada.substr(0, corte);
     cliente.entrada.erase(0, corte + 1);
-    const std::string resposta = responde(*tocador_, linha);
+    const std::string resposta = responde(*tocador_, arredores_, linha);
     // Resposta vazia é a linha em branco, e a ella nada se manda: nem uma linha
     // vazia, que o cliente leria como mensagem.
     if (resposta.empty()) continue;
@@ -302,6 +334,27 @@ void Servidor::pulsa() {
   clientes_.erase(std::remove_if(clientes_.begin(), clientes_.end(),
                                  [](const Cliente& cliente) { return cliente.fd < 0; }),
                   clientes_.end());
+}
+
+// Uma linha, e não um tractado: o modo --sonda existe para se lêr de relance, e
+// o que faltava era saber o caminho sem adivinhar e saber se a porta está de pé.
+std::string texto_do_socket() {
+  const std::string caminho = caminho_padrao_do_socket();
+  if (caminho.empty())
+    return "\nSocket de commando: nao ha, que XDG_RUNTIME_DIR nao esta definido\n";
+  // NÃO se usa aqui o ha_quem_escute: elle affirma que ha na duvida, e diagnostico
+  // que affirma o que não sondou manda o operador caçar processo que não existe.
+  int erro = 0;
+  switch (quem_escuta(caminho, &erro)) {
+    case Escuta::Ha:
+      return "\nSocket de commando: " + caminho + " (ha quem escute)\n";
+    case Escuta::Ninguem:
+      return "\nSocket de commando: " + caminho + " (ninguem escuta)\n";
+    case Escuta::NaoSeSondou:
+      break;
+  }
+  return "\nSocket de commando: " + caminho + " (nao se pudo sondar: " +
+         std::strerror(erro) + ")\n";
 }
 
 }  // namespace mysong::api

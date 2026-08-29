@@ -150,6 +150,21 @@ cmake -B build -S .
 cmake --build build
 ```
 
+O aviso do compilador vale por ERRO nos alvos d'esta Casa: `-Wall -Wextra` sahe
+com `-Werror`, e por isso esquecer um ramo n'um `switch` novo faz a compilacao
+RECUSAR, em vez de imprimir um aviso que a rolagem come. O FTXUI e o doctest
+ficam de fora da regra, que vem por FetchContent e nao sao obra d'esta Casa.
+
+Quem topar com compilador ou versao que traga aviso inedito desliga a recusa, e
+os avisos continuam a imprimir-se:
+
+```sh
+cmake -B build -S . -DMYSONG_WERROR=OFF
+```
+
+A opcao guarda-se no cache d'aquelle directorio de build: uma vez configurado
+com `OFF`, assim fica ate se dizer `-DMYSONG_WERROR=ON` ou se deitar fora o
+`build/`.
 ## Como se installa
 
 ```sh
@@ -223,6 +238,8 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
+| `z` | liga e desliga o embaralhar |
+| `x` | cicla o repetir: nenhuma, uma, todas |
 | `j` / `k` ou `↑` / `↓` | anda na lista |
 | Enter ou `→` | entra (artista, album, faixa) |
 | Escape, Backspace ou `←` | volta um degrau |
@@ -295,6 +312,33 @@ lista em que se entrou fica sendo a ALVO, e o titulo passa a mostra-la; volta-se
 ao acervo, elege-se a faixa e tecla-se `a`. Dentro da lista, `K` e `J` movem o
 item, `t` retira-o, e Enter enche a fila do nucleo com a lista TODA na ordem
 gravada, comecando na faixa eleita.
+
+### O socket de commando
+
+Com o mysong aberto ha um socket Unix em `$XDG_RUNTIME_DIR/mysong.sock`, por onde
+se governa o tocador de fora: uma linha de JSON entra, uma linha de JSON sahe.
+
+```sh
+printf '{"verbo":"estado"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+printf '{"verbo":"pausar"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+```
+
+O `-q 1` importa: sem elle o `nc` pode sahir antes de ler a resposta. O arquivo
+nasce em modo `0600` dentro do `$XDG_RUNTIME_DIR`, que e `0700`, e essa e a
+proteccao inteira: nao ha senha nem cifra. Fechado o programa, o arquivo sahe do
+disco.
+
+Sem `$XDG_RUNTIME_DIR` o socket nao sobe, e o mysong diz por que no stderr; a
+tela abre e a musica toca do mesmo jeito. Nao ha recuo a `/tmp`, que e escripta
+de todos: socket de commando la deixaria qualquer usuario da machina governar o
+tocador alheio.
+
+Havendo outro mysong ja a servir naquelle caminho, o segundo NAO lhe rouba o
+socket: corre sem elle e diz por que. `./build/mysong --sonda` diz o caminho e se
+ha quem escute nelle.
+
+Os verbos todos, a forma das respostas e os codigos de erro estao em
+[`docs/protocolo-do-socket.md`](docs/protocolo-do-socket.md).
 
 ## Como se roda a bateria de testes
 

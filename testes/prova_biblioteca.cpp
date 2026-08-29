@@ -18,10 +18,12 @@
 
 #include <unistd.h>
 
+#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
@@ -289,6 +291,37 @@ TEST_CASE("abandonar a meio conserva o índice antigo, e nada sobra") {
   const nu::Biblioteca livraria(cova.banco());
   CHECK(livraria.total() == 4u);
   CHECK(livraria.busca_faixa("Analyse").empty());
+}
+
+// A prova dos DOUS FIOS da issue #69. O socket de commando lê a bibliotheca do
+// fio do relogio, e o reabre() troca o punho do fio da tela: sem tranca, um fio
+// consulta o banco que o outro acabou de fechar. As asserções correm DEPOIS do
+// join, no fio da prova; durante a tormenta o juiz é o sanitizador de fios.
+TEST_CASE("ler a bibliotheca emquanto outro fio a reabre não a parte") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.aberta());
+
+  std::atomic<bool> pare{false};
+  std::atomic<long> lidas{0};
+  std::thread leitor([&] {
+    while (!pare.load()) {
+      // QUATRO portas, e não uma: a tranca ha de valer para todas, e a que
+      // ficasse de fóra appareceria aqui e sómente aqui.
+      livraria.total();
+      livraria.artistas();
+      livraria.busca_faixa("a");
+      if (livraria.aberta()) lidas.fetch_add(1);
+    }
+  });
+  for (int volta = 0; volta < 1000; ++volta) livraria.reabre();
+  pare.store(true);
+  leitor.join();
+
+  CHECK(lidas.load() > 0);   // o fio leitor correu de facto, e não passou ao lado
+  CHECK(livraria.aberta());  // e o punho ficou de pé ao cabo de mil trocas
+  CHECK(livraria.total() == 4);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

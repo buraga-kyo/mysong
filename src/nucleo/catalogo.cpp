@@ -124,6 +124,9 @@ bool busca_catalogo(std::string_view crua, Catalogo* catalogo) {
   curl_easy_setopt(punho, CURLOPT_WRITEDATA, &corpo);
   curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(punho, CURLOPT_TIMEOUT, 15L);
+  // O signal cala-se, pela razão que o tractado do musicbrainz escreve por
+  // extenso: o resolvedor do curl arma alarm(), e a obra tem mais de um fio.
+  curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
   // O Spotify recusa quem não se nomeie por navegador. Diz-se o que se é DEPOIS do
   // que elle exige: mentir sobre o navegador é o preço de a pagina ser servida, e
   // o nome d'esta obra vae no fim para que o registro d'elles saiba quem pediu.

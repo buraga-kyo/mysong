@@ -17,6 +17,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <algorithm>
+
 #include "nucleo/fila.hpp"
 
 namespace {
@@ -30,7 +32,52 @@ mysong::nucleo::Fila com_tres() {
   return fila;
 }
 
+// Cinco faixas, que é o numero com que o aceite da issue #62 está escripto.
+mysong::nucleo::Fila com_cinco() {
+  mysong::nucleo::Fila fila;
+  for (const char* nome : {"a.wav", "b.wav", "c.wav", "d.wav", "e.wav"})
+    fila.junta(nome);
+  return fila;
+}
+
+// O passeio inteiro para deante, colhendo o assento por onde se passa. Colhe-se
+// o de partida tambem: elle é uma das faixas por que se passou.
+std::vector<std::size_t> passeio(mysong::nucleo::Fila& fila) {
+  std::vector<std::size_t> visitados{fila.indice()};
+  while (fila.proxima()) visitados.push_back(fila.indice());
+  return visitados;
+}
+
+using Repeticao = mysong::nucleo::Repeticao;
+
 }  // namespace
+
+TEST_CASE("embaralhada, a fila passa por todas as faixas sem repetir nenhuma") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  std::vector<std::size_t> visitados = passeio(fila);
+  REQUIRE(visitados.size() == 5);      // cinco passos, e não quatro nem seis
+  CHECK(visitados.front() == 0);       // a corrente vae ao principio
+  std::sort(visitados.begin(), visitados.end());
+  const std::vector<std::size_t> todos = {0, 1, 2, 3, 4};
+  CHECK(visitados == todos);           // as cinco, e nenhuma duas vezes
+}
+
+TEST_CASE("desligar o embaralhar restitue a ordem e conserva a faixa") {
+  auto fila = com_cinco();
+  CHECK(fila.ir_para(2));
+  fila.embaralhar(true);
+  CHECK(fila.corrente() == "c.wav");  // ligar não troca a faixa
+  REQUIRE(fila.proxima());
+  REQUIRE(fila.proxima());
+  const std::string tocando(fila.corrente());
+  fila.embaralhar(false);
+  CHECK(fila.corrente() == tocando);  // desligar tambem não
+  const std::vector<std::string> chegada = {"a.wav", "b.wav", "c.wav", "d.wav",
+                                            "e.wav"};
+  CHECK(fila.todas() == chegada);
+  CHECK(fila.ordem().empty());
+}
 
 TEST_CASE("a fila guarda a ordem que o cliente definiu") {
   auto fila = com_tres();
@@ -97,3 +144,139 @@ TEST_CASE("todas dá a vista inteira, na ordem que o cliente definiu") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+
+// A issue #62 diz que a permutação NÃO se re-sorteia ao esgotar: com o repetir
+// em «todas», a segunda volta corre a MESMA ordem da primeira. É a differença
+// entre embaralhar uma vez e embaralhar a cada volta, e sem este caso ella
+// passaria calada, que as duas lavras se parecem em toda a primeira volta.
+TEST_CASE("esgotada, a permutação não se re-sorteia") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  fila.repetir(mysong::nucleo::Repeticao::Todas);
+  const std::vector<std::size_t> sorteada = fila.ordem();
+  REQUIRE(sorteada.size() == 5);
+  std::vector<std::size_t> primeira, segunda;
+  for (int volta = 0; volta < 5; ++volta) {
+    primeira.push_back(fila.indice());
+    REQUIRE(fila.proxima());
+  }
+  for (int volta = 0; volta < 5; ++volta) {
+    segunda.push_back(fila.indice());
+    REQUIRE(fila.proxima());
+  }
+  CHECK(primeira == sorteada);
+  CHECK(segunda == sorteada);
+  CHECK(fila.ordem() == sorteada);
+}
+
+// «uma» prende o proxima() e devolve VERDADEIRO: o tocador manda tocar o que a
+// fila aponta, e a faixa recomeça. E o anterior() NÃO se prende, que a issue
+// nomeou sómente o proxima(): é a sahida do laço sem mexer no modo.
+TEST_CASE("uma prende o proxima na faixa corrente, e o anterior não") {
+  auto fila = com_cinco();
+  CHECK(fila.ir_para(2));
+  fila.repetir(Repeticao::Uma);
+  for (int volta = 0; volta < 3; ++volta) {
+    CHECK(fila.proxima());
+    CHECK(fila.indice() == 2);
+  }
+  CHECK(fila.anterior());
+  CHECK(fila.indice() == 1);
+}
+
+// «todas» gira nos DOUS sentidos: no MPRIS este modo chama-se Playlist, e girar
+// n'um sentido só é meio giro.
+TEST_CASE("todas faz a fila girar nos dous sentidos") {
+  auto fila = com_cinco();
+  fila.repetir(Repeticao::Todas);
+  CHECK(fila.ir_para(4));
+  CHECK(fila.proxima());
+  CHECK(fila.indice() == 0);
+  CHECK(fila.anterior());
+  CHECK(fila.indice() == 4);
+}
+
+// As duas bordas onde a conta estoura: sortear permutação de vector vazio, e
+// tomar `ordem_.size() - 1` n'um vector sem elementos. Fila de uma faixa é a
+// vizinha d'ellas, e é onde «todas» gira sobre si mesma sem sahir do logar.
+TEST_CASE("os dous modos respondem em fila vazia e em fila de uma faixa") {
+  mysong::nucleo::Fila vazia;
+  vazia.embaralhar(true);
+  CHECK(vazia.ordem().empty());
+  CHECK_FALSE(vazia.proxima());
+  CHECK_FALSE(vazia.anterior());
+  vazia.repetir(Repeticao::Todas);
+  CHECK_FALSE(vazia.proxima());
+  CHECK_FALSE(vazia.anterior());
+
+  mysong::nucleo::Fila uma;
+  uma.junta("so.wav");
+  uma.embaralhar(true);
+  CHECK(uma.ordem().size() == 1);
+  CHECK_FALSE(uma.proxima());
+  uma.repetir(Repeticao::Todas);
+  CHECK(uma.proxima());
+  CHECK(uma.indice() == 0);
+  CHECK(uma.anterior());
+  CHECK(uma.indice() == 0);
+}
+
+// A faixa juntada DURANTE o embaralhado entra no fim da permutação, e a
+// permutação não se re-sorteia. Sem este caso, ordem_ e faixas_ podiam sahir de
+// synchronia e o indice apontaria para assento que não ha.
+TEST_CASE("juntar durante o embaralhado conserva a permutação inteira") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  fila.junta("f.wav");
+  REQUIRE(fila.ordem().size() == 6);
+  std::vector<std::size_t> visitados = passeio(fila);
+  CHECK(visitados.size() == 6);
+  CHECK(visitados.back() == 5);  // a que chegou depois toca por ultimo
+  std::sort(visitados.begin(), visitados.end());
+  const std::vector<std::size_t> todos = {0, 1, 2, 3, 4, 5};
+  CHECK(visitados == todos);
+}
+
+// Os dous modos são INDEPENDENTES: «uma» prende mesmo com o embaralhado ligado.
+TEST_CASE("os dous modos não se atropelam") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  fila.repetir(Repeticao::Uma);
+  const std::size_t assento = fila.indice();
+  CHECK(fila.proxima());
+  CHECK(fila.indice() == assento);
+  CHECK(fila.embaralhado());
+  CHECK(fila.repeticao() == Repeticao::Uma);
+}
+
+// LIGAR o que já está ligado é NADA. Sem a guarda, o pedido que todo cliente do
+// MPRIS tem por inocuo re-sorteava a permutação no meio da passagem, e faixa que
+// já tocara tornava a tocar antes de todas terem tocado. O caso anda METADE da
+// permutação de proposito: é no meio d'ella que o defeito se vê, e nunca no
+// principio, que é onde a estructura continua sã em qualquer das duas lavras.
+TEST_CASE("ligar o embaralhar que já está ligado não move nada") {
+  auto fila = com_cinco();
+  fila.embaralhar(true);
+  const std::vector<std::size_t> sorteada = fila.ordem();
+  REQUIRE(sorteada.size() == 5);
+  REQUIRE(fila.proxima());
+  REQUIRE(fila.proxima());
+  const std::size_t meio = fila.indice();
+
+  fila.embaralhar(true);            // o pedido que se tem por inocuo
+  CHECK(fila.ordem() == sorteada);  // a MESMA permutação
+  CHECK(fila.indice() == meio);     // e o mesmo assento d'ella
+
+  // E o resto da passagem esgota sem tornar ao que já tocou.
+  std::vector<std::size_t> restam;
+  while (fila.proxima()) restam.push_back(fila.indice());
+  REQUIRE(restam.size() == 2);
+  CHECK(restam[0] == sorteada[3]);
+  CHECK(restam[1] == sorteada[4]);
+
+  // Desligar e tornar a ligar RE-SORTEIA, e é o unico modo de o fazer: a faixa
+  // corrente volta ao principio da permutação nova.
+  fila.embaralhar(false);
+  fila.embaralhar(true);
+  CHECK(fila.ordem().front() == fila.indice());
+}
