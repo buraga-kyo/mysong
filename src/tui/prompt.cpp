@@ -5,6 +5,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/prompt.hpp"
 
+#include <utility>
+
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
@@ -77,12 +79,24 @@ ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
   const std::string junto = aceita_letra(modo) ? rotulo + " " + termo : rotulo;
   const std::size_t cabe = largura > 3 ? largura - 3 : 1;
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  const tokens::Triade viva = tokens::rgb(tokens::v500);
+  ftxui::Elements campo{pinta("\u258c ", tokens::v500),
+                        pinta(rabo(junto, cabe), tokens::text_bright)};
+  // O CARET, na cella logo a seguir ao ultimo caractere digitado. Pinta-se E
+  // pede-se o cursor do terminal para a mesma cella: o `focusCursorBar` é o no
+  // de foco que o FTXUI lê no fim da montagem, e sem no algum o cursor vae para
+  // o canto e esconde-se. Os dous juntos porque o terminal que não mostre
+  // cursor deixaria o campo mudo, e o bloco pintado continua a dizer onde se
+  // digita. O Confirma não leva caret: n'elle não se digita, responde-se.
+  if (aceita_letra(modo))
+    campo.push_back(ftxui::text(" ") |
+                    ftxui::bgcolor(ftxui::Color::RGB(viva.r, viva.g, viva.b)) |
+                    ftxui::focusCursorBar);
+  campo.push_back(ftxui::filler());
   return ftxui::vbox(
-      {a_trilha,
-       ftxui::hbox({pinta("\u258c ", tokens::v500),
-                    pinta(rabo(junto, cabe), tokens::text_bright),
-                    ftxui::filler()}) |
-           ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b))});
+      {a_trilha, ftxui::hbox(std::move(campo)) |
+                     ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g,
+                                                      fundo.b))});
 }
 
 }  // namespace mysong::tui
