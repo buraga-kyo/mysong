@@ -220,6 +220,26 @@ TEST_CASE("os argumentos do download não embutem etiqueta, e não sobrescrevem"
   CHECK(tem("/acervo/A/B/01 - T.%(ext)s"));
 }
 
+// A CAPA (issue #81). Sem estas duas bandeiras o yt-dlp não colhe miniatura alguma,
+// e o painel NOW PLAYING fica com o marcador para toda faixa que a Casa baixe. O
+// caso afere a LISTA, e por isso corre sem rede e sem yt-dlp installado.
+TEST_CASE("os argumentos do download pedem a miniatura convertida a jpeg") {
+  const std::vector<std::string> ditos =
+      nu::argumentos_do_download("https://exemplo/x", "/acervo/A/B/01 - T");
+  const auto tem = [&ditos](const std::string& q) {
+    return std::find(ditos.begin(), ditos.end(), q) != ditos.end();
+  };
+  CHECK(tem("--embed-thumbnail"));
+  // O `jpg` tem de vir COLLADO ao `--convert-thumbnails`: solto, elle seria tomado
+  // por URL, e o yt-dlp recusaria a chamada inteira.
+  const auto onde = std::find(ditos.begin(), ditos.end(), "--convert-thumbnails");
+  REQUIRE(onde != ditos.end());
+  REQUIRE(onde + 1 != ditos.end());
+  CHECK(*(onde + 1) == "jpg");
+  // E o texto da etiqueta continua a ser cousa nossa, que é o que a #34 mediu.
+  CHECK(tem("--no-embed-metadata"));
+}
+
 TEST_CASE("a busca pede o pseudo-endereco do yt-dlp, e apara o quanto") {
   const std::vector<std::string> ditos =
       nu::argumentos_da_busca("bach", 5, nu::Fonte::YouTube);
