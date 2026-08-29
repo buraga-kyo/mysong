@@ -922,4 +922,5 @@ Olhe para si mesmo, é essa a vida que você quer viver?
 Por que se importar? Você me tem, afinal
 Você está imaginando coisas de novo
 Imagine-se
-V
+Vá lá fora, respire
+Eu estava 
