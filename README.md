@@ -886,4 +886,6 @@ Você se esqueceu?
 Fugindo da realidade
 Você está conectado?
 A Jornada
-Já estive aqui a
+Já estive aqui antes?
+
+Vejo pessoas no canto 
