@@ -166,6 +166,28 @@ TEST_CASE("a galeria converte uma vez por album e por tamanho") {
   CHECK(galeria.quantos_renders() == 2u);
 }
 
+// A ORDEM, provada e não sómente declarada. Os dous estão presentes, e a etiqueta
+// leva arte PODRE de proposito: ganhando ella, o chafa engasgaria e `achada` viria
+// falso. Vindo verdadeiro, foi o arquivo ao lado que se tomou, que é a ordem que o
+// cabeçalho promette.
+TEST_CASE("com capa ao lado e na etiqueta ganha a do lado") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  REQUIRE(lavra_a_etiqueta(faixa, "isto não é imagem alguma"));
+  REQUIRE_FALSE(nu::arte_embutida(faixa).empty());
+
+  const std::filesystem::path imagem = cova.raiz() / "cover.png";
+  const std::string commando =
+      "ffmpeg -y -f lavfi -i color=c=teal:s=64x64 -frames:v 1 '" +
+      imagem.string() + "' >/dev/null 2>&1";
+  if (std::system(commando.c_str()) != 0 || !std::filesystem::exists(imagem)) {
+    WARN("sem ffmpeg: o caso da preferencia não corre");
+    return;
+  }
+  nu::Galeria galeria;
+  CHECK(galeria.capa(faixa, 10, 5).achada);
+}
+
 TEST_CASE("album sem capa devolve a ausencia, e guarda-a") {
   const Cova cova;
   nu::Galeria galeria;
