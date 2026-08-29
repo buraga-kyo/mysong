@@ -697,7 +697,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
-               ftxui::text(trilha) | ftxui::dim,
+               // O caret SÓ nos modos que digitam. O `Confirma` captura a
+               // tecla mas não é campo de texto: é pergunta de uma tecla, e
+               // caret n'ella convidaria a escrever onde não se escreve.
+               tui::elemento_da_trilha(trilha,
+                                       digita != Digita::Nada &&
+                                           digita != Digita::Confirma,
+                                       larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador),
                    ftxui::text("  "),
