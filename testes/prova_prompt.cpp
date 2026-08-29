@@ -11,6 +11,9 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/color.hpp>
+#include <ftxui/screen/screen.hpp>
 #include "tui/prompt.hpp"
 
 namespace tui = mysong::tui;
@@ -63,4 +66,48 @@ TEST_CASE("cada modo que captura tecla diz o seu rotulo") {
   for (const tui::Modo modo : kTodos)
     if (modo != tui::Modo::Nada)
       CHECK_FALSE(tui::rotulo_do_prompt(modo, "x").empty());
+}
+
+namespace {
+
+// O ÉCRAN DE PAPEL, lido cella a cella. Não se lê o `ToString`, pela razão que a
+// prova da tabella deu: elle mette escapes no meio dos bytes.
+struct Papel {
+  std::vector<std::string> linhas;
+  std::vector<ftxui::Color> fundos;  // o fundo da primeira cella de cada linha
+  ftxui::Screen::Cursor cursor;
+};
+
+Papel pintar(const std::string& trilha, tui::Modo modo, const std::string& termo,
+             std::size_t largura) {
+  ftxui::Element quadro =
+      tui::elemento_do_topo(trilha, modo, "YouTube", termo, largura);
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(largura)),
+                            ftxui::Dimension::Fixed(3));
+  ftxui::Render(ecran, quadro);
+  Papel papel;
+  for (int y = 0; y < 3; ++y) {
+    std::string linha;
+    for (int x = 0; x < static_cast<int>(largura); ++x)
+      linha += ecran.PixelAt(x, y).character;
+    papel.linhas.push_back(linha);
+    papel.fundos.push_back(ecran.PixelAt(0, y).background_color);
+  }
+  papel.cursor = ecran.cursor();
+  return papel;
+}
+}  // namespace
+
+TEST_CASE("a trilha sobrevive a todos os oito modos") {
+  for (const tui::Modo modo : kTodos) {
+    const Papel papel = pintar("ARTISTS > AYMEE > Voce", modo, "jk", 60);
+    CHECK(papel.linhas[0].substr(0, 22) == "ARTISTS > AYMEE > Voce");
+  }
+}
+
+TEST_CASE("o campo abre em linha propria por baixo da trilha") {
+  const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
+  CHECK(papel.linhas[0].substr(0, 7) == "ARTISTS");
+  CHECK(papel.linhas[1].find("BUSCA NA REDE (YouTube): jk") != std::string::npos);
 }
