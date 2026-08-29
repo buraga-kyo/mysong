@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -96,6 +97,11 @@ std::string saneia_utf8(std::string_view crua);
 // A BIBLIOTHECA: o lado que LÊ. Abre o banco em sómente-leitura, e banco
 // ausente é resposta vazia e não erro — o acervo que ainda não se varreu é
 // caso legitimo, e não avaria. Nenhuma consulta lança pela borda.
+//
+// TRANCADA POR DENTRO, á maneira do Tocador da issue #50: o socket de commando
+// lê-a do fio do relogio, e o reabre() troca o punho do fio da tela. Punho lido
+// por um fio emquanto outro o fecha é uso de banco já fechado, e o ponteiro em
+// si é corrida que o compilador tem licença de moer.
 class Biblioteca {
  public:
   explicit Biblioteca(std::filesystem::path banco);
@@ -133,6 +139,11 @@ class Biblioteca {
   bool acha_por_caminho(std::string_view caminho, Faixa& sahida) const;
 
  private:
+  // A tranca NÃO é reentrante: porta publica alguma d'esta classe chama outra,
+  // e a segunda tomada seria abraço de si mesma. O destructor não a toma, que o
+  // objecto sobrevive a todos os fios que o lêem: a janella junta-os antes de a
+  // pilha se desfazer.
+  mutable std::mutex tranca_;
   std::filesystem::path banco_;
   sqlite3* punho_ = nullptr;
 };

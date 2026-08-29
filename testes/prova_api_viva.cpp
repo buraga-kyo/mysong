@@ -24,6 +24,7 @@
 #include <doctest/doctest.h>
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -78,10 +79,35 @@ class DirectorioTemporario {
   DirectorioTemporario& operator=(const DirectorioTemporario&) = delete;
 
   bool valido() const { return !caminho_.empty(); }
+  const std::string& raiz() const { return caminho_; }
   std::string dentro(const std::string& nome) const { return caminho_ + "/" + nome; }
 
  private:
   std::string caminho_;
+};
+// A GUARDA do ambiente. O caminho de fabrica sahe de $XDG_RUNTIME_DIR, e prova
+// que muta variavel de ambiente ha de a repor, senão o caso seguinte herda o que
+// este poz. Repõe tambem o caso de a variavel não existir antes, que apagar o que
+// não havia é cousa diversa de repor o que havia.
+class Ambiente {
+ public:
+  Ambiente(std::string nome, const std::string& valor) : nome_(std::move(nome)) {
+    const char* antigo = ::getenv(nome_.c_str());
+    havia_ = antigo != nullptr;
+    if (havia_) antigo_ = antigo;
+    ::setenv(nome_.c_str(), valor.c_str(), 1);
+  }
+  ~Ambiente() {
+    if (havia_) ::setenv(nome_.c_str(), antigo_.c_str(), 1);
+    else ::unsetenv(nome_.c_str());
+  }
+  Ambiente(const Ambiente&) = delete;
+  Ambiente& operator=(const Ambiente&) = delete;
+
+ private:
+  std::string nome_;
+  std::string antigo_;
+  bool havia_ = false;
 };
 // UM CLIENTE DE VERDADE, e não dublê: socket AF_UNIX, connect, send e recv. É por
 // elle que se prova o que só o transporte pode errar.
@@ -329,6 +355,71 @@ TEST_CASE("o caminho recusa-se por nome quando falta o XDG ou quando nao cabe") 
   CHECK(razao.find("108") != std::string::npos);
   CHECK(razao.find(std::to_string(comprido.size())) != std::string::npos);
 }
+// O CAMINHO DE FABRICA, ponta a ponta: é o que a issue #69 pede por escripto, e é
+// por onde o operador entra de verdade. Sem este caso a bateria provaria o
+// transporte n'um caminho injectado, e nunca aquelle que a janella usa.
+TEST_CASE("o socket sobe no caminho de fabrica e some quando o programa fecha") {
+  const DirectorioTemporario casa;
+  REQUIRE(casa.valido());
+  const Ambiente posto("XDG_RUNTIME_DIR", casa.raiz());
+  const std::string caminho = mysong::api::caminho_padrao_do_socket();
+  REQUIRE(caminho == casa.dentro("mysong.sock"));
+
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+  {
+    std::string razao;
+    auto servidor = Servidor::abrir(tocador, caminho, &razao);
+    REQUIRE_MESSAGE(servidor.has_value(), razao);
+    Cliente cliente(caminho);
+    REQUIRE(cliente.ligado());
+    cliente.manda("{\"verbo\":\"versao\"}\n");
+    const std::vector<std::string> linhas = cliente.colhe(*servidor, 1);
+    REQUIRE(linhas.size() == 1);
+    CHECK(linhas[0].find("\"ok\":true") != std::string::npos);
+    CHECK(linhas[0].find("\"obra\":\"mysong\"") != std::string::npos);
+  }
+  // Fechado o programa, o arquivo sahe do disco: é a segunda metade do aceite, e
+  // é o que impede o orphao de envenenar a corrida seguinte.
+  struct ::stat marca {};
+  CHECK(::stat(caminho.c_str(), &marca) != 0);
+}
+
+// O DITO do diagnostico nos TRES estados que o operador pode encontrar. Sem este
+// caso, a linha do --sonda seria a unica parte d'esta obra que só o olho afere.
+TEST_CASE("o dito do socket diz o caminho e quem escute n'elle") {
+  MotorMudo motor;
+  mysong::nucleo::Tocador tocador(motor);
+
+  SUBCASE("sem a variavel: diz que caminho nao ha e nomeia a variavel") {
+    // Vazia e ausente entram pelo mesmo galho da fabrica, e a guarda repõe.
+    const Ambiente posto("XDG_RUNTIME_DIR", "");
+    const std::string dito = mysong::api::texto_do_socket();
+    CHECK(dito.find("XDG_RUNTIME_DIR") != std::string::npos);
+    CHECK(dito.find("nao ha") != std::string::npos);
+  }
+
+  SUBCASE("com a variavel e sem servidor: diz o caminho e que ninguem escuta") {
+    const DirectorioTemporario casa;
+    REQUIRE(casa.valido());
+    const Ambiente posto("XDG_RUNTIME_DIR", casa.raiz());
+    const std::string dito = mysong::api::texto_do_socket();
+    CHECK(dito.find(casa.dentro("mysong.sock")) != std::string::npos);
+    CHECK(dito.find("ninguem escuta") != std::string::npos);
+  }
+
+  SUBCASE("com o servidor de pe: diz que ha quem escute") {
+    const DirectorioTemporario casa;
+    REQUIRE(casa.valido());
+    const Ambiente posto("XDG_RUNTIME_DIR", casa.raiz());
+    std::string razao;
+    auto servidor = Servidor::abrir(tocador, casa.dentro("mysong.sock"), &razao);
+    REQUIRE_MESSAGE(servidor.has_value(), razao);
+    CHECK(mysong::api::texto_do_socket().find("ha quem escute") !=
+          std::string::npos);
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.

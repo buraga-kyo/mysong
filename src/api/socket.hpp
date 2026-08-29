@@ -40,6 +40,13 @@ namespace mysong::api {
 // commando ahi deixaria qualquer usuario da machina governar o tocador alheio.
 std::string caminho_padrao_do_socket();
 
+// O DITO do socket para o diagnostico: o caminho, e se ha quem escute n'elle
+// n'este instante. Sonda por tentativa de ligação, que é a unica prova de vida
+// que não mente quando o processo morre de morte matada; na duvida diz que ha,
+// que é o lado seguro. NADA cria em disco: nem arquivo, nem directorio, donde o
+// modo de diagnostico não muta a machina que veio diagnosticar.
+std::string texto_do_socket();
+
 class Servidor {
  public:
   // Teto de clientes ao mesmo tempo. Além d'elle responde-se «lotado» e fecha-se,
