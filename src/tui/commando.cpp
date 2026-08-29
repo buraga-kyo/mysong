@@ -133,6 +133,13 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   // de fonte não estraga cousa gravada; a guarda da secção fica na janella.
   if (tecla == ftxui::Event::Character('f')) return {Verbo::TrocaFonte, 0.0};
 
+  // ── As duas do modo de reprodução (issue #62) ────────────────────────────
+  // O `z` é a convenção do ncmpcpp e do mpd, e quem vem de lá não reaprende o
+  // dedo; o `x` é o visinho d'elle no teclado, e as duas estavam livres.
+  // Minusculas, que trocar de modo não estraga cousa gravada.
+  if (tecla == ftxui::Event::Character('z')) return {Verbo::Embaralhar, 0.0};
+  if (tecla == ftxui::Event::Character('x')) return {Verbo::Repetir, 0.0};
+
   return {Verbo::Nada, 0.0};
 }
 

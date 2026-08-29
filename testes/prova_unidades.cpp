@@ -93,5 +93,24 @@ TEST_CASE("a URL escapa tudo menos a barra e o arco livre") {
   CHECK(ap::url_do_arquivo("/a-b/c.d_e~f") == "file:///a-b/c.d_e~f");
 }
 
+// A taboa do LoopStatus, nos DOUS sentidos. Vae pelos dous de proposito: taboa
+// que se prova n'um sentido só pode estar torta do outro lado sem que a prova
+// accuse, e é o outro lado que recebe o que o playerctl escreve.
+TEST_CASE("o repetir vae e volta nos tres nomes do MPRIS") {
+  CHECK(ap::repeticao_do_mpris(nu::Repeticao::Nenhuma) == "None");
+  CHECK(ap::repeticao_do_mpris(nu::Repeticao::Uma) == "Track");
+  CHECK(ap::repeticao_do_mpris(nu::Repeticao::Todas) == "Playlist");
+
+  CHECK(ap::repeticao_do_nome("None") == nu::Repeticao::Nenhuma);
+  CHECK(ap::repeticao_do_nome("Track") == nu::Repeticao::Uma);
+  CHECK(ap::repeticao_do_nome("Playlist") == nu::Repeticao::Todas);
+
+  // Nome que a especificação não tem devolve VAZIO, e nunca «nenhuma»: a
+  // differença é a Casa recusar o pedido em vez de desligar o modo por si.
+  CHECK_FALSE(ap::repeticao_do_nome("Girar").has_value());
+  CHECK_FALSE(ap::repeticao_do_nome("").has_value());
+  CHECK_FALSE(ap::repeticao_do_nome("track").has_value());  // a caixa importa
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

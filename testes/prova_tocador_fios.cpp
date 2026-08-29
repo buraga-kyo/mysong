@@ -73,7 +73,7 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
   });
   std::thread tela([&] {
     for (int volta = 0; volta < VOLTAS; ++volta) {
-      switch (volta % 8) {
+      switch (volta % 10) {
         case 0: tocador.pausar(); break;
         case 1: tocador.retomar(); break;
         case 2: tocador.buscar(volta % 30); break;
@@ -82,6 +82,11 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
         case 5: tocador.anterior(); break;
         case 6: tocador.junta("fio_" + std::to_string(volta)); break;
         case 7: tocador.ir_para(0); tocador.tocar_corrente(); break;
+        // Os dous modos (issue #62). Alternar e ciclar mexem na permutação e no
+        // passo, que é estado NOVO da fila; sem elles aqui, o sanitizador não
+        // olharia para o unico estado que esta issue accrescentou.
+        case 8: tocador.alterna_embaralhar(); break;
+        case 9: tocador.cicla_repetir(); break;
       }
     }
   });
@@ -89,7 +94,7 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
   tela.join();
 
   const Retracto fim = tocador.retracto();
-  CHECK(fim.tamanho == 2 + VOLTAS / 8);
+  CHECK(fim.tamanho == 2 + VOLTAS / 10);
   CHECK(motor.bombeadas() == static_cast<unsigned long>(VOLTAS));
   CHECK((fim.volume >= 0 && fim.volume <= 100));
 }
@@ -121,6 +126,8 @@ TEST_CASE("tres fios, mil voltas: o barramento entra na conta") {
       const Retracto agora = tocador.retracto();  // Get e GetAll fazem isto
       tocador.volume(agora.volume);               // e Set(Volume) faz isto
       if (volta % 100 == 99) tocador.proxima();   // Next, na borda da fila
+      if (volta % 3 == 0) tocador.embaralhar(volta % 6 == 0);  // Set(Shuffle)
+      if (volta % 5 == 0) tocador.cicla_repetir();             // Set(LoopStatus)
     }
   });
   relogio.join();

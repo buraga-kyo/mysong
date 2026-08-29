@@ -170,12 +170,11 @@ std::string_view razao_da_colheita(Colheita colheita);
 
 // ── O CASAMENTO PELO CATALOGO (issue #13) ───────────────────────────────────
 
-// A TOLERANCIA do casamento, em segundos. Doze: o mesmo audio no YouTube costuma
-// trazer um ou dous segundos de silencio nas pontas, e a versão ao vivo ou a
-// estendida differe de muito mais que isso. Doze aceita a primeira e recusa a
-// segunda, e o numero está aqui n'uma constante com nome para que quem o mude mude
-// um logar e diga por que.
-inline constexpr int TOLERANCIA_DO_CASAMENTO = 12;
+// A TOLERANCIA do casamento, em segundos. DERIVA de kToleranciaSeg, que mora em
+// musicbrainz.hpp e é a fonte do numero (issue #63); o nome fica, que é por elle
+// que a Casa a chama desde a issue #13. Quem quiser mudar os doze muda a fonte,
+// e não esta linha, que d'antes declarava o mesmo numero uma segunda vez.
+inline constexpr int TOLERANCIA_DO_CASAMENTO = kToleranciaSeg;
 
 // ── A BUSCA NO YOUTUBE (issue #12) ──────────────────────────────────────────
 

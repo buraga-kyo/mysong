@@ -36,6 +36,8 @@
 
 #include <unistd.h>
 
+#include <curl/curl.h>
+
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/screen/terminal.hpp>
@@ -163,6 +165,12 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += ':';
   marca += std::to_string(agora.tamanho);
   marca += ':';
+  // Os DOUS MODOS (issue #62). Sem elles aqui, teclar `z` com a musica pausada
+  // mudava o modo e a fita ficava como estava até o operador carregar n'outra
+  // tecla por acaso: é o defeito que a issue #49 já apanhou uma vez n'esta Casa.
+  marca += agora.embaralhado ? 'E' : '.';
+  marca += static_cast<char>('0' + static_cast<int>(agora.repeticao));
+  marca += ':';
   marca += agora.faixa;
   marca += ':';
   // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
@@ -205,6 +213,8 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   retracto.duracao = agora.duracao;
   retracto.volume = agora.volume;
   retracto.tamanho = agora.tamanho;
+  retracto.embaralhado = agora.embaralhado;
+  retracto.repeticao = agora.repeticao;
   if (agora.tamanho > 0) {
     retracto.indice = agora.indice;
     retracto.titulo = agora.faixa;
@@ -246,6 +256,11 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
       else tocador.volume(static_cast<int>(ordem.alvo));
       break;
     case tui::Verbo::Sahir: sahir.store(true); break;
+    // Os DOUS MODOS (issue #62). Alternar e ciclar são punhos do tocador, e não
+    // «ler o retracto e depois escrever»: entre a leitura e a escripta caberia o
+    // socket ou o barramento, e a tecla assentaria o contrario do que se viu.
+    case tui::Verbo::Embaralhar: tocador.alterna_embaralhar(); break;
+    case tui::Verbo::Repetir: tocador.cicla_repetir(); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
     // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
@@ -1047,9 +1062,23 @@ int recusar_e_sahir(const nucleo::Relatorio& relatorio) {
   return 1;
 }
 
+// O CURL DA CASA. O libcurl ergue-se UMA vez, antes de fio algum: sem esta
+// chamada a inicialização implicita corre dentro do primeiro curl_easy_init, e
+// os dous obreiros da baixa podem chegar lá juntos. Que o curl de hoje tolere
+// isso é accidente, e não garantia. Ergue-se AQUI, e não n'um dos tres modulos
+// que o usam, porque aqui é que a Casa ergue o que é do processo inteiro; e por
+// objecto, porque main() tem quatro sahidas e esquecer uma seria vasamento.
+struct CurlDaCasa {
+  CurlDaCasa() { (void)curl_global_init(CURL_GLOBAL_DEFAULT); }
+  ~CurlDaCasa() { curl_global_cleanup(); }
+  CurlDaCasa(const CurlDaCasa&) = delete;
+  CurlDaCasa& operator=(const CurlDaCasa&) = delete;
+};
+
 }  // namespace
 
 int main(int argc, char** argv) {
+  const CurlDaCasa curl_da_casa;
   const nucleo::Relatorio relatorio =
       nucleo::sondar(nucleo::inquerito_do_systema());
 

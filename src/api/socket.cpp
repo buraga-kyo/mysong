@@ -110,7 +110,8 @@ constexpr std::size_t kTetoDaBatida = 4u * Servidor::kTetoDaLinha;
 
 std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
                                         const std::string& caminho,
-                                        std::string* razao) {
+                                        std::string* razao,
+                                        const Arredores& arredores) {
   const auto recusa = [razao](std::string dito) {
     if (razao != nullptr) *razao = std::move(dito);
     return std::optional<Servidor>{};
@@ -161,17 +162,22 @@ std::optional<Servidor> Servidor::abrir(nucleo::Tocador& tocador,
     return recusa("nao se pudo escutar em " + caminho + ": " +
                   std::strerror(erro_da_escuta));
   }
-  return Servidor(tocador, escuta, caminho);
+  return Servidor(tocador, escuta, caminho, arredores);
 }
 
-Servidor::Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho) noexcept
-    : tocador_(&tocador), escuta_(escuta), caminho_(std::move(caminho)) {}
+Servidor::Servidor(nucleo::Tocador& tocador, int escuta, std::string caminho,
+                   const Arredores& arredores) noexcept
+    : tocador_(&tocador),
+      arredores_(arredores),
+      escuta_(escuta),
+      caminho_(std::move(caminho)) {}
 
 // O MOVE esvazia a fonte, e é por isso que elle é seguro: o destructor da fonte
 // corre de todo modo, e sem esvaziar ella desligaria o arquivo que o destino
 // acabou de herdar.
 Servidor::Servidor(Servidor&& outro) noexcept
     : tocador_(outro.tocador_),
+      arredores_(outro.arredores_),
       escuta_(outro.escuta_),
       caminho_(std::move(outro.caminho_)),
       clientes_(std::move(outro.clientes_)) {
@@ -267,7 +273,7 @@ void Servidor::colhe(Cliente& cliente) {
   for (std::size_t corte; (corte = cliente.entrada.find('\n')) != std::string::npos;) {
     const std::string linha = cliente.entrada.substr(0, corte);
     cliente.entrada.erase(0, corte + 1);
-    const std::string resposta = responde(*tocador_, linha);
+    const std::string resposta = responde(*tocador_, arredores_, linha);
     // Resposta vazia é a linha em branco, e a ella nada se manda: nem uma linha
     // vazia, que o cliente leria como mensagem.
     if (resposta.empty()) continue;
