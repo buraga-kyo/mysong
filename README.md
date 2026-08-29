@@ -438,4 +438,4 @@ MIT. Veja o arquivo LICENSE.
                                                                                                                                                                                                                                                                                                                                                       
 
              o                                                                     o        o                o        o                           
-            <|>                                                                   <|>     _<|>_             <|>   
+            <|>                                                                   <|>     _<|>_             <|>     _<|>_                       
