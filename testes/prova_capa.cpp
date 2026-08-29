@@ -6,6 +6,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <taglib/attachedpictureframe.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/mpegfile.h>
 #include <unistd.h>
 
 #include <filesystem>
@@ -46,7 +49,50 @@ class Cova {
 
 int Cova::semente_ = 0;
 
+// Um PNG de um pixel, escripto octeto a octeto. Chamar o ffmpeg aqui seria trocar a
+// prova da capa embutida por uma prova do ffmpeg: a issue #81 pede que ella corra sem
+// ferramenta alheia e sem rede, e é este arranjo que o cumpre.
+const std::string& png_de_um_pixel() {
+  static const unsigned char kCrus[] = {
+      0x89, 'P',  'N',  'G',  0x0D, 0x0A, 0x1A, 0x0A, 0,    0,    0,    13,
+      'I',  'H',  'D',  'R',  0,    0,    0,    1,    0,    0,    0,    1,
+      8,    2,    0,    0,    0,    0x90, 0x77, 0x53, 0xDE, 0,    0,    0,
+      12,   'I',  'D',  'A',  'T',  0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+      0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0xB0, 0,    0,    0,
+      0,    'I',  'E',  'N',  'D',  0xAE, 0x42, 0x60, 0x82};
+  static const std::string kPng(reinterpret_cast<const char*>(kCrus), sizeof kCrus);
+  return kPng;
+}
+
+// lavra_a_etiqueta — põe um APIC na faixa, pela MESMA taglib com que a obra o lê.
+// O corpo do arquivo é um quadro de MPEG minimo: basta para a taglib o aceitar, e
+// faixa que toque não é o que este caso afere.
+bool lavra_a_etiqueta(const std::filesystem::path& faixa, const std::string& arte) {
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  TagLib::MPEG::File arquivo(faixa.c_str());
+  if (!arquivo.isValid()) return false;
+  auto* quadro = new TagLib::ID3v2::AttachedPictureFrame();
+  quadro->setMimeType("image/png");
+  quadro->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+  quadro->setPicture(
+      TagLib::ByteVector(arte.data(), static_cast<unsigned>(arte.size())));
+  arquivo.ID3v2Tag(true)->addFrame(quadro);
+  return arquivo.save();
+}
+
 }  // namespace
+
+// A CAPA EMBUTIDA. Este caminho existe desde a issue #44 e nunca teve prova: andou
+// certo por sorte. Corre sem chafa e sem rede, que é o que a issue #81 pede.
+TEST_CASE("a capa embutida lê-se da etiqueta lavrada á mão") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  const std::string arte = png_de_um_pixel();
+  REQUIRE(lavra_a_etiqueta(faixa, arte));
+  // Os MESMOS octetos voltam. Aferir sómente que «veio alguma cousa» deixaria passar
+  // uma leitura que truncasse a arte, e arte truncada o chafa recusa.
+  CHECK(nu::arte_embutida(faixa) == arte);
+}
 
 TEST_CASE("a capa ao lado acha-se pela ordem de preferencia") {
   const Cova cova;
