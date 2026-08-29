@@ -875,4 +875,8 @@ ____ __   ___  __   ____   ___  ____ ____ ____ ___  ____ ____ ____ ____
              |_|                                                      |_|               |_|
 DE FAUXX:
 
-EU sou
+EU sou ruído
+
+Encare-se
+Éter
+Tudo o
