@@ -949,4 +949,5 @@ Não precisa se preocupar
 Opiniões não valem nada
 Parece que não consigo encontrar uma saída daqui
 Isso é real
-Você não pr
+Você não precisa mais disso
+Você deveria
