@@ -66,13 +66,22 @@ void assenta_endereco(::sockaddr_un* endereco, const std::string& caminho) {
   std::memcpy(endereco->sun_path, caminho.c_str(), caminho.size());
 }
 
-// HA QUEM ESCUTE? O socket é a propria prova de vida: tenta-se connectar, e quem
+// QUEM ESCUTA? O socket é a propria prova de vida: tenta-se connectar, e quem
 // responde está vivo. PID algum se consulta e arquivo de tranca algum se escreve,
-// que ambos mentem quando o processo morre de morte matada. Na duvida (nem se pudo
-// abrir a sonda) responde-se SIM, que é o lado seguro: não se desliga o alheio.
-bool ha_quem_escute(const std::string& caminho) {
+// que ambos mentem quando o processo morre de morte matada.
+//
+// TRES desfechos, e não dous, porque os dous consumidores lêem a duvida ao
+// contrario um do outro: quem vae ABRIR recúa na duvida, que desligar o alheio é
+// peor que não abrir; quem vae DIZER no diagnostico não pode affirmar o que não
+// sondou, que o modo --sonda existe para acabar com a adivinhação.
+enum class Escuta { Ha, Ninguem, NaoSeSondou };
+
+Escuta quem_escuta(const std::string& caminho, int* erro = nullptr) {
   const int sonda = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (sonda < 0) return true;
+  if (sonda < 0) {
+    if (erro != nullptr) *erro = errno;
+    return Escuta::NaoSeSondou;
+  }
   ::sockaddr_un endereco{};
   assenta_endereco(&endereco, caminho);
   const int veredicto = ::connect(
@@ -80,7 +89,12 @@ bool ha_quem_escute(const std::string& caminho) {
   const int guardado = errno;
   ::close(sonda);
   errno = guardado;
-  return veredicto == 0;
+  return veredicto == 0 ? Escuta::Ha : Escuta::Ninguem;
+}
+
+// Na duvida, SIM: é o lado seguro de quem vae abrir, e o alheio não se desliga.
+bool ha_quem_escute(const std::string& caminho) {
+  return quem_escuta(caminho) != Escuta::Ninguem;
 }
 
 // O ORÇAMENTO de uma batida, por cliente. O laço da colheita corre na linha do
