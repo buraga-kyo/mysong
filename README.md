@@ -935,4 +935,6 @@ Pare de receber comandos
 Desplugue-se, você precisa disso
 Tema-me
 Eu sou a morte
-Conecte
+Conecte-se
+Pare e escute
+Relaxamento
