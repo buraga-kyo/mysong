@@ -49,6 +49,12 @@ std::string apara(const std::string& crua, std::size_t largura) {
 
 }  // namespace
 
+ftxui::Element caret_do_campo() {
+  // Espaço, e não cadeia vazia: o cursor pousa no `x_min` da caixa d'este nó, e
+  // nó de largura zero não tem caixa que sirva de endereço.
+  return ftxui::text(" ") | ftxui::focusCursorBar;
+}
+
 ftxui::Element elemento_da_barra(const Navegador& navegador) {
   // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
   // faz o dedo do operador errar o alvo que já sabia de memoria.

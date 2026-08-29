@@ -49,6 +49,17 @@ ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas
 ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
                                 std::size_t collunas, std::size_t linhas);
 
+// caret_do_campo — a cella de UMA collunha onde o cursor do terminal pousa
+// emquanto ha prompt aberto. É o UNICO logar d'esta obra que pede foco, e é de
+// proposito: o `Render` do FTXUI elege UM nó focado por quadro e cala os outros
+// sem aviso, donde dous pedidos seriam um pedido a perder-se em silencio.
+//
+// Barra QUIETA, e não a piscar: a queixa que abriu a issue #78 foi «o meu cursor
+// fica piscando», e dar-lhe um caret que pisca seria responder á queixa com a
+// queixa. O FTXUI usa o foco tambem para rolar dentro de um `frame`; esta obra
+// não tem `frame` algum, e quem puser um ha de saber que herda esta linha.
+ftxui::Element caret_do_campo();
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
