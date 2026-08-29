@@ -67,6 +67,7 @@
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/navegador.hpp"
+#include "tui/prompt.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
@@ -438,15 +439,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
   tela.TrackMouse(false);
   std::atomic<bool> sahir{false};
-  // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
-  // booleanos: dous booleanos admittem o estado «ambos», que não existe.
-  // A PROCURA entra no mesmo enum, pela mesma razão: tres destinos, e não tres
-  // booleanos, que tres booleanos admittem o estado «os tres», que não existe.
-  // O NOME e a CONFIRMAÇÃO entram no mesmo enum: são dous destinos mais, e a razão
-  // é a mesma que fez a Procura entrar aqui em vez de n'um booleano ao lado.
-  enum class Digita {
-    Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma, Lista
-  } digita = Digita::Nada;
+  // O MODO de digitar. Um enum, e não booleanos ao lado: dous booleanos
+  // admittem o estado «ambos», que não existe. Mudou-se de casa na issue #79 e
+  // vive agora em `tui::Modo`, que o TOPO da tela depende d'elle e o topo tem
+  // de se provar, ao passo que a janella não se prova. O apelido fica para o
+  // despacho de teclas continuar a dizer `Digita::Busca` sem mudar uma linha.
+  using Digita = tui::Modo;
+  Digita digita = Digita::Nada;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
