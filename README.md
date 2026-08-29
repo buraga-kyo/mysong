@@ -931,4 +931,5 @@ Eu sou
 Emoções humanas
 Isso parece vazio
 Acordando pela primeira vez
-P
+Pare de receber comandos
+Despl
