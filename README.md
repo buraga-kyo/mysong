@@ -242,6 +242,33 @@ ao acervo, elege-se a faixa e tecla-se `a`. Dentro da lista, `K` e `J` movem o
 item, `t` retira-o, e Enter enche a fila do nucleo com a lista TODA na ordem
 gravada, comecando na faixa eleita.
 
+### O socket de commando
+
+Com o mysong aberto ha um socket Unix em `$XDG_RUNTIME_DIR/mysong.sock`, por onde
+se governa o tocador de fora: uma linha de JSON entra, uma linha de JSON sahe.
+
+```sh
+printf '{"verbo":"estado"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+printf '{"verbo":"pausar"}\n' | nc -U -q 1 "$XDG_RUNTIME_DIR/mysong.sock"
+```
+
+O `-q 1` importa: sem elle o `nc` pode sahir antes de ler a resposta. O arquivo
+nasce em modo `0600` dentro do `$XDG_RUNTIME_DIR`, que e `0700`, e essa e a
+proteccao inteira: nao ha senha nem cifra. Fechado o programa, o arquivo sahe do
+disco.
+
+Sem `$XDG_RUNTIME_DIR` o socket nao sobe, e o mysong diz por que no stderr; a
+tela abre e a musica toca do mesmo jeito. Nao ha recuo a `/tmp`, que e escripta
+de todos: socket de commando la deixaria qualquer usuario da machina governar o
+tocador alheio.
+
+Havendo outro mysong ja a servir naquelle caminho, o segundo NAO lhe rouba o
+socket: corre sem elle e diz por que. `./build/mysong --sonda` diz o caminho e se
+ha quem escute nelle.
+
+Os verbos todos, a forma das respostas e os codigos de erro estao em
+[`docs/protocolo-do-socket.md`](docs/protocolo-do-socket.md).
+
 ## Como se roda a bateria de testes
 
 ```sh
