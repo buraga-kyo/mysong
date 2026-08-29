@@ -50,6 +50,11 @@ target_sources(mysong_testes PRIVATE prova_api.cpp prova_api_viva.cpp)
 #     -tc='ler a bibliotheca emquanto outro fio a reabre não a parte'
 #
 # O setarch é d'esta machina: sem elle o sanitizador morre no mapeamento.
+#
+# E medido: CINCO casos do prova_api_viva.cpp, da issue #4, já levam vírgula no
+# nome. Pelo ctest correm todos, que elle cita o nome inteiro; pelo -tc á mão,
+# pedem curinga («-tc='*byte a byte'»), senão o binario salta os 269 e sahe com
+# successo.
 
 # ══════════════════════════════════════════════════════════════════════════
 # ─── Prova do espectro (issue #5) ───────────────────────────────────────────
