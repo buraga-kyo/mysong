@@ -36,6 +36,10 @@ bool aceita_letra(Modo modo) noexcept;
 // linhas_do_topo — UMA linha (a trilha) fechado o prompt, DUAS aberto.
 std::size_t linhas_do_topo(Modo modo) noexcept;
 
+// assenta_novidade — a tela pode tomar novidade de fio de fundo? SÓMENTE em
+// Nada: com o campo de pé a secção CONGELA, e o que chega espera (issue #79).
+bool assenta_novidade(Modo modo) noexcept;
+
 // rotulo_do_prompt — o que se escreve á esquerda do campo. O `contexto` é a
 // fonte na Procura e o nome da lista no Confirma; os mais ignoram-no.
 std::string rotulo_do_prompt(Modo modo, std::string_view contexto);

@@ -44,6 +44,8 @@ std::size_t linhas_do_topo(Modo modo) noexcept {
   return modo == Modo::Nada ? 1u : 2u;
 }
 
+bool assenta_novidade(Modo modo) noexcept { return modo == Modo::Nada; }
+
 // Os ROTULOS. Ficam as palavras que a janella já dizia, e sómente o filtro
 // ganha palavra sua: uma barra sozinha n'uma linha nova lê-se como sujeira da
 // tela, e não como campo em que se digita.

@@ -581,9 +581,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
     // na colheita, donde a lista se assenta UMA vez e o eleito não volta ao alto a
     // cada quadro.
+    //
+    // E SÓMENTE COM O CAMPO FECHADO. As tres colheitas d'este pintor que mutam o
+    // navegador guardam-se pelo `assenta_novidade`: com o prompt de pé, a secção
+    // congela. A tela a mudar debaixo do operador sem elle mandar É o defeito da
+    // issue #79, e não importa se a mudança vem de tecla ou de fio de fundo.
+    // Nada se perde: o correio guarda o recado até ser colhido, e a bandeira do
+    // acervo novo só se consome na leitura. A novidade espera, e assenta no
+    // primeiro quadro depois de o campo fechar.
     std::vector<nucleo::Achado> achados;
     std::string recado;
-    if (correio.colhe(&achados, &recado)) {
+    if (tui::assenta_novidade(digita) && correio.colhe(&achados, &recado)) {
       // A guarda da COLHEITA, par da do fio: entre a checagem de lá e o pouso
       // aqui cabe um f, e a resposta que já não é da fonte vigente cai. Os
       // achados vêm estampados; a resposta VAZIA é sempre de fonte de rede,
@@ -602,7 +610,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // para se conferir.
     std::vector<nucleo::Catalogo> lidos;
     std::string recado_da_lista;
-    if (correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
+    if (tui::assenta_novidade(digita) &&
+        correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
       if (!lidos.empty() && !lidos.front().faixas.empty())
         navegador.mostra_catalogo(std::move(lidos.front()));
       aviso_da_rede = recado_da_lista;
@@ -614,7 +623,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tratador de teclas, que corre no fio da tela; recarregá-lo do relogio era
     // mutá-lo de um fio e lê-lo de outro. O pintor corre no mesmo fio do tratador,
     // donde a corrida sahe. Não é embelleçamento: é o defeito da corrida a fechar-se.
-    if (acervo_novo.exchange(false)) {
+    if (tui::assenta_novidade(digita) && acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
     }
