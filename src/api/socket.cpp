@@ -304,6 +304,16 @@ void Servidor::pulsa() {
                   clientes_.end());
 }
 
+// Uma linha, e não um tractado: o modo --sonda existe para se lêr de relance, e
+// o que faltava era saber o caminho sem adivinhar e saber se a porta está de pé.
+std::string texto_do_socket() {
+  const std::string caminho = caminho_padrao_do_socket();
+  if (caminho.empty())
+    return "\nSocket de commando: nao ha, que XDG_RUNTIME_DIR nao esta definido\n";
+  return "\nSocket de commando: " + caminho +
+         (ha_quem_escute(caminho) ? " (ha quem escute)\n" : " (ninguem escuta)\n");
+}
+
 }  // namespace mysong::api
 
 // ══════════════════════════════════════════════════════════════════════════

@@ -1052,6 +1052,7 @@ int main(int argc, char** argv) {
   // zero havendo impedimento, para que sirva de guarda em script.
   if (argc > 1 && std::string_view(argv[1]) == "--sonda") {
     std::cout << tui::texto_do_relatorio(relatorio);
+    std::cout << api::texto_do_socket();
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
