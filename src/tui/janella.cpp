@@ -659,18 +659,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       for (const std::string& degrau : navegador.trilha())
         trilha += "  \ue0b1  " + degrau;
     }
-    if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
-    else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
-    else if (digita == Digita::Procura)
-      trilha = "BUSCA NA REDE (" +
-               std::string(nucleo::nome_da_fonte(fonte_da_busca)) +
-               "): " + termo_em_curso;
-    else if (digita == Digita::Lista) trilha = "PLAYLIST DO SPOTIFY: " + termo_em_curso;
-    else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
-    else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
-    else if (digita == Digita::Confirma)
-      trilha = "apagar «" + navegador.nome_do_rol_eleito() + "»? s/n";
-    else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    // O PROMPT NÃO ESCREVE AQUI. Até a issue #79 escrevia: dez linhas neste
+    // logar trocavam a trilha pelo campo de digitar, e quem teclasse `s` perdia
+    // o unico signal de onde estava. Agora o campo tem linha propria, e a
+    // garantia é estructural: cadeia alguma d'este bloco olha o `digita`.
+    // E o filtro posto diz-se SEMPRE, tambem com o prompt aberto, que antes
+    // elle era o ultimo ramo da cadeia que o prompt encabeçava.
+    if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
     // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
     // `a` manda a faixa, e o operador não ha de o adivinhar.
     if (navegador.rol_corrente() != 0 &&
@@ -693,10 +688,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                   ? std::vector<nucleo::LinhaDaLetra>()
                   : nucleo::le_lrc_do_disco(retracto.titulo);
     }
+    // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
+    // pergunta do apagar. Os demais modos ignoram-no.
+    const std::string contexto_do_campo =
+        digita == Digita::Confirma
+            ? navegador.nome_do_rol_eleito()
+            : std::string(nucleo::nome_da_fonte(fonte_da_busca));
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
-               ftxui::text(trilha) | ftxui::dim,
+               tui::elemento_do_topo(trilha, digita, contexto_do_campo,
+                                     termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador),
                    ftxui::text("  "),
