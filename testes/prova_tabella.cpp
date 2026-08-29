@@ -94,6 +94,22 @@ class Cova {
   std::filesystem::path caminho_;
 };
 
+// cursor_da_trilha — pinta a trilha n'um écran de PAPEL e devolve o cursor que o
+// FTXUI lhe pôz. Terminal algum se abre, e é o ponto: o `Render` d'elle decide o
+// cursor a cada quadro pelo nó focado do documento, e é essa decisão que se afere
+// aqui, sem depender de olho que abriu a tela. `com_orla` embrulha o elemento no
+// `vbox` e na `border` que a tela real lhe põe á volta.
+ftxui::Screen::Cursor cursor_da_trilha(const std::string& trilha, bool digitando,
+                                       std::size_t largura, bool com_orla) {
+  ftxui::Element quadro = tui::elemento_da_trilha(trilha, digitando, largura);
+  if (com_orla) quadro = ftxui::vbox({quadro}) | ftxui::border;
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(largura)),
+                            ftxui::Dimension::Fixed(com_orla ? 3 : 1));
+  ftxui::Render(ecran, quadro);
+  return ecran.cursor();
+}
+
 }  // namespace
 
 TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita") {
@@ -182,6 +198,16 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   navegador.mostra_rede(std::vector<nu::Achado>{});
   const std::vector<std::string> rede = pintar(navegador, 1, 70);
   CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
+}
+
+
+TEST_CASE("a trilha parada não pede cursor algum") {
+  // Não pedindo o documento foco algum, o FTXUI põe `Hidden` a cada quadro e o
+  // «ESC[?25h» não sae. Hoje isso vem de graça, porque logar algum d'esta obra
+  // pedia foco; este caso é quem o guarda no dia em que a etiqueta do FTXUI
+  // subir e o esconder se perder calado.
+  const ftxui::Screen::Cursor parada = cursor_da_trilha("ARTISTS", false, 40, false);
+  CHECK(parada.shape == ftxui::Screen::Cursor::Shape::Hidden);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
