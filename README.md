@@ -906,4 +906,6 @@ Sono
 Fugir
 Pare de falar
 Está alto demais
-L
+Luz bonita
+Brilhe sobre mim
+To
