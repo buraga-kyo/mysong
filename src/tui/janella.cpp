@@ -622,9 +622,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A tabella toma o que sobra em altura: cinco linhas de guarnição (marca,
-    // trilha, espectro de oito, transporte, rodapé) mais a orla.
-    const std::size_t alt_tab = lin > 16 ? static_cast<std::size_t>(lin - 16) : 1;
+    // A tabella toma o que sobra em altura: as linhas de guarnição (marca, topo,
+    // espectro de oito, transporte, rodapé) mais a orla. O TOPO conta-se pelo
+    // modo, que aberto o prompt são duas linhas e não uma. A linha nova sahe
+    // d'aqui, e não de uma sobra que ninguem declarou: sobra consumida ás
+    // escondidas é o genero de acoplamento que se paga na tarefa seguinte.
+    const std::size_t guarnicao = 15 + tui::linhas_do_topo(digita);
+    const std::size_t alt_tab = lin > static_cast<int>(guarnicao)
+                                    ? static_cast<std::size_t>(lin) - guarnicao
+                                    : 1;
     primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
                                              navegador.vista().size(), alt_tab,
                                              primeira_linha);
