@@ -946,4 +946,5 @@ Não tenha medo
 Conecte-se hoje mesmo!
 Está se sentindo desplugado?
 Não precisa se preocupar
-Opiniões 
+Opiniões não valem nada
+Parece que não
