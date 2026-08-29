@@ -30,10 +30,14 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
          ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// apara — a cadeia em `largura` collunhas, contando CODEPOINTS e não bytes. Sem
-// isto, um titulo com acentos sahiria mais curto do que a conta diz e a tabella
-// perderia o alinhamento das columnas.
-std::string apara(const std::string& crua, std::size_t largura) {
+// cortar — a cadeia nas primeiras `largura` collunhas, contando CODEPOINTS e
+// não bytes. Sem isto, um titulo com acentos sahiria mais curto do que a conta
+// diz e a tabella perderia o alinhamento das columnas.
+//
+// NÃO enche o que sobra, e o enchimento é que ficou no `apara`: quem põe caret
+// no fim do texto quer o corte nú, que espaço á direita empurraria o caret uma
+// collunha para lá do que se escreveu.
+std::string cortar(const std::string& crua, std::size_t largura) {
   std::string feita;
   std::size_t contadas = 0;
   for (std::size_t i = 0; i < crua.size(); ++i) {
@@ -43,6 +47,16 @@ std::string apara(const std::string& crua, std::size_t largura) {
     }
     feita += crua[i];
   }
+  return feita;
+}
+
+// apara — o corte, enchido de espaços até `largura`. É o enchimento que alinha
+// as columnas da tabella, e é por isso que elle existe.
+std::string apara(const std::string& crua, std::size_t largura) {
+  std::string feita = cortar(crua, largura);
+  std::size_t contadas = 0;
+  for (const char byte : feita)
+    if ((static_cast<unsigned char>(byte) & 0xC0) != 0x80) ++contadas;
   while (contadas++ < largura) feita += ' ';
   return feita;
 }
