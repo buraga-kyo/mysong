@@ -284,6 +284,23 @@ tocar a rede; o `s` PERGUNTA ao YouTube. Na secção NET, Enter encommenda a bai
 do achado eleito, e duas baixas correm ao mesmo tempo no maximo: as demais
 esperam, e a linha do titulo diz quantas correm e quantas esperam.
 
+Todo campo de digitar abre em LINHA PROPRIA, logo abaixo da trilha, e nunca por
+cima della: teclando `s` num album ve-se ao mesmo tempo onde se esta e o que se
+digita. A linha do campo tem marca a esquerda, fundo proprio e o cursor do
+terminal dentro. Escape cancela e devolve ao mesmo logar, com a mesma faixa
+eleita; o texto digitado perde-se, que Escape e cancelar. E emquanto o campo
+esta aberto a lista CONGELA: resposta da rede, playlist lida ou varredura
+concluida esperam a sua vez, e so assentam no quadro seguinte ao fechar do
+campo. Vale para os cinco campos que ha: o filtro do `/`, a busca do `s`, a URL
+do `b`, o nome de lista do `c` e do `R`, e a playlist do `I`.
+
+O cursor do terminal so aparece havendo prompt aberto, e aparece como barra
+QUIETA na collunha logo a seguir ao que se digitou; fechado o prompt, ele some.
+Fora dai a tela nao mostra cursor algum: a vinte quadros por segundo, um cursor
+que se reposiciona e o que o olho le por piscar. Morrendo o mysong por sinal
+brutal (o `kill -9`), o terminal fica sem cursor, e `tput cnorm` o traz de
+volta.
+
 ### O video
 
 Faixa de video abre em janella PROPRIA do systema, e não dentro do terminal: a

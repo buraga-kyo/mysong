@@ -30,10 +30,20 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
          ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// apara — a cadeia em `largura` collunhas, contando CODEPOINTS e não bytes. Sem
-// isto, um titulo com acentos sahiria mais curto do que a conta diz e a tabella
-// perderia o alinhamento das columnas.
-std::string apara(const std::string& crua, std::size_t largura) {
+// cortar — a cadeia nos primeiros `largura` CODEPOINTS, e não bytes nem
+// collunhas: o glypho largo (CJK, emoji) conta por um valendo duas. Sem a
+// conta por codepoint, um titulo com acentos sahiria mais curto do que a conta
+// diz e a tabella perderia o alinhamento das columnas.
+//
+// NÃO enche o que sobra, e o enchimento é que ficou no `apara`: quem põe caret
+// no fim do texto quer o corte nú, que espaço á direita empurraria o caret uma
+// collunha para lá do que se escreveu.
+//
+// Devolve tambem, por `deixadas`, quantas contou: quem enche o que sobra já não
+// tem de tornar a percorrer a cadeia para o saber, e a volta pelo UTF-8 fica
+// n'este logar só, que foi a razão de se partir o `apara` em dous.
+std::string cortar(const std::string& crua, std::size_t largura,
+                   std::size_t* deixadas = nullptr) {
   std::string feita;
   std::size_t contadas = 0;
   for (std::size_t i = 0; i < crua.size(); ++i) {
@@ -43,11 +53,39 @@ std::string apara(const std::string& crua, std::size_t largura) {
     }
     feita += crua[i];
   }
+  if (deixadas != nullptr) *deixadas = contadas;
+  return feita;
+}
+
+// apara — o corte, enchido de espaços até `largura`. É o enchimento que alinha
+// as columnas da tabella, e é por isso que elle existe.
+std::string apara(const std::string& crua, std::size_t largura) {
+  std::size_t contadas = 0;
+  std::string feita = cortar(crua, largura, &contadas);
   while (contadas++ < largura) feita += ' ';
   return feita;
 }
 
 }  // namespace
+
+ftxui::Element caret_do_campo() {
+  // Espaço, e não cadeia vazia: o cursor pousa no `x_min` da caixa d'este nó, e
+  // nó de largura zero não tem caixa que sirva de endereço.
+  return ftxui::text(" ") | ftxui::focusCursorBar;
+}
+
+ftxui::Element elemento_da_trilha(const std::string& trilha,
+                                  const std::string& sufixo, bool digitando,
+                                  std::size_t largura) {
+  if (!digitando) return ftxui::text(trilha + sufixo) | ftxui::dim;
+  // Digitando, o sufixo fica de fóra: a linha é o prompt, e o caret ha de
+  // pousar no fim do que se escreveu, não no fim do ultimo recado da rede.
+  // Uma collunha se guarda para o caret, e a trilha corta-se no que sobra. Sem
+  // este corte, o texto comprido levaria o caret para lá da ultima collunha.
+  const std::size_t cabe = largura > 1 ? largura - 1 : 0;
+  return ftxui::hbox(
+      {ftxui::text(cortar(trilha, cabe)) | ftxui::dim, caret_do_campo()});
+}
 
 ftxui::Element elemento_da_barra(const Navegador& navegador) {
   // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
