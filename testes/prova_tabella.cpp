@@ -239,5 +239,30 @@ TEST_CASE("o caret não sae da tela com termo mais comprido que ella") {
   CHECK(caret.x < 20);
 }
 
+TEST_CASE("o aviso da rede não leva o caret do prompt comsigo") {
+  // O aviso escreve-se em dezoito logares da janella e não se apaga nunca;
+  // colado á trilha, elle punha o caret depois de palavras que ninguem
+  // digitou, em TODO prompt da sessão a partir do primeiro recado. O appenso
+  // entra á parte, e digitando-se o elemento cala-o.
+  const ftxui::Screen::Cursor caret =
+      cursor_da_trilha("/ção", true, 40, false, "   baixada: pronta");
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x == 4);
+  CHECK(caret.y == 0);
+}
+
+TEST_CASE("parada a trilha ainda mostra o appenso") {
+  // Calar o appenso emquanto se digita não é perdê-lo: fechado o prompt, o
+  // recado torna á linha. Lê-se cella a cella, como o resto d'esta prova.
+  ftxui::Element quadro =
+      tui::elemento_da_trilha("ARTISTS", "   [video: a.mkv]", false, 40);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(40),
+                                              ftxui::Dimension::Fixed(1));
+  ftxui::Render(ecran, quadro);
+  std::string linha;
+  for (int x = 0; x < 40; ++x) linha += ecran.PixelAt(x, 0).character;
+  CHECK(linha.find("[video: a.mkv]") != std::string::npos);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
