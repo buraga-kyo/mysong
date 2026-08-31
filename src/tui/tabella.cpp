@@ -37,7 +37,12 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
 // NÃO enche o que sobra, e o enchimento é que ficou no `apara`: quem põe caret
 // no fim do texto quer o corte nú, que espaço á direita empurraria o caret uma
 // collunha para lá do que se escreveu.
-std::string cortar(const std::string& crua, std::size_t largura) {
+//
+// Devolve tambem, por `deixadas`, quantas contou: quem enche o que sobra já não
+// tem de tornar a percorrer a cadeia para o saber, e a volta pelo UTF-8 fica
+// n'este logar só, que foi a razão de se partir o `apara` em dous.
+std::string cortar(const std::string& crua, std::size_t largura,
+                   std::size_t* deixadas = nullptr) {
   std::string feita;
   std::size_t contadas = 0;
   for (std::size_t i = 0; i < crua.size(); ++i) {
@@ -47,16 +52,15 @@ std::string cortar(const std::string& crua, std::size_t largura) {
     }
     feita += crua[i];
   }
+  if (deixadas != nullptr) *deixadas = contadas;
   return feita;
 }
 
 // apara — o corte, enchido de espaços até `largura`. É o enchimento que alinha
 // as columnas da tabella, e é por isso que elle existe.
 std::string apara(const std::string& crua, std::size_t largura) {
-  std::string feita = cortar(crua, largura);
   std::size_t contadas = 0;
-  for (const char byte : feita)
-    if ((static_cast<unsigned char>(byte) & 0xC0) != 0x80) ++contadas;
+  std::string feita = cortar(crua, largura, &contadas);
   while (contadas++ < largura) feita += ' ';
   return feita;
 }
