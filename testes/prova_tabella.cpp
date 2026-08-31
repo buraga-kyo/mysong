@@ -280,5 +280,20 @@ TEST_CASE("os dous modos nunca medidos pousam o caret na collunha certa") {
   CHECK(nome.y == 0);
 }
 
+TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da folga") {
+  // O corte conta CODEPOINTS, e o glypho largo (CJK, emoji) conta por um
+  // valendo duas collunhas: trinta d'elles pedem sessenta n'uma tela de
+  // quarenta. Medido no papel, o hbox espreme o caret para a orla e elle pousa
+  // em `largura` em ponto, UMA collunha além da ultima; é a folga de quatro do
+  // pintor (`larg` é `col - 4`) que o guarda do escape negativo no terminal
+  // de verdade. Crescer d'ahi é o que este caso recusa.
+  std::string larga;
+  for (int i = 0; i < 30; ++i) larga += "\u65e5";
+  const ftxui::Screen::Cursor caret = cursor_da_trilha(larga, true, 40, false);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x <= 40);
+  CHECK(caret.y == 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
