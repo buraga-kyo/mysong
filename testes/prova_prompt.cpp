@@ -156,3 +156,19 @@ TEST_CASE("o corte do termo nao parte codepoint ao meio") {
   CHECK(papel.linhas[1].find("ção") != std::string::npos);
   CHECK(papel.cursor.x < 14);
 }
+
+TEST_CASE("o rotulo sobrevive ao termo comprido no terminal estreito") {
+  // O caso que morde: `b` com URL comprida em oitenta collunhas. O rabo da
+  // cadeia INTEIRA comia o «URL: » pela esquerda, e o operador ficava com um
+  // rabo de texto SEM nome de campo, que é parente do defeito que esta issue
+  // veio matar. O rotulo mostra-se INTEIRO, e quem perde o começo é o termo.
+  const Papel papel =
+      pintar("ARTISTS", tui::Modo::Url, std::string(90, 'w'), 80);
+  CHECK(papel.linhas[1].find("URL: w") != std::string::npos);
+  CHECK(papel.cursor.x < 80);
+  // E não cabendo nem o rotulo, apara-se ELLE á direita: fica o começo, que é
+  // o que diz o officio, e o caret pousa na ultima collunha.
+  const Papel curto = pintar("ARTISTS", tui::Modo::Procura, "abc", 8);
+  CHECK(curto.linhas[1].find("BUSCA") != std::string::npos);
+  CHECK(curto.cursor.x == 7);
+}
