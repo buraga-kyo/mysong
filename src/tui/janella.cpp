@@ -67,6 +67,7 @@
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/navegador.hpp"
+#include "tui/prompt.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
@@ -438,15 +439,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
   tela.TrackMouse(false);
   std::atomic<bool> sahir{false};
-  // O MODO de digitar tem DOUS destinos: a busca e a URL. Um enum, e não dous
-  // booleanos: dous booleanos admittem o estado «ambos», que não existe.
-  // A PROCURA entra no mesmo enum, pela mesma razão: tres destinos, e não tres
-  // booleanos, que tres booleanos admittem o estado «os tres», que não existe.
-  // O NOME e a CONFIRMAÇÃO entram no mesmo enum: são dous destinos mais, e a razão
-  // é a mesma que fez a Procura entrar aqui em vez de n'um booleano ao lado.
-  enum class Digita {
-    Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma, Lista
-  } digita = Digita::Nada;
+  // O MODO de digitar. Um enum, e não booleanos ao lado: dous booleanos
+  // admittem o estado «ambos», que não existe. Mudou-se de casa na issue #79 e
+  // vive agora em `tui::Modo`, que o TOPO da tela depende d'elle e o topo tem
+  // de se provar, ao passo que a janella não se prova. O apelido fica para o
+  // despacho de teclas continuar a dizer `Digita::Busca` sem mudar uma linha.
+  using Digita = tui::Modo;
+  Digita digita = Digita::Nada;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -582,9 +581,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // navegador. O fio da busca não o toca: elle põe no correio, e o correio consome-se
     // na colheita, donde a lista se assenta UMA vez e o eleito não volta ao alto a
     // cada quadro.
+    //
+    // E SÓMENTE COM O CAMPO FECHADO. As tres colheitas d'este pintor que mutam o
+    // navegador guardam-se pelo `assenta_novidade`: com o prompt de pé, a secção
+    // congela. A tela a mudar debaixo do operador sem elle mandar É o defeito da
+    // issue #79, e não importa se a mudança vem de tecla ou de fio de fundo.
+    // Nada se perde: o correio guarda o recado até ser colhido, e a bandeira do
+    // acervo novo só se consome na leitura. A novidade espera, e assenta no
+    // primeiro quadro depois de o campo fechar.
     std::vector<nucleo::Achado> achados;
     std::string recado;
-    if (correio.colhe(&achados, &recado)) {
+    if (tui::assenta_novidade(digita) && correio.colhe(&achados, &recado)) {
       // A guarda da COLHEITA, par da do fio: entre a checagem de lá e o pouso
       // aqui cabe um f, e a resposta que já não é da fonte vigente cai. Os
       // achados vêm estampados; a resposta VAZIA é sempre de fonte de rede,
@@ -603,7 +610,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // para se conferir.
     std::vector<nucleo::Catalogo> lidos;
     std::string recado_da_lista;
-    if (correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
+    if (tui::assenta_novidade(digita) &&
+        correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
       if (!lidos.empty() && !lidos.front().faixas.empty())
         navegador.mostra_catalogo(std::move(lidos.front()));
       aviso_da_rede = recado_da_lista;
@@ -615,7 +623,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tratador de teclas, que corre no fio da tela; recarregá-lo do relogio era
     // mutá-lo de um fio e lê-lo de outro. O pintor corre no mesmo fio do tratador,
     // donde a corrida sahe. Não é embelleçamento: é o defeito da corrida a fechar-se.
-    if (acervo_novo.exchange(false)) {
+    if (tui::assenta_novidade(digita) && acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
     }
@@ -623,9 +631,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A tabella toma o que sobra em altura: cinco linhas de guarnição (marca,
-    // trilha, espectro de oito, transporte, rodapé) mais a orla.
-    const std::size_t alt_tab = lin > 16 ? static_cast<std::size_t>(lin - 16) : 1;
+    // A tabella toma o que sobra em altura: as linhas de guarnição (marca, topo,
+    // espectro de oito, transporte, rodapé) mais a orla. O TOPO conta-se pelo
+    // modo, que aberto o prompt são duas linhas e não uma. A linha nova sahe
+    // d'aqui, e não de uma sobra que ninguem declarou: sobra consumida ás
+    // escondidas é o genero de acoplamento que se paga na tarefa seguinte.
+    const std::size_t guarnicao = 15 + tui::linhas_do_topo(digita);
+    const std::size_t alt_tab = lin > static_cast<int>(guarnicao)
+                                    ? static_cast<std::size_t>(lin) - guarnicao
+                                    : 1;
     primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
                                              navegador.vista().size(), alt_tab,
                                              primeira_linha);
@@ -660,18 +674,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       for (const std::string& degrau : navegador.trilha())
         trilha += "  \ue0b1  " + degrau;
     }
-    if (digita == Digita::Busca) trilha = "/" + termo_em_curso;
-    else if (digita == Digita::Url) trilha = "URL: " + termo_em_curso;
-    else if (digita == Digita::Procura)
-      trilha = "BUSCA NA REDE (" +
-               std::string(nucleo::nome_da_fonte(fonte_da_busca)) +
-               "): " + termo_em_curso;
-    else if (digita == Digita::Lista) trilha = "PLAYLIST DO SPOTIFY: " + termo_em_curso;
-    else if (digita == Digita::NomeNovo) trilha = "LISTA NOVA: " + termo_em_curso;
-    else if (digita == Digita::NomeOutro) trilha = "NOME: " + termo_em_curso;
-    else if (digita == Digita::Confirma)
-      trilha = "apagar «" + navegador.nome_do_rol_eleito() + "»? s/n";
-    else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    // O PROMPT NÃO ESCREVE AQUI. Até a issue #79 escrevia: dez linhas neste
+    // logar trocavam a trilha pelo campo de digitar, e quem teclasse `s` perdia
+    // o unico signal de onde estava. Agora o campo tem linha propria, e a
+    // garantia é estructural: cadeia alguma d'este bloco olha o `digita`.
+    // E o filtro posto diz-se SEMPRE, tambem com o prompt aberto, que antes
+    // elle era o ultimo ramo da cadeia que o prompt encabeçava.
+    if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
     // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
     // `a` manda a faixa, e o operador não ha de o adivinhar.
     if (navegador.rol_corrente() != 0 &&
@@ -694,10 +703,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                   ? std::vector<nucleo::LinhaDaLetra>()
                   : nucleo::le_lrc_do_disco(retracto.titulo);
     }
+    // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
+    // pergunta do apagar. Os demais modos ignoram-no.
+    const std::string contexto_do_campo =
+        digita == Digita::Confirma
+            ? navegador.nome_do_rol_eleito()
+            : std::string(nucleo::nome_da_fonte(fonte_da_busca));
     const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
-               ftxui::text(trilha) | ftxui::dim,
+               tui::elemento_do_topo(trilha, digita, contexto_do_campo,
+                                     termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador),
                    ftxui::text("  "),
