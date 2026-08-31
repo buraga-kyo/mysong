@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
@@ -74,7 +75,9 @@ std::size_t codepoints(const std::string& crua) {
 // que é a mesma cella e o mesmo decorador: a forma do cursor decide-se n'um
 // logar só, e o merge não escolhe ao acaso qual das duas versões fica.
 ftxui::Element caret(ftxui::Color fundo) {
-  return ftxui::text(" ") | ftxui::bgcolor(fundo) | ftxui::focusCursorBar;
+  // A troca do R8, feita no merge: a fórma do cursor decide-se n'um logar só,
+  // o caret_do_campo da tabella (issue #78); o fundo do campo pinta-se por cima.
+  return caret_do_campo() | ftxui::bgcolor(fundo);
 }
 
 }  // namespace

@@ -279,6 +279,13 @@ concluida esperam a sua vez, e so assentam no quadro seguinte ao fechar do
 campo. Vale para os cinco campos que ha: o filtro do `/`, a busca do `s`, a URL
 do `b`, o nome de lista do `c` e do `R`, e a playlist do `I`.
 
+O cursor do terminal so aparece havendo prompt aberto, e aparece como barra
+QUIETA na collunha logo a seguir ao que se digitou; fechado o prompt, ele some.
+Fora dai a tela nao mostra cursor algum: a vinte quadros por segundo, um cursor
+que se reposiciona e o que o olho le por piscar. Morrendo o mysong por sinal
+brutal (o `kill -9`), o terminal fica sem cursor, e `tput cnorm` o traz de
+volta.
+
 ### O video
 
 Faixa de video abre em janella PROPRIA do systema, e não dentro do terminal: a

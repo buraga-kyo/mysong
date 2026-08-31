@@ -94,6 +94,24 @@ class Cova {
   std::filesystem::path caminho_;
 };
 
+// cursor_da_trilha — pinta a trilha n'um écran de PAPEL e devolve o cursor que o
+// FTXUI lhe pôz. Terminal algum se abre, e é o ponto: o `Render` d'elle decide o
+// cursor a cada quadro pelo nó focado do documento, e é essa decisão que se afere
+// aqui, sem depender de olho que abriu a tela. `com_orla` embrulha o elemento no
+// `vbox` e na `border` que a tela real lhe põe á volta.
+ftxui::Screen::Cursor cursor_da_trilha(const std::string& trilha, bool digitando,
+                                       std::size_t largura, bool com_orla,
+                                       const std::string& sufixo = "") {
+  ftxui::Element quadro =
+      tui::elemento_da_trilha(trilha, sufixo, digitando, largura);
+  if (com_orla) quadro = ftxui::vbox({quadro}) | ftxui::border;
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(largura)),
+                            ftxui::Dimension::Fixed(com_orla ? 3 : 1));
+  ftxui::Render(ecran, quadro);
+  return ecran.cursor();
+}
+
 }  // namespace
 
 TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita") {
@@ -182,6 +200,99 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   navegador.mostra_rede(std::vector<nu::Achado>{});
   const std::vector<std::string> rede = pintar(navegador, 1, 70);
   CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
+}
+
+
+TEST_CASE("a trilha parada não pede cursor algum") {
+  // Não pedindo o documento foco algum, o FTXUI põe `Hidden` a cada quadro e o
+  // «ESC[?25h» não sae. Hoje isso vem de graça, porque logar algum d'esta obra
+  // pedia foco; este caso é quem o guarda no dia em que a etiqueta do FTXUI
+  // subir e o esconder se perder calado.
+  const ftxui::Screen::Cursor parada = cursor_da_trilha("ARTISTS", false, 40, false);
+  CHECK(parada.shape == ftxui::Screen::Cursor::Shape::Hidden);
+}
+
+TEST_CASE("a trilha a digitar põe a barra logo a seguir ao texto") {
+  // «/ção» tem quatro collunhas e cinco bytes: contando bytes, o caret cahiria
+  // uma collunha á direita do que se escreveu.
+  const ftxui::Screen::Cursor caret = cursor_da_trilha("/ção", true, 40, false);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x == 4);
+  CHECK(caret.y == 0);
+}
+
+TEST_CASE("o caret sobrevive ao vbox e á orla que a tela lhe põe á volta") {
+  // O foco propaga-se de filho para pae; a tela real embrulha a trilha, e sem
+  // esta prova a propagação ficaria por conta da leitura do codigo alheio.
+  const ftxui::Screen::Cursor caret = cursor_da_trilha("/ção", true, 40, true);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x == 5);
+  CHECK(caret.y == 1);
+}
+
+TEST_CASE("o caret não sae da tela com termo mais comprido que ella") {
+  // Caret á direita da ultima collunha faz o FTXUI mandar deslocamento
+  // NEGATIVO, que é escape mal formado a sahir para o terminal do operador.
+  const ftxui::Screen::Cursor caret =
+      cursor_da_trilha(std::string(80, 'x'), true, 20, false);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x < 20);
+}
+
+TEST_CASE("o aviso da rede não leva o caret do prompt comsigo") {
+  // O aviso escreve-se em dezoito logares da janella e não se apaga nunca;
+  // colado á trilha, elle punha o caret depois de palavras que ninguem
+  // digitou, em TODO prompt da sessão a partir do primeiro recado. O appenso
+  // entra á parte, e digitando-se o elemento cala-o.
+  const ftxui::Screen::Cursor caret =
+      cursor_da_trilha("/ção", true, 40, false, "   baixada: pronta");
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x == 4);
+  CHECK(caret.y == 0);
+}
+
+TEST_CASE("parada a trilha ainda mostra o appenso") {
+  // Calar o appenso emquanto se digita não é perdê-lo: fechado o prompt, o
+  // recado torna á linha. Lê-se cella a cella, como o resto d'esta prova.
+  ftxui::Element quadro =
+      tui::elemento_da_trilha("ARTISTS", "   [video: a.mkv]", false, 40);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(40),
+                                              ftxui::Dimension::Fixed(1));
+  ftxui::Render(ecran, quadro);
+  std::string linha;
+  for (int x = 0; x < 40; ++x) linha += ecran.PixelAt(x, 0).character;
+  CHECK(linha.find("[video: a.mkv]") != std::string::npos);
+}
+
+TEST_CASE("os dous modos nunca medidos pousam o caret na collunha certa") {
+  // O «I» (a playlist do Spotify) e o «R» (renomear) nunca passaram pelo pty;
+  // o papel fixa-lhes a forma e o logar, com a MESMA linha que a janella compõe
+  // para cada um.
+  const ftxui::Screen::Cursor lista =
+      cursor_da_trilha("PLAYLIST DO SPOTIFY: beat", true, 40, false);
+  CHECK(lista.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(lista.x == 25);
+  CHECK(lista.y == 0);
+  const ftxui::Screen::Cursor nome =
+      cursor_da_trilha("NOME: novo", true, 40, false);
+  CHECK(nome.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(nome.x == 10);
+  CHECK(nome.y == 0);
+}
+
+TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da folga") {
+  // O corte conta CODEPOINTS, e o glypho largo (CJK, emoji) conta por um
+  // valendo duas collunhas: trinta d'elles pedem sessenta n'uma tela de
+  // quarenta. Medido no papel, o hbox espreme o caret para a orla e elle pousa
+  // em `largura` em ponto, UMA collunha além da ultima; é a folga de quatro do
+  // pintor (`larg` é `col - 4`) que o guarda do escape negativo no terminal
+  // de verdade. Crescer d'ahi é o que este caso recusa.
+  std::string larga;
+  for (int i = 0; i < 30; ++i) larga += "\u65e5";
+  const ftxui::Screen::Cursor caret = cursor_da_trilha(larga, true, 40, false);
+  CHECK(caret.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(caret.x <= 40);
+  CHECK(caret.y == 0);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
