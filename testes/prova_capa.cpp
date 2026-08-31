@@ -7,8 +7,10 @@
 #include <doctest/doctest.h>
 
 #include <taglib/attachedpictureframe.h>
+#include <taglib/fileref.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/mpegfile.h>
+#include <taglib/tag.h>
 #include <unistd.h>
 
 #include <filesystem>
@@ -91,6 +93,35 @@ TEST_CASE("a capa embutida lê-se da etiqueta lavrada á mão") {
   REQUIRE(lavra_a_etiqueta(faixa, arte));
   // Os MESMOS octetos voltam. Aferir sómente que «veio alguma cousa» deixaria passar
   // uma leitura que truncasse a arte, e arte truncada o chafa recusa.
+  CHECK(nu::arte_embutida(faixa) == arte);
+}
+
+// A PROPRIEDADE DA TAGLIB de que a baixa inteira depende, e que até aqui vivia n'uma
+// medição á mão e n'um commentario. Na aquisição a ordem é esta: o yt-dlp embute a
+// capa, e SÓ DEPOIS o `escreve_etiqueta` abre o arquivo pela `FileRef` e grava
+// artista e titulo. Deitasse esse `save()` a arte fóra, a capa sumia do painel com a
+// bateria inteira verde, e a queixa do operador voltava sem que nada se queixasse.
+//
+// O `escreve_etiqueta` é anonymo e não se alcança d'aqui; o que se alcança é o que
+// elle usa, e é isso que este caso prende.
+TEST_CASE("gravar a etiqueta pela FileRef não deita fóra a capa embutida") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  const std::string arte = png_de_um_pixel();
+  REQUIRE(lavra_a_etiqueta(faixa, arte));
+
+  // O MESMO que a aquisição faz depois de baixar: FileRef, texto novo, e salvar.
+  {
+    TagLib::FileRef punho(faixa.c_str());
+    REQUIRE_FALSE(punho.isNull());
+    REQUIRE(punho.tag() != nullptr);
+    punho.tag()->setArtist(TagLib::String("Quem Baixou", TagLib::String::UTF8));
+    punho.tag()->setTitle(TagLib::String("Faixa Colhida", TagLib::String::UTF8));
+    REQUIRE(punho.save());
+  }
+
+  // E a arte continua lá, octeto por octeto. Medi-a tambem sobre a faixa que o
+  // mysong baixou de verdade: 23689 octetos antes do `save()` e 23689 depois.
   CHECK(nu::arte_embutida(faixa) == arte);
 }
 
