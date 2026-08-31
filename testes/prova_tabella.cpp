@@ -264,5 +264,21 @@ TEST_CASE("parada a trilha ainda mostra o appenso") {
   CHECK(linha.find("[video: a.mkv]") != std::string::npos);
 }
 
+TEST_CASE("os dous modos nunca medidos pousam o caret na collunha certa") {
+  // O «I» (a playlist do Spotify) e o «R» (renomear) nunca passaram pelo pty;
+  // o papel fixa-lhes a forma e o logar, com a MESMA linha que a janella compõe
+  // para cada um.
+  const ftxui::Screen::Cursor lista =
+      cursor_da_trilha("PLAYLIST DO SPOTIFY: beat", true, 40, false);
+  CHECK(lista.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(lista.x == 25);
+  CHECK(lista.y == 0);
+  const ftxui::Screen::Cursor nome =
+      cursor_da_trilha("NOME: novo", true, 40, false);
+  CHECK(nome.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(nome.x == 10);
+  CHECK(nome.y == 0);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
