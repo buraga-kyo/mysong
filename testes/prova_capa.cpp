@@ -6,6 +6,11 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <taglib/attachedpictureframe.h>
+#include <taglib/fileref.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/mpegfile.h>
+#include <taglib/tag.h>
 #include <unistd.h>
 
 #include <filesystem>
@@ -46,7 +51,79 @@ class Cova {
 
 int Cova::semente_ = 0;
 
+// Um PNG de um pixel, escripto octeto a octeto. Chamar o ffmpeg aqui seria trocar a
+// prova da capa embutida por uma prova do ffmpeg: a issue #81 pede que ella corra sem
+// ferramenta alheia e sem rede, e é este arranjo que o cumpre.
+const std::string& png_de_um_pixel() {
+  static const unsigned char kCrus[] = {
+      0x89, 'P',  'N',  'G',  0x0D, 0x0A, 0x1A, 0x0A, 0,    0,    0,    13,
+      'I',  'H',  'D',  'R',  0,    0,    0,    1,    0,    0,    0,    1,
+      8,    2,    0,    0,    0,    0x90, 0x77, 0x53, 0xDE, 0,    0,    0,
+      12,   'I',  'D',  'A',  'T',  0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+      0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0xB0, 0,    0,    0,
+      0,    'I',  'E',  'N',  'D',  0xAE, 0x42, 0x60, 0x82};
+  static const std::string kPng(reinterpret_cast<const char*>(kCrus), sizeof kCrus);
+  return kPng;
+}
+
+// lavra_a_etiqueta — põe um APIC na faixa, pela MESMA taglib com que a obra o lê.
+// O corpo do arquivo é um quadro de MPEG minimo: basta para a taglib o aceitar, e
+// faixa que toque não é o que este caso afere.
+bool lavra_a_etiqueta(const std::filesystem::path& faixa, const std::string& arte) {
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  TagLib::MPEG::File arquivo(faixa.c_str());
+  if (!arquivo.isValid()) return false;
+  auto* quadro = new TagLib::ID3v2::AttachedPictureFrame();
+  quadro->setMimeType("image/png");
+  quadro->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+  quadro->setPicture(
+      TagLib::ByteVector(arte.data(), static_cast<unsigned>(arte.size())));
+  arquivo.ID3v2Tag(true)->addFrame(quadro);
+  return arquivo.save();
+}
+
 }  // namespace
+
+// A CAPA EMBUTIDA. Este caminho existe desde a issue #44 e nunca teve prova: andou
+// certo por sorte. Corre sem chafa e sem rede, que é o que a issue #81 pede.
+TEST_CASE("a capa embutida lê-se da etiqueta lavrada á mão") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  const std::string arte = png_de_um_pixel();
+  REQUIRE(lavra_a_etiqueta(faixa, arte));
+  // Os MESMOS octetos voltam. Aferir sómente que «veio alguma cousa» deixaria passar
+  // uma leitura que truncasse a arte, e arte truncada o chafa recusa.
+  CHECK(nu::arte_embutida(faixa) == arte);
+}
+
+// A PROPRIEDADE DA TAGLIB de que a baixa inteira depende, e que até aqui vivia n'uma
+// medição á mão e n'um commentario. Na aquisição a ordem é esta: o yt-dlp embute a
+// capa, e SÓ DEPOIS o `escreve_etiqueta` abre o arquivo pela `FileRef` e grava
+// artista e titulo. Deitasse esse `save()` a arte fóra, a capa sumia do painel com a
+// bateria inteira verde, e a queixa do operador voltava sem que nada se queixasse.
+//
+// O `escreve_etiqueta` é anonymo e não se alcança d'aqui; o que se alcança é o que
+// elle usa, e é isso que este caso prende.
+TEST_CASE("gravar a etiqueta pela FileRef não deita fóra a capa embutida") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  const std::string arte = png_de_um_pixel();
+  REQUIRE(lavra_a_etiqueta(faixa, arte));
+
+  // O MESMO que a aquisição faz depois de baixar: FileRef, texto novo, e salvar.
+  {
+    TagLib::FileRef punho(faixa.c_str());
+    REQUIRE_FALSE(punho.isNull());
+    REQUIRE(punho.tag() != nullptr);
+    punho.tag()->setArtist(TagLib::String("Quem Baixou", TagLib::String::UTF8));
+    punho.tag()->setTitle(TagLib::String("Faixa Colhida", TagLib::String::UTF8));
+    REQUIRE(punho.save());
+  }
+
+  // E a arte continua lá, octeto por octeto. Medi-a tambem sobre a faixa que o
+  // mysong baixou de verdade: 23689 octetos antes do `save()` e 23689 depois.
+  CHECK(nu::arte_embutida(faixa) == arte);
+}
 
 TEST_CASE("a capa ao lado acha-se pela ordem de preferencia") {
   const Cova cova;
@@ -118,6 +195,49 @@ TEST_CASE("a galeria converte uma vez por album e por tamanho") {
   // E de volta ao tamanho de antes: cache outra vez.
   galeria.capa(uma, 10, 5);
   CHECK(galeria.quantos_renders() == 2u);
+}
+
+// A ORDEM, provada e não sómente declarada. Os dous estão presentes, e a etiqueta
+// leva arte PODRE de proposito: ganhando ella, o chafa engasgaria e `achada` viria
+// falso. Vindo verdadeiro, foi o arquivo ao lado que se tomou, que é a ordem que o
+// cabeçalho promette.
+TEST_CASE("com capa ao lado e na etiqueta ganha a do lado") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  REQUIRE(lavra_a_etiqueta(faixa, "isto não é imagem alguma"));
+  REQUIRE_FALSE(nu::arte_embutida(faixa).empty());
+
+  const std::filesystem::path imagem = cova.raiz() / "cover.png";
+  const std::string commando =
+      "ffmpeg -y -f lavfi -i color=c=teal:s=64x64 -frames:v 1 '" +
+      imagem.string() + "' >/dev/null 2>&1";
+  if (std::system(commando.c_str()) != 0 || !std::filesystem::exists(imagem)) {
+    WARN("sem ffmpeg: o caso da preferencia não corre");
+    return;
+  }
+  nu::Galeria galeria;
+  CHECK(galeria.capa(faixa, 10, 5).achada);
+}
+
+// O `.mkv` do video, e todo arquivo que a taglib não leia como MP3. Medido: ella dá
+// `isValid()` verdadeiro e etiqueta NÃO nula para todos estes, que a cria a pedido;
+// o que vem vazio é a lista de quadros. Sahem quietos, e é isso que segura o pintor
+// contra uma excepção quando o operador põe um video no acervo.
+TEST_CASE("arquivo que não é mp3 não dá capa alguma nem lança") {
+  const Cova cova;
+  // Um `.mkv` de VERDADE, pelos quatro octetos do cabeçalho EBML, e não prosa com
+  // nome de video: foi sobre arquivo assim que a medição correu, e um arquivo de
+  // texto provaria sómente que a taglib recusa texto, que é affirmação mais fraca.
+  std::ofstream(cova.raiz() / "video.mkv", std::ios::binary)
+      << "\x1A\x45\xDF\xA3";
+  cova.poe("lixo.mp3");
+  std::ofstream(cova.raiz() / "vazio.mp3", std::ios::binary);
+  CHECK(nu::arte_embutida(cova.raiz() / "video.mkv").empty());
+  CHECK(nu::arte_embutida(cova.raiz() / "lixo.mp3").empty());
+  CHECK(nu::arte_embutida(cova.raiz() / "vazio.mp3").empty());
+  // E o que nem existe sahe quieto tambem, que o pintor pergunta por faixa que o
+  // acervo pode ter perdido entre a varredura e o quadro.
+  CHECK(nu::arte_embutida(cova.raiz() / "nao-existe.mp3").empty());
 }
 
 TEST_CASE("album sem capa devolve a ausencia, e guarda-a") {

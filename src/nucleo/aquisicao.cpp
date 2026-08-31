@@ -209,9 +209,30 @@ std::vector<std::string> argumentos_do_download(
           "--extract-audio",
           "--audio-format", "mp3",
           "--audio-quality", "0",
-          // Etiqueta NENHUMA se embute: quem a escreve é esta Casa, com a taglib,
-          // e a razão está no tractado do cabeçalho.
+          // Etiqueta de TEXTO nenhuma se embute: quem a escreve é esta Casa, com
+          // a taglib, e a razão está no tractado do cabeçalho.
           "--no-embed-metadata",
+          // A MINIATURA, essa pede-se, e vae para dentro da etiqueta (issue #81).
+          // Tres cousas medidas antes de escolher, e todas sobre uma URL de verdade:
+          //
+          //  1. O YouTube dá a miniatura em WEBP («Writing video thumbnail 37 to:
+          //     faixa.webp»). Nem toda build do chafa lê WebP, e leitor de etiqueta
+          //     alheio lê-o ainda peor dentro de um APIC. D'onde o
+          //     `--convert-thumbnails jpg`, que corre por ffmpeg; e ffmpeg já é
+          //     dependencia dura do `--extract-audio` acima, donde nada de novo entra.
+          //  2. EMBUTIR ganha de gravar ao lado. Com `--write-thumbnail` a capa pousa
+          //     com o nome do MOLDE, e ficou «01 - Prelude.jpg»; esse nome não está
+          //     entre os doze que a `nomes_de_capa()` procura, donde a capa ficaria no
+          //     disco e o painel continuaria vazio. Embutida, é o que a `capa.cpp` já
+          //     sabe ler, e sobrevive a mover a faixa.
+          //  3. A ordem não morde. A etiqueta escreve-se DEPOIS, no `escreve_etiqueta`,
+          //     e o `save()` da taglib PRESERVA o quadro: 23689 octetos antes, 23689
+          //     depois. Fosse elle deitar a arte fóra, embutir seria escolha morta.
+          //
+          // Video sem miniatura alguma não faz a baixa falhar: o yt-dlp diz que não ha
+          // o que embutir e segue (postprocessor/embedthumbnail.py).
+          "--embed-thumbnail",
+          "--convert-thumbnails", "jpg",
           "--output", molde.string() + ".%(ext)s",
           "--", url};
   ditos.insert(ditos.end(), resto.begin(), resto.end());

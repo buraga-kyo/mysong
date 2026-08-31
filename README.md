@@ -131,6 +131,21 @@ nao se desenha por protocolo, e sim por MEIO-BLOCO (o caractere `▀` com
 tinta e fundo differentes, dous pixeis por celula), que e o que o chafa faz e
 o que atravessa o tmux inteiro.
 
+### De onde vem a capa que se desenha
+
+Duas fontes, e n'esta ordem. Primeiro um ARQUIVO ao lado da faixa, entre doze
+nomes que os ripadores usam (`cover.jpg`, `folder.png`, `front.jpg`, e outros);
+depois a capa EMBUTIDA na etiqueta, no quadro APIC. O arquivo ao lado ganha
+porque e o que voce pode trocar sem reescrever o mp3: basta pousar um
+`cover.jpg` na pasta do album.
+
+Baixando pelo proprio mysong, a capa vem embutida: elle pede a miniatura ao
+yt-dlp, manda converte-la a jpeg e grava-a na etiqueta. Assim ella sobrevive a
+mover o arquivo, e uma faixa so continua a ser um arquivo so.
+
+Faixa sem capa nenhuma nao e falha: o painel mostra um marcador de nota
+musical, para voce ver que a capa falta e nao que a tela quebrou.
+
 ### Tudo o que vem do apt, n'uma linha
 
 ```sh
