@@ -73,9 +73,12 @@ ftxui::Element caret_do_campo() {
   return ftxui::text(" ") | ftxui::focusCursorBar;
 }
 
-ftxui::Element elemento_da_trilha(const std::string& trilha, bool digitando,
+ftxui::Element elemento_da_trilha(const std::string& trilha,
+                                  const std::string& sufixo, bool digitando,
                                   std::size_t largura) {
-  if (!digitando) return ftxui::text(trilha) | ftxui::dim;
+  if (!digitando) return ftxui::text(trilha + sufixo) | ftxui::dim;
+  // Digitando, o sufixo fica de fóra: a linha é o prompt, e o caret ha de
+  // pousar no fim do que se escreveu, não no fim do ultimo recado da rede.
   // Uma collunha se guarda para o caret, e a trilha corta-se no que sobra. Sem
   // este corte, o texto comprido levaria o caret para lá da ultima collunha.
   const std::size_t cabe = largura > 1 ? largura - 1 : 0;

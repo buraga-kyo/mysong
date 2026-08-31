@@ -683,20 +683,25 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     else if (digita == Digita::Confirma)
       trilha = "apagar «" + navegador.nome_do_rol_eleito() + "»? s/n";
     else if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
+    // Os appensos da linha vão Á PARTE, e é o elemento quem decide d'elles:
+    // digitando-se, elle os cala, que n'essa hora a linha é o prompt e o caret
+    // pousa no fim do que se escreveu. O aviso da rede, uma vez posto, seguia
+    // TODO prompt da sessão e levava o caret comsigo.
+    std::string sufixo;
     // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
     // `a` manda a faixa, e o operador não ha de o adivinhar.
     if (navegador.rol_corrente() != 0 &&
         navegador.secao() != tui::Secao::NoRol)
-      trilha += "   [\ue0b1 " + navegador.nome_corrente() + "]";
+      sufixo += "   [\ue0b1 " + navegador.nome_corrente() + "]";
     // A janella do video diz-se enquanto ella viver. Deixando de viver, a linha
     // cala-se por si: é a pergunta ao processo que o diz, e não bandeira nossa que
     // pudesse ficar a mentir.
     if (projector.rodando())
-      trilha += "   [video: " + projector.faixa().filename().string() + "]";
-    if (!varrida.load()) trilha += "   (a varrer o acervo...)";
-    if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
+      sufixo += "   [video: " + projector.faixa().filename().string() + "]";
+    if (!varrida.load()) sufixo += "   (a varrer o acervo...)";
+    if (!aviso_da_rede.empty()) sufixo += "   " + aviso_da_rede;
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
-    if (!andamento.empty()) trilha += "   " + andamento;
+    if (!andamento.empty()) sufixo += "   " + andamento;
 
     // A letra relê-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
@@ -711,7 +716,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                // O caret SÓ nos modos que digitam. O `Confirma` captura a
                // tecla mas não é campo de texto: é pergunta de uma tecla, e
                // caret n'ella convidaria a escrever onde não se escreve.
-               tui::elemento_da_trilha(trilha,
+               tui::elemento_da_trilha(trilha, sufixo,
                                        digita != Digita::Nada &&
                                            digita != Digita::Confirma,
                                        larg),

@@ -66,7 +66,14 @@ ftxui::Element caret_do_campo();
 // pintor tem, e a trilha corta-se em `largura - 1` collunhas para que o caret
 // caiba DENTRO da tela: caret fóra d'ella faria o FTXUI mandar deslocamento
 // negativo ao terminal do operador, que é escape mal formado.
-ftxui::Element elemento_da_trilha(const std::string& trilha, bool digitando,
+//
+// O `sufixo` traz os appensos da linha (a lista alvo, o video, a varredura, o
+// aviso da rede, o andamento das baixas). Parada a trilha, elles seguem-na;
+// digitando-se, calam-se AQUI, que n'essa hora a linha é o prompt, e appenso
+// depois do texto levaria o caret para o fim de palavras que o operador não
+// escreveu.
+ftxui::Element elemento_da_trilha(const std::string& trilha,
+                                  const std::string& sufixo, bool digitando,
                                   std::size_t largura);
 
 }  // namespace mysong::tui

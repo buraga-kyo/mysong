@@ -100,8 +100,10 @@ class Cova {
 // aqui, sem depender de olho que abriu a tela. `com_orla` embrulha o elemento no
 // `vbox` e na `border` que a tela real lhe põe á volta.
 ftxui::Screen::Cursor cursor_da_trilha(const std::string& trilha, bool digitando,
-                                       std::size_t largura, bool com_orla) {
-  ftxui::Element quadro = tui::elemento_da_trilha(trilha, digitando, largura);
+                                       std::size_t largura, bool com_orla,
+                                       const std::string& sufixo = "") {
+  ftxui::Element quadro =
+      tui::elemento_da_trilha(trilha, sufixo, digitando, largura);
   if (com_orla) quadro = ftxui::vbox({quadro}) | ftxui::border;
   ftxui::Screen ecran =
       ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(largura)),
