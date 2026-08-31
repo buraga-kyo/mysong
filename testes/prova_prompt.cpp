@@ -75,6 +75,7 @@ namespace {
 struct Papel {
   std::vector<std::string> linhas;
   std::vector<ftxui::Color> fundos;  // o fundo da primeira cella de cada linha
+  std::vector<ftxui::Color> fundos_meio;  // e o da cella do MEIO da linha
   ftxui::Screen::Cursor cursor;
 };
 
@@ -93,6 +94,8 @@ Papel pintar(const std::string& trilha, tui::Modo modo, const std::string& termo
       linha += ecran.PixelAt(x, y).character;
     papel.linhas.push_back(linha);
     papel.fundos.push_back(ecran.PixelAt(0, y).background_color);
+    papel.fundos_meio.push_back(
+        ecran.PixelAt(static_cast<int>(largura) / 2, y).background_color);
   }
   papel.cursor = ecran.cursor();
   return papel;
@@ -115,6 +118,9 @@ TEST_CASE("o campo abre em linha propria por baixo da trilha") {
 TEST_CASE("o campo tem fundo que a trilha nao tem") {
   const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
   CHECK(papel.fundos[0] != papel.fundos[1]);
+  // A primeira cella é a da marca: regressão que pintasse SÓ a marca passaria
+  // por ella. O meio da linha do campo tambem leva o fundo, e a trilha não.
+  CHECK(papel.fundos_meio[0] != papel.fundos_meio[1]);
 }
 
 TEST_CASE("o caret pousa logo a seguir ao que se digitou") {
