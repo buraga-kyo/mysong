@@ -30,8 +30,9 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
          ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// cortar — a cadeia nas primeiras `largura` collunhas, contando CODEPOINTS e
-// não bytes. Sem isto, um titulo com acentos sahiria mais curto do que a conta
+// cortar — a cadeia nos primeiros `largura` CODEPOINTS, e não bytes nem
+// collunhas: o glypho largo (CJK, emoji) conta por um valendo duas. Sem a
+// conta por codepoint, um titulo com acentos sahiria mais curto do que a conta
 // diz e a tabella perderia o alinhamento das columnas.
 //
 // NÃO enche o que sobra, e o enchimento é que ficou no `apara`: quem põe caret
