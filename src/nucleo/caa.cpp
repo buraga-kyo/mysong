@@ -215,6 +215,37 @@ CacaDeCapa caca_uma_faixa(const Faixa& faixa, MemoriaDeCapas* memoria,
                                     : CacaDeCapa::FalhouAEscripta;
 }
 
+SommaDaCaca caca_capas(const std::vector<Faixa>& faixas,
+                       MemoriaDeCapas* memoria,
+                       const ConsultaComEstado& consulta,
+                       const Relator& relator) {
+  SommaDaCaca somma;
+  std::map<std::string, std::string> arte_da_release;
+  std::set<std::string> release_sem_capa;
+  for (const Faixa& faixa : faixas) {
+    const CacaDeCapa desfecho = caca_uma_faixa(faixa, memoria, consulta,
+                                               &arte_da_release,
+                                               &release_sem_capa);
+    if (relator) relator(faixa, desfecho);
+    switch (desfecho) {
+      case CacaDeCapa::Embutida: ++somma.embutidas; break;
+      case CacaDeCapa::JaTinha: ++somma.ja_tinham; break;
+      case CacaDeCapa::JaProcurada: ++somma.ja_procuradas; break;
+      case CacaDeCapa::ForaDoAlcance: ++somma.fora_do_alcance; break;
+      case CacaDeCapa::SemMetadado:
+      case CacaDeCapa::Duvidosa: ++somma.duvidosas; break;
+      case CacaDeCapa::SemCapa: ++somma.sem_capa; break;
+      case CacaDeCapa::RedeFalhou:
+      case CacaDeCapa::FalhouAEscripta: ++somma.falhas; break;
+      case CacaDeCapa::Recuo: somma.parou_por_recuo = true; break;
+    }
+    // O recuo pára a corrida INTEIRA: as restantes nem se tentam nem se
+    // lembram, que martelar quem pediu tregua engrossa a rajada.
+    if (somma.parou_por_recuo) break;
+  }
+  return somma;
+}
+
 std::string_view palavra_da_procurada(Procurada procurada) {
   switch (procurada) {
     case Procurada::SemCapa: return "sem capa no CAA";
