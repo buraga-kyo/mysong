@@ -697,5 +697,44 @@ TEST_CASE("a barra re-entra nos albuns e nas faixas pela trilha corrente") {
   CHECK(navegador.trilha() == std::vector<std::string>{"Ada Lovelace"});
 }
 
+TEST_CASE("o degrau sem chão recusa sem mudar cousa alguma") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  const std::vector<std::string> antes = textos(navegador);
+  // No topo não ha artista na trilha, rede buscada nem catalogo importado.
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Albuns));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Faixas));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Rede));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Lista));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::NoRol));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(textos(navegador) == antes);
+  CHECK(navegador.eleito() == 0);
+}
+
+TEST_CASE("a rede e o catalogo dão chão quando as fontes chegam") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.mostra_rede({achado("Toccata", "Canal A", 90, "https://y/1")});
+  REQUIRE(navegador.volta());  // sahe-se da rede, e os achados FICAM
+  REQUIRE(navegador.secao() == tui::Secao::Artistas);
+  // Entrar pela barra mostra o que JÁ havia: busca alguma se re-dispara.
+  CHECK(navegador.vai_para(tui::Secao::Rede));
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Toccata");
+  nu::Catalogo lista;
+  lista.nome = "mix da prova";
+  lista.faixas.push_back({"Um", "Alguem", 1, 90000, ""});
+  navegador.mostra_catalogo(lista);
+  REQUIRE(navegador.volta());
+  CHECK(navegador.vai_para(tui::Secao::Lista));
+  CHECK(navegador.secao() == tui::Secao::Lista);
+  CHECK(navegador.vista().size() == 1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
