@@ -1136,7 +1136,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     }
   });
 
+  // PEDE-SE O FOCO ao terminal (issue #82): com o modo 1004 elle manda
+  // ESC [ I e ESC [ O a cada troca, e é d'esses avisos que a vigilia vive.
+  // Liga-se antes do Loop e desliga-se logo depois, no mesmo assentar e
+  // desfazer que o FTXUI pratica com o que é d'elle; aviso que chegue antes
+  // do parser espera no buffer do tty, que o Install não descarta entrada.
+  std::cout << "\x1b[?1004h" << std::flush;
   tela.Loop(janella);
+  std::cout << "\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
@@ -1144,6 +1151,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // desfeito, e isso não perdoa.
   for (std::thread& fio : ao_fundo)
     if (fio.joinable()) fio.join();
+  // A FALTA DECLARA-SE (issue #82): pediu-se o aviso de foco e aviso algum
+  // veio na sessão inteira. Diz-se o FATO, e não a culpa, que saber se o
+  // terminal é incapaz ou se ninguem trocou de foco não se pode; e diz-se
+  // depois da tela, no stderr, como o relatorio dos requisitos se diz.
+  if (!vigilia.ha_noticia())
+    std::cerr << "mysong: evento de foco nenhum veio nesta sessão; o relogio "
+                 "nunca dormiu. Dentro do tmux, «set -g focus-events on» é o "
+                 "que o faz chegar.\n";
   return 0;
 }
 
