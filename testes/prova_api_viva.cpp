@@ -24,6 +24,7 @@
 #include <doctest/doctest.h>
 
 #include <cerrno>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <stdexcept>
@@ -34,6 +35,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "api/protocolo.hpp"
@@ -418,6 +420,78 @@ TEST_CASE("o dito do socket diz o caminho e quem escute n'elle") {
     CHECK(mysong::api::texto_do_socket().find("ha quem escute") !=
           std::string::npos);
   }
+}
+
+// O QUARTO estado do dito é a RECUSA, e nasceu de defeito (issue #84): caminho
+// que passa do sun_path escrevia-se alem do vector DENTRO do quem_escuta, e o
+// --sonda inteiro morria no protector da pilha antes de dizer cousa alguma.
+// Este caso morde por si: se a guarda cahir, não é um CHECK que falha, é a
+// bateria INTEIRA que rebenta no estouro.
+TEST_CASE("o dito do socket recusa por nome o caminho que passa do sun_path") {
+  const Ambiente posto("XDG_RUNTIME_DIR", "/tmp/" + std::string(150, 'r'));
+  const std::string dito = mysong::api::texto_do_socket();
+  CHECK(dito.find("nao se pudo sondar") != std::string::npos);
+  CHECK(dito.find("mysong.sock") != std::string::npos);
+}
+
+namespace {
+
+// Colhe a sahida E o codigo do commando: o pclose devolve o estado do wait, e
+// é d'elle que se lê se o filho SAHIU ou se morreu de sinal, que é justamente
+// a differença que a issue #84 existe para guardar. Morte de sinal devolve-se
+// NEGATIVA, para que o caso a accuse com o estado á vista e nunca a confunda
+// com codigo de sahida. Aspas simples nos caminhos, que o binario d'esta
+// machina mora em caminho com espaços.
+int colher_com_codigo(const std::string& commando, std::string* sahida) {
+  sahida->clear();
+  FILE* cano = ::popen((commando + " 2>&1").c_str(), "r");
+  if (cano == nullptr) return -1;
+  char pedaco[512];
+  while (std::fgets(pedaco, sizeof pedaco, cano) != nullptr) *sahida += pedaco;
+  const int estado = ::pclose(cano);
+  return WIFEXITED(estado) ? WEXITSTATUS(estado) : -estado;
+}
+
+}  // namespace
+
+// O CAMINHO DA ISSUE #84, ponta a ponta e no binario de verdade: o HOME
+// desviado para um rascunho, que é o cenario que a issue nomeia, e o
+// XDG_RUNTIME_DIR fundo, que é o gatilho que o rasto achou; a fonte vae
+// forçada ausente para que o codigo de sahida seja UM por decisão, e não por
+// acaso das fontes da machina. O rascunho fica vazio: sem fontes n'elle, o
+// fontconfig nada escreve ali, que os caches do systema valem.
+TEST_CASE("a sonda corre ate ao fim com o ambiente desviado para um rascunho") {
+  const DirectorioTemporario rascunho;
+  REQUIRE(rascunho.valido());
+  const std::string fundo = rascunho.raiz() + "/" + std::string(120, 'f');
+  const std::string binario(MYSONG_BINARIO);
+  std::string sahida;
+  const int codigo = colher_com_codigo(
+      "HOME='" + rascunho.raiz() + "' XDG_RUNTIME_DIR='" + fundo +
+          "' MYSONG_SONDA_FORCA=fonte '" + binario + "' --sonda",
+      &sahida);
+  CHECK_MESSAGE(codigo == 1, sahida);
+  CHECK(sahida.find("Socket de commando:") != std::string::npos);
+  CHECK(sahida.find("nao se pudo sondar") != std::string::npos);
+  CHECK(sahida.find("ajustes em vigor") != std::string::npos);
+}
+
+// E o ARRANQUE NORMAL, sem --sonda, que a sonda corre tambem ao abrir o
+// tocador: sem terminal, o impedimento responde-se no stderr com codigo um. O
+// que se prende aqui é que elle TERMINA e responde inteiro, e não que rebente
+// no meio como rebentava.
+TEST_CASE("o arranque sem terminal responde inteiro sob o ambiente desviado") {
+  const DirectorioTemporario rascunho;
+  REQUIRE(rascunho.valido());
+  const std::string fundo = rascunho.raiz() + "/" + std::string(120, 'f');
+  const std::string binario(MYSONG_BINARIO);
+  std::string sahida;
+  const int codigo = colher_com_codigo(
+      "HOME='" + rascunho.raiz() + "' XDG_RUNTIME_DIR='" + fundo +
+          "' MYSONG_SONDA_FORCA=fonte '" + binario + "' </dev/null",
+      &sahida);
+  CHECK_MESSAGE(codigo == 1, sahida);
+  CHECK(sahida.find("FALTA") != std::string::npos);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

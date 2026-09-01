@@ -77,6 +77,15 @@ void assenta_endereco(::sockaddr_un* endereco, const std::string& caminho) {
 enum class Escuta { Ha, Ninguem, NaoSeSondou };
 
 Escuta quem_escuta(const std::string& caminho, int* erro = nullptr) {
+  // O TECTO confere-se AQUI, que o vector é d'esta funcção: o assenta_endereco
+  // presume a conta feita, e este era o unico chamador que não a fazia. Caminho
+  // que não cabe respondia-se escrevendo alem do sun_path, por cima da guarda
+  // da pilha, e o diagnostico morria no meio (issue #84); responde-se agora
+  // NaoSeSondou com a razão no erro, que é a verdade: não se sondou.
+  if (!cabe_no_sun_path(caminho, nullptr)) {
+    if (erro != nullptr) *erro = ENAMETOOLONG;
+    return Escuta::NaoSeSondou;
+  }
   const int sonda = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (sonda < 0) {
     if (erro != nullptr) *erro = errno;
