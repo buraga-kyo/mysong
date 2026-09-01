@@ -10,9 +10,11 @@
 
 #include <unistd.h>
 
+#include <fstream>
 #include <string>
 
 #include "nucleo/caa.hpp"
+#include "nucleo/capa.hpp"
 
 namespace nu = mysong::nucleo;
 
@@ -32,6 +34,7 @@ class Cova {
   }
   Cova(const Cova&) = delete;
   Cova& operator=(const Cova&) = delete;
+  const std::filesystem::path& raiz() const { return caminho_; }
   std::filesystem::path banco() const { return caminho_ / "capas.sqlite3"; }
 
  private:
@@ -114,6 +117,7 @@ constexpr char kFichaComRelease[] =
 struct RedeDeMentira {
   std::string busca = kBuscaComEleita;
   std::string ficha = kFichaComRelease;
+  std::string capa = std::string("\xFF\xD8\xFF\xE0", 4) + "arte de mentira";
   nu::DesfechoMB desfecho = nu::DesfechoMB::Achado;  // o que a rede responde
   long estado = 200;
   int gastas = 0;
@@ -123,6 +127,7 @@ struct RedeDeMentira {
       *dito = estado;
       if (url.find("recording?query=") != std::string::npos) *corpo = busca;
       else if (url.find("recording/") != std::string::npos) *corpo = ficha;
+      else if (url.find("coverartarchive") != std::string::npos) *corpo = capa;
       return desfecho;
     };
   }
@@ -179,6 +184,42 @@ TEST_CASE("duvidosa recuo e rede muda explicam o casamento vazio") {
     CHECK(nu::casa_release("R", "N", 213, rede.consulta(), &porque).empty());
     CHECK(porque == nu::CacaDeCapa::RedeFalhou);
   }
+}
+
+namespace {
+
+// poe_mp3 — a fixture minima da prova da capa: um quadro de MPEG que a taglib
+// aceita. Etiqueta não precisa: a caça lê o metadado da Faixa do ÍNDICE.
+std::filesystem::path poe_mp3(const Cova& cova, const std::string& nome) {
+  const std::filesystem::path faixa = cova.raiz() / nome;
+  std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00";
+  return faixa;
+}
+
+nu::Faixa faixa_de(const std::filesystem::path& caminho) {
+  nu::Faixa faixa;
+  faixa.caminho = caminho.string();
+  faixa.artista = "Rick Astley";
+  faixa.titulo = "Never Gonna Give You Up";
+  faixa.duracao = 213;
+  return faixa;
+}
+
+}  // namespace
+
+TEST_CASE("a caça embute a arte da release casada e o painel a relê") {
+  const Cova cova;
+  nu::MemoriaDeCapas memoria(cova.banco());
+  RedeDeMentira rede;
+  std::map<std::string, std::string> artes;
+  std::set<std::string> sem_capa;
+  const std::filesystem::path faixa = poe_mp3(cova, "01 - Never.mp3");
+  CHECK(nu::caca_uma_faixa(faixa_de(faixa), &memoria, rede.consulta(), &artes,
+                           &sem_capa) == nu::CacaDeCapa::Embutida);
+  CHECK(rede.gastas == 3);  // busca, ficha, e a arte: nem uma a mais
+  // O MESMO leitor que abastece o painel desde a issue #81 relê os octetos.
+  CHECK(nu::arte_embutida(faixa) == rede.capa);
+  CHECK(memoria.quantas() == 0);  // desfecho feliz não é negativo: nada se assenta
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
