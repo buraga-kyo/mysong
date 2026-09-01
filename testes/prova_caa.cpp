@@ -284,5 +284,48 @@ TEST_CASE("capa que já ha formato alheio e sem metadado ficam em casa") {
   CHECK(rede.gastas == 0);  // nenhuma das quatro tocou a rede
 }
 
+TEST_CASE("a corrida reusa a arte da release e conta a somma") {
+  const Cova cova;
+  nu::MemoriaDeCapas memoria(cova.banco());
+  RedeDeMentira rede;
+  std::vector<nu::Faixa> fila;
+  fila.push_back(faixa_de(poe_mp3(cova, "01 - Uma.mp3")));
+  fila.push_back(faixa_de(poe_mp3(cova, "02 - Outra.mp3")));
+  const std::filesystem::path com = poe_mp3(cova, "03 - Com.mp3");
+  REQUIRE(nu::embute_arte(com, rede.capa));
+  fila.push_back(faixa_de(com));
+  std::size_t linhas = 0;
+  const nu::SommaDaCaca somma = nu::caca_capas(
+      fila, &memoria, rede.consulta(),
+      [&linhas](const nu::Faixa&, nu::CacaDeCapa) { ++linhas; });
+  CHECK(somma.embutidas == 2);
+  CHECK(somma.ja_tinham == 1);
+  CHECK(linhas == 3);  // o relator viu a fila inteira
+  // As irmãs casam na MESMA release e a arte baixou UMA vez: duas buscas,
+  // duas fichas (o casamento é por faixa) e uma arte fazem cinco.
+  CHECK(rede.gastas == 5);
+  CHECK(nu::arte_embutida(fila[0].caminho) == rede.capa);
+  CHECK(nu::arte_embutida(fila[1].caminho) == rede.capa);
+}
+
+TEST_CASE("o recuo a meio da corrida deixa as restantes virgens") {
+  const Cova cova;
+  nu::MemoriaDeCapas memoria(cova.banco());
+  RedeDeMentira rede;
+  rede.desfecho = nu::DesfechoMB::Recuo;
+  rede.estado = 503;
+  std::vector<nu::Faixa> fila;
+  fila.push_back(faixa_de(poe_mp3(cova, "01 - Uma.mp3")));
+  fila.push_back(faixa_de(poe_mp3(cova, "02 - Outra.mp3")));
+  std::size_t linhas = 0;
+  const nu::SommaDaCaca somma = nu::caca_capas(
+      fila, &memoria, rede.consulta(),
+      [&linhas](const nu::Faixa&, nu::CacaDeCapa) { ++linhas; });
+  CHECK(somma.parou_por_recuo);
+  CHECK(linhas == 1);      // a segunda nem entrou no relato
+  CHECK(rede.gastas == 1);  // e rede alguma se gastou por ella
+  CHECK(memoria.quantas() == 0);  // nada se lembrou: amanhã tenta-se
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
