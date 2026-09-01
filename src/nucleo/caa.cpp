@@ -29,6 +29,27 @@ constexpr char kEsquemaDaMemoria[] =
     "  caminho TEXT PRIMARY KEY, desfecho TEXT NOT NULL,"
     "  quando INTEGER NOT NULL);";
 
+// corre — a consulta com as cadeias por AMARRAÇÃO, nunca por concatenação: é
+// o desenho do rol, aparado ao que esta memoria usa (cadeia, e nada mais).
+bool corre(sqlite3* punho, const std::string& sql,
+           const std::vector<std::string>& cadeias,
+           const std::function<void(sqlite3_stmt*)>& cinzel = nullptr) {
+  if (punho == nullptr) return false;
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho, sql.c_str(), -1, &passo, nullptr) != SQLITE_OK)
+    return false;
+  int alvo = 1;
+  for (const std::string& cadeia : cadeias)
+    sqlite3_bind_text(passo, alvo++, cadeia.c_str(),
+                      static_cast<int>(cadeia.size()), SQLITE_TRANSIENT);
+  int veredicto = sqlite3_step(passo);
+  while (veredicto == SQLITE_ROW) {
+    if (cinzel) cinzel(passo);
+    veredicto = sqlite3_step(passo);
+  }
+  sqlite3_finalize(passo);
+  return veredicto == SQLITE_DONE;
+}
 
 }  // namespace
 
@@ -63,6 +84,20 @@ MemoriaDeCapas::MemoriaDeCapas(std::filesystem::path banco)
     sqlite3_close(punho_);
     punho_ = nullptr;
   }
+  if (punho_ == nullptr) return;
+  // A versão assenta-se UMA vez, no exacto regime do Roleiro. O numero é
+  // constante de compilação, e não cadeia do operador: compô-lo na consulta
+  // não abre porta alguma que a amarração feche.
+  int quantas = 0;
+  corre(punho_, "SELECT COUNT(*) FROM esquema_da_memoria;", {},
+        [&quantas](sqlite3_stmt* passo) {
+          quantas = sqlite3_column_int(passo, 0);
+        });
+  if (quantas == 0)
+    corre(punho_,
+          "INSERT INTO esquema_da_memoria VALUES (" +
+              std::to_string(kVersaoDaMemoria) + ");",
+          {});
 }
 
 MemoriaDeCapas::~MemoriaDeCapas() {
@@ -70,6 +105,13 @@ MemoriaDeCapas::~MemoriaDeCapas() {
 }
 
 bool MemoriaDeCapas::aberta() const noexcept { return punho_ != nullptr; }
+
+int MemoriaDeCapas::versao() const noexcept {
+  int lida = 0;
+  corre(punho_, "SELECT versao FROM esquema_da_memoria;", {},
+        [&lida](sqlite3_stmt* passo) { lida = sqlite3_column_int(passo, 0); });
+  return lida;
+}
 
 }  // namespace mysong::nucleo
 
