@@ -150,6 +150,10 @@ target_sources(mysong_testes PRIVATE prova_tocador_fios.cpp)
 # O unico caso que toca o mundo toca RELOGIO (o acelerador), e não rede.
 target_sources(mysong_testes PRIVATE prova_musicbrainz.cpp)
 
+# ─── A PROVA DO COVER ART ARCHIVE (issue #83) ───────────────────────────────
+# Sem rede: a Consulta entra de mentira e as faixas são fixtures em temporario.
+target_sources(mysong_testes PRIVATE prova_caa.cpp)
+
 # ─── A PROVA DA LINHA DE COMMANDO (issue #66) ───────────────────────────────
 target_sources(mysong_testes PRIVATE prova_linha.cpp)
 # ─── A PROVA DOS AJUSTES (issue #67) ────────────────────────────────────────
