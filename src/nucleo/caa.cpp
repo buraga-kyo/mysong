@@ -113,6 +113,24 @@ int MemoriaDeCapas::versao() const noexcept {
   return lida;
 }
 
+std::string_view palavra_da_caca(CacaDeCapa desfecho) {
+  switch (desfecho) {
+    case CacaDeCapa::Embutida: return "capa embutida";
+    case CacaDeCapa::JaTinha: return "já tinha capa";
+    case CacaDeCapa::JaProcurada: return "já se procurou antes";
+    case CacaDeCapa::ForaDoAlcance: return "fóra do alcance: não é MP3";
+    case CacaDeCapa::SemMetadado:
+      return "sem titulo ou duração no índice: duvidosa";
+    case CacaDeCapa::Duvidosa: return "o MusicBrainz não casou: duvidosa";
+    case CacaDeCapa::SemCapa: return "o Cover Art Archive não tem a capa";
+    case CacaDeCapa::RedeFalhou: return "a rede falhou: fica para outra corrida";
+    case CacaDeCapa::Recuo: return "o servidor pediu recuo: a corrida pára";
+    case CacaDeCapa::FalhouAEscripta:
+      return "a arte veio e a etiqueta não se escreveu";
+  }
+  return "desfecho sem nome";
+}
+
 std::string_view palavra_da_procurada(Procurada procurada) {
   switch (procurada) {
     case Procurada::SemCapa: return "sem capa no CAA";

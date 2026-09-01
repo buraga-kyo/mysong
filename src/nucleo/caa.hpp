@@ -48,7 +48,28 @@ enum class DesfechoDaCapa { Achada, SemCapa, Transitoria, Recuo };
 // para que a bateria a afira sem rede alguma.
 DesfechoDaCapa desfecho_da_capa(DesfechoMB desfecho, long estado_http);
 
-// A VERSÃO do esquema da memoria: banco proprio sobe sozinho.
+// ── A CAÇA DE UMA FAIXA ─────────────────────────────────────────────────────
+
+// O DESFECHO da caça, faixa a faixa. Todo caso tem nome, pela regra da
+// Colheita: «falhou» não diz ao operador se ha de consertar etiqueta, esperar
+// a rede voltar, ou aceitar que a capa não existe. Os quatro primeiros
+// decidem-se em casa, sem requisição; os demais contam a rede.
+enum class CacaDeCapa {
+  Embutida,        // a arte está na etiqueta, e o painel a verá
+  JaTinha,         // havia capa, ao lado ou embutida: rede nem se tocou
+  JaProcurada,     // corrida anterior já decidiu; a memoria poupa a rede
+  ForaDoAlcance,   // não é MP3 que a taglib aceite: só ID3v2 se embute (R7)
+  SemMetadado,     // sem titulo ou sem duração: sem crivo não ha casamento
+  Duvidosa,        // o MB respondeu e não casou com confiança; lembra-se
+  SemCapa,         // o CAA disse 404 para a release casada; lembra-se
+  RedeFalhou,      // falha passageira: diz-se, e NÃO se lembra
+  Recuo,           // 429 ou 503: a corrida inteira ha de parar aqui
+  FalhouAEscripta, // a arte veio e a etiqueta não se deixou escrever
+};
+
+// palavra_da_caca — a linha que o relato mostra. Switch exhaustivo: desfecho
+// novo sem palavra não compila.
+std::string_view palavra_da_caca(CacaDeCapa desfecho);
 inline constexpr int kVersaoDaMemoria = 1;
 
 // O que se LEMBRA de uma faixa procurada. SÓ desfecho definitivo tem nome
