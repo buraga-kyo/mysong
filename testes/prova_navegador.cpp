@@ -736,5 +736,21 @@ TEST_CASE("a rede e o catalogo dão chão quando as fontes chegam") {
   CHECK(navegador.vista().size() == 1);
 }
 
+TEST_CASE("a barra e a tecla P levam á mesma lista das listas") {
+  const Cova cova;
+  const CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador pela_barra(livraria, &roleiro);
+  tui::Navegador pela_tecla(livraria, &roleiro);
+  REQUIRE(pela_barra.cria_rol("viagem"));
+  REQUIRE(pela_barra.volta());
+  CHECK(pela_barra.vai_para(tui::Secao::Rois));
+  pela_tecla.mostra_rois();  // o caminho do «P», tal e qual
+  CHECK(pela_barra.secao() == pela_tecla.secao());
+  CHECK(textos(pela_barra) == textos(pela_tecla));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
