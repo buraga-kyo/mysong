@@ -20,9 +20,13 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <map>
+#include <set>
 #include <string>
 #include <string_view>
+#include <vector>
 
+#include "nucleo/biblioteca.hpp"
 #include "nucleo/musicbrainz.hpp"
 
 // O punho do SQLite, declarado adiante e no escopo global, pela mesma razão
@@ -128,6 +132,38 @@ class MemoriaDeCapas {
   std::filesystem::path banco_;
   sqlite3* punho_ = nullptr;
 };
+
+// ── A CORRIDA ───────────────────────────────────────────────────────────────
+
+// caca_uma_faixa — a caça de UMA faixa, do filtro em casa ao quadro gravado:
+// capa que já ha e memoria poupam a rede; casa_release e o CAA gastam-na; e
+// os dous caches DA CORRIDA entram por parametro, para que duas irmãs da
+// mesma release baixem a arte uma vez só e o 404 d'ella se reuse sem esperar
+// a memoria. Quem lembra o definitivo (sem-capa, duvidosa) é ESTA função, no
+// instante em que o decide: corrida interrompida conserva o já decidido.
+CacaDeCapa caca_uma_faixa(const Faixa& faixa, MemoriaDeCapas* memoria,
+                          const ConsultaComEstado& consulta,
+                          std::map<std::string, std::string>* arte_da_release,
+                          std::set<std::string>* release_sem_capa);
+
+// O RELATOR: uma linha por faixa, entregue a quem chama (a tela imprime, a
+// bateria colhe). A palavra sahe da palavra_da_caca.
+using Relator = std::function<void(const Faixa&, CacaDeCapa)>;
+
+// A SOMMA do remate. O SemMetadado conta com as duvidosas, que é o que elle
+// vira na memoria; RedeFalhou e FalhouAEscripta são as falhas que voltam.
+struct SommaDaCaca {
+  std::size_t embutidas = 0, ja_tinham = 0, ja_procuradas = 0;
+  std::size_t fora_do_alcance = 0, duvidosas = 0, sem_capa = 0, falhas = 0;
+  bool parou_por_recuo = false;
+};
+
+// caca_capas — a corrida inteira, na ordem dada: caça faixa a faixa, conta a
+// somma, e PÁRA no primeiro recuo, sem tentar nem lembrar as restantes.
+SommaDaCaca caca_capas(const std::vector<Faixa>& faixas,
+                       MemoriaDeCapas* memoria,
+                       const ConsultaComEstado& consulta,
+                       const Relator& relator);
 
 }  // namespace mysong::nucleo
 
