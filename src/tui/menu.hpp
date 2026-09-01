@@ -54,6 +54,32 @@ enum class GestoDaBarra { Alheio, Fecha, Sobe, Desce, AoPrincipio, AoFim,
 // VOLTA (seta esquerda, Escape, Backspace) aqui fecha sem trocar secção.
 GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept;
 
+// A MACHINA. Dous campos e nada mais: se o menu está aberto, e qual degrau
+// está eleito. Não conhece o Navegador por dentro: quem abre DIZ-LHE a secção
+// corrente, e quem entra pergunta-lhe o alvo e vae elle proprio ao navegador.
+// Fechar não esquece o degrau de proposito: o estado que fica é inerte, e
+// abrir torna a assentá-lo na secção corrente.
+class Menu {
+ public:
+  bool aberto() const noexcept;
+  std::size_t degrau() const noexcept;
+  Secao alvo() const noexcept;  // a secção do degrau eleito
+
+  // abre — o Tab vindo da lista. O degrau eleito nasce na secção CORRENTE,
+  // que é o que o esboço aprovado mostra: o marcador acorda onde se está.
+  void abre(Secao corrente) noexcept;
+  void fecha() noexcept;
+
+  void sobe() noexcept;  // saturam nos extremos: menu não é carrossel
+  void desce() noexcept;
+  void ao_principio() noexcept;
+  void ao_fim() noexcept;
+
+ private:
+  bool aberto_ = false;
+  std::size_t degrau_ = 0;
+};
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

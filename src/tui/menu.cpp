@@ -61,6 +61,29 @@ GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept {
   return GestoDaBarra::Alheio;
 }
 
+bool Menu::aberto() const noexcept { return aberto_; }
+std::size_t Menu::degrau() const noexcept { return degrau_; }
+Secao Menu::alvo() const noexcept { return secao_do_degrau(degrau_); }
+
+void Menu::abre(Secao corrente) noexcept {
+  aberto_ = true;
+  degrau_ = degrau_da_secao(corrente);
+}
+
+void Menu::fecha() noexcept { aberto_ = false; }
+
+void Menu::sobe() noexcept {
+  if (degrau_ > 0) --degrau_;
+}
+
+void Menu::desce() noexcept {
+  if (degrau_ + 1 < DEGRAUS_DA_BARRA) ++degrau_;
+}
+
+void Menu::ao_principio() noexcept { degrau_ = 0; }
+
+void Menu::ao_fim() noexcept { degrau_ = DEGRAUS_DA_BARRA - 1; }
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
