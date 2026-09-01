@@ -79,9 +79,18 @@ MemoriaDeCapas::MemoriaDeCapas(std::filesystem::path banco)
   // (IF NOT EXISTS), donde reabrir o banco de hontem não o toca.
   if (sqlite3_open_v2(banco_.c_str(), &punho_,
                       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
-                      nullptr) != SQLITE_OK ||
-      sqlite3_exec(punho_, kEsquemaDaMemoria, nullptr, nullptr, nullptr) !=
-          SQLITE_OK) {
+                      nullptr) != SQLITE_OK) {
+    sqlite3_close(punho_);
+    punho_ = nullptr;
+    return;
+  }
+  // Duas corridas ao mesmo tempo não se coordenam (o man manda UMA, mas
+  // mandar não é trancar): com o busy_timeout a segunda espera a vez por até
+  // dous segundos em logar de falhar de pronto no primeiro assento
+  // concorrente. Achado da revisão d'esta issue.
+  sqlite3_busy_timeout(punho_, 2000);
+  if (sqlite3_exec(punho_, kEsquemaDaMemoria, nullptr, nullptr, nullptr) !=
+      SQLITE_OK) {
     sqlite3_close(punho_);
     punho_ = nullptr;
   }
