@@ -67,6 +67,7 @@
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/navegador.hpp"
+#include "tui/menu.hpp"
 #include "tui/prompt.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
@@ -457,6 +458,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // despacho de teclas continuar a dizer `Digita::Busca` sem mudar uma linha.
   using Digita = tui::Modo;
   Digita digita = Digita::Nada;
+  // O MENU da barra (issue #80). Vive aqui como o `digita`: é estado do fio da
+  // tela, que só o tratador de teclas muta e só o pintor lê. E note-se que
+  // prompt aberto com menu aberto NÃO existe: toda tecla que abre prompt é
+  // alheia á barra, e o ramo Alheio fecha-a antes de a tecla seguir.
+  tui::Menu menu;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -831,6 +837,38 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         return true;
       }
       return true;  // dentro do modo, tecla alguma sahe para fóra
+    }
+
+    // O MENU DA BARRA (issue #80) trata DEPOIS do campo e ANTES da taboada
+    // geral, que é a ordem declarada no tractado d'elle. A tecla que a barra
+    // não conhece FECHA-A e segue ao fluxo de sempre, e é por isso que o ramo
+    // Alheio não retorna: o atalho vale na barra porque passa por aqui.
+    if (menu.aberto()) {
+      switch (tui::gesto_da_barra(tecla)) {
+        case tui::GestoDaBarra::Fecha: menu.fecha(); return true;
+        case tui::GestoDaBarra::Sobe: menu.sobe(); return true;
+        case tui::GestoDaBarra::Desce: menu.desce(); return true;
+        case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
+        case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
+        case tui::GestoDaBarra::Entra: {
+          const tui::Secao alvo = menu.alvo();
+          if (navegador.vai_para(alvo)) {
+            menu.fecha();  // entrar é estar dentro: o foco volta á lista
+          } else if (alvo == tui::Secao::Albuns) {
+            aviso_da_rede = "entra por um artista primeiro";
+          } else if (alvo == tui::Secao::Faixas) {
+            aviso_da_rede = "entra por um album primeiro";
+          } else if (alvo == tui::Secao::Rede) {
+            aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+          } else {
+            aviso_da_rede = "catálogo nenhum; importa com I";
+          }
+          return true;  // sem chão avisa-se, e o foco FICA na barra
+        }
+        case tui::GestoDaBarra::Alheio:
+          menu.fecha();
+          break;  // e a tecla segue: faz o que sempre fez
+      }
     }
 
     const tui::Ordem ordem =
