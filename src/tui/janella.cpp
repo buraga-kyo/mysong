@@ -72,6 +72,7 @@
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
+#include "tui/vigilia.hpp"
 
 namespace api = mysong::api;
 namespace nucleo = mysong::nucleo;
@@ -140,7 +141,10 @@ constexpr int ACHADOS_POR_BUSCA = 15;
 // operador n'outro, o tmux manda «cnorm» quarenta vezes por segundo ao terminal de fóra e
 // arrasta o cursor VISIVEL do painel d'elle por dous mil e quinhentos reposicionamentos em
 // cinco segundos. Aquelle cursor é do painel activo, e o mysong não é dono d'elle:
-// esconder mais o nosso não apaga o alheio. Tem issue propria.
+// esconder mais o nosso não apaga o alheio. O remedio foi o da issue #82, e mora
+// na VIGILIA: pedido o foco ao terminal (modo 1004), perdendo o painel os olhos
+// o relogio dorme e batida alguma pede repintura; sem repintura nossa, o tmux
+// não tem quadro que pintar lá fóra, e cnorm algum arrasta o cursor alheio.
 //
 // A posição entra em SEGUNDOS inteiros, e não em decimos: a barra e o relogio mostram
 // segundos, e a fracção mudaria a assignatura sem mudar um pixel.
@@ -485,6 +489,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // alheia não se justifica, e agora não ha nenhum.
   // A ultima assignatura do que se vê. Vazia de saida, para que o primeiro quadro sahia.
   std::string ultima_assignatura;
+  // A VIGILIA do desenho (issue #82): o fio da tela a escreve (foco e tecla)
+  // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
+  tui::Vigilia vigilia;
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
   // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
@@ -764,6 +771,19 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   });
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
+    // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
+    // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
+    // letra no termo em curso.
+    switch (tui::gesto_do_foco(tecla)) {
+      case tui::GestoDoFoco::Ganha: vigilia.ganha(); return true;
+      case tui::GestoDoFoco::Perde: vigilia.perde(); return true;
+      case tui::GestoDoFoco::Alheio: break;
+    }
+    // Tecla de gente só chega a painel focado: adormecida, a vigilia acorda
+    // aqui e a tecla SEGUE ao seu fluxo de sempre. Desperta ou sem noticia,
+    // nada ha que acordar, e noticia de foco tecla nenhuma dá.
+    if (!vigilia.pede_batida() && tui::eh_tecla_de_gente(tecla))
+      vigilia.ganha();
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
@@ -1098,22 +1118,35 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (estaleiro.colheu()) pede_varrer.store(true);
       analisador.pulsa();
       mpris.pulsa();
-      // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
-      // tela escreve zero: é a correcção da issue #48.
-      const std::string agora = assignatura_do_visivel(
-          tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
-          mostra_letra.load(), varrida.load(),
-          correio.geracao() + correio_do_catalogo.geracao(),
-          projector.rodando());
-      if (agora != ultima_assignatura) {
-        ultima_assignatura = agora;
-        tela.PostEvent(ftxui::Event::Custom);
+      // SÓMENTE quando o que se vê muda (issue #48), e SÓMENTE com olhos no
+      // painel (issue #82): a vigilia governa o desenho e nada mais; os
+      // pulsos acima nunca dormem, que a musica não pára por falta de platéa.
+      // Ao acordar esquece-se a assignatura, porque o que mudou dormindo não
+      // se pintou, e o primeiro quadro desperto ha de sahir completo.
+      if (vigilia.acordou()) ultima_assignatura.clear();
+      if (vigilia.pede_batida()) {
+        const std::string agora = assignatura_do_visivel(
+            tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
+            mostra_letra.load(), varrida.load(),
+            correio.geracao() + correio_do_catalogo.geracao(),
+            projector.rodando());
+        if (agora != ultima_assignatura) {
+          ultima_assignatura = agora;
+          tela.PostEvent(ftxui::Event::Custom);
+        }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
   });
 
+  // PEDE-SE O FOCO ao terminal (issue #82): com o modo 1004 elle manda
+  // ESC [ I e ESC [ O a cada troca, e é d'esses avisos que a vigilia vive.
+  // Liga-se antes do Loop e desliga-se logo depois, no mesmo assentar e
+  // desfazer que o FTXUI pratica com o que é d'elle; aviso que chegue antes
+  // do parser espera no buffer do tty, que o Install não descarta entrada.
+  std::cout << "\x1b[?1004h" << std::flush;
   tela.Loop(janella);
+  std::cout << "\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
@@ -1121,6 +1154,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // desfeito, e isso não perdoa.
   for (std::thread& fio : ao_fundo)
     if (fio.joinable()) fio.join();
+  // A FALTA DECLARA-SE (issue #82): pediu-se o aviso de foco e aviso algum
+  // veio na sessão inteira. Diz-se o FATO, e não a culpa, que saber se o
+  // terminal é incapaz ou se ninguem trocou de foco não se pode; e diz-se
+  // depois da tela, no stderr, como o relatorio dos requisitos se diz.
+  if (!vigilia.ha_noticia())
+    std::cerr << "mysong: evento de foco nenhum veio nesta sessão; o relogio "
+                 "nunca dormiu. Dentro do tmux, «set -g focus-events on» é o "
+                 "que o faz chegar.\n";
   return 0;
 }
 
