@@ -120,6 +120,8 @@ struct RedeDeMentira {
   std::string capa = std::string("\xFF\xD8\xFF\xE0", 4) + "arte de mentira";
   nu::DesfechoMB desfecho = nu::DesfechoMB::Achado;  // o que a rede responde
   long estado = 200;
+  nu::DesfechoMB desfecho_capa = nu::DesfechoMB::Achado;  // a porta do CAA
+  long estado_capa = 200;
   int gastas = 0;
   mysong::nucleo::ConsultaComEstado consulta() {
     return [this](const std::string& url, std::string* corpo, long* dito) {
@@ -127,7 +129,11 @@ struct RedeDeMentira {
       *dito = estado;
       if (url.find("recording?query=") != std::string::npos) *corpo = busca;
       else if (url.find("recording/") != std::string::npos) *corpo = ficha;
-      else if (url.find("coverartarchive") != std::string::npos) *corpo = capa;
+      else if (url.find("coverartarchive") != std::string::npos) {
+        *corpo = capa;
+        *dito = estado_capa;
+        return desfecho_capa;
+      }
       return desfecho;
     };
   }
@@ -220,6 +226,29 @@ TEST_CASE("a caça embute a arte da release casada e o painel a relê") {
   // O MESMO leitor que abastece o painel desde a issue #81 relê os octetos.
   CHECK(nu::arte_embutida(faixa) == rede.capa);
   CHECK(memoria.quantas() == 0);  // desfecho feliz não é negativo: nada se assenta
+}
+
+TEST_CASE("o 404 do CAA lembra-se e a corrida seguinte fica em casa") {
+  const Cova cova;
+  nu::MemoriaDeCapas memoria(cova.banco());
+  RedeDeMentira rede;
+  rede.desfecho_capa = nu::DesfechoMB::Falhou;  // o 404: capa não ha lá
+  rede.estado_capa = 404;
+  std::map<std::string, std::string> artes;
+  std::set<std::string> sem_capa;
+  const std::filesystem::path faixa = poe_mp3(cova, "01 - Never.mp3");
+  CHECK(nu::caca_uma_faixa(faixa_de(faixa), &memoria, rede.consulta(), &artes,
+                           &sem_capa) == nu::CacaDeCapa::SemCapa);
+  CHECK(rede.gastas == 3);
+  CHECK(nu::arte_embutida(faixa).empty());  // byte algum entrou na faixa
+  // A corrida de amanhã relê a memoria do DISCO e fica em casa: zero rede,
+  // que é o «não voltar a bater na rede por nada» da issue.
+  nu::MemoriaDeCapas relida(cova.banco());
+  std::map<std::string, std::string> artes2;
+  std::set<std::string> sem2;
+  CHECK(nu::caca_uma_faixa(faixa_de(faixa), &relida, rede.consulta(), &artes2,
+                           &sem2) == nu::CacaDeCapa::JaProcurada);
+  CHECK(rede.gastas == 3);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
