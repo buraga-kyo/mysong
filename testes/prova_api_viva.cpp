@@ -420,6 +420,18 @@ TEST_CASE("o dito do socket diz o caminho e quem escute n'elle") {
   }
 }
 
+// O QUARTO estado do dito é a RECUSA, e nasceu de defeito (issue #84): caminho
+// que passa do sun_path escrevia-se alem do vector DENTRO do quem_escuta, e o
+// --sonda inteiro morria no protector da pilha antes de dizer cousa alguma.
+// Este caso morde por si: se a guarda cahir, não é um CHECK que falha, é a
+// bateria INTEIRA que rebenta no estouro.
+TEST_CASE("o dito do socket recusa por nome o caminho que passa do sun_path") {
+  const Ambiente posto("XDG_RUNTIME_DIR", "/tmp/" + std::string(150, 'r'));
+  const std::string dito = mysong::api::texto_do_socket();
+  CHECK(dito.find("nao se pudo sondar") != std::string::npos);
+  CHECK(dito.find("mysong.sock") != std::string::npos);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
