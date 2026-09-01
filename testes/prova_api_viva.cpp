@@ -476,6 +476,24 @@ TEST_CASE("a sonda corre ate ao fim com o ambiente desviado para um rascunho") {
   CHECK(sahida.find("ajustes em vigor") != std::string::npos);
 }
 
+// E o ARRANQUE NORMAL, sem --sonda, que a sonda corre tambem ao abrir o
+// tocador: sem terminal, o impedimento responde-se no stderr com codigo um. O
+// que se prende aqui é que elle TERMINA e responde inteiro, e não que rebente
+// no meio como rebentava.
+TEST_CASE("o arranque sem terminal responde inteiro sob o ambiente desviado") {
+  const DirectorioTemporario rascunho;
+  REQUIRE(rascunho.valido());
+  const std::string fundo = rascunho.raiz() + "/" + std::string(120, 'f');
+  const std::string binario(MYSONG_BINARIO);
+  std::string sahida;
+  const int codigo = colher_com_codigo(
+      "HOME='" + rascunho.raiz() + "' XDG_RUNTIME_DIR='" + fundo +
+          "' MYSONG_SONDA_FORCA=fonte '" + binario + "' </dev/null",
+      &sahida);
+  CHECK_MESSAGE(codigo == 1, sahida);
+  CHECK(sahida.find("FALTA") != std::string::npos);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
