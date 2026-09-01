@@ -128,5 +128,25 @@ struct RedeDeMentira {
 
 }  // namespace
 
+TEST_CASE("o casamento feliz gasta duas consultas e dá a release canonica") {
+  RedeDeMentira rede;
+  nu::CacaDeCapa porque = nu::CacaDeCapa::Embutida;
+  const std::string mbid =
+      nu::casa_release("Rick Astley", "Never Gonna Give You Up", 213,
+                       rede.consulta(), &porque);
+  CHECK(mbid == "bc9051ea-9d77-3ae3-8bd6-45960a8c0e4f");
+  CHECK(rede.gastas == 2);  // a busca e a ficha, e nada mais
+}
+
+TEST_CASE("sem titulo ou sem duração o casamento nem toca a rede") {
+  RedeDeMentira rede;
+  nu::CacaDeCapa porque = nu::CacaDeCapa::Embutida;
+  CHECK(nu::casa_release("Rick", "", 213, rede.consulta(), &porque).empty());
+  CHECK(porque == nu::CacaDeCapa::SemMetadado);
+  CHECK(nu::casa_release("Rick", "Never", 0, rede.consulta(), &porque).empty());
+  CHECK(porque == nu::CacaDeCapa::SemMetadado);
+  CHECK(rede.gastas == 0);  // é o «sem gastar rede alguma» do aceite
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
