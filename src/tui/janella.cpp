@@ -49,6 +49,7 @@
 
 #include "nucleo/ajustes.hpp"
 #include "nucleo/analisador.hpp"
+#include "nucleo/caa.hpp"
 #include "nucleo/capa.hpp"
 #include "nucleo/catalogo.hpp"
 #include "nucleo/estaleiro.hpp"
@@ -1254,6 +1255,55 @@ int main(int argc, char** argv) {
     std::cout << api::texto_do_socket();
     std::cout << nucleo::texto_dos_ajustes(ajustes);
     return relatorio.ha_impedimento() ? 1 : 0;
+  }
+
+  // O modo da capa (issue #83): texto puro, tela nenhuma, e rede SÓ por esta
+  // ordem. Varre-se ANTES, com a mesma Varredura da tela: o índice se
+  // reconstroe a cada varredura por desenho, e caçar sobre índice velho
+  // abriria arquivo já movido.
+  if (invocacao.modo == nucleo::Modo::Capa) {
+    const std::filesystem::path banco = caminho_do_indice();
+    if (banco.empty()) {
+      std::cerr << "mysong --capa: sem XDG_DATA_HOME nem HOME nao ha indice.\n";
+      return 1;
+    }
+    nucleo::MemoriaDeCapas memoria(banco.parent_path() / "capas.sqlite3");
+    if (!memoria.aberta()) {  // sem memoria toda corrida re-tentaria a rede
+      std::cerr << "mysong --capa: a memoria de capas nao abriu ao lado do "
+                   "indice.\n";
+      return 1;
+    }
+    const std::filesystem::path acervo = ajustes.acervo.valor;
+    std::cout << "a varrer " << acervo.string() << "..." << std::endl;
+    {
+      nucleo::Varredura varredura(banco, {acervo});
+      while (varredura.passo()) {
+      }
+    }
+    nucleo::Biblioteca livraria(banco);
+    const std::vector<nucleo::Faixa> fila = livraria.busca_faixa("");
+    std::cout << "a caçar capa para " << fila.size() << " faixas (uma "
+              << "requisição por segundo)..." << std::endl;
+    const nucleo::SommaDaCaca somma = nucleo::caca_capas(
+        fila, &memoria, nucleo::consulta_mb_com_estado,
+        [](const nucleo::Faixa& faixa, nucleo::CacaDeCapa desfecho) {
+          // Linha só para o que muda ou pede olho: mil «já tinha» seriam
+          // ruido, e essas vão contadas na somma do remate.
+          if (desfecho == nucleo::CacaDeCapa::JaTinha ||
+              desfecho == nucleo::CacaDeCapa::JaProcurada)
+            return;
+          std::cout << faixa.artista << " - " << faixa.titulo << ": "
+                    << nucleo::palavra_da_caca(desfecho) << std::endl;
+        });
+    std::cout << somma.embutidas << " embutidas · " << somma.ja_tinham
+              << " já tinham · " << somma.ja_procuradas << " já procuradas · "
+              << somma.duvidosas << " duvidosas · " << somma.sem_capa
+              << " sem capa · " << somma.fora_do_alcance
+              << " fóra do alcance · " << somma.falhas << " falhas\n";
+    if (somma.parou_por_recuo)
+      std::cerr << "o servidor pediu recuo: a corrida parou; o resto fica "
+                   "para a proxima.\n";
+    return somma.parou_por_recuo ? 1 : 0;
   }
 
   if (relatorio.ha_impedimento()) {

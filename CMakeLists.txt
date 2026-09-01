@@ -320,6 +320,11 @@ target_sources(mysong_core PRIVATE src/nucleo/catalogo.cpp)
 # Rede pelo MESMO libcurl do catalogo; dependencia nova alguma se cobra.
 target_sources(mysong_core PRIVATE src/nucleo/musicbrainz.cpp)
 
+# ─── A CAPA DO ACERVO PELO COVER ART ARCHIVE (issue #83) ────────────────────
+# A caça da capa que falta ao que já está no disco: casa no MB, pede ao CAA,
+# embute. Rede pelo MESMO consulta_mb da #57; dependencia nova alguma se cobra.
+target_sources(mysong_core PRIVATE src/nucleo/caa.cpp)
+
 # O ESPIA do catalogo: o instrumento com que a leitura se afere contra a pagina de
 # verdade, antes de o corpo entrar na bateria escripto á mão.
 add_executable(espia_catalogo exemplos/espia_catalogo.cpp)
@@ -330,6 +335,11 @@ target_link_libraries(espia_catalogo PRIVATE mysong_core)
 add_executable(espia_musicbrainz exemplos/espia_musicbrainz.cpp)
 target_compile_options(espia_musicbrainz PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(espia_musicbrainz PRIVATE mysong_core)
+
+# O ESPIA da capa: a prova viva da caça da issue #83, sobre faixa de rascunho.
+add_executable(espia_capa exemplos/espia_capa.cpp)
+target_compile_options(espia_capa PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(espia_capa PRIVATE mysong_core)
 
 # ─── O CURL GLOBAL (issue #63) ──────────────────────────────────────────────
 # O main ergue o libcurl uma vez, antes de fio algum, e por isso o alvo da tela

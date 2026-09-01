@@ -105,6 +105,29 @@ std::string arte_embutida(const std::filesystem::path& faixa) {
                      static_cast<std::size_t>(arte->picture().size()));
 }
 
+bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos) {
+  // O mime sahe do CONTEUDO, e de extensão nenhuma: o CAA promette JPEG na
+  // miniatura, e prometter não é medir. Fóra os dous formatos que o painel e
+  // os leitores alheios sabem ler, recusa-se ANTES de abrir o arquivo.
+  const bool jpeg = octetos.size() > 3 &&
+                    static_cast<unsigned char>(octetos[0]) == 0xFF &&
+                    static_cast<unsigned char>(octetos[1]) == 0xD8;
+  const bool png = octetos.size() > 8 &&
+                   octetos.compare(0, 8, "\x89PNG\r\n\x1a\n") == 0;
+  if (!jpeg && !png) return false;
+  TagLib::MPEG::File arquivo(faixa.c_str());
+  if (!arquivo.isValid()) return false;
+  auto* quadro = new TagLib::ID3v2::AttachedPictureFrame();
+  quadro->setMimeType(jpeg ? "image/jpeg" : "image/png");
+  quadro->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+  quadro->setPicture(
+      TagLib::ByteVector(octetos.data(), static_cast<unsigned>(octetos.size())));
+  // A etiqueta cria-se A PEDIDO (o `true`), que faixa antiga pode nem ter
+  // ID3v2; e o quadro entregue passa a ser da taglib, que o desfaz no save.
+  arquivo.ID3v2Tag(true)->addFrame(quadro);
+  return arquivo.save();
+}
+
 namespace {
 
 // extrahe_embutida — a mesma arte, posta n'um temporario para que o chafa a possa

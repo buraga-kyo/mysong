@@ -24,6 +24,7 @@ Invocacao ler_linha(int argc, const char* const* argv) {
   Invocacao invocacao;
   bool encerradas = false;
   bool quer_ajuda = false, quer_versao = false, quer_sonda = false;
+  bool quer_capa = false;
 
   for (int i = 1; i < argc; ++i) {
     const std::string_view arg(argv[i]);
@@ -32,6 +33,7 @@ Invocacao ler_linha(int argc, const char* const* argv) {
     else if (arg == "--ajuda" || arg == "--help") quer_ajuda = true;
     else if (arg == "--versao" || arg == "--version") quer_versao = true;
     else if (arg == "--sonda") quer_sonda = true;
+    else if (arg == "--capa") quer_capa = true;
     else {
       invocacao.modo = Modo::Recusa;
       invocacao.razao = "mysong: opcao desconhecida: " + std::string(arg) +
@@ -43,6 +45,7 @@ Invocacao ler_linha(int argc, const char* const* argv) {
   if (quer_ajuda) invocacao.modo = Modo::Ajuda;
   else if (quer_versao) invocacao.modo = Modo::Versao;
   else if (quer_sonda) invocacao.modo = Modo::Sonda;
+  else if (quer_capa) invocacao.modo = Modo::Capa;
   return invocacao;
 }
 
@@ -63,6 +66,8 @@ Uso: mysong [opcao]... [faixa]...
   --versao, --version   diz o nome e o numero, e sahe
   --ajuda, --help       escreve estas linhas, e sahe
   --sonda               so o diagnostico dos requisitos, em texto
+  --capa                busca no Cover Art Archive a capa que falta as
+                        faixas do acervo, e a embute na etiqueta
   --                    encerra as opcoes; o que vem depois e caminho de
                         faixa, ainda que principie por traco
 
@@ -71,7 +76,7 @@ taboada e recusada, e a sahida vae differente de zero.
 
 A opcao vale em qualquer logar da linha, e nao so antes das faixas.
 Apparecendo mais de uma, a recusa manda em todas; depois della manda a
---ajuda, depois a --versao, e por fim o --sonda.
+--ajuda, depois a --versao, depois o --sonda, e por fim o --capa.
 
 O manual inteiro: man mysong
 )";

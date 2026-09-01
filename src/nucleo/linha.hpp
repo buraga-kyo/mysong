@@ -20,10 +20,11 @@
 
 namespace mysong::nucleo {
 
-// UM modo, e não pilha de bandeiras: os cinco excluem-se.
+// UM modo, e não pilha de bandeiras: os seis excluem-se.
 enum class Modo {
   Tocar,   // erguer o tocador com as faixas colhidas
   Sonda,   // o diagnostico dos requisitos, em texto (issue #22)
+  Capa,    // buscar a capa que falta ao acervo, em texto (issue #83)
   Versao,  // o nome e o numero, e sahir
   Ajuda,   // as opções que existem, e sahir
   Recusa,  // opção que a obra não conhece; a razão diz qual

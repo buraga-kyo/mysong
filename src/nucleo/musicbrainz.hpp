@@ -53,6 +53,9 @@ struct FichaMB {
   std::string titulo;
   std::string artista;
   std::string album;   // da release canonica: Official, grupo Album puro, a mais antiga
+  // O MBID d'essa mesma release (issue #83): é pela release que o Cover Art
+  // Archive indexa a arte da capa. Vazio quando o corpo não trouxe release.
+  std::string release_mbid;
   int ano = 0;         // o anno d'essa release
   int numero = 0;      // a posição da faixa n'ella (`position`; `number` vem «A3»)
   int duracao_ms = 0;  // a duração exacta da gravação, em milesimos
@@ -128,6 +131,15 @@ DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
 // enche o corpo. Re-tento algum se faz aqui: uma fila de faixas a re-tentar
 // amplificaria a rajada que o acelerador impede.
 DesfechoMB consulta_mb(const std::string& url, std::string* corpo);
+
+// A MESMA consulta, dizendo tambem o ESTADO HTTP (issue #83). O desfecho não
+// basta a quem precisa separar o 404 definitivo (o Cover Art Archive não TEM
+// a capa; lembra-se) da rede muda e do 5xx passageiro (não se lembra): os
+// tres são Falhou. Zero no estado é «resposta alguma houve». Nome proprio, e
+// não sobrecarga: sobrecarregada, a Consulta de omissão logo abaixo ficaria
+// ambigua em todo logar que diz `= consulta_mb`.
+DesfechoMB consulta_mb_com_estado(const std::string& url, std::string* corpo,
+                                  long* estado_http);
 
 // A CONSULTA por parametro: é a junta do dublê, a mesma do Estaleiro. Entrando
 // a rede por parametro, a bateria põe no logar d'ella uma consulta de mentira e

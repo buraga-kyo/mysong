@@ -41,6 +41,9 @@ TEST_CASE("cada opção longa dá o seu modo, e o dedo escreve as duas formas") 
   CHECK(ler({"--ajuda"}).modo == Modo::Ajuda);
   CHECK(ler({"--help"}).modo == Modo::Ajuda);
   CHECK(ler({"--sonda"}).modo == Modo::Sonda);
+  CHECK(ler({"--capa"}).modo == Modo::Capa);
+  // A precedencia declarada na ajuda: o --sonda ganha do --capa.
+  CHECK(ler({"--sonda", "--capa"}).modo == Modo::Sonda);
   CHECK(ler({}).modo == Modo::Tocar);
 }
 
@@ -86,6 +89,7 @@ TEST_CASE("o numero tem forma de numero, e a ajuda nomeia o que existe") {
 
   const std::string ajuda = texto_da_ajuda();
   CHECK(ajuda.find("--versao") != std::string::npos);
+  CHECK(ajuda.find("--capa") != std::string::npos);
   CHECK(ajuda.find("--ajuda") != std::string::npos);
   CHECK(ajuda.find("--sonda") != std::string::npos);
   CHECK(ajuda.find("\n  -- ") != std::string::npos);
