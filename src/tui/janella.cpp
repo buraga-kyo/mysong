@@ -686,6 +686,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
     }
     if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
+    // O SEARCH da barra (issue #80): a secção da busca no acervo tem nome
+    // proprio no topo, que «ARTISTS» n'ella seria o titulo a mentir.
+    if (navegador.secao() == tui::Secao::Busca) trilha = "SEARCH";
     if (navegador.secao() == tui::Secao::NoRol) {
       trilha = "LISTS";
       for (const std::string& degrau : navegador.trilha())
@@ -732,7 +735,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                tui::elemento_do_topo(trilha, digita, contexto_do_campo,
                                      termo_em_curso, larg),
                ftxui::hbox({
-                   tui::elemento_da_barra(navegador),
+                   tui::elemento_da_barra(navegador, menu.aberto(),
+                                          menu.degrau()),
                    ftxui::text("  "),
                    tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
                                             larg_tab),
@@ -748,7 +752,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
+               ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
+                           " · / filtra · s busca na rede"
                            " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
                            " · K/J move · R renomeia · D apaga · v video"
@@ -871,6 +876,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       }
     }
 
+    // O Tab abre o menu com o degrau na secção corrente (issue #80). Trata-se
+    // aqui, e não na taboada geral: o foco não é ordem de tocador nem de
+    // navegador, e verbo de foco n'aquelle enum seria verbo que o cumprir()
+    // teria de fingir que não viu.
+    if (tui::tecla_abre_menu(tecla)) {
+      menu.abre(navegador.secao());
+      return true;
+    }
+
     const tui::Ordem ordem =
         tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
@@ -879,7 +893,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::Verbo::Sobe: navegador.sobe(); return true;
       case tui::Verbo::AoPrincipio: navegador.ao_principio(); return true;
       case tui::Verbo::AoFim: navegador.ao_fim(); return true;
-      case tui::Verbo::Volta: navegador.volta(); return true;
+      case tui::Verbo::Volta:
+        // No alto, a SETA esquerda abre o menu (issue #80): quem quer mais á
+        // esquerda só tem a barra. O Escape e o Backspace ficam inertes como
+        // sempre: cancelar não é gesto que abra cousa alguma.
+        if (!navegador.volta() && tecla == ftxui::Event::ArrowLeft)
+          menu.abre(navegador.secao());
+        return true;
       case tui::Verbo::AbreBusca:
         digita = Digita::Busca;
         termo_em_curso.clear();
