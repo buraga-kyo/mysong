@@ -114,14 +114,16 @@ constexpr char kFichaComRelease[] =
 struct RedeDeMentira {
   std::string busca = kBuscaComEleita;
   std::string ficha = kFichaComRelease;
+  nu::DesfechoMB desfecho = nu::DesfechoMB::Achado;  // o que a rede responde
+  long estado = 200;
   int gastas = 0;
   mysong::nucleo::ConsultaComEstado consulta() {
-    return [this](const std::string& url, std::string* corpo, long* estado) {
+    return [this](const std::string& url, std::string* corpo, long* dito) {
       ++gastas;
-      *estado = 200;
+      *dito = estado;
       if (url.find("recording?query=") != std::string::npos) *corpo = busca;
       else if (url.find("recording/") != std::string::npos) *corpo = ficha;
-      return nu::DesfechoMB::Achado;
+      return desfecho;
     };
   }
 };
@@ -146,6 +148,37 @@ TEST_CASE("sem titulo ou sem duração o casamento nem toca a rede") {
   CHECK(nu::casa_release("Rick", "Never", 0, rede.consulta(), &porque).empty());
   CHECK(porque == nu::CacaDeCapa::SemMetadado);
   CHECK(rede.gastas == 0);  // é o «sem gastar rede alguma» do aceite
+}
+
+TEST_CASE("duvidosa recuo e rede muda explicam o casamento vazio") {
+  nu::CacaDeCapa porque = nu::CacaDeCapa::Embutida;
+  {  // score baixo: o MB respondeu e não casou. É a duvidosa que se lembra.
+    RedeDeMentira rede;
+    rede.busca = R"({"recordings":[{"id":"x","score":80,"length":213000}]})";
+    CHECK(nu::casa_release("R", "N", 213, rede.consulta(), &porque).empty());
+    CHECK(porque == nu::CacaDeCapa::Duvidosa);
+    CHECK(rede.gastas == 1);  // sem eleita, a ficha não se gasta
+  }
+  {  // gravação casada sem release alguma: não ha porta para o CAA.
+    RedeDeMentira rede;
+    rede.ficha = R"({"title":"Never Gonna Give You Up","releases":[]})";
+    CHECK(nu::casa_release("R", "N", 213, rede.consulta(), &porque).empty());
+    CHECK(porque == nu::CacaDeCapa::Duvidosa);
+  }
+  {  // recuo: o espião o vê por baixo do falso do resolve_gravacao.
+    RedeDeMentira rede;
+    rede.desfecho = nu::DesfechoMB::Recuo;
+    rede.estado = 503;
+    CHECK(nu::casa_release("R", "N", 213, rede.consulta(), &porque).empty());
+    CHECK(porque == nu::CacaDeCapa::Recuo);
+  }
+  {  // rede muda: transitoria, e NÃO duvidosa, que duvidosa se lembraria.
+    RedeDeMentira rede;
+    rede.desfecho = nu::DesfechoMB::Falhou;
+    rede.estado = 0;
+    CHECK(nu::casa_release("R", "N", 213, rede.consulta(), &porque).empty());
+    CHECK(porque == nu::CacaDeCapa::RedeFalhou);
+  }
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
