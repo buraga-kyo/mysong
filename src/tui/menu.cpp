@@ -39,6 +39,28 @@ bool tecla_abre_menu(const ftxui::Event& tecla) noexcept {
   return tecla == ftxui::Event::Tab || tecla == ftxui::Event::TabReverse;
 }
 
+// A taboada da barra aberta. O Tab fecha porque alternar é o contracto d'elle;
+// a seta esquerda, o Escape e o Backspace fecham porque na lista elles VOLTAM,
+// e da barra não ha para onde voltar senão á lista. Tecla que não está aqui é
+// Alheio, e o Alheio NÃO é queda de taboada: é a regra que faz o atalho valer.
+GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept {
+  namespace f = ftxui;
+  if (tecla_abre_menu(tecla) || tecla == f::Event::Escape ||
+      tecla == f::Event::Backspace || tecla == f::Event::ArrowLeft)
+    return GestoDaBarra::Fecha;
+  if (tecla == f::Event::ArrowDown || tecla == f::Event::Character('j'))
+    return GestoDaBarra::Desce;
+  if (tecla == f::Event::ArrowUp || tecla == f::Event::Character('k'))
+    return GestoDaBarra::Sobe;
+  if (tecla == f::Event::Home || tecla == f::Event::Character('g'))
+    return GestoDaBarra::AoPrincipio;
+  if (tecla == f::Event::End || tecla == f::Event::Character('G'))
+    return GestoDaBarra::AoFim;
+  if (tecla == f::Event::Return || tecla == f::Event::ArrowRight)
+    return GestoDaBarra::Entra;
+  return GestoDaBarra::Alheio;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

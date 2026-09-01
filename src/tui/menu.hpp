@@ -42,6 +42,18 @@ std::size_t degrau_da_secao(Secao secao) noexcept;
 // avançar e voltar são o mesmo gesto, e tecla morta não se dá a quem explora.
 bool tecla_abre_menu(const ftxui::Event& tecla) noexcept;
 
+// Os GESTOS da barra aberta. O Alheio é toda tecla que a barra não conhece:
+// quem o recebe FECHA a barra e deixa a tecla seguir á taboada de sempre. É
+// assim que o espaço pausa, o «q» sahe, e o atalho de secção leva ao mesmo
+// logar a que a barra levaria, sem taboada paralela de trinta verbos.
+enum class GestoDaBarra { Alheio, Fecha, Sobe, Desce, AoPrincipio, AoFim,
+                          Entra };
+
+// gesto_da_barra — a taboada da barra aberta, espelho da navegação da lista:
+// seta e vogal do vi andam, Enter e seta direita entram, e o que na lista
+// VOLTA (seta esquerda, Escape, Backspace) aqui fecha sem trocar secção.
+GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept;
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
