@@ -113,6 +113,42 @@ int MemoriaDeCapas::versao() const noexcept {
   return lida;
 }
 
+std::string_view palavra_da_procurada(Procurada procurada) {
+  switch (procurada) {
+    case Procurada::SemCapa: return "sem capa no CAA";
+    case Procurada::Duvidosa: return "duvidosa";
+  }
+  return "desfecho sem nome";
+}
+
+bool MemoriaDeCapas::ja_procurada(std::string_view caminho) const {
+  bool achou = false;
+  corre(punho_, "SELECT 1 FROM procurada WHERE caminho = ?1;",
+        {std::string(caminho)},
+        [&achou](sqlite3_stmt*) { achou = true; });
+  return achou;
+}
+
+bool MemoriaDeCapas::lembra(std::string_view caminho, Procurada procurada) {
+  // Caminho vazio não se assenta: linha sem identidade não se acharia mais.
+  // O REPLACE cobre a corrida repetida por cima de memoria velha, e o relogio
+  // é o do proprio SQLite, que poupa amarração de inteiro a esta peça.
+  if (caminho.empty()) return false;
+  return corre(punho_,
+               "INSERT OR REPLACE INTO procurada VALUES "
+               "(?1, ?2, strftime('%s','now'));",
+               {std::string(caminho), std::string(palavra_da_procurada(procurada))});
+}
+
+std::size_t MemoriaDeCapas::quantas() const {
+  std::size_t conta = 0;
+  corre(punho_, "SELECT COUNT(*) FROM procurada;", {},
+        [&conta](sqlite3_stmt* passo) {
+          conta = static_cast<std::size_t>(sqlite3_column_int64(passo, 0));
+        });
+  return conta;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
