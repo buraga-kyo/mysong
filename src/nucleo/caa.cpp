@@ -5,6 +5,7 @@
 // rede por baixo, á maneira do musicbrainz.cpp, que é o irmão d'esta peça.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/caa.hpp"
+#include "nucleo/capa.hpp"
 
 #include <sqlite3.h>
 
@@ -163,6 +164,55 @@ std::string casa_release(const std::string& artista, const std::string& titulo,
   // Gravação sem release não tem porta para o CAA: confessa-se a duvida.
   if (ficha.release_mbid.empty()) { *porque = CacaDeCapa::Duvidosa; return {}; }
   return ficha.release_mbid;
+}
+
+CacaDeCapa caca_uma_faixa(const Faixa& faixa, MemoriaDeCapas* memoria,
+                          const ConsultaComEstado& consulta,
+                          std::map<std::string, std::string>* arte_da_release,
+                          std::set<std::string>* release_sem_capa) {
+  const std::filesystem::path caminho(faixa.caminho);
+  // Capa que já ha poupa tudo, e ANTES do formato: flac com capa é «já tinha».
+  if (!capa_ao_lado(caminho).empty() || !arte_embutida(caminho).empty())
+    return CacaDeCapa::JaTinha;
+  std::string extensao = caminho.extension().string();
+  for (char& l : extensao) l = l >= 'A' && l <= 'Z' ? char(l + 32) : l;
+  if (extensao != ".mp3") return CacaDeCapa::ForaDoAlcance;
+  if (memoria->ja_procurada(faixa.caminho)) return CacaDeCapa::JaProcurada;
+  CacaDeCapa porque = CacaDeCapa::Duvidosa;
+  const std::string release = casa_release(faixa.artista, faixa.titulo,
+                                           faixa.duracao, consulta, &porque);
+  if (release.empty()) {
+    // O definitivo assenta-se JÁ; recuo e rede muda amanhã podem casar.
+    if (porque == CacaDeCapa::Duvidosa || porque == CacaDeCapa::SemMetadado)
+      memoria->lembra(faixa.caminho, Procurada::Duvidosa);
+    return porque;
+  }
+  // O 404 da mesma release visto NESTA corrida reusa-se sem nova requisição.
+  if (release_sem_capa->count(release) != 0) {
+    memoria->lembra(faixa.caminho, Procurada::SemCapa);
+    return CacaDeCapa::SemCapa;
+  }
+  std::string arte;
+  const auto guardada = arte_da_release->find(release);
+  if (guardada != arte_da_release->end()) {
+    arte = guardada->second;  // a irmã de album já a baixou nesta corrida
+  } else {
+    long estado = 0;
+    std::string corpo;
+    const DesfechoDaCapa dito = desfecho_da_capa(
+        consulta(url_da_capa(release), &corpo, &estado), estado);
+    if (dito == DesfechoDaCapa::Recuo) return CacaDeCapa::Recuo;
+    if (dito == DesfechoDaCapa::SemCapa) {
+      release_sem_capa->insert(release);
+      memoria->lembra(faixa.caminho, Procurada::SemCapa);
+      return CacaDeCapa::SemCapa;
+    }
+    if (dito != DesfechoDaCapa::Achada || corpo.empty())
+      return CacaDeCapa::RedeFalhou;
+    arte = (*arte_da_release)[release] = corpo;
+  }
+  return embute_arte(caminho, arte) ? CacaDeCapa::Embutida
+                                    : CacaDeCapa::FalhouAEscripta;
 }
 
 std::string_view palavra_da_procurada(Procurada procurada) {
