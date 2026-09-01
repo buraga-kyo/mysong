@@ -69,6 +69,8 @@ enum class CacaDeCapa {
   RedeFalhou,      // falha passageira: diz-se, e NÃO se lembra
   Recuo,           // 429 ou 503: a corrida inteira ha de parar aqui
   FalhouAEscripta, // a arte veio e a etiqueta não se deixou escrever
+  MemoriaNaoGravou, // decidiu-se, e o banco recusou o assento: diz-se, que
+                    // calado a corrida seguinte re-tentaria a rede ás cegas
 };
 
 // palavra_da_caca — a linha que o relato mostra. Switch exhaustivo: desfecho

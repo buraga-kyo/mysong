@@ -137,6 +137,8 @@ std::string_view palavra_da_caca(CacaDeCapa desfecho) {
     case CacaDeCapa::Recuo: return "o servidor pediu recuo: a corrida pára";
     case CacaDeCapa::FalhouAEscripta:
       return "a arte veio e a etiqueta não se escreveu";
+    case CacaDeCapa::MemoriaNaoGravou:
+      return "decidida, mas a memoria não gravou: re-tenta na proxima";
   }
   return "desfecho sem nome";
 }
@@ -191,16 +193,19 @@ CacaDeCapa caca_uma_faixa(const Faixa& faixa, MemoriaDeCapas* memoria,
   const std::string release = casa_release(faixa.artista, faixa.titulo,
                                            faixa.duracao, consulta, &porque);
   if (release.empty()) {
-    // O definitivo assenta-se JÁ; recuo e rede muda amanhã podem casar.
-    if (porque == CacaDeCapa::Duvidosa || porque == CacaDeCapa::SemMetadado)
-      memoria->lembra(faixa.caminho, Procurada::Duvidosa);
+    // O definitivo assenta-se JÁ; recuo e rede muda amanhã podem casar. E o
+    // assento que FALHE diz-se (achado da revisão): calado, a corrida
+    // seguinte voltava á rede sem o operador saber por quê.
+    if ((porque == CacaDeCapa::Duvidosa || porque == CacaDeCapa::SemMetadado) &&
+        !memoria->lembra(faixa.caminho, Procurada::Duvidosa))
+      return CacaDeCapa::MemoriaNaoGravou;
     return porque;
   }
   // O 404 da mesma release visto NESTA corrida reusa-se sem nova requisição.
-  if (release_sem_capa->count(release) != 0) {
-    memoria->lembra(faixa.caminho, Procurada::SemCapa);
-    return CacaDeCapa::SemCapa;
-  }
+  if (release_sem_capa->count(release) != 0)
+    return memoria->lembra(faixa.caminho, Procurada::SemCapa)
+               ? CacaDeCapa::SemCapa
+               : CacaDeCapa::MemoriaNaoGravou;
   std::string arte;
   const auto guardada = arte_da_release->find(release);
   if (guardada != arte_da_release->end()) {
@@ -217,8 +222,9 @@ CacaDeCapa caca_uma_faixa(const Faixa& faixa, MemoriaDeCapas* memoria,
     if (dito == DesfechoDaCapa::Recuo) return CacaDeCapa::Recuo;
     if (dito == DesfechoDaCapa::SemCapa) {
       release_sem_capa->insert(release);
-      memoria->lembra(faixa.caminho, Procurada::SemCapa);
-      return CacaDeCapa::SemCapa;
+      return memoria->lembra(faixa.caminho, Procurada::SemCapa)
+                 ? CacaDeCapa::SemCapa
+                 : CacaDeCapa::MemoriaNaoGravou;
     }
     if (dito != DesfechoDaCapa::Achada || corpo.empty())
       return CacaDeCapa::RedeFalhou;
@@ -249,7 +255,8 @@ SommaDaCaca caca_capas(const std::vector<Faixa>& faixas,
       case CacaDeCapa::Duvidosa: ++somma.duvidosas; break;
       case CacaDeCapa::SemCapa: ++somma.sem_capa; break;
       case CacaDeCapa::RedeFalhou:
-      case CacaDeCapa::FalhouAEscripta: ++somma.falhas; break;
+      case CacaDeCapa::FalhouAEscripta:
+      case CacaDeCapa::MemoriaNaoGravou: ++somma.falhas; break;
       case CacaDeCapa::Recuo: somma.parou_por_recuo = true; break;
     }
     // O recuo pára a corrida INTEIRA: as restantes nem se tentam nem se
