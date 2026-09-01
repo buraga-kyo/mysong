@@ -25,8 +25,15 @@
 
 namespace mysong::tui {
 
-// A barra lateral do mockup. Marca a secção em que se está.
-ftxui::Element elemento_da_barra(const Navegador& navegador);
+// A barra lateral do mockup. Marca a secção em que se está e, com o FOCO na
+// barra (issue #80), marca tambem o degrau sob o dedo: o primeiro espaço do
+// rotulo vira «▸» e o fundo é o v900 do eleito da tabella, que é a cor de
+// cursor d'esta Casa. Os dous signaes convivem: o v700 diz onde se ESTÁ, o
+// «▸» diz onde o dedo aponta e QUEM manda na tecla. Sem foco, os parametros
+// novos dormem nos padrões e a pintura é a de sempre, byte por byte.
+ftxui::Element elemento_da_barra(const Navegador& navegador,
+                                 bool com_foco = false,
+                                 std::size_t degrau_eleito = 0);
 
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não

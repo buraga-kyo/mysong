@@ -295,5 +295,49 @@ TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da folga") {
   CHECK(caret.y == 0);
 }
 
+// ── A BARRA COM FOCO (issue #80) ────────────────────────────────────────────
+
+namespace {
+
+// pintar_barra — o écran de papel da BARRA, nas nove collunhas e sete linhas
+// d'ella, lido cella a cella pela mesma razão do pintar da tabella.
+std::vector<std::string> pintar_barra(const tui::Navegador& navegador,
+                                      bool com_foco, std::size_t degrau) {
+  ftxui::Element quadro = tui::elemento_da_barra(navegador, com_foco, degrau);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(9),
+                                              ftxui::Dimension::Fixed(7));
+  ftxui::Render(ecran, quadro);
+  std::vector<std::string> linhas;
+  for (int y = 0; y < 7; ++y) {
+    std::string linha;
+    for (int x = 0; x < 9; ++x) linha += ecran.PixelAt(x, y).character;
+    linhas.push_back(linha);
+  }
+  return linhas;
+}
+
+}  // namespace
+
+TEST_CASE("com o foco na barra o dedo pinta-se n'uma fileira só") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  const std::vector<std::string> linhas = pintar_barra(navegador, true, 5);
+  CHECK(linhas[5] == "▸LISTS   ");
+  CHECK(linhas[0] == " ARTISTS ");  // a corrente fica, sem dedo
+  for (std::size_t i = 0; i < linhas.size(); ++i)
+    if (i != 5) CHECK(linhas[i].find("▸") == std::string::npos);
+}
+
+TEST_CASE("sem foco a barra não tem dedo algum e é a de sempre") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  for (const std::string& linha : pintar_barra(navegador, false, 3))
+    CHECK(linha.find("▸") == std::string::npos);
+  // E o dedo sobre a fileira corrente soma os dous signaes n'uma só.
+  CHECK(pintar_barra(navegador, true, 0)[0] == "▸ARTISTS ");
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

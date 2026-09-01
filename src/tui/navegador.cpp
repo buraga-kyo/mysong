@@ -442,6 +442,46 @@ bool Navegador::volta() {
   return true;
 }
 
+bool Navegador::vai_para(Secao alvo) {
+  switch (alvo) {
+    case Secao::Artistas:
+    case Secao::Busca:
+      // O topo do acervo, e a busca n'elle inteiro: sempre ha chão. A Busca
+      // com termo vazio é o acervo plano, e o filtro refina-a d'ahi.
+      trilha_.clear();
+      break;
+    case Secao::Albuns:
+      // A trilha só carrega ARTISTA quando a secção é do acervo: em NoRol o
+      // primeiro degrau d'ella é o nome da lista, que artista não é.
+      if (secao_ != Secao::Albuns && secao_ != Secao::Faixas) return false;
+      trilha_.resize(1);
+      break;
+    case Secao::Faixas:
+      if (secao_ != Secao::Faixas) return false;
+      break;
+    case Secao::Rede:
+      if (rede_.empty()) return false;
+      trilha_.clear();
+      break;
+    case Secao::Lista:
+      if (catalogo_.faixas.empty()) return false;
+      trilha_.clear();
+      break;
+    case Secao::Rois:
+      // A lista das listas sempre se abre, vazia que esteja: é o que o `P`
+      // faz, e o aceite manda a barra levar ao MESMO logar.
+      mostra_rois();
+      return true;
+    case Secao::NoRol:
+      return false;  // dentro de uma lista não é degrau da barra
+  }
+  secao_ = alvo;
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+  return true;
+}
+
 void Navegador::recarrega() {
   // Conserva a secção e a trilha SE ellas ainda existirem no acervo novo. Um
   // artista que sahiu do disco não pode continuar a ser o titulo da tabella, e

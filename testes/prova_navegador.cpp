@@ -653,5 +653,104 @@ TEST_CASE("juntar do ACERVO á lista alvo, que é o caminho de quem usa a cousa"
   CHECK(navegador.vista()[0].chave == primeira);
 }
 
+// ── A ENTRADA PELA BARRA (issue #80) ────────────────────────────────────────
+// O vai_para prova-se pelas duas metades do contracto: no chão entra-se de
+// novo, como a tecla de atalho faria; sem chão devolve-se falso e NADA muda.
+
+TEST_CASE("a barra entra no topo e na busca do acervo inteiro") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE_FALSE(navegador.entra());  // no artista
+  REQUIRE_FALSE(navegador.entra());  // no album: secção das faixas
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  navegador.desce();
+  CHECK(navegador.vai_para(tui::Secao::Artistas));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(navegador.trilha().empty());
+  CHECK(navegador.eleito() == 0);
+  // A busca com termo vazio é o acervo PLANO: as quatro faixas, e o filtro
+  // refina d'ahi, que é o SEARCH da barra.
+  CHECK(navegador.vai_para(tui::Secao::Busca));
+  CHECK(navegador.vista().size() == 4);
+  navegador.filtra("fuga");
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Fuga");
+}
+
+TEST_CASE("a barra re-entra nos albuns e nas faixas pela trilha corrente") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  navegador.desce();
+  // Re-entrar na secção onde se está é entrar de novo: o eleito ao alto.
+  CHECK(navegador.vai_para(tui::Secao::Faixas));
+  CHECK(navegador.eleito() == 0);
+  CHECK(navegador.vai_para(tui::Secao::Albuns));
+  CHECK(navegador.secao() == tui::Secao::Albuns);
+  CHECK(textos(navegador) == std::vector<std::string>{"Máquina", "Notas"});
+  CHECK(navegador.trilha() == std::vector<std::string>{"Ada Lovelace"});
+}
+
+TEST_CASE("o degrau sem chão recusa sem mudar cousa alguma") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  const std::vector<std::string> antes = textos(navegador);
+  // No topo não ha artista na trilha, rede buscada nem catalogo importado.
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Albuns));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Faixas));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Rede));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::Lista));
+  CHECK_FALSE(navegador.vai_para(tui::Secao::NoRol));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(textos(navegador) == antes);
+  CHECK(navegador.eleito() == 0);
+}
+
+TEST_CASE("a rede e o catalogo dão chão quando as fontes chegam") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.mostra_rede({achado("Toccata", "Canal A", 90, "https://y/1")});
+  REQUIRE(navegador.volta());  // sahe-se da rede, e os achados FICAM
+  REQUIRE(navegador.secao() == tui::Secao::Artistas);
+  // Entrar pela barra mostra o que JÁ havia: busca alguma se re-dispara.
+  CHECK(navegador.vai_para(tui::Secao::Rede));
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Toccata");
+  nu::Catalogo lista;
+  lista.nome = "mix da prova";
+  lista.faixas.push_back({"Um", "Alguem", 1, 90000, ""});
+  navegador.mostra_catalogo(lista);
+  REQUIRE(navegador.volta());
+  CHECK(navegador.vai_para(tui::Secao::Lista));
+  CHECK(navegador.secao() == tui::Secao::Lista);
+  CHECK(navegador.vista().size() == 1);
+}
+
+TEST_CASE("a barra e a tecla P levam á mesma lista das listas") {
+  const Cova cova;
+  const CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador pela_barra(livraria, &roleiro);
+  tui::Navegador pela_tecla(livraria, &roleiro);
+  REQUIRE(pela_barra.cria_rol("viagem"));
+  REQUIRE(pela_barra.volta());
+  CHECK(pela_barra.vai_para(tui::Secao::Rois));
+  pela_tecla.mostra_rois();  // o caminho do «P», tal e qual
+  CHECK(pela_barra.secao() == pela_tecla.secao());
+  CHECK(textos(pela_barra) == textos(pela_tecla));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -87,7 +87,8 @@ ftxui::Element elemento_da_trilha(const std::string& trilha,
       {ftxui::text(cortar(trilha, cabe)) | ftxui::dim, caret_do_campo()});
 }
 
-ftxui::Element elemento_da_barra(const Navegador& navegador) {
+ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
+                                 std::size_t degrau_eleito) {
   // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
   // faz o dedo do operador errar o alvo que já sabia de memoria.
   const std::pair<Secao, const char*> degraus[] = {
@@ -100,6 +101,7 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
       {Secao::Lista, " SPOTIFY "},
   };
   std::vector<ftxui::Element> linhas;
+  std::size_t qual = 0;
   for (const auto& [degrau, rotulo] : degraus) {
     // Dentro de uma lista, a fileira que accende é a das LISTAS: é lá que se está,
     // um degrau abaixo. Fileira propria para o dentro seria fileira que o operador
@@ -107,14 +109,24 @@ ftxui::Element elemento_da_barra(const Navegador& navegador) {
     const bool aqui = navegador.secao() == degrau ||
                       (degrau == Secao::Rois &&
                        navegador.secao() == Secao::NoRol);
-    ftxui::Element linha = pinta(rotulo, aqui ? tokens::text_bright
-                                              : tokens::text_muted);
-    if (aqui) {
-      const tokens::Triade fundo = tokens::rgb(tokens::v700);
+    // O DEDO da barra (issue #80). O «▸» toma o logar do primeiro espaço do
+    // rotulo, e a largura não muda; o fundo é o v900 do eleito da tabella. E
+    // elle ganha do v700 quando os dous cahem na mesma fileira: o cursor é o
+    // signal mais novo, e é elle que diz quem manda na tecla.
+    const bool sob_o_dedo = com_foco && qual == degrau_eleito;
+    const std::string texto =
+        sob_o_dedo ? "▸" + std::string(rotulo + 1) : std::string(rotulo);
+    ftxui::Element linha =
+        pinta(texto, aqui || sob_o_dedo ? tokens::text_bright
+                                        : tokens::text_muted);
+    if (aqui || sob_o_dedo) {
+      const tokens::Triade fundo =
+          tokens::rgb(sob_o_dedo ? tokens::v900 : tokens::v700);
       linha = linha | ftxui::bgcolor(
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
     linhas.push_back(std::move(linha));
+    ++qual;
   }
   return ftxui::vbox(std::move(linhas));
 }

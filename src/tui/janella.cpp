@@ -67,6 +67,7 @@
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/navegador.hpp"
+#include "tui/menu.hpp"
 #include "tui/prompt.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
@@ -457,6 +458,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // despacho de teclas continuar a dizer `Digita::Busca` sem mudar uma linha.
   using Digita = tui::Modo;
   Digita digita = Digita::Nada;
+  // O MENU da barra (issue #80). Vive aqui como o `digita`: é estado do fio da
+  // tela, que só o tratador de teclas muta e só o pintor lê. E note-se que
+  // prompt aberto com menu aberto NÃO existe: toda tecla que abre prompt é
+  // alheia á barra, e o ramo Alheio fecha-a antes de a tecla seguir.
+  tui::Menu menu;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -680,6 +686,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
     }
     if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
+    // O SEARCH da barra (issue #80): a secção da busca no acervo tem nome
+    // proprio no topo, que «ARTISTS» n'ella seria o titulo a mentir.
+    if (navegador.secao() == tui::Secao::Busca) trilha = "SEARCH";
     if (navegador.secao() == tui::Secao::NoRol) {
       trilha = "LISTS";
       for (const std::string& degrau : navegador.trilha())
@@ -726,7 +735,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                tui::elemento_do_topo(trilha, digita, contexto_do_campo,
                                      termo_em_curso, larg),
                ftxui::hbox({
-                   tui::elemento_da_barra(navegador),
+                   tui::elemento_da_barra(navegador, menu.aberto(),
+                                          menu.degrau()),
                    ftxui::text("  "),
                    tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
                                             larg_tab),
@@ -742,7 +752,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
                    : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
-               ftxui::text("↑↓ anda · → entra · ← volta · / filtra · s busca na rede"
+               ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
+                           " · / filtra · s busca na rede"
                            " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
                            " · n/p faixa · P listas · c cria · a junta · t retira"
                            " · K/J move · R renomeia · D apaga · v video"
@@ -833,6 +844,47 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;  // dentro do modo, tecla alguma sahe para fóra
     }
 
+    // O MENU DA BARRA (issue #80) trata DEPOIS do campo e ANTES da taboada
+    // geral, que é a ordem declarada no tractado d'elle. A tecla que a barra
+    // não conhece FECHA-A e segue ao fluxo de sempre, e é por isso que o ramo
+    // Alheio não retorna: o atalho vale na barra porque passa por aqui.
+    if (menu.aberto()) {
+      switch (tui::gesto_da_barra(tecla)) {
+        case tui::GestoDaBarra::Fecha: menu.fecha(); return true;
+        case tui::GestoDaBarra::Sobe: menu.sobe(); return true;
+        case tui::GestoDaBarra::Desce: menu.desce(); return true;
+        case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
+        case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
+        case tui::GestoDaBarra::Entra: {
+          const tui::Secao alvo = menu.alvo();
+          if (navegador.vai_para(alvo)) {
+            menu.fecha();  // entrar é estar dentro: o foco volta á lista
+          } else if (alvo == tui::Secao::Albuns) {
+            aviso_da_rede = "entra por um artista primeiro";
+          } else if (alvo == tui::Secao::Faixas) {
+            aviso_da_rede = "entra por um album primeiro";
+          } else if (alvo == tui::Secao::Rede) {
+            aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+          } else {
+            aviso_da_rede = "catálogo nenhum; importa com I";
+          }
+          return true;  // sem chão avisa-se, e o foco FICA na barra
+        }
+        case tui::GestoDaBarra::Alheio:
+          menu.fecha();
+          break;  // e a tecla segue: faz o que sempre fez
+      }
+    }
+
+    // O Tab abre o menu com o degrau na secção corrente (issue #80). Trata-se
+    // aqui, e não na taboada geral: o foco não é ordem de tocador nem de
+    // navegador, e verbo de foco n'aquelle enum seria verbo que o cumprir()
+    // teria de fingir que não viu.
+    if (tui::tecla_abre_menu(tecla)) {
+      menu.abre(navegador.secao());
+      return true;
+    }
+
     const tui::Ordem ordem =
         tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
@@ -841,7 +893,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::Verbo::Sobe: navegador.sobe(); return true;
       case tui::Verbo::AoPrincipio: navegador.ao_principio(); return true;
       case tui::Verbo::AoFim: navegador.ao_fim(); return true;
-      case tui::Verbo::Volta: navegador.volta(); return true;
+      case tui::Verbo::Volta:
+        // No alto, a SETA esquerda abre o menu (issue #80): quem quer mais á
+        // esquerda só tem a barra. O Escape e o Backspace ficam inertes como
+        // sempre: cancelar não é gesto que abra cousa alguma.
+        if (!navegador.volta() && tecla == ftxui::Event::ArrowLeft)
+          menu.abre(navegador.secao());
+        return true;
       case tui::Verbo::AbreBusca:
         digita = Digita::Busca;
         termo_em_curso.clear();
