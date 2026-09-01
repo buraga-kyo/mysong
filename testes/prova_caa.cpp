@@ -92,5 +92,41 @@ TEST_CASE("a memoria das procuradas escreve reabre e relê") {
   CHECK(relida.quantas() == 2);
 }
 
+namespace {
+
+// Os corpos de MENTIRA, na fórma viva do ws/2 (a fórma inteira está presa na
+// prova do MusicBrainz; aqui basta o que os leitores da caça consomem).
+constexpr char kBuscaComEleita[] =
+    R"({"recordings":[{"id":"8f3471b5-7e6a-48da-86a9-c1c07a0f47ae",)"
+    R"("score":100,"title":"Never Gonna Give You Up","length":213000,)"
+    R"("first-release-date":"1987-07-27"}]})";
+constexpr char kFichaComRelease[] =
+    R"({"length":213000,"title":"Never Gonna Give You Up",)"
+    R"("id":"8f3471b5-7e6a-48da-86a9-c1c07a0f47ae","releases":[)"
+    R"({"title":"Whenever You Need Somebody","date":"1987-10-01",)"
+    R"("status":"Official","release-group":{"primary-type":"Album",)"
+    R"("secondary-types":[]},"id":"bc9051ea-9d77-3ae3-8bd6-45960a8c0e4f"}],)"
+    R"("artist-credit":[{"name":"Rick Astley"}]})";
+
+// A REDE DE MENTIRA: responde pelo pedaço da URL e CONTA as requisições, que
+// é como o «zero consultas» do aceite se afere. O que devolver a cada porta
+// entra pelos tres corpos; vazio quer dizer «404 sem corpo».
+struct RedeDeMentira {
+  std::string busca = kBuscaComEleita;
+  std::string ficha = kFichaComRelease;
+  int gastas = 0;
+  mysong::nucleo::ConsultaComEstado consulta() {
+    return [this](const std::string& url, std::string* corpo, long* estado) {
+      ++gastas;
+      *estado = 200;
+      if (url.find("recording?query=") != std::string::npos) *corpo = busca;
+      else if (url.find("recording/") != std::string::npos) *corpo = ficha;
+      return nu::DesfechoMB::Achado;
+    };
+  }
+};
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
