@@ -251,5 +251,38 @@ TEST_CASE("o 404 do CAA lembra-se e a corrida seguinte fica em casa") {
   CHECK(rede.gastas == 3);
 }
 
+TEST_CASE("capa que já ha formato alheio e sem metadado ficam em casa") {
+  const Cova cova;
+  nu::MemoriaDeCapas memoria(cova.banco());
+  RedeDeMentira rede;
+  std::map<std::string, std::string> artes;
+  std::set<std::string> sem_capa;
+  // Com APIC na etiqueta: «já tinha», e a rede fica parada.
+  const std::filesystem::path com_apic = poe_mp3(cova, "01 - Com.mp3");
+  REQUIRE(nu::embute_arte(com_apic, rede.capa));
+  CHECK(nu::caca_uma_faixa(faixa_de(com_apic), &memoria, rede.consulta(),
+                           &artes, &sem_capa) == nu::CacaDeCapa::JaTinha);
+  // Flac não se embute (RULINGS R7): fóra do alcance, sem rede e sem
+  // memoria, que a decisão é local, grátis, e a issue do flac virá limpa.
+  const std::filesystem::path flac = cova.raiz() / "02 - Alheia.flac";
+  { std::ofstream(flac, std::ios::binary) << "fLaC"; }
+  CHECK(nu::caca_uma_faixa(faixa_de(flac), &memoria, rede.consulta(), &artes,
+                           &sem_capa) == nu::CacaDeCapa::ForaDoAlcance);
+  CHECK_FALSE(memoria.ja_procurada(flac.string()));
+  // Sem duração no índice: duvidosa SEM rede, e LEMBRADA (SPEC C4).
+  nu::Faixa muda = faixa_de(poe_mp3(cova, "03 - Muda.mp3"));
+  muda.duracao = 0;
+  CHECK(nu::caca_uma_faixa(muda, &memoria, rede.consulta(), &artes, &sem_capa)
+        == nu::CacaDeCapa::SemMetadado);
+  CHECK(memoria.ja_procurada(muda.caminho));
+  // E a capa AO LADO tambem é «já tinha»: é a que o operador governa.
+  const Cova outra;
+  const std::filesystem::path lado = poe_mp3(outra, "01 - Lado.mp3");
+  { std::ofstream(outra.raiz() / "cover.jpg") << "arte ao lado"; }
+  CHECK(nu::caca_uma_faixa(faixa_de(lado), &memoria, rede.consulta(), &artes,
+                           &sem_capa) == nu::CacaDeCapa::JaTinha);
+  CHECK(rede.gastas == 0);  // nenhuma das quatro tocou a rede
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
