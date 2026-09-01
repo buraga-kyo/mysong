@@ -54,6 +54,16 @@ std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa);
 // operador pode trocar sem reescrever o MP3, e por isso é o que elle manda.
 std::string arte_embutida(const std::filesystem::path& faixa);
 
+// embute_arte — o ESPELHO de escripta do arte_embutida (issue #83): assenta
+// os octetos como quadro APIC de capa da FRENTE, com o mime lido do CONTEUDO
+// (JPEG ou PNG pelos octetos de guarda; outro formato recusa-se sem tocar o
+// arquivo, que gravar a pagina de erro de um servidor dentro da etiqueta é
+// pior que não gravar). O resto da etiqueta FICA: o save() da taglib preserva
+// os quadros, propriedade que a prova da issue #81 prende. Falso quando os
+// octetos não são imagem ou a taglib recusa o arquivo. ESCREVE em disco, e é
+// por isso que quem chama só o faz em faixa que não tinha capa alguma.
+bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos);
+
 // chave_do_cache — o que identifica um render. É a PASTA da faixa mais o tamanho,
 // e não o caminho da faixa: as faixas de um album partilham a capa, e usar o
 // caminho faria converter uma vez por faixa em vez de uma por album.
