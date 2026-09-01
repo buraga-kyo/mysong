@@ -55,6 +55,7 @@ constexpr char kCorpoDaFicha[] =
     R"({"length":212946,"title":"Never Gonna Give You Up","video":false,)"
     R"("id":"8f3471b5-7e6a-48da-86a9-c1c07a0f47ae","releases":[)"
     R"j({"title":"¡Boom! 3 (El disco de los exitos)","date":"1987",)j"
+    R"("id":"11111111-1111-4111-8111-111111111111",)"
     R"("status":"Official","artist-credit":[{"name":"Various Artists"}],)"
     R"("release-group":{"primary-type":"Album","releases":[],)"
     R"("secondary-types":["Compilation"],"first-release-date":"1987"},)"
@@ -64,10 +65,16 @@ constexpr char kCorpoDaFicha[] =
     R"("release-group":{"primary-type":"Single","secondary-types":[],)"
     R"("first-release-date":"1987-07-27"},"media":[{"tracks":[)"
     R"({"number":"3","position":3}]}]},)"
+    // O «id» do GRUPO vem á frente, e o da release vem por DERRADEIRO, atraz
+    // até das faixas (que trazem id no corpo vivo): é a armadilha que prende a
+    // leitura de fundo um. Lesse ella qualquer fundo, sahia o id do grupo.
     R"({"title":"Whenever You Need Somebody","date":"1987-10-01",)"
     R"("status":"Official","country":"XE","release-group":{)"
+    R"("id":"22222222-2222-4222-8222-222222222222",)"
     R"("primary-type":"Album","secondary-types":[]},"media":[{"format":"CD",)"
-    R"("track-count":10,"tracks":[{"number":"1","position":1,"length":215733}]}]}],)"
+    R"("track-count":10,"tracks":[{"number":"1","position":1,"length":215733,)"
+    R"("id":"33333333-3333-4333-8333-333333333333"}]}],)"
+    R"("id":"bc9051ea-9d77-3ae3-8bd6-45960a8c0e4f"}],)"
     R"("isrcs":["GB5KW2103369","GB5KW2202504","GBARL0401372","GBARL0600786",)"
     R"("GBARL0600789","GBARL8700052","GBARL9300135","USAT21601138"],)"
     R"("artist-credit":[{"name":"Rick Astley","joinphrase":""}]})";
@@ -88,6 +95,9 @@ TEST_CASE("a ficha sahe com os ISRCs na ordem e a release canonica") {
   CHECK(ficha.album == "Whenever You Need Somebody");
   CHECK(ficha.ano == 1987);
   CHECK(ficha.numero == 1);
+  // O MBID é o da CANONICA (issue #83): nem o da compilação que vem á frente,
+  // nem o do release-group, nem o da faixa, que moram dentro do mesmo objecto.
+  CHECK(ficha.release_mbid == "bc9051ea-9d77-3ae3-8bd6-45960a8c0e4f");
 }
 
 namespace {
@@ -208,6 +218,7 @@ TEST_CASE("recorte de objecto truncado dá vazio, e ficha meio lida não inventa
   CHECK(meia.album.empty());
   CHECK(meia.ano == 0);
   CHECK(meia.numero == 0);
+  CHECK(meia.release_mbid.empty());  // sem release não ha MBID que se invente
 }
 
 TEST_CASE("as consultas sahem percent-encodadas, byte a byte") {
