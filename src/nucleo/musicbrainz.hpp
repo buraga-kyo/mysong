@@ -53,6 +53,9 @@ struct FichaMB {
   std::string titulo;
   std::string artista;
   std::string album;   // da release canonica: Official, grupo Album puro, a mais antiga
+  // O MBID d'essa mesma release (issue #83): é pela release que o Cover Art
+  // Archive indexa a arte da capa. Vazio quando o corpo não trouxe release.
+  std::string release_mbid;
   int ano = 0;         // o anno d'essa release
   int numero = 0;      // a posição da faixa n'ella (`position`; `number` vem «A3»)
   int duracao_ms = 0;  // a duração exacta da gravação, em milesimos

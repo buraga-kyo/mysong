@@ -192,6 +192,10 @@ FichaMB le_ficha_da_gravacao(std::string_view corpo) {
   const std::string& da_vez = !eleita.empty() ? eleita : qualquer;
   if (da_vez.empty()) return ficha;
   ficha.album = api::texto_de_chave(da_vez, "title");
+  // O MBID da eleita, por onde o Cover Art Archive indexa a arte (issue #83).
+  // O texto_de_chave lê FUNDO UM, donde o «id» do release-group, dos creditos
+  // e das faixas, que moram mais fundo no objecto, não se tomam pelo d'ella.
+  ficha.release_mbid = api::texto_de_chave(da_vez, "id");
   const std::string data = api::texto_de_chave(da_vez, "date");
   if (data.size() >= 4) ficha.ano = std::atoi(data.substr(0, 4).c_str());
   // O numero é `position` da faixa, que é inteiro; o `number` impresso vem «A3»
