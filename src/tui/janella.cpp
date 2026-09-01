@@ -72,6 +72,7 @@
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
+#include "tui/vigilia.hpp"
 
 namespace api = mysong::api;
 namespace nucleo = mysong::nucleo;
@@ -485,6 +486,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // alheia não se justifica, e agora não ha nenhum.
   // A ultima assignatura do que se vê. Vazia de saida, para que o primeiro quadro sahia.
   std::string ultima_assignatura;
+  // A VIGILIA do desenho (issue #82): o fio da tela a escreve (foco e tecla)
+  // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
+  tui::Vigilia vigilia;
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
   // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
@@ -764,6 +768,19 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   });
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
+    // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
+    // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
+    // letra no termo em curso.
+    switch (tui::gesto_do_foco(tecla)) {
+      case tui::GestoDoFoco::Ganha: vigilia.ganha(); return true;
+      case tui::GestoDoFoco::Perde: vigilia.perde(); return true;
+      case tui::GestoDoFoco::Alheio: break;
+    }
+    // Tecla de gente só chega a painel focado: adormecida, a vigilia acorda
+    // aqui e a tecla SEGUE ao seu fluxo de sempre. Desperta ou sem noticia,
+    // nada ha que acordar, e noticia de foco tecla nenhuma dá.
+    if (!vigilia.pede_batida() && tui::eh_tecla_de_gente(tecla))
+      vigilia.ganha();
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
@@ -1098,16 +1115,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (estaleiro.colheu()) pede_varrer.store(true);
       analisador.pulsa();
       mpris.pulsa();
-      // SÓMENTE quando o que se vê muda. Parado, isto não pede repintura alguma, e a
-      // tela escreve zero: é a correcção da issue #48.
-      const std::string agora = assignatura_do_visivel(
-          tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
-          mostra_letra.load(), varrida.load(),
-          correio.geracao() + correio_do_catalogo.geracao(),
-          projector.rodando());
-      if (agora != ultima_assignatura) {
-        ultima_assignatura = agora;
-        tela.PostEvent(ftxui::Event::Custom);
+      // SÓMENTE quando o que se vê muda (issue #48), e SÓMENTE com olhos no
+      // painel (issue #82): a vigilia governa o desenho e nada mais; os
+      // pulsos acima nunca dormem, que a musica não pára por falta de platéa.
+      // Ao acordar esquece-se a assignatura, porque o que mudou dormindo não
+      // se pintou, e o primeiro quadro desperto ha de sahir completo.
+      if (vigilia.acordou()) ultima_assignatura.clear();
+      if (vigilia.pede_batida()) {
+        const std::string agora = assignatura_do_visivel(
+            tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
+            mostra_letra.load(), varrida.load(),
+            correio.geracao() + correio_do_catalogo.geracao(),
+            projector.rodando());
+        if (agora != ultima_assignatura) {
+          ultima_assignatura = agora;
+          tela.PostEvent(ftxui::Event::Custom);
+        }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
