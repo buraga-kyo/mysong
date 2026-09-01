@@ -70,6 +70,22 @@ enum class CacaDeCapa {
 // palavra_da_caca — a linha que o relato mostra. Switch exhaustivo: desfecho
 // novo sem palavra não compila.
 std::string_view palavra_da_caca(CacaDeCapa desfecho);
+
+// A consulta COM ESTADO por parametro, irmã da Consulta da casa: é por aqui
+// que a bateria põe a rede de mentira e CONTA as requisições que a caça
+// gasta, que é como se prova o «zero consultas» do aceite.
+using ConsultaComEstado =
+    std::function<DesfechoMB(const std::string&, std::string*, long*)>;
+
+// casa_release — o casamento SEM ISRC: resolve_gravacao pela busca (titulo e
+// duração obrigam, artista entra quando ha; o crivo é o da #57), e d'ella o
+// MBID da release canonica. Vazio quando não casou, e `porque` diz o motivo,
+// com Recuo e RedeFalhou vindos do espião na Consulta. Casando, não se toca.
+std::string casa_release(const std::string& artista, const std::string& titulo,
+                         int duracao_seg, const ConsultaComEstado& consulta,
+                         CacaDeCapa* porque);
+
+// A VERSÃO do esquema da memoria: banco proprio sobe sozinho.
 inline constexpr int kVersaoDaMemoria = 1;
 
 // O que se LEMBRA de uma faixa procurada. SÓ desfecho definitivo tem nome

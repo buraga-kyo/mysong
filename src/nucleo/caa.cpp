@@ -131,6 +131,40 @@ std::string_view palavra_da_caca(CacaDeCapa desfecho) {
   return "desfecho sem nome";
 }
 
+std::string casa_release(const std::string& artista, const std::string& titulo,
+                         int duracao_seg, const ConsultaComEstado& consulta,
+                         CacaDeCapa* porque) {
+  // Sem titulo ou duração não ha crivo nem rede: precedente da #13 e da #44.
+  if (titulo.empty() || duracao_seg <= 0) {
+    *porque = CacaDeCapa::SemMetadado;
+    return {};
+  }
+  // O ESPIÃO anota o PIOR desfecho visto (recuo ganha de falha): é por elle
+  // que o falso do resolve_gravacao, que engole ambos, se explica lá fóra.
+  DesfechoMB pior = DesfechoMB::Achado;
+  const Consulta espiada = [&consulta, &pior](const std::string& url,
+                                              std::string* corpo) {
+    long estado = 0;
+    const DesfechoMB dito = consulta(url, corpo, &estado);
+    if (dito == DesfechoMB::Recuo ||
+        (dito == DesfechoMB::Falhou && pior == DesfechoMB::Achado))
+      pior = dito;
+    return dito;
+  };
+  FichaMB ficha;
+  const bool casou = resolve_gravacao("", artista, titulo, duracao_seg * 1000,
+                                      &ficha, espiada);
+  if (pior == DesfechoMB::Recuo) { *porque = CacaDeCapa::Recuo; return {}; }
+  if (!casou) {
+    *porque = pior == DesfechoMB::Falhou ? CacaDeCapa::RedeFalhou
+                                         : CacaDeCapa::Duvidosa;
+    return {};
+  }
+  // Gravação sem release não tem porta para o CAA: confessa-se a duvida.
+  if (ficha.release_mbid.empty()) { *porque = CacaDeCapa::Duvidosa; return {}; }
+  return ficha.release_mbid;
+}
+
 std::string_view palavra_da_procurada(Procurada procurada) {
   switch (procurada) {
     case Procurada::SemCapa: return "sem capa no CAA";
