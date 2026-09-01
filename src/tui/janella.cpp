@@ -141,7 +141,10 @@ constexpr int ACHADOS_POR_BUSCA = 15;
 // operador n'outro, o tmux manda «cnorm» quarenta vezes por segundo ao terminal de fóra e
 // arrasta o cursor VISIVEL do painel d'elle por dous mil e quinhentos reposicionamentos em
 // cinco segundos. Aquelle cursor é do painel activo, e o mysong não é dono d'elle:
-// esconder mais o nosso não apaga o alheio. Tem issue propria.
+// esconder mais o nosso não apaga o alheio. O remedio foi o da issue #82, e mora
+// na VIGILIA: pedido o foco ao terminal (modo 1004), perdendo o painel os olhos
+// o relogio dorme e batida alguma pede repintura; sem repintura nossa, o tmux
+// não tem quadro que pintar lá fóra, e cnorm algum arrasta o cursor alheio.
 //
 // A posição entra em SEGUNDOS inteiros, e não em decimos: a barra e o relogio mostram
 // segundos, e a fracção mudaria a assignatura sem mudar um pixel.
