@@ -132,6 +132,15 @@ DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
 // amplificaria a rajada que o acelerador impede.
 DesfechoMB consulta_mb(const std::string& url, std::string* corpo);
 
+// A MESMA consulta, dizendo tambem o ESTADO HTTP (issue #83). O desfecho não
+// basta a quem precisa separar o 404 definitivo (o Cover Art Archive não TEM
+// a capa; lembra-se) da rede muda e do 5xx passageiro (não se lembra): os
+// tres são Falhou. Zero no estado é «resposta alguma houve». Nome proprio, e
+// não sobrecarga: sobrecarregada, a Consulta de omissão logo abaixo ficaria
+// ambigua em todo logar que diz `= consulta_mb`.
+DesfechoMB consulta_mb_com_estado(const std::string& url, std::string* corpo,
+                                  long* estado_http);
+
 // A CONSULTA por parametro: é a junta do dublê, a mesma do Estaleiro. Entrando
 // a rede por parametro, a bateria põe no logar d'ella uma consulta de mentira e
 // afere QUANTAS e QUAES consultas a resolução gasta, sem tocar a rede.

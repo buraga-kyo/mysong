@@ -290,6 +290,12 @@ void espera_a_vez_do_mb() {
 }
 
 DesfechoMB consulta_mb(const std::string& url, std::string* corpo) {
+  return consulta_mb_com_estado(url, corpo, nullptr);
+}
+
+DesfechoMB consulta_mb_com_estado(const std::string& url, std::string* corpo,
+                                  long* estado_http) {
+  if (estado_http != nullptr) *estado_http = 0;
   if (url.empty() || corpo == nullptr) return DesfechoMB::Falhou;
   espera_a_vez_do_mb();
   CURL* punho = curl_easy_init();
@@ -308,6 +314,7 @@ DesfechoMB consulta_mb(const std::string& url, std::string* corpo) {
   long estado = 0;
   curl_easy_getinfo(punho, CURLINFO_RESPONSE_CODE, &estado);
   curl_easy_cleanup(punho);
+  if (estado_http != nullptr) *estado_http = estado;
   return desfecho_da_resposta(static_cast<int>(desfecho), estado);
 }
 
