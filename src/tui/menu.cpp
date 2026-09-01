@@ -86,5 +86,5 @@ void Menu::ao_fim() noexcept { degrau_ = DEGRAUS_DA_BARRA - 1; }
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

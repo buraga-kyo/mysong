@@ -81,5 +81,5 @@ TEST_CASE("o Tab alterna e a seta anda saturando nos extremos") {
   CHECK(menu.alvo() == tui::Secao::Busca);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
