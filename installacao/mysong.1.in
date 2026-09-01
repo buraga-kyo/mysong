@@ -30,6 +30,16 @@ Escreve as opcoes que existem, e sahe com zero.
 Escreve o diagnostico dos requisitos, em texto puro e sem tela alguma, e sahe
 com codigo differente de zero havendo impedimento. Serve de guarda em script.
 .TP
+.B \-\-capa
+Varre o acervo e busca no Cover Art Archive a capa das faixas MP3 que nao a
+tem nem na etiqueta nem ao lado, embutindo-a na etiqueta (quadro APIC). O
+casamento e pelo MusicBrainz (artista, titulo e duracao do indice), a uma
+requisicao por segundo; faixa que o archivo nao conheca, ou que nao case com
+confianca, diz-se UMA vez e fica lembrada em capas.sqlite3, para corrida
+futura nao bater na rede por nada. Para re-tentar as lembradas, apague esse
+arquivo. Recuo do servidor (429 ou 503) para a corrida, com sahida differente
+de zero. Corra UMA corrida por vez, e nao com outra baixa em andamento.
+.TP
 .B \-\-
 Encerra as opcoes: o que vier depois e caminho de faixa, ainda que principie
 por traco. Traco sozinho tambem e caminho.
@@ -44,8 +54,10 @@ manda a
 .BR \-\-ajuda ,
 depois a
 .BR \-\-versao ,
+depois o
+.BR \-\-sonda ,
 e por fim o
-.BR \-\-sonda .
+.BR \-\-capa .
 .SH TECLAS
 A taboada esta inteira, e vae dividida pelo que cada grupo governa.
 .SS Transporte
@@ -96,6 +108,11 @@ creado com modo 0700.
 .I rol.sqlite3
 As listas do operador, ao lado do indice e NAO dentro delle: o indice e refeito
 a cada varredura, e taboa de lista la dentro sahiria com ella.
+.TP
+.I capas.sqlite3
+A memoria do \-\-capa, ao lado do indice pela mesma razao do rol: guarda as
+faixas cuja capa ja se procurou (sem capa no archivo, ou duvidosa) para nao
+re-tentar em cada corrida. Apagar o arquivo re-tenta tudo.
 .TP
 .I $XDG_RUNTIME_DIR/mysong.sock
 O soquete de commando. Sem a variavel, soquete algum se ergue.

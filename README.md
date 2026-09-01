@@ -229,6 +229,7 @@ DESTDIR=/tmp/embrulho cmake --install build
 ./build/mysong                          # abre com a fila vazia
 ./build/mysong faixa.mp3 outra.flac     # abre a tocar a primeira
 ./build/mysong --sonda                  # so o diagnostico, em texto
+./build/mysong --capa                   # busca a capa que falta ao acervo
 ./build/mysong --versao                 # diz o nome e o numero, e sahe
 ./build/mysong --ajuda                  # diz as opcoes que existem, e sahe
 ./build/mysong -- --faixa-com-traco.mp3 # o `--` encerra as opcoes
@@ -241,7 +242,17 @@ esteja nessa taboada e RECUSADA, com a razao pelo stderr e sahida differente
 de zero; ate aqui ella era tratada como caminho de faixa. A opcao vale em
 qualquer logar da linha, e nao so antes das faixas: `mysong faixa.mp3 --versao`
 diz a versao. Apparecendo mais de uma, a recusa manda em todas; depois della
-manda a `--ajuda`, depois a `--versao`, e por fim o `--sonda`.
+manda a `--ajuda`, depois a `--versao`, depois o `--sonda`, e por fim o
+`--capa`.
+
+O `--capa` (issue #83) e a ordem que busca arte para o que JA esta no disco:
+varre o acervo, e para cada MP3 sem capa (nem quadro APIC nem arquivo ao
+lado) casa a gravacao no MusicBrainz pelos metadados do indice e embute a
+capa da release que o Cover Art Archive tiver, a UMA requisicao por segundo.
+Faixa que o archivo nao conheca, ou que nao case com confianca, diz-se uma
+vez e fica lembrada em `capas.sqlite3` ao lado do indice: corrida seguinte
+nao volta a rede por ella. Para re-tentar as lembradas, apague esse arquivo.
+Sem a ordem, nada se busca: e o operador quem manda na rede d'elle.
 
 A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
 acervo da corrida anterior, e o `r` manda varrer outra vez.
