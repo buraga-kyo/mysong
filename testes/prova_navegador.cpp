@@ -653,5 +653,49 @@ TEST_CASE("juntar do ACERVO á lista alvo, que é o caminho de quem usa a cousa"
   CHECK(navegador.vista()[0].chave == primeira);
 }
 
+// ── A ENTRADA PELA BARRA (issue #80) ────────────────────────────────────────
+// O vai_para prova-se pelas duas metades do contracto: no chão entra-se de
+// novo, como a tecla de atalho faria; sem chão devolve-se falso e NADA muda.
+
+TEST_CASE("a barra entra no topo e na busca do acervo inteiro") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE_FALSE(navegador.entra());  // no artista
+  REQUIRE_FALSE(navegador.entra());  // no album: secção das faixas
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  navegador.desce();
+  CHECK(navegador.vai_para(tui::Secao::Artistas));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(navegador.trilha().empty());
+  CHECK(navegador.eleito() == 0);
+  // A busca com termo vazio é o acervo PLANO: as quatro faixas, e o filtro
+  // refina d'ahi, que é o SEARCH da barra.
+  CHECK(navegador.vai_para(tui::Secao::Busca));
+  CHECK(navegador.vista().size() == 4);
+  navegador.filtra("fuga");
+  REQUIRE(navegador.vista().size() == 1);
+  CHECK(navegador.vista()[0].texto == "Fuga");
+}
+
+TEST_CASE("a barra re-entra nos albuns e nas faixas pela trilha corrente") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  navegador.desce();
+  // Re-entrar na secção onde se está é entrar de novo: o eleito ao alto.
+  CHECK(navegador.vai_para(tui::Secao::Faixas));
+  CHECK(navegador.eleito() == 0);
+  CHECK(navegador.vai_para(tui::Secao::Albuns));
+  CHECK(navegador.secao() == tui::Secao::Albuns);
+  CHECK(textos(navegador) == std::vector<std::string>{"Máquina", "Notas"});
+  CHECK(navegador.trilha() == std::vector<std::string>{"Ada Lovelace"});
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
