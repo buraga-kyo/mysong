@@ -199,8 +199,12 @@ CacaDeCapa caca_uma_faixa(const Faixa& faixa, MemoriaDeCapas* memoria,
   } else {
     long estado = 0;
     std::string corpo;
-    const DesfechoDaCapa dito = desfecho_da_capa(
-        consulta(url_da_capa(release), &corpo, &estado), estado);
+    // Em DOUS passos por obrigação, e não por gosto: a ordem de avaliação de
+    // argumentos é livre no C++, e n'uma chamada só o `estado` podia ser lido
+    // ANTES de a consulta o escrever, dando Transitoria a todo 404. A bateria
+    // pegou-o: o teste do 404 lembrado sahia RedeFalhou.
+    const DesfechoMB resposta = consulta(url_da_capa(release), &corpo, &estado);
+    const DesfechoDaCapa dito = desfecho_da_capa(resposta, estado);
     if (dito == DesfechoDaCapa::Recuo) return CacaDeCapa::Recuo;
     if (dito == DesfechoDaCapa::SemCapa) {
       release_sem_capa->insert(release);
