@@ -16,6 +16,8 @@
 
 #include <atomic>
 
+#include <ftxui/component/event.hpp>
+
 namespace mysong::tui {
 
 class Vigilia {
@@ -44,6 +46,38 @@ class Vigilia {
   std::atomic<Estado> estado_{Estado::SemNoticia};
   std::atomic<bool> acordou_{false};
 };
+
+// O GESTO do foco, tal como o FTXUI v7.0.3 o entrega. O parser d'elle não
+// conhece o CSI do modo 1004: o «ESC [ I» chega CRU n'um Event::Special, mas o
+// «ESC [ O» cahe no g_uniformize, que o reescreve para «ESC O R» por o tomar
+// pelo F3 de terminal velho. Aceitam-se pois as DUAS formas por perda: tecla F
+// alguma existe na taboada d'esta Casa, e um F3 physico que adormeça por
+// engano desfaz-se na tecla seguinte, que tecla de gente acorda (abaixo).
+enum class GestoDoFoco { Alheio, Ganha, Perde };
+
+inline GestoDoFoco gesto_do_foco(const ftxui::Event& evento) {
+  if (evento.input() == "\x1b[I") return GestoDoFoco::Ganha;
+  if (evento.input() == "\x1b[O" || evento == ftxui::Event::F3)
+    return GestoDoFoco::Perde;
+  return GestoDoFoco::Alheio;
+}
+
+// eh_tecla_de_gente — tecla que terminal e tmux só entregam a painel FOCADO:
+// chegar uma é prova de foco, e a vigilia adormecida acorda por ella. É a rede
+// de segurança do F3 disfarçado. A lista é o vocabulario inteiro da taboada; o
+// Event::Custom fica DE FORA, que é a batida do proprio relogio, e batida que
+// acordasse faria o somno impossivel.
+inline bool eh_tecla_de_gente(const ftxui::Event& evento) {
+  using ftxui::Event;
+  if (evento == Event::Custom) return false;
+  if (evento.is_character()) return true;
+  return evento == Event::ArrowUp || evento == Event::ArrowDown ||
+         evento == Event::ArrowLeft || evento == Event::ArrowRight ||
+         evento == Event::Return || evento == Event::Escape ||
+         evento == Event::Tab || evento == Event::TabReverse ||
+         evento == Event::Backspace || evento == Event::Home ||
+         evento == Event::End;
+}
 
 }  // namespace mysong::tui
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
