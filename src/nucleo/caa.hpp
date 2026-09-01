@@ -18,10 +18,16 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <cstddef>
+#include <filesystem>
 #include <string>
 #include <string_view>
 
 #include "nucleo/musicbrainz.hpp"
+
+// O punho do SQLite, declarado adiante e no escopo global, pela mesma razão
+// da bibliotheca: quem nos inclue não herda o sqlite3.h que não pediu.
+struct sqlite3;
 
 namespace mysong::nucleo {
 
@@ -41,6 +47,50 @@ enum class DesfechoDaCapa { Achada, SemCapa, Transitoria, Recuo };
 // desfecho_da_capa — a leitura PURA do que consulta_mb_com_estado devolveu,
 // para que a bateria a afira sem rede alguma.
 DesfechoDaCapa desfecho_da_capa(DesfechoMB desfecho, long estado_http);
+
+// A VERSÃO do esquema da memoria: banco proprio sobe sozinho.
+inline constexpr int kVersaoDaMemoria = 1;
+
+// O que se LEMBRA de uma faixa procurada. SÓ desfecho definitivo tem nome
+// aqui: transitorio e recuo não entram na memoria de proposito, que lembrar
+// queda de rede seria carimbar o acervo de «sem capa» por avaria de um dia.
+enum class Procurada { SemCapa, Duvidosa };
+
+// palavra_da_procurada — a palavra que se assenta no banco e se diz no
+// relato. Vive aqui pela regra do razao_da_colheita: desfecho novo sem
+// palavra não compila.
+std::string_view palavra_da_procurada(Procurada procurada);
+
+// A MEMORIA DAS PROCURADAS: `capas.sqlite3` AO LADO do índice, e nunca dentro
+// d'elle, pela razão exacta do rol (RULINGS R5): o índice reconstroe-se a
+// cada varredura por temporario e rename, e taboa lá dentro morreria na
+// primeira. A chave é o CAMINHO da faixa (a identidade do índice; movida,
+// procura-se outra vez). O banco ENTRA POR PARAMETRO: bateria em temporario.
+class MemoriaDeCapas {
+ public:
+  explicit MemoriaDeCapas(std::filesystem::path banco);
+  ~MemoriaDeCapas();
+
+  MemoriaDeCapas(const MemoriaDeCapas&) = delete;
+  MemoriaDeCapas& operator=(const MemoriaDeCapas&) = delete;
+
+  bool aberta() const noexcept;
+  int versao() const noexcept;
+
+  // ja_procurada — corrida anterior já decidiu esta faixa? É o que poupa a
+  // rede: quem já foi sem-capa ou duvidosa não volta á fila.
+  bool ja_procurada(std::string_view caminho) const;
+
+  // lembra — assenta o desfecho definitivo, com o relogio de agora. Falso
+  // quando o banco recusou; caminho vazio não se assenta.
+  bool lembra(std::string_view caminho, Procurada procurada);
+
+  std::size_t quantas() const;  // serve á prova e á somma do relato
+
+ private:
+  std::filesystem::path banco_;
+  sqlite3* punho_ = nullptr;
+};
 
 }  // namespace mysong::nucleo
 
