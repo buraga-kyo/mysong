@@ -327,5 +327,32 @@ TEST_CASE("o recuo a meio da corrida deixa as restantes virgens") {
   CHECK(memoria.quantas() == 0);  // nada se lembrou: amanhã tenta-se
 }
 
+TEST_CASE("a memoria que recusa o assento apparece no relato") {
+  const Cova cova;
+  nu::MemoriaDeCapas memoria(cova.banco());
+  REQUIRE(memoria.aberta());
+  RedeDeMentira rede;
+  rede.desfecho_capa = nu::DesfechoMB::Falhou;
+  rede.estado_capa = 404;
+  std::map<std::string, std::string> artes;
+  std::set<std::string> sem_capa;
+  const std::filesystem::path faixa = poe_mp3(cova, "01 - Never.mp3");
+  // O directorio vira SÓ-LEITURA depois de tudo aberto: o INSERT precisa
+  // criar o journal ao lado, e é ahi que o SQLite recusa, como recusaria
+  // n'um disco cheio. É a falha que d'antes passava calada.
+  namespace fs = std::filesystem;
+  fs::permissions(cova.raiz(), fs::perms::owner_read | fs::perms::owner_exec,
+                  fs::perm_options::replace);
+  CHECK(nu::caca_uma_faixa(faixa_de(faixa), &memoria, rede.consulta(), &artes,
+                           &sem_capa) == nu::CacaDeCapa::MemoriaNaoGravou);
+  fs::permissions(cova.raiz(), fs::perms::owner_all,
+                  fs::perm_options::replace);
+  CHECK_FALSE(memoria.ja_procurada(faixa.string()));  // nada persistiu
+  // Com o directorio de volta, o MESMO caminho assenta e sahe SemCapa.
+  CHECK(nu::caca_uma_faixa(faixa_de(faixa), &memoria, rede.consulta(), &artes,
+                           &sem_capa) == nu::CacaDeCapa::SemCapa);
+  CHECK(memoria.ja_procurada(faixa.string()));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
