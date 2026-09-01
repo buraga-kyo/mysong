@@ -295,5 +295,55 @@ TEST_CASE("o SGR do chafa parte-se em corridas com as suas côres") {
   CHECK(alheio[0].texto == "x");
 }
 
+// O EMBUTE da issue #83: o espelho de escripta, sem chafa e sem rede.
+TEST_CASE("o embute grava a arte e o arte_embutida a relê tal e qual") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Nua.mp3";
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  const std::string arte = png_de_um_pixel();
+  REQUIRE(nu::embute_arte(faixa, arte));
+  CHECK(nu::arte_embutida(faixa) == arte);
+  // E o mime sahiu do CONTEUDO: o PNG de guarda ha de dizer image/png.
+  TagLib::MPEG::File relida(faixa.c_str());
+  REQUIRE(relida.isValid());
+  const auto& quadros = relida.ID3v2Tag()->frameListMap()["APIC"];
+  REQUIRE_FALSE(quadros.isEmpty());
+  const auto* quadro =
+      dynamic_cast<const TagLib::ID3v2::AttachedPictureFrame*>(quadros.front());
+  REQUIRE(quadro != nullptr);
+  CHECK(quadro->mimeType() == "image/png");
+  CHECK(quadro->type() == TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+}
+
+TEST_CASE("o embute preserva a etiqueta que a faixa já tinha") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  {
+    TagLib::FileRef punho(faixa.c_str());
+    REQUIRE_FALSE(punho.isNull());
+    punho.tag()->setArtist(TagLib::String("Quem Já Era", TagLib::String::UTF8));
+    punho.tag()->setTitle(TagLib::String("Faixa Antiga", TagLib::String::UTF8));
+    REQUIRE(punho.save());
+  }
+  // Um JPEG de mentira basta ao sniff: os octetos de guarda e um corpo.
+  const std::string jpeg = std::string("\xFF\xD8\xFF\xE0", 4) + "corpo";
+  REQUIRE(nu::embute_arte(faixa, jpeg));
+  TagLib::FileRef relida(faixa.c_str());
+  CHECK(relida.tag()->artist().to8Bit(true) == "Quem Já Era");
+  CHECK(relida.tag()->title().to8Bit(true) == "Faixa Antiga");
+  CHECK(nu::arte_embutida(faixa) == jpeg);
+}
+
+TEST_CASE("octetos que não são imagem recusam-se sem tocar o arquivo") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Sã.mp3";
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  const auto tamanho = std::filesystem::file_size(faixa);
+  CHECK_FALSE(nu::embute_arte(faixa, "<html>404 not found</html>"));
+  CHECK(std::filesystem::file_size(faixa) == tamanho);  // byte algum entrou
+  CHECK(nu::arte_embutida(faixa).empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
