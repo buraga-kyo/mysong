@@ -169,6 +169,15 @@ class Navegador {
   // existirem. Chama-se depois de a varredura concluir.
   void recarrega();
 
+  // vai_para — a entrada pela BARRA (issue #80). Troca a secção reusando as
+  // fontes que o navegador JÁ tem: busca alguma se dispara, catalogo algum se
+  // relê. FALSO no degrau sem chão (Albuns sem artista na trilha, Faixas sem
+  // album, Rede sem achados, Lista sem catalogo) e em NoRol, que não é degrau
+  // da barra; no falso NADA muda, para que a tela avise e fique onde está. No
+  // verdadeiro o termo limpa-se e o eleito volta ao alto: entrar é entrar de
+  // novo, o mesmo que a tecla de atalho faz.
+  bool vai_para(Secao alvo);
+
  private:
   void refaz_vista();
 
