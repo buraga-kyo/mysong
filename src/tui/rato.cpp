@@ -55,9 +55,13 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept {
       return {Peca::Linha, caixas.primeira_linha + i, 0.0};
   if (caixas.capa.Contain(x, y)) return {Peca::Capa, 0, 0.0};
   const CaixasDoTransporte& baixo = caixas.transporte;
-  if (baixo.anterior.Contain(x, y)) return {Peca::Anterior, 0, 0.0};
   if (baixo.pausa.Contain(x, y)) return {Peca::Pausa, 0, 0.0};
-  if (baixo.proxima.Contain(x, y)) return {Peca::Proxima, 0, 0.0};
+  if (baixo.saltos.Contain(x, y)) {
+    // Ao MEIO: o ⏮ cahe na metade esquerda e o ⏭ na direita, seja qual for a
+    // largura que a fonte deu ao glypho, que esta Casa não mede.
+    const int meio = (baixo.saltos.x_min + baixo.saltos.x_max) / 2;
+    return {x < meio ? Peca::Anterior : Peca::Proxima, 0, 0.0};
+  }
   const ftxui::Box barra = baixo.progresso();
   if (barra.Contain(x, y)) return {Peca::Progresso, 0, fracao_na(barra, x)};
   return {};  // a orla, o rodapé e o espectro não respondem ao rato

@@ -90,33 +90,27 @@ std::string repete(std::string_view glifo, std::size_t n) {
 ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos,
                                 CaixasDoTransporte* caixas) {
   std::vector<ftxui::Element> partes;
-  partes.reserve(pedacos.size() + 1);
+  partes.reserve(pedacos.size());
   for (const Pedaco& pedaco : pedacos) {
     const tokens::Triade frente = tokens::rgb(pedaco.tinta);
     const tokens::Triade tras = tokens::rgb(pedaco.fundo);
+    // vestir — o pedaço com o seu par de côres, que é o que a regra (b) da fita
+    // já resolveu: aqui sómente se pinta o que ella diz.
     const auto vestir = [&](const std::string& texto) {
       return ftxui::text(texto) |
              ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
              ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b));
     };
-    const std::size_t salto = pedaco.texto.find(kProxima);
-    if (caixas != nullptr && !pedaco.juncao && salto != std::string::npos) {
-      // O segmento dos DOUS saltos parte-se ao meio, em textos de EGUAL tinta e
-      // egual fundo: as cellas sahem as mesmas, e cada glypho ganha caixa
-      // propria. Caixa do pedaço inteiro não saberia dizer em qual dos dous o
-      // dedo pousou, e partir a FITA em dous segmentos metteria entre elles um
-      // glypho de junção, que é mudar o desenho para achar o dedo.
-      partes.push_back(vestir(pedaco.texto.substr(0, salto)) |
-                       ftxui::reflect(caixas->anterior));
-      partes.push_back(vestir(pedaco.texto.substr(salto)) |
-                       ftxui::reflect(caixas->proxima));
-      continue;
-    }
     ftxui::Element parte = vestir(pedaco.texto);
-    if (caixas != nullptr && !pedaco.juncao &&
-        (pedaco.texto.find(kPausar) != std::string::npos ||
-         pedaco.texto.find(kTocar) != std::string::npos))
-      parte = parte | ftxui::reflect(caixas->pausa);
+    // A caixa põe-se por cima do pedaço INTEIRO, e o segmento acha-se pelo
+    // GLIFO, e não pela ordem em que a fita o junta. Texto algum se parte.
+    if (caixas != nullptr && !pedaco.juncao) {
+      if (pedaco.texto.find(kProxima) != std::string::npos)
+        parte = parte | ftxui::reflect(caixas->saltos);
+      else if (pedaco.texto.find(kPausar) != std::string::npos ||
+               pedaco.texto.find(kTocar) != std::string::npos)
+        parte = parte | ftxui::reflect(caixas->pausa);
+    }
     partes.push_back(std::move(parte));
   }
   return ftxui::hbox(std::move(partes));

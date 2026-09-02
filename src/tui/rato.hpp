@@ -33,9 +33,13 @@ inline ftxui::Box caixa_por_pintar() noexcept { return {0, -1, 0, -1}; }
 // porque o enchimento se pinta em DOUS elementos, o cheio e o vazio: no
 // principio e no fim um d'elles tem largura zero e a caixa d'esse sahe vazia.
 struct CaixasDoTransporte {
-  ftxui::Box anterior = caixa_por_pintar();
+  // Os DOUS saltos vivem n'UM segmento da fita, e a fita não se parte para os
+  // separar: foi MEDIDO que partir muda o desenho, que a trinta collunhas o
+  // FTXUI encolhe a linha e reparte o corte por ELEMENTO, donde dous textos
+  // onde havia um dão « ⏮⏭ » em logar de « ⏮ ⏭». A caixa é pois UMA, e quem a
+  // lê parte-a ao meio.
+  ftxui::Box saltos = caixa_por_pintar();
   ftxui::Box pausa = caixa_por_pintar();
-  ftxui::Box proxima = caixa_por_pintar();
   ftxui::Box barra_cheia = caixa_por_pintar();
   ftxui::Box barra_vazia = caixa_por_pintar();
 

@@ -38,8 +38,7 @@ tui::CaixasDaTela tela_de_mentira() {
   caixas.primeira_linha = 20;
   caixas.capa = {62, 80, 3, 12};
   caixas.transporte.pausa = {1, 3, 30, 30};
-  caixas.transporte.anterior = {4, 6, 30, 30};
-  caixas.transporte.proxima = {7, 9, 30, 30};
+  caixas.transporte.saltos = {4, 9, 30, 30};
   caixas.transporte.barra_cheia = {11, 20, 30, 30};
   caixas.transporte.barra_vazia = {21, 30, 30, 30};
   return caixas;
