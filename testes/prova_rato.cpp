@@ -108,3 +108,41 @@ TEST_CASE("sómente o botão esquerdo a descer governa alguma cousa") {
   CHECK(tui::gesto_do_alvo(linha, Mouse::Left, Mouse::Pressed, estado).gesto ==
         tui::Gesto::Toca);
 }
+
+namespace {
+
+// clicou — o gesto de um clique esquerdo n'um ponto, que é o que quasi todo
+// caso abaixo pergunta. Sem elle, a linha da chamada não cabe na medida.
+tui::GestoDoRato clicou(const tui::CaixasDaTela& caixas, int x, int y,
+                        const tui::EstadoDoRato& estado) {
+  return tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, x, y), Mouse::Left,
+                            Mouse::Pressed, estado);
+}
+
+}  // namespace
+
+TEST_CASE("com o campo aberto o clique fecha-o, e pára ahi") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  const tui::EstadoDoRato digita{true, 21, 40, 200.0};
+  // A linha, o degrau e o botão: TODO alvo dá a mesma cousa, que é o campo a
+  // fechar-se. A tela não ha de mudar debaixo de quem está a digitar.
+  for (const int y : {4, 6, 30})
+    CHECK(clicou(caixas, y == 6 ? 5 : (y == 30 ? 2 : 30), y, digita).gesto ==
+          tui::Gesto::FechaCampo);
+  // E a roda tambem: o rato não escreve no termo por caminho algum.
+  CHECK(tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, 30, 4), Mouse::WheelDown,
+                           Mouse::Pressed, digita)
+            .gesto == tui::Gesto::FechaCampo);
+}
+
+TEST_CASE("o clique elege a linha, e o clique na JÁ eleita toca-a") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  const tui::EstadoDoRato estado{false, 21, 40, 200.0};
+  const tui::GestoDoRato outra = clicou(caixas, 30, 6, estado);
+  CHECK(outra.gesto == tui::Gesto::Elege);
+  CHECK(outra.indice == 23);
+  CHECK(clicou(caixas, 30, 4, estado).gesto == tui::Gesto::Toca);
+  // A vista encolheu entre a pintura e o clique: não se elege ás cegas.
+  const tui::EstadoDoRato curta{false, 0, 21, 200.0};
+  CHECK(clicou(caixas, 30, 4, curta).gesto == tui::Gesto::Nada);
+}
