@@ -43,6 +43,14 @@ nu::CapaPintada capa_de(std::size_t quantas, std::size_t largura) {
   return capa;
 }
 
+// collunha_de — a COLLUNHA em que tal glifo pousou, e menos um não o havendo.
+// Por cella, e não por byte: busca em cadeia mentiria com o glifo de tres bytes.
+int collunha_de(const ftxui::Screen& ecran, int y, const std::string& glifo) {
+  for (int x = 0; x < ecran.dimx(); ++x)
+    if (ecran.PixelAt(x, y).character == glifo) return x;
+  return -1;
+}
+
 }  // namespace
 
 TEST_CASE("a somma da colleção diz-se por extenso") {
@@ -155,4 +163,21 @@ TEST_CASE("a ficha vem na linha seguinte á ultima da capa") {
     CHECK(linha_de(tela, alta + 2).substr(0, 16) == "Boards of Canada");
     CHECK(linha_de(tela, alta + 3).substr(0, 8) == "Geogaddi");
   }
+}
+
+// O MARCADOR sahe do elemento_da_capa com orla POR FÓRA, e é por isso que se
+// lhe pede quatro por trinta e sete: o que se ha de ver são seis por trinta e
+// nove, sem transbordar o painel.
+TEST_CASE("sem capa o marcador toma seis linhas e a ficha vem na setima") {
+  const nu::CapaPintada nenhuma;
+  CHECK(tui::linhas_da_arte(nenhuma, 20) == 6);
+  const ftxui::Screen tela = papel(
+      tui::elemento_do_painel({"Dawn Chorus", "Boards of Canada", "Geogaddi"},
+                              tui::elemento_da_arte(nenhuma, 39, 6),
+                              ftxui::text(""), 39),
+      39, 34);
+  CHECK(collunha_de(tela, 4, "\u266b") > 0);
+  CHECK(collunha_de(tela, 6, "\u2500") >= 0);
+  CHECK(collunha_de(tela, 7, "\u2500") == -1);
+  CHECK(linha_de(tela, 7).substr(0, 11) == "Dawn Chorus");
 }
