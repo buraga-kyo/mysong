@@ -12,8 +12,14 @@
 #include <ftxui/screen/box.hpp>
 #include <ftxui/screen/screen.hpp>
 
-#include <string>
+#include <unistd.h>
 
+#include <filesystem>
+#include <string>
+#include <system_error>
+
+#include "nucleo/biblioteca.hpp"
+#include "tui/menu.hpp"
 #include "tui/rato.hpp"
 #include "tui/tabella.hpp"
 #include "tui/transporte.hpp"
@@ -240,4 +246,46 @@ TEST_CASE("a caixa não muda um pixel da capa") {
   // ficar a do quadro anterior a apanhar cliques sobre a tabella.
   tui::elemento_da_capa(sem_capa, 0, 0, &caixa);
   CHECK(caixa.IsEmpty());
+}
+
+namespace {
+
+// A cova e o índice: a barra e a tabella pedem um Navegador, e elle pede uma
+// Bibliotheca. O acervo fica VAZIO, e a vista põe-se por `mostra_rede`.
+class Cova {
+ public:
+  Cova() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-rato-" + std::to_string(::getpid()));
+    std::filesystem::create_directories(caminho_);
+    mysong::nucleo::Escriba escriba(caminho_ / "indice.sqlite3");
+    escriba.conclui();
+  }
+  ~Cova() { std::error_code erro; std::filesystem::remove_all(caminho_, erro); }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+  std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+ private:
+  std::filesystem::path caminho_;
+};
+
+}  // namespace
+
+TEST_CASE("a caixa não muda um pixel da barra nem da tabella") {
+  Cova cova;
+  const mysong::nucleo::Biblioteca livraria(cova.banco());
+  mysong::nucleo::Achado um;
+  um.titulo = "Toccata";
+  tui::Navegador navegador(livraria);  // acervo vasio: a vista vem da rede
+  navegador.mostra_rede({um, um, um});
+  std::vector<ftxui::Box> degraus;
+  CHECK(papel(tui::elemento_da_barra(navegador, true, 2), 10, 7) ==
+        papel(tui::elemento_da_barra(navegador, true, 2, &degraus), 10, 7));
+  CHECK(degraus.size() == tui::DEGRAUS_DA_BARRA);
+  CHECK_FALSE(degraus[6].IsEmpty());
+  std::vector<ftxui::Box> linhas;
+  CHECK(papel(tui::elemento_da_tabella(navegador, 0, 5, 60), 60, 5) ==
+        papel(tui::elemento_da_tabella(navegador, 0, 5, 60, &linhas), 60, 5));
+  // Tres na vista e cinco de altura: caixa alguma para o que se não pintou.
+  CHECK(linhas.size() == 3);
 }
