@@ -198,8 +198,13 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   std::vector<ftxui::Element> linhas;
   // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
   // referencia, e realloque no meio do quadro deixá-la-hia pendurada.
+  // A subtracção vae GUARDADA, como a do transporte: em std::size_t tirar mais
+  // do que ha dá numero enorme, e o `assign` tentaria armar bilhões de caixas.
+  // Hoje o caso não chega aqui, que a `primeira_a_mostrar` o impede; mas esta
+  // funcção é publica, e o laço de baixo já era tolerante ao mesmo engano.
   if (caixas != nullptr)
-    caixas->assign(fim_da_fatia - primeira, caixa_por_pintar());
+    caixas->assign(fim_da_fatia > primeira ? fim_da_fatia - primeira : 0,
+                   caixa_por_pintar());
   for (std::size_t i = primeira; i < fim_da_fatia; ++i) {
     const Linha& linha = vista[i];
     const bool eleita = i == navegador.eleito();
