@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 #include <vector>
 
 #include <ftxui/component/event.hpp>
@@ -69,6 +70,13 @@ AlvoDaBarra alvo_do_degrau(std::size_t degrau,
 // uma lista o degrau é o d'ELLA, achado pelo id.
 std::size_t degrau_da_secao(Secao secao, const std::vector<nucleo::Rol>& listas,
                             int rol_corrente);
+
+// O ROTULO de um degrau: em caixa alta e em portuguez, salvo o da lista, que vae
+// como o operador o escreveu, que nome dado por elle é dado d'elle e não rotulo
+// d'esta Casa. Mora aqui, ao lado da taboada, e não na pintura: rotulo n'um
+// arquivo e alvo n'outro é o que faz o Enter abrir cousa que o marcador não diz.
+std::string rotulo_do_degrau(std::size_t degrau,
+                             const std::vector<nucleo::Rol>& listas);
 
 // tecla_abre_menu — o Tab, e o Shift+Tab com elle: havendo sómente dous focos,
 // avançar e voltar são o mesmo gesto, e tecla morta não se dá a quem explora.

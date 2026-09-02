@@ -73,6 +73,22 @@ std::size_t degrau_da_secao(Secao secao, const std::vector<nucleo::Rol>& listas,
   return 0;
 }
 
+std::string rotulo_do_degrau(std::size_t degrau,
+                             const std::vector<nucleo::Rol>& listas) {
+  if (degrau > 0 && degrau <= listas.size()) return listas[degrau - 1].nome;
+  switch (alvo_do_degrau(degrau, listas).secao) {
+    case Secao::Busca: return "MINHAS MÚSICAS";
+    case Secao::Artistas: return "ARTISTAS";
+    case Secao::Albuns: return "ÁLBUNS";
+    case Secao::Rede: return "REDE";
+    case Secao::Lista: return "SPOTIFY";
+    case Secao::Faixas:
+    case Secao::Rois:
+    case Secao::NoRol: break;  // não são degraus da barra
+  }
+  return "MINHAS MÚSICAS";
+}
+
 bool tecla_abre_menu(const ftxui::Event& tecla) noexcept {
   return tecla == ftxui::Event::Tab || tecla == ftxui::Event::TabReverse;
 }
