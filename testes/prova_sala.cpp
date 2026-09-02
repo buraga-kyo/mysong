@@ -7,6 +7,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <string>
+#include <vector>
+
 #include "tui/sala.hpp"
 
 namespace tui = mysong::tui;
@@ -31,4 +34,28 @@ TEST_CASE("a conta da colleção muda de substantivo com a especie") {
   CHECK(tui::texto_da_conta(1, tui::Especie::Albuns, 0) == "1 ÁLBUM");
   CHECK(tui::texto_da_conta(3, tui::Especie::Listas, 0) == "3 LISTAS");
   CHECK(tui::texto_da_conta(9, tui::Especie::Achados, 0) == "9 ACHADOS");
+}
+
+TEST_CASE("o cabeçalho nomeia a colleção pela secção e pela trilha") {
+  const std::vector<std::string> alto;
+  const std::vector<std::string> fundo = {"Boards of Canada", "Geogaddi"};
+  CHECK(tui::nome_da_colleccao(tui::Secao::Busca, alto, "") == "MINHAS MÚSICAS");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Artistas, alto, "") == "ARTISTAS");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Albuns, alto, "") == "ÁLBUNS");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Albuns, fundo, "") == "Geogaddi");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Faixas, fundo, "") == "Geogaddi");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Rede, alto, "") == "REDE");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Rois, alto, "") == "LISTAS");
+  CHECK(tui::nome_da_colleccao(tui::Secao::NoRol, fundo, "") == "Geogaddi");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Lista, alto, "") == "SPOTIFY");
+  CHECK(tui::nome_da_colleccao(tui::Secao::Lista, alto, "Verão") == "Verão");
+}
+
+TEST_CASE("cada secção conta a sua especie") {
+  CHECK(tui::especie_da_secao(tui::Secao::Artistas) == tui::Especie::Artistas);
+  CHECK(tui::especie_da_secao(tui::Secao::Albuns) == tui::Especie::Albuns);
+  CHECK(tui::especie_da_secao(tui::Secao::Rois) == tui::Especie::Listas);
+  CHECK(tui::especie_da_secao(tui::Secao::Rede) == tui::Especie::Achados);
+  CHECK(tui::especie_da_secao(tui::Secao::Busca) == tui::Especie::Faixas);
+  CHECK(tui::especie_da_secao(tui::Secao::NoRol) == tui::Especie::Faixas);
 }
