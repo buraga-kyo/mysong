@@ -40,6 +40,27 @@ double fracao_na(const ftxui::Box& caixa, int x) noexcept {
 
 }  // namespace
 
+Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept {
+  // A ordem não é preferencia: caixa alguma se sobrepõe a outra, e a primeira
+  // que contiver o ponto é a UNICA que o contem. Percorre-se pela ordem em que
+  // a tela se lê, do alto para baixo, que é o que torna a lista revisavel.
+  for (std::size_t i = 0; i < caixas.degraus.size(); ++i)
+    if (caixas.degraus[i].Contain(x, y)) return {Peca::Degrau, i, 0.0};
+  // O indice sahe ABSOLUTO: a caixa é da linha VISIVEL, e a rolagem somma-se
+  // aqui, uma vez só, no logar que sabe quanto ella vale.
+  for (std::size_t i = 0; i < caixas.linhas.size(); ++i)
+    if (caixas.linhas[i].Contain(x, y))
+      return {Peca::Linha, caixas.primeira_linha + i, 0.0};
+  if (caixas.capa.Contain(x, y)) return {Peca::Capa, 0, 0.0};
+  const CaixasDoTransporte& baixo = caixas.transporte;
+  if (baixo.anterior.Contain(x, y)) return {Peca::Anterior, 0, 0.0};
+  if (baixo.pausa.Contain(x, y)) return {Peca::Pausa, 0, 0.0};
+  if (baixo.proxima.Contain(x, y)) return {Peca::Proxima, 0, 0.0};
+  const ftxui::Box barra = baixo.progresso();
+  if (barra.Contain(x, y)) return {Peca::Progresso, 0, fracao_na(barra, x)};
+  return {};  // a orla, o rodapé e o espectro não respondem ao rato
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
