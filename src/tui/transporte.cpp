@@ -31,6 +31,14 @@ namespace mysong::tui {
 inline constexpr std::string_view kBarraCheia = "\u2588";
 inline constexpr std::string_view kBarraVazia = "\u2591";
 
+// Os glifos dos botões. Escrevem-se por PONTO DE CODIGO pela razão da fita, e
+// ganham nome porque servem tambem de ENDEREÇO: é por elles que a caixa do rato
+// (issue #95) acha o seu segmento, e não pela ordem em que a fita os junta.
+inline constexpr std::string_view kPausar = "\u23f8";
+inline constexpr std::string_view kTocar = "\u25b6";
+inline constexpr std::string_view kAnterior = "\u23ee";
+inline constexpr std::string_view kProxima = "\u23ed";
+
 
 std::string mm_ss(double segundos) {
   // Tempo que não é tempo mostra-se como tal, e não como `00:00`: zero é uma
@@ -79,15 +87,31 @@ std::string repete(std::string_view glifo, std::size_t n) {
 // Os pedaços da fita em elementos. A regra do DESIGN_SYSTEM manda que a côr da
 // seta seja a côr do segmento que ella SEGUE, e a fita já a resolveu: aqui
 // sómente se pinta o que ella diz.
-ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
+ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos,
+                                CaixasDoTransporte* caixas) {
   std::vector<ftxui::Element> partes;
   partes.reserve(pedacos.size());
   for (const Pedaco& pedaco : pedacos) {
     const tokens::Triade frente = tokens::rgb(pedaco.tinta);
     const tokens::Triade tras = tokens::rgb(pedaco.fundo);
-    partes.push_back(ftxui::text(pedaco.texto) |
-                     ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
-                     ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b)));
+    // vestir — o pedaço com o seu par de côres, que é o que a regra (b) da fita
+    // já resolveu: aqui sómente se pinta o que ella diz.
+    const auto vestir = [&](const std::string& texto) {
+      return ftxui::text(texto) |
+             ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
+             ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b));
+    };
+    ftxui::Element parte = vestir(pedaco.texto);
+    // A caixa põe-se por cima do pedaço INTEIRO, e o segmento acha-se pelo
+    // GLIFO, e não pela ordem em que a fita o junta. Texto algum se parte.
+    if (caixas != nullptr && !pedaco.juncao) {
+      if (pedaco.texto.find(kProxima) != std::string::npos)
+        parte = parte | ftxui::reflect(caixas->saltos);
+      else if (pedaco.texto.find(kPausar) != std::string::npos ||
+               pedaco.texto.find(kTocar) != std::string::npos)
+        parte = parte | ftxui::reflect(caixas->pausa);
+    }
+    partes.push_back(std::move(parte));
   }
   return ftxui::hbox(std::move(partes));
 }
@@ -119,9 +143,10 @@ std::string rotulo_dos_modos(const Retracto& retracto) {
 Fita fita_dos_botoes(const Retracto& retracto, bool com_modos) {
   const bool tocando = retracto.estado == nucleo::Estado::Tocando;
   Fita fita(Sentido::Dextra);
-  fita.junta({" " + std::string(tocando ? "\u23f8" : "\u25b6") + " ",
+  fita.junta({" " + std::string(tocando ? kPausar : kTocar) + " ",
               tokens::v500, tokens::base});
-  fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
+  fita.junta({" " + std::string(kAnterior) + " " + std::string(kProxima) + " ",
+              tokens::v700, tokens::text_bright});
   fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
               tokens::v900, tokens::text_bright});
   // Os dous modos, e SÓMENTE quando ha modo ligado: fita que dissesse «emb:
@@ -143,7 +168,11 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
 }
 
 ftxui::Element elemento_do_transporte(const Retracto& retracto,
-                                      std::size_t largura) {
+                                      std::size_t largura,
+                                      CaixasDoTransporte* caixas) {
+  // Esvazia-se á entrada, e antes de toda sahida antecipada: linha que se não
+  // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
+  if (caixas != nullptr) *caixas = CaixasDoTransporte();
   if (largura == 0) return ftxui::text("");
 
   const std::string relogio =
@@ -172,11 +201,24 @@ ftxui::Element elemento_do_transporte(const Retracto& retracto,
   const std::size_t cheias =
       enchimento(retracto.posicao, retracto.duracao, larg_barra);
 
+  // As duas metades da barra reflectem-se á parte, e a união d'ellas é que dá a
+  // barra inteira: n'um hbox aninhado o FTXUI reparte a sobra por outro grupo, e
+  // o que se ganharia em uma linha pagar-se-hia em desenho torto na tela
+  // apertada. A união sabe tratar a metade de largura zero, que é o principio e
+  // o fim de toda faixa.
+  ftxui::Element cheia = pinta(repete(kBarraCheia, cheias), tokens::v500);
+  ftxui::Element vazia =
+      pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset);
+  if (caixas != nullptr) {
+    cheia = cheia | ftxui::reflect(caixas->barra_cheia);
+    vazia = vazia | ftxui::reflect(caixas->barra_vazia);
+  }
+
   return ftxui::hbox({
-      fita_em_elemento(fita.compor()),
+      fita_em_elemento(fita.compor(), caixas),
       ftxui::text(" "),
-      pinta(repete(kBarraCheia, cheias), tokens::v500),
-      pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset),
+      std::move(cheia),
+      std::move(vazia),
       pinta(relogio, tokens::text_bright),
       pinta(som, tokens::text_muted),
   });

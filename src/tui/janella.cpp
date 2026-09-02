@@ -70,6 +70,7 @@
 #include "tui/navegador.hpp"
 #include "tui/menu.hpp"
 #include "tui/prompt.hpp"
+#include "tui/rato.hpp"
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
@@ -448,13 +449,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> pede_catalogo{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
-  // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
-  // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
-  // ainda que ninguem carregue em botão algum. Dentro de tmux essas sequencias vazam, e
-  // o que o operador vê é o teclado a cuspir lixo e a comer teclas.
+  // O RATO PEDE-SE Á MÃO (issue #95), e o rastreio do FTXUI fica desligado. Não é
+  // desconfiança: elle liga QUATRO modos de uma vez, e um d'elles é o `ESC[?1003h`,
+  // que manda uma sequencia de escape a cada MEXIDA do rato, ainda que ninguem
+  // carregue em botão algum. Dentro de tmux essas sequencias vazam, e o que o
+  // operador vê é o teclado a cuspir lixo e a comer teclas. Medido no FTXUI v7.0.3,
+  // em `app.cpp`: com o rastreio ligado sahem o 1000, o 1003, o 1015 e o 1006.
   //
-  // E esta Casa não usa rato: tratador de rato algum se ligou em issue alguma. Pagar o
-  // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
+  // D'esses quatro esta Casa consome DOUS: o 1000, que manda o botão a descer e a
+  // subir, e o 1006, que os manda no formato SGR, de coordenada sem o tecto de
+  // duzentas e vinte e tres collunhas do formato velho. Ligam-se abaixo, ao lado do
+  // modo do foco, e desfazem-se logo depois do laço.
   tela.TrackMouse(false);
   std::atomic<bool> sahir{false};
   // O MODO de digitar. Um enum, e não booleanos ao lado: dous booleanos
@@ -475,6 +480,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // toca, e por isso elle não pede tranca.
   std::string aviso_da_rede;
   std::size_t primeira_linha = 0;
+  // AS CAIXAS da tela (issue #95). Vivem n'esta pilha, e não dentro do pintor: o
+  // `reflect` guarda referencia para ellas, e o tratador de eventos lê-as DEPOIS
+  // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
+  // pintura.
+  tui::CaixasDaTela caixas;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -683,6 +693,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     primeira_linha =
         tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
                                 geo.tabella, primeira_linha);
+    caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
 
     std::string trilha = "ARTISTAS";
     for (const std::string& degrau : navegador.trilha())
@@ -776,11 +787,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // Tela estreita ou baixa não pinta painel algum, e com elle vão-se o
     // espectro e a letra: roubar da tabella, que é onde se navega, para mostrar
     // arte seria trocar o que serve pelo que enfeita. É o que a capa já fazia.
+    // A CAIXA da arte (issue #95) pendura-se aqui, no punho que a sala recebe:
+    // assim o `sala.*` da lavra irmã não muda uma linha, e o clique na arte
+    // continua a achar o quadro que ella pintou. Esvazia-se a cada quadro, que
+    // painel que se não pinta não ha de deixar caixa velha a apanhar cliques.
+    caixas.capa = tui::caixa_por_pintar();
     ftxui::Element painel =
         geo.painel == 0
             ? ftxui::text("")
             : tui::elemento_do_painel(
-                  ficha, tui::elemento_da_arte(arte, geo.painel, alt_arte),
+                  ficha,
+                  tui::elemento_da_arte(arte, geo.painel, alt_arte) |
+                      ftxui::reflect(caixas.capa),
                   mostra_letra.load()
                       ? tui::elemento_da_letra(
                             letra,
@@ -794,7 +812,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau(), alt_corpo),
+                                          menu.degrau(), alt_corpo,
+                                          &caixas.degraus),
                    ftxui::text("  "),
                    // `emptyElement`, e não `text("")`: o `text` pede UMA
                    // linha ainda que nada escreva, e a faixa do meio pediria
@@ -807,10 +826,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                                        tui::kCapaPequena,
                                                        tui::kCapaPequenaLinhas),
                                           geo.meio),
-                                tui::elemento_da_tabella(navegador,
-                                                         primeira_linha,
-                                                         geo.tabella, geo.meio,
-                                                         retracto.titulo)}),
+                                tui::elemento_da_tabella(
+                                    navegador, primeira_linha, geo.tabella,
+                                    geo.meio, retracto.titulo,
+                                    &caixas.linhas)}),
                    ftxui::text(geo.painel == 0 ? "" : " "),
                    std::move(painel),
                }) |
@@ -823,7 +842,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                    // versos). Egual cura os dous. Medido n'um pty.
                    ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                static_cast<int>(alt_corpo)),
-               tui::elemento_do_transporte(retracto, larg),
+               tui::elemento_do_transporte(retracto, larg,
+                                           &caixas.transporte),
                ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
                            " · / filtra · s busca na rede"
                            " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
@@ -834,6 +854,29 @@ int erguer_tocador(const std::vector<std::string>& faixas,
            }) |
            ftxui::border;
   });
+
+  // entra_no_alvo — o caminho do Enter na barra, n'um logar só. Sahe do ramo do
+  // menu porque o clique do rato (issue #95) ha de percorrer o MESMO caminho:
+  // duas copias d'estes recados divergiriam na primeira issue que acrescentasse
+  // degrau, e o dedo veria um aviso e a tecla outro.
+  //
+  // Quem chama diz o ALVO, e não o degrau: a taboada degrau para alvo é da
+  // barra (issue #93), e este lambda não a conhece.
+  const auto entra_no_alvo = [&](const tui::AlvoDaBarra& alvo) {
+    const bool entrou = alvo.rol != 0 ? navegador.vai_para_rol(alvo.rol)
+                                      : navegador.vai_para(alvo.secao);
+    if (entrou) {
+      menu.fecha();  // entrar é estar dentro: o foco volta á lista
+    } else if (alvo.secao == tui::Secao::Albuns) {
+      aviso_da_rede = "entra por um artista primeiro";
+    } else if (alvo.secao == tui::Secao::NoRol) {
+      aviso_da_rede = "essa lista já não existe";
+    } else if (alvo.secao == tui::Secao::Rede) {
+      aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+    } else {
+      aviso_da_rede = "catálogo nenhum; importa com I";
+    }
+  };
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
@@ -849,6 +892,94 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // nada ha que acordar, e noticia de foco tecla nenhuma dá.
     if (!vigilia.pede_batida() && tui::eh_tecla_de_gente(tecla))
       vigilia.ganha();
+    // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
+    // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
+    tui::Ordem ordem_do_rato;
+    if (tecla.is_mouse()) {
+      ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
+      const ftxui::Mouse rato = copia.mouse();
+      const tui::Retracto agora = retracto_do(tocador, projector);
+      const tui::GestoDoRato gesto = tui::gesto_do_alvo(
+          tui::alvo_do_ponto(caixas, rato.x, rato.y), rato.button, rato.motion,
+          {digita != Digita::Nada, navegador.eleito(),
+           navegador.vista().size(),
+           // A duração vae ZERO com a janella do video de pé, e a guarda do
+           // rato faz o resto: o clique na barra fica INERTE. A duração que
+           // este retracto sabe é a do AUDIO pausado, e o video que corre é a
+           // ELEITA, que nem sempre é a mesma faixa: video de cinco minutos com
+           // audio de tres mandaria o video ao minuto tres por um clique no fim
+           // da barra. A tecla já decidiu o mesmo por outro caminho, a busca
+           // RELATIVA: d'ella não se sabe a posição sem lhe perguntar pelo
+           // soquete, e a barra tambem não anda emquanto ella corre.
+           agora.video ? 0.0 : agora.duracao});
+      switch (gesto.gesto) {
+        case tui::Gesto::Nada: return true;  // consumido: lixo que não vaza
+        case tui::Gesto::FechaCampo:
+          digita = Digita::Nada;
+          termo_em_curso.clear();
+          return true;
+        case tui::Gesto::EntraNoDegrau: {
+          // A barra abre-se no degrau CLICADO, para que o degrau sem chão
+          // mostre onde o dedo pousou. O `abre` acorda na secção corrente, e
+          // d'ahi anda-se até elle pelas ordens que SATURAM: são quando muito
+          // uma barra de degraus, e porta que o assentasse não ha.
+          const std::vector<nucleo::Rol> listas = navegador.rois();
+          menu.abre(navegador.secao(), listas, navegador.rol_corrente());
+          while (menu.degrau() != gesto.indice) {
+            const std::size_t antes = menu.degrau();
+            antes < gesto.indice ? menu.desce() : menu.sobe();
+            if (menu.degrau() == antes) break;
+          }
+          entra_no_alvo(tui::alvo_do_degrau(gesto.indice, listas));
+          return true;
+        }
+        case tui::Gesto::Elege:
+        case tui::Gesto::Toca:
+          // Anda-se pelo sobe e pelo desce, que SATURAM: o navegador não ganha
+          // `vai_a` por isto, e nem precisa, que o indice clicado está dentro
+          // da fatia á vista. No Toca a volta é de zero passos.
+          menu.fecha();
+          while (navegador.eleito() != gesto.indice) {
+            const std::size_t antes = navegador.eleito();
+            antes < gesto.indice ? navegador.desce() : navegador.sobe();
+            if (navegador.eleito() == antes) break;  // saturou: acabou a lista
+          }
+          // O Toca SEGUE, e não pára aqui: elle é o Entra, e quem o cumpre é a
+          // taboada de baixo. Parando, o segundo clique elegia o que já estava
+          // eleito e mais nada, que foi o que a prova no pty accusou.
+          if (gesto.gesto == tui::Gesto::Elege) return true;
+          ordem_do_rato = {tui::Verbo::Entra};
+          break;
+        case tui::Gesto::RodaSobe:
+        case tui::Gesto::RodaDesce:
+          for (std::size_t passo = 0; passo < gesto.indice; ++passo)
+            gesto.gesto == tui::Gesto::RodaSobe ? navegador.sobe()
+                                                : navegador.desce();
+          return true;
+        case tui::Gesto::DegrauSobe:
+        case tui::Gesto::DegrauDesce:
+          if (!menu.aberto())
+            menu.abre(navegador.secao(), navegador.rois(),
+                      navegador.rol_corrente());
+          gesto.gesto == tui::Gesto::DegrauSobe ? menu.sobe() : menu.desce();
+          return true;
+        // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
+        // sempre, que é quem sabe roteá-las ao video quando elle está de pé.
+        case tui::Gesto::Anterior: ordem_do_rato = {tui::Verbo::Anterior}; break;
+        case tui::Gesto::Proxima: ordem_do_rato = {tui::Verbo::Proxima}; break;
+        case tui::Gesto::Busca:
+          ordem_do_rato = {tui::Verbo::Buscar, gesto.alvo};
+          break;
+        case tui::Gesto::PausaOuRetoma:
+          // O ⏯ e a capa perguntam á MESMA taboada do espaço: duas taboadas
+          // dariam duas verdades sobre o que alternar quer dizer.
+          ordem_do_rato =
+              tui::ordem_da_tecla(ftxui::Event::Character(' '), agora);
+          break;
+      }
+      // Parado não ha o que pausar, e ahi o gesto morre aqui, consumido.
+      if (ordem_do_rato.verbo == tui::Verbo::Nada) return true;
+    }
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
@@ -933,34 +1064,24 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // geral, que é a ordem declarada no tractado d'elle. A tecla que a barra
     // não conhece FECHA-A e segue ao fluxo de sempre, e é por isso que o ramo
     // Alheio não retorna: o atalho vale na barra porque passa por aqui.
-    if (menu.aberto()) {
+    //
+    // E o Event::Custom NÃO passa por aqui. Elle é a batida do relogio, e não
+    // tecla de gente: cahindo no Alheio, FECHAVA o menu vinte vezes por
+    // segundo, donde com musica a tocar a barra não ficava aberta nem pelo Tab
+    // nem pela roda do rato. Medido n'um pty, e é o que descobre o rato: parado
+    // o tocador, a batida é rara e o defeito não apparecia.
+    if (menu.aberto() && tecla != ftxui::Event::Custom) {
       switch (tui::gesto_da_barra(tecla)) {
         case tui::GestoDaBarra::Fecha: menu.fecha(); return true;
         case tui::GestoDaBarra::Sobe: menu.sobe(); return true;
         case tui::GestoDaBarra::Desce: menu.desce(); return true;
         case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
         case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
-        case tui::GestoDaBarra::Entra: {
+        case tui::GestoDaBarra::Entra:
           // O alvo pergunta-se á taboada com as listas na mão: a barra pinta-as
           // e o degrau nomeia-as, e as duas hão de ler a MESMA conta.
-          const tui::AlvoDaBarra alvo =
-              tui::alvo_do_degrau(menu.degrau(), navegador.rois());
-          const bool entrou = alvo.rol != 0
-                                  ? navegador.vai_para_rol(alvo.rol)
-                                  : navegador.vai_para(alvo.secao);
-          if (entrou) {
-            menu.fecha();  // entrar é estar dentro: o foco volta á lista
-          } else if (alvo.secao == tui::Secao::Albuns) {
-            aviso_da_rede = "entra por um artista primeiro";
-          } else if (alvo.secao == tui::Secao::NoRol) {
-            aviso_da_rede = "essa lista já não existe";
-          } else if (alvo.secao == tui::Secao::Rede) {
-            aviso_da_rede = "a rede está vazia: busca primeiro (s)";
-          } else {
-            aviso_da_rede = "catálogo nenhum; importa com I";
-          }
+          entra_no_alvo(tui::alvo_do_degrau(menu.degrau(), navegador.rois()));
           return true;  // sem chão avisa-se, e o foco FICA na barra
-        }
         case tui::GestoDaBarra::Alheio:
           menu.fecha();
           break;  // e a tecla segue: faz o que sempre fez
@@ -977,8 +1098,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;
     }
 
+    // A ordem vem do RATO quando o evento é do rato, e da tecla quando é da
+    // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
+    // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
     const tui::Ordem ordem =
-        tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
+        tecla.is_mouse()
+            ? ordem_do_rato
+            : tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
       case tui::Verbo::Nada: return false;  // tecla alheia segue
       case tui::Verbo::Desce: navegador.desce(); return true;
@@ -1217,9 +1343,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // Liga-se antes do Loop e desliga-se logo depois, no mesmo assentar e
   // desfazer que o FTXUI pratica com o que é d'elle; aviso que chegue antes
   // do parser espera no buffer do tty, que o Install não descarta entrada.
-  std::cout << "\x1b[?1004h" << std::flush;
+  //
+  // E PEDE-SE O RATO com elle (issue #95): o 1000 dá o botão a descer e a subir,
+  // e o 1006 dá-os em SGR. O 1003 fica de fóra, e é esse o ponto da issue.
+  std::cout << "\x1b[?1004h\x1b[?1000h\x1b[?1006h" << std::flush;
   tela.Loop(janella);
-  std::cout << "\x1b[?1004l" << std::flush;
+  std::cout << "\x1b[?1006l\x1b[?1000l\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o

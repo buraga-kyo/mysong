@@ -421,3 +421,9 @@ target_sources(mysong_core PRIVATE src/tui/prompt.cpp)
 # Por target_sources, ACRESCENTANDO linha. Peça nova pela mesma razão do
 # prompt: a machina de foco precisava de se provar, e a janella não se prova.
 target_sources(mysong_core PRIVATE src/tui/menu.cpp)
+
+# ─── O RATO (issue #95) ─────────────────────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Peça nova
+# pela razão do prompt e do menu: a traducção de coordenada em gesto precisava
+# de se provar, e a janella não se prova.
+target_sources(mysong_core PRIVATE src/tui/rato.cpp)

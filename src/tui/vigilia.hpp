@@ -70,6 +70,9 @@ inline GestoDoFoco gesto_do_foco(const ftxui::Event& evento) {
 inline bool eh_tecla_de_gente(const ftxui::Event& evento) {
   using ftxui::Event;
   if (evento == Event::Custom) return false;
+  // O RATO conta (issue #95): terminal e tmux só entregam evento de rato a
+  // painel FOCADO, donde chegar um é a mesma prova que uma tecla dá.
+  if (evento.is_mouse()) return true;
   if (evento.is_character()) return true;
   return evento == Event::ArrowUp || evento == Event::ArrowDown ||
          evento == Event::ArrowLeft || evento == Event::ArrowRight ||

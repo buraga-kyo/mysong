@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "tui/menu.hpp"
+#include "tui/rato.hpp"
 #include "tui/tokens.hpp"
 #include "tui/transporte.hpp"
 
@@ -107,7 +108,8 @@ ftxui::Element elemento_da_trilha(const std::string& trilha,
 
 ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
                                  std::size_t degrau_eleito,
-                                 std::size_t altura) {
+                                 std::size_t altura,
+                                 std::vector<ftxui::Box>* caixas) {
   // As listas lêem-se A CADA PINTURA, e não de cópia guardada: o aceite pede que
   // a lista creada, renomeada ou apagada appareça, mude ou suma no MESMO quadro,
   // e cópia guardada envelheceria justamente n'esse.
@@ -123,6 +125,13 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
   linhas.push_back(
       pinta(apara(" BIBLIOTECA", LARGURA_DA_BARRA), tokens::text_heading));
   const std::size_t quantos = degraus_da_barra(listas.size());
+  // O vector das caixas (issue #95) dimensiona-se UMA vez, ANTES do laço, e
+  // conta os DEGRAUS: o titulo e a risca não são degraus e não ganham caixa.
+  // O `reflect` guarda REFERENCIA, e vector que realloque no meio do quadro
+  // deixaria referencia pendurada a apontar memoria mudada de logar. Degrau
+  // que a rolagem do grupo das listas deixe de fóra fica com a caixa VAZIA,
+  // e caixa vazia não casa com ponto algum.
+  if (caixas != nullptr) caixas->assign(quantos, caixa_por_pintar());
   // O que a barra gasta fóra do grupo das listas: o titulo, as minhas musicas, a
   // risca e os quatro de navegar. Com altura posta, o grupo ROLA no que sobra,
   // que barra mais alta que a tela empurraria o transporte para fóra do quadro.
@@ -168,6 +177,7 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
       linha = linha | ftxui::bgcolor(
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
+    if (caixas != nullptr) linha = linha | ftxui::reflect((*caixas)[qual]);
     linhas.push_back(std::move(linha));
   }
   return ftxui::vbox(std::move(linhas));
@@ -176,7 +186,12 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura,
-                                   const std::string& tocando) {
+                                   const std::string& tocando,
+                                   std::vector<ftxui::Box>* caixas) {
+  // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
+  // antecipada que deixasse as caixas do quadro anterior faria o clique
+  // acertar linhas que já não estão na tela.
+  if (caixas != nullptr) caixas->clear();
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
   if (vista.empty()) {
@@ -229,6 +244,15 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   const std::size_t larg_titulo = largura > fixas ? largura - fixas : 1;
 
   std::vector<ftxui::Element> linhas;
+  // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
+  // referencia, e realloque no meio do quadro deixá-la-hia pendurada.
+  // A subtracção vae GUARDADA, como a do transporte: em std::size_t tirar mais
+  // do que ha dá numero enorme, e o `assign` tentaria armar bilhões de caixas.
+  // Hoje o caso não chega aqui, que a `primeira_a_mostrar` o impede; mas esta
+  // funcção é publica, e o laço de baixo já era tolerante ao mesmo engano.
+  if (caixas != nullptr)
+    caixas->assign(fim_da_fatia > primeira ? fim_da_fatia - primeira : 0,
+                   caixa_por_pintar());
   for (std::size_t i = primeira; i < fim_da_fatia; ++i) {
     const Linha& linha = vista[i];
     const bool eleita = i == navegador.eleito();
@@ -257,6 +281,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
       pintada = pintada | ftxui::bgcolor(
                               ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
+    if (caixas != nullptr)
+      pintada = pintada | ftxui::reflect((*caixas)[i - primeira]);
     linhas.push_back(std::move(pintada));
   }
   return ftxui::vbox(std::move(linhas));
@@ -294,8 +320,15 @@ ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas
 }
 
 ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
-                                std::size_t collunas, std::size_t linhas) {
+                                std::size_t collunas, std::size_t linhas,
+                                ftxui::Box* caixa) {
+  // Esvazia-se á entrada: terminal apertado não mostra capa alguma, e a caixa
+  // do quadro anterior deixaria o clique a pausar sobre a tabella.
+  if (caixa != nullptr) *caixa = caixa_por_pintar();
   if (collunas == 0 || linhas == 0) return ftxui::text("");
+  const auto lembrar = [caixa](ftxui::Element pintada) {
+    return caixa == nullptr ? pintada : pintada | ftxui::reflect(*caixa);
+  };
   if (capa.achada) {
     // Cada corrida vira UM elemento com a sua tinta. Não se passa a cadeia crua do
     // chafa: o FTXUI contaria os octetos do escape como LARGURA, e a capa esmagaria a
@@ -319,7 +352,7 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
       }
       pintadas.push_back(ftxui::hbox(std::move(corridas)));
     }
-    return ftxui::vbox(std::move(pintadas));
+    return lembrar(ftxui::vbox(std::move(pintadas)));
   }
 
   // O MARCADOR: uma nota musical no meio de um quadro de orla, com os tokens d'esta
@@ -336,7 +369,7 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
       pintadas.push_back(pinta(std::string(collunas, ' '), tokens::inset));
     }
   }
-  return ftxui::vbox(std::move(pintadas)) | ftxui::border;
+  return lembrar(ftxui::vbox(std::move(pintadas)) | ftxui::border);
 }
 
 }  // namespace mysong::tui

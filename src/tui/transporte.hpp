@@ -29,6 +29,7 @@
 
 #include "nucleo/fila.hpp"
 #include "nucleo/motor.hpp"
+#include "tui/rato.hpp"
 
 namespace mysong::tui {
 
@@ -75,8 +76,12 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura);
 // elemento_do_transporte — a barra inteira: os botões em fita arrowline, a barra
 // de progresso enchida em v500 sobre inset, o tempo em MM:SS / MM:SS, e o
 // volume. Largura zero dá elemento vazio, e nunca quadro roto.
+//
+// As CAIXAS (issue #95) enchem-se aqui, dentro de quem pinta a peça. Punho
+// nullo quer dizer «esta chamada não quer saber», e a linha sahe a mesma.
 ftxui::Element elemento_do_transporte(const Retracto& retracto,
-                                      std::size_t largura);
+                                      std::size_t largura,
+                                      CaixasDoTransporte* caixas = nullptr);
 
 }  // namespace mysong::tui
 
