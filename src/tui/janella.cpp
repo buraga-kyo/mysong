@@ -70,6 +70,7 @@
 #include "tui/navegador.hpp"
 #include "tui/menu.hpp"
 #include "tui/prompt.hpp"
+#include "tui/sala.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
@@ -479,6 +480,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
   std::vector<nucleo::LinhaDaLetra> letra;
   std::string letra_de_qual;
+  // A FICHA da faixa que sôa, guardada como a letra e pela mesma razão: o
+  // indice consultado a cada quadro seriam vinte perguntas por segundo ao
+  // banco por uma cousa que sómente muda quando a faixa muda.
+  tui::Ficha ficha;
   // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
   // assignatura, e o fio da tela troca-o na tecla `l`.
   std::atomic<bool> mostra_letra{false};
@@ -656,35 +661,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A tabella toma o que sobra em altura: as linhas de guarnição (marca, topo,
-    // espectro de oito, transporte, rodapé) mais a orla. O TOPO conta-se pelo
-    // modo, que aberto o prompt são duas linhas e não uma. A linha nova sahe
-    // d'aqui, e não de uma sobra que ninguem declarou: sobra consumida ás
-    // escondidas é o genero de acoplamento que se paga na tarefa seguinte.
-    const std::size_t guarnicao = 15 + tui::linhas_do_topo(digita);
-    const std::size_t alt_tab = lin > static_cast<int>(guarnicao)
-                                    ? static_cast<std::size_t>(lin) - guarnicao
-                                    : 1;
-    primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
-                                             navegador.vista().size(), alt_tab,
-                                             primeira_linha);
-    // O painel NOW PLAYING toma um quinto da largura, e nunca mais de vinte
-    // collunhas nem menos de oito: a arte quer quadrado, e o quadrado n'um terminal
-    // pede duas linhas por collunha, donde a altura sahe da largura e não ao
-    // contrario. Terminal apertado não mostra capa alguma, que roubar da tabella
-    // para mostrar arte seria trocar o que serve pelo que enfeita.
-    const std::size_t larg_capa =
-        larg >= 60 ? std::min<std::size_t>(20, larg / 5) : 0;
-    const std::size_t alt_capa =
-        larg_capa == 0 ? 0 : std::min<std::size_t>(alt_tab, larg_capa / 2 + 1);
-    const std::size_t reservado_capa = larg_capa == 0 ? 0 : larg_capa + 1;
-    // A barra mais o espaçador de duas collunhas que o hbox lhe põe ao lado.
-    // Vinha por um onze escripto á mão, da barra de nove; a barra é agora de
-    // vinte (issue #93), e a conta segue-lhe a constante em vez do numero.
-    const std::size_t guarda_da_barra = tui::LARGURA_DA_BARRA + 2;
-    const std::size_t larg_tab = larg > guarda_da_barra + reservado_capa
-                                     ? larg - guarda_da_barra - reservado_capa
-                                     : 1;
+    // A guarnição em altura: marca, topo, transporte, rodapé e as duas da orla,
+    // que são CINCO mais o topo. Eram quinze com a fita do espectro no pé e a
+    // linha em branco que a precedia (issue #92). Foram seis por um quadro, e
+    // ahi sobrava sempre uma fileira vazia no pé: a conta cobrava uma linha que
+    // desenho algum gastava. O TOPO conta-se pelo modo, que aberto o prompt são
+    // duas linhas e não uma.
+    const std::size_t guarnicao = 5 + tui::linhas_do_topo(digita);
+    const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
+                                      ? static_cast<std::size_t>(lin) - guarnicao
+                                      : 1;
+    // A barra mais o espaçador de duas collunhas que o hbox lhe põe ao lado. O
+    // numero é da BARRA, e a barra é lavra da issue #93: vem por isso da
+    // constante d'ella, e não de um onze escripto á mão. A geometria da sala
+    // recebe-o por PARAMETRO, que é o que faz d'esta a UNICA linha a mudar no
+    // dia em que a barra mudar de largura outra vez.
+    const std::size_t kBarraCollunhas = tui::LARGURA_DA_BARRA + 2;
+    const tui::Geometria geo =
+        tui::geometria_da_sala(larg, alt_corpo, kBarraCollunhas);
+    primeira_linha =
+        tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
+                                geo.tabella, primeira_linha);
 
     std::string trilha = "ARTISTAS";
     for (const std::string& degrau : navegador.trilha())
@@ -731,12 +728,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
     if (!andamento.empty()) trilha += "   " + andamento;
 
-    // A letra relê-se sómente quando a faixa muda.
+    // A letra e a ficha relêem-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
       letra_de_qual = retracto.titulo;
       letra = retracto.titulo.empty()
                   ? std::vector<nucleo::LinhaDaLetra>()
                   : nucleo::le_lrc_do_disco(retracto.titulo);
+      nucleo::Faixa d_ella;
+      livraria.acha_por_caminho(retracto.titulo, d_ella);
+      ficha = tui::ficha_da_faixa(retracto.titulo, d_ella.titulo, d_ella.artista,
+                                  d_ella.album);
     }
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
@@ -744,28 +745,83 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
-    const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
+    // O CABEÇALHO da colleção á vista. A somma é das linhas Á VISTA, e não do
+    // acervo: com filtro posto, o operador ha de ler a conta do que VÊ.
+    tui::Colleccao colleccao;
+    colleccao.nome = tui::nome_da_colleccao(navegador.secao(), navegador.trilha(),
+                                            navegador.nome_do_catalogo());
+    colleccao.quantas = navegador.vista().size();
+    colleccao.especie = tui::especie_da_secao(navegador.secao());
+    for (const tui::Linha& qual : navegador.vista())
+      colleccao.duracao += qual.duracao;
+    colleccao.embaralhado = retracto.embaralhado;
+    colleccao.repeticao = retracto.repeticao;
+    // A capa pequena é a da PRIMEIRA linha, e sómente onde a chave é caminho de
+    // arquivo. Quem o sabe é a sala, por switch exhaustivo: secção nova accende
+    // aviso do compilador lá, e não passa calada a pedir capa de uma URL.
+    const std::string capa_do_meio =
+        tui::chave_e_caminho(navegador.secao()) && !navegador.vista().empty()
+            ? navegador.vista().front().chave
+            : std::string();
+    // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
+    // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
+    const nucleo::CapaPintada& arte =
+        galeria.capa(retracto.titulo, geo.painel, geo.capa);
+    const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
+    const std::size_t alt_baixo =
+        geo.livre > alt_arte ? geo.livre - alt_arte : 1;
+    const tui::Quadro quadro =
+        tui::compor(tocador.bandas(), geo.painel, alt_baixo);
+    // Tela estreita ou baixa não pinta painel algum, e com elle vão-se o
+    // espectro e a letra: roubar da tabella, que é onde se navega, para mostrar
+    // arte seria trocar o que serve pelo que enfeita. É o que a capa já fazia.
+    ftxui::Element painel =
+        geo.painel == 0
+            ? ftxui::text("")
+            : tui::elemento_do_painel(
+                  ficha, tui::elemento_da_arte(arte, geo.painel, alt_arte),
+                  mostra_letra.load()
+                      ? tui::elemento_da_letra(
+                            letra,
+                            nucleo::linha_corrente(letra, retracto.posicao),
+                            alt_baixo, geo.painel)
+                      : tui::elemento_do_espectro(quadro),
+                  geo.painel);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
                tui::elemento_do_topo(trilha, digita, contexto_do_campo,
                                      termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau(), alt_tab),
+                                          menu.degrau(), alt_corpo),
                    ftxui::text("  "),
-                   tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
-                                            larg_tab),
-                   ftxui::text(" "),
-                   tui::elemento_da_capa(
-                       galeria.capa(retracto.titulo, larg_capa, alt_capa),
-                       larg_capa, alt_capa),
-               }),
-               ftxui::text(""),
-               mostra_letra.load()
-                   ? tui::elemento_da_letra(
-                         letra,
-                         nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
-                   : tui::elemento_do_espectro(quadro),
+                   // `emptyElement`, e não `text("")`: o `text` pede UMA
+                   // linha ainda que nada escreva, e a faixa do meio pediria
+                   // uma a mais do que a conta lhe deu.
+                   ftxui::vbox({geo.cabecalho == 0
+                                    ? ftxui::emptyElement()
+                                    : tui::elemento_do_cabecalho(
+                                          colleccao,
+                                          galeria.capa(capa_do_meio,
+                                                       tui::kCapaPequena,
+                                                       tui::kCapaPequenaLinhas),
+                                          geo.meio),
+                                tui::elemento_da_tabella(navegador,
+                                                         primeira_linha,
+                                                         geo.tabella, geo.meio,
+                                                         retracto.titulo)}),
+                   ftxui::text(geo.painel == 0 ? "" : " "),
+                   std::move(painel),
+               }) |
+                   // A faixa do corpo mede EXACTAMENTE a altura contada. Por
+                   // menos que ella, a barra de sete fileiras fixas empurrava o
+                   // transporte para fóra da tela n'um terminal de doze linhas;
+                   // por mais, o `size` zera o flex e a faixa deixava de encher
+                   // a altura, d'onde o transporte e o rodapé sobiam e o pé da
+                   // tela ficava em branco (vista curta, ou letra de dous
+                   // versos). Egual cura os dous. Medido n'um pty.
+                   ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                               static_cast<int>(alt_corpo)),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
                            " · / filtra · s busca na rede"

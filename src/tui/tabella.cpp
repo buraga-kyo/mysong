@@ -175,7 +175,8 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
 
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
-                                   std::size_t largura) {
+                                   std::size_t largura,
+                                   const std::string& tocando) {
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
   if (vista.empty()) {
@@ -231,9 +232,16 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   for (std::size_t i = primeira; i < fim_da_fatia; ++i) {
     const Linha& linha = vista[i];
     const bool eleita = i == navegador.eleito();
+    // O que SÔA casa-se pela CHAVE, que nas secções de faixa é o caminho do
+    // arquivo. Nas outras a chave é nome ou id, e ahi nada casa, que é o que se
+    // quer: album algum «toca». O «▶» toma o logar do numero, e não uma columna
+    // nova: columna nova empurraria o titulo e desalinharia a tabella inteira
+    // sómente porque alguma cousa sôa.
+    const bool soa = !tocando.empty() && linha.chave == tocando;
     const std::string numero =
-        linha.numero > 0 ? apara(std::to_string(linha.numero), larg_num)
-                         : apara("", larg_num);
+        soa ? apara(" \u25b6", larg_num)
+        : linha.numero > 0 ? apara(std::to_string(linha.numero), larg_num)
+                           : apara("", larg_num);
     const std::string tempo =
         linha.duracao > 0 ? apara(" " + mm_ss(linha.duracao), larg_tempo)
                           : apara("", larg_tempo);
@@ -241,7 +249,9 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
         larg_autor == 0 ? std::string() : apara(" " + linha.autor, larg_autor);
     ftxui::Element pintada =
         pinta(numero + apara(linha.texto, larg_titulo) + autor + tempo,
-              eleita ? tokens::text_bright : tokens::text_muted);
+              soa       ? tokens::glow_core
+              : eleita  ? tokens::text_bright
+                        : tokens::text_muted);
     if (eleita) {
       const tokens::Triade fundo = tokens::rgb(tokens::v900);
       pintada = pintada | ftxui::bgcolor(
