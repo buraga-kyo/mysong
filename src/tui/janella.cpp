@@ -673,7 +673,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         tui::geometria_da_sala(larg, alt_corpo, kBarraCollunhas);
     primeira_linha =
         tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
-                                alt_corpo, primeira_linha);
+                                geo.tabella, primeira_linha);
 
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
@@ -731,6 +731,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
+    // O CABEÇALHO da colleção á vista. A somma é das linhas Á VISTA, e não do
+    // acervo: com filtro posto, o operador ha de ler a conta do que VÊ.
+    tui::Colleccao colleccao;
+    colleccao.nome = tui::nome_da_colleccao(navegador.secao(), navegador.trilha(),
+                                            navegador.nome_do_catalogo());
+    colleccao.quantas = navegador.vista().size();
+    colleccao.especie = tui::especie_da_secao(navegador.secao());
+    for (const tui::Linha& qual : navegador.vista())
+      colleccao.duracao += qual.duracao;
+    colleccao.embaralhado = retracto.embaralhado;
+    colleccao.repeticao = retracto.repeticao;
+    // A capa pequena é a da PRIMEIRA linha, e sómente onde a chave é caminho de
+    // arquivo: na Rede ella é URL e nas listas é numero, e pedir capa d'essas
+    // poria a Casa a procurar arquivo que não existe a cada quadro.
+    const bool chave_e_caminho = navegador.secao() == tui::Secao::Faixas ||
+                                 navegador.secao() == tui::Secao::Busca ||
+                                 navegador.secao() == tui::Secao::NoRol;
+    const std::string capa_do_meio =
+        chave_e_caminho && !navegador.vista().empty()
+            ? navegador.vista().front().chave
+            : std::string();
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
     const nucleo::CapaPintada& arte =
@@ -763,8 +784,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                    tui::elemento_da_barra(navegador, menu.aberto(),
                                           menu.degrau()),
                    ftxui::text("  "),
-                   tui::elemento_da_tabella(navegador, primeira_linha,
-                                            alt_corpo, geo.meio),
+                   ftxui::vbox({geo.cabecalho == 0
+                                    ? ftxui::text("")
+                                    : tui::elemento_do_cabecalho(
+                                          colleccao,
+                                          galeria.capa(capa_do_meio,
+                                                       tui::kCapaPequena,
+                                                       tui::kCapaPequenaLinhas),
+                                          geo.meio),
+                                tui::elemento_da_tabella(navegador,
+                                                         primeira_linha,
+                                                         geo.tabella,
+                                                         geo.meio)}),
                    ftxui::text(geo.painel == 0 ? "" : " "),
                    std::move(painel),
                }),

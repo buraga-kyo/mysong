@@ -37,8 +37,6 @@ constexpr std::size_t kMeioMinimo = 40, kCabecalho = 6, kTabellaMinima = 3;
 // 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
 // diria «não ha capa» mais alto do que o painel diz a musica.
 constexpr std::size_t kMarcadorLinhas = 6;
-// A capa pequena do cabeçalho: dez por cinco, que a cella é de dous por um.
-constexpr std::size_t kCapaPequena = 10, kCapaPequenaLinhas = 5;
 
 // pinta — o texto na tinta do token. Côr crua não entra n'esta obra.
 ftxui::Element pinta(const std::string& texto, std::string_view token) {
