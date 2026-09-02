@@ -171,6 +171,24 @@ std::string_view chave_da_fonte(Fonte fonte) {
   return "fonte sem nome";
 }
 
+// sextantes_de — as tres palavras, e sómente ellas. Nome que não é nenhuma
+// devolve vazio, e a queixa fica com quem chama, pela regra do fonte_de.
+std::optional<Sextantes> sextantes_de(std::string_view texto) {
+  if (egual_sem_caixa(texto, "auto")) return Sextantes::Auto;
+  if (egual_sem_caixa(texto, "sim")) return Sextantes::Sim;
+  if (egual_sem_caixa(texto, "nao")) return Sextantes::Nao;
+  return std::nullopt;
+}
+
+std::string_view chave_dos_sextantes(Sextantes sextantes) {
+  switch (sextantes) {
+    case Sextantes::Auto: return "auto";
+    case Sextantes::Sim: return "sim";
+    case Sextantes::Nao: return "nao";
+  }
+  return "valor sem nome";
+}
+
 std::optional<int> volume_de(std::string_view texto) {
   const std::optional<int> numero = inteiro_de(texto);
   if (!numero || *numero < 0 || *numero > VOLUME_DA_CASA) return std::nullopt;
@@ -220,6 +238,12 @@ void resolver(const Degraus& degraus,
       else
         ajustes->queixa(onde + "baixas_simultaneas «" + par.valor +
                        "» não é numero de um a oito");
+    } else if (par.chave == "capa_sextantes") {
+      if (const auto quer = sextantes_de(par.valor))
+        ajustes->capa_sextantes = {*quer, Origem::Arquivo};
+      else
+        ajustes->queixa(onde + "capa_sextantes «" + par.valor +
+                       "» não é auto, sim nem nao");
     } else {
       ajustes->queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
     }
@@ -400,6 +424,10 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
   linha_do_ajuste(&texto, "baixas_simultaneas",
                   std::to_string(ajustes.baixas_simultaneas.valor),
                   ajustes.baixas_simultaneas.origem);
+  linha_do_ajuste(
+      &texto, "capa_sextantes",
+      std::string(chave_dos_sextantes(ajustes.capa_sextantes.valor)),
+      ajustes.capa_sextantes.origem);
   // O CAMINHO vae sempre, ainda que o arquivo não exista: sem elle, quem
   // escreveu o arquivo no logar errado não tem como descobrir qual é o certo.
   texto += "\n  arquivo: " + ajustes.arquivo.string() + " (";
