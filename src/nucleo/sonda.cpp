@@ -140,11 +140,17 @@ bool contem_insensivel(std::string_view palheiro, std::string_view agulha) {
 //
 // Fontconfig que não inicialize conta-se FALTA, e nunca presença: o silencio
 // d'elle é ignorancia nossa, e ignorancia não se resolve por optimismo.
-bool ha_familia_de_fonte(std::string_view agulha) {
+//
+// O ceremonial (abrir a configuração, armar o padrão, listar, e desfazer os
+// quatro punhos) mora AQUI e n'um logar só, e o que varia entra por `basta`:
+// pergunta nova sobre as fontes é predicado novo, e não copia d'este bloco.
+// Pára na primeira familia que responda verdadeiro.
+bool alguma_familia(std::string_view agulha,
+                    const std::function<bool(FcPattern*)>& basta) {
   FcConfig* configuracao = FcInitLoadConfigAndFonts();
   if (configuracao == nullptr) return false;
   FcPattern* padrao = FcPatternCreate();
-  FcObjectSet* campos = FcObjectSetBuild(FC_FAMILY, nullptr);
+  FcObjectSet* campos = FcObjectSetBuild(FC_FAMILY, FC_CHARSET, nullptr);
   FcFontSet* achadas = (padrao != nullptr && campos != nullptr)
                            ? FcFontList(configuracao, padrao, campos)
                            : nullptr;
@@ -154,14 +160,20 @@ bool ha_familia_de_fonte(std::string_view agulha) {
     FcChar8* familia = nullptr;
     if (FcPatternGetString(achadas->fonts[posicao], FC_FAMILY, 0, &familia) ==
             FcResultMatch &&
-        familia != nullptr)
-      achou = contem_insensivel(reinterpret_cast<const char*>(familia), agulha);
+        familia != nullptr &&
+        contem_insensivel(reinterpret_cast<const char*>(familia), agulha))
+      achou = basta(achadas->fonts[posicao]);
   }
   if (achadas != nullptr) FcFontSetDestroy(achadas);
   if (campos != nullptr) FcObjectSetDestroy(campos);
   if (padrao != nullptr) FcPatternDestroy(padrao);
   FcConfigDestroy(configuracao);
   return achou;
+}
+
+// ha_familia_de_fonte — o nome basta, e nada mais se pergunta á fonte.
+bool ha_familia_de_fonte(std::string_view agulha) {
+  return alguma_familia(agulha, [](FcPattern*) { return true; });
 }
 
 // ha_bibliotheca — tenta CARREGAR a bibliotheca pelo seu soname, e logo a
