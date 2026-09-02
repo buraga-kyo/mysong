@@ -317,3 +317,14 @@ TEST_CASE("nome comprido não empurra a barra nem o painel") {
   // E o nome comprido escreve-se até onde cabe, sem invadir o painel.
   CHECK(linha_de(sala_de(std::string(120, 'N')), 1).substr(23, 4) == "NNNN");
 }
+
+TEST_CASE("sómente tres secções trazem caminho de arquivo por chave") {
+  CHECK(tui::chave_e_caminho(tui::Secao::Faixas));
+  CHECK(tui::chave_e_caminho(tui::Secao::Busca));
+  CHECK(tui::chave_e_caminho(tui::Secao::NoRol));
+  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Artistas));
+  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Albuns));
+  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Rede));
+  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Rois));
+  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Lista));
+}

@@ -85,6 +85,20 @@ std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao) {
   return feita;
 }
 
+bool chave_e_caminho(Secao secao) {
+  switch (secao) {
+    case Secao::Faixas:
+    case Secao::Busca:
+    case Secao::NoRol: return true;
+    case Secao::Artistas:
+    case Secao::Albuns:
+    case Secao::Rede:
+    case Secao::Rois:
+    case Secao::Lista: break;
+  }
+  return false;
+}
+
 Especie especie_da_secao(Secao secao) {
   switch (secao) {
     case Secao::Artistas: return Especie::Artistas;

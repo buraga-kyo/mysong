@@ -753,13 +753,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     colleccao.embaralhado = retracto.embaralhado;
     colleccao.repeticao = retracto.repeticao;
     // A capa pequena é a da PRIMEIRA linha, e sómente onde a chave é caminho de
-    // arquivo: na Rede ella é URL e nas listas é numero, e pedir capa d'essas
-    // poria a Casa a procurar arquivo que não existe a cada quadro.
-    const bool chave_e_caminho = navegador.secao() == tui::Secao::Faixas ||
-                                 navegador.secao() == tui::Secao::Busca ||
-                                 navegador.secao() == tui::Secao::NoRol;
+    // arquivo. Quem o sabe é a sala, por switch exhaustivo: secção nova accende
+    // aviso do compilador lá, e não passa calada a pedir capa de uma URL.
     const std::string capa_do_meio =
-        chave_e_caminho && !navegador.vista().empty()
+        tui::chave_e_caminho(navegador.secao()) && !navegador.vista().empty()
             ? navegador.vista().front().chave
             : std::string();
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16

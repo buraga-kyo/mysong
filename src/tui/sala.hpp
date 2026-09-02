@@ -49,6 +49,11 @@ std::string texto_da_duracao(int segundos);
 // texto_da_conta — «4 FAIXAS, 14min». Um sahe no singular e sem o `s`.
 std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao);
 
+// chave_e_caminho — a `chave` das linhas d'esta secção é caminho de arquivo?
+// Na Rede ella é URL, nas listas é numero, no catalogo é vazia, e pedir capa
+// d'essas poria a Casa a procurar arquivo inexistente a cada quadro.
+bool chave_e_caminho(Secao secao);
+
 // especie_da_secao — o que se conta em cada secção da barra lateral.
 Especie especie_da_secao(Secao secao);
 
