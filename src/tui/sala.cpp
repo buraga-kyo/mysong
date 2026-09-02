@@ -214,6 +214,8 @@ ftxui::Element linha_da_conta(const Colleccao& qual, std::size_t largura) {
   std::vector<ftxui::Element> partes = {pinta(conta + "  ", tokens::text_body)};
   const int pede = ftxui::string_width(conta) + ftxui::string_width(um) +
                    ftxui::string_width(dous);
+  // O CINCO são os vãos que o texto não conta: DOUS entre a capa pequena e o
+  // que vae á direita d'ella, DOUS depois da conta, e UM entre os chips.
   if (largura >= kCapaPequena + 5 + static_cast<std::size_t>(pede)) {
     partes.push_back(chip(um, qual.embaralhado));
     partes.push_back(ftxui::text(" "));

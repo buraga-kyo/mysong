@@ -389,3 +389,6 @@ TEST_CASE("a letra e o espectro tomam o mesmo rectangulo do painel") {
     CHECK(linha_de(qual, 23) == vazia);                 // e não passa d'ahi
   }
 }
+
+//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+// ══════════════════════════════════════════════════════════════════════════
