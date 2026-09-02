@@ -13,6 +13,7 @@
 #include "tui/rato.hpp"
 
 namespace tui = mysong::tui;
+using ftxui::Mouse;
 
 TEST_CASE("a caixa por pintar não casa com ponto algum") {
   const ftxui::Box vazia = tui::caixa_por_pintar();
@@ -73,4 +74,37 @@ TEST_CASE("a fracção da barra vae de zero na primeira collunha a um na ultima"
   CHECK(tui::alvo_do_ponto(caixas, 30, 30).fracao == doctest::Approx(1.0));
   CHECK(tui::alvo_do_ponto(caixas, 21, 30).fracao ==
         doctest::Approx(10.0 / 19.0));
+}
+
+TEST_CASE("a barra fica inteira com uma das metades por pintar") {
+  tui::CaixasDaTela caixas = tela_de_mentira();
+  // Principio da faixa: o cheio tem largura zero, e o FTXUI dá-lhe caixa vazia.
+  caixas.transporte.barra_cheia = tui::caixa_por_pintar();
+  CHECK(tui::alvo_do_ponto(caixas, 21, 30).peca == tui::Peca::Progresso);
+  CHECK(tui::alvo_do_ponto(caixas, 21, 30).fracao == doctest::Approx(0.0));
+  // Fim da faixa: agora é o vazio que se não pintou.
+  caixas = tela_de_mentira();
+  caixas.transporte.barra_vazia = tui::caixa_por_pintar();
+  CHECK(tui::alvo_do_ponto(caixas, 20, 30).peca == tui::Peca::Progresso);
+  CHECK(tui::alvo_do_ponto(caixas, 20, 30).fracao == doctest::Approx(1.0));
+  // As duas por pintar: barra alguma ha, e o ponto não acha cousa alguma.
+  caixas.transporte.barra_cheia = tui::caixa_por_pintar();
+  CHECK(tui::alvo_do_ponto(caixas, 20, 30).peca == tui::Peca::Nada);
+}
+
+TEST_CASE("sómente o botão esquerdo a descer governa alguma cousa") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  const tui::Alvo linha = tui::alvo_do_ponto(caixas, 30, 4);
+  const tui::EstadoDoRato estado{false, 21, 40, 200.0};
+  // O soltar chega SEMPRE, que o modo 1000 manda o `m` do SGR; sem esta guarda
+  // cada clique valeria por dous. A mexida não chega, que o 1003 se não liga.
+  for (const Mouse::Motion mexeu : {Mouse::Released, Mouse::Moved})
+    CHECK(tui::gesto_do_alvo(linha, Mouse::Left, mexeu, estado).gesto ==
+          tui::Gesto::Nada);
+  // O direito é da issue #96, e o do meio não é de issue alguma.
+  for (const Mouse::Button qual : {Mouse::Right, Mouse::Middle, Mouse::None})
+    CHECK(tui::gesto_do_alvo(linha, qual, Mouse::Pressed, estado).gesto ==
+          tui::Gesto::Nada);
+  CHECK(tui::gesto_do_alvo(linha, Mouse::Left, Mouse::Pressed, estado).gesto ==
+        tui::Gesto::Toca);
 }
