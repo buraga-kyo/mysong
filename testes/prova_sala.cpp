@@ -30,7 +30,13 @@ ftxui::Screen papel(ftxui::Element quadro, int largura, int altura) {
 
 std::string linha_de(const ftxui::Screen& ecran, int y) {
   std::string dita;
-  for (int x = 0; x < ecran.dimx(); ++x) dita += ecran.PixelAt(x, y).character;
+  // Cella INTACTA vale espaço, e não nada: o FTXUI deixa-lhe o glifo vazio, e
+  // sommar vazio faria o vão de duas collunhas somir da cadeia, com todo indice
+  // seguinte a apontar para a collunha errada. Medido, e não suposto.
+  for (int x = 0; x < ecran.dimx(); ++x) {
+    const std::string& glifo = ecran.PixelAt(x, y).character;
+    dita += glifo.empty() ? " " : glifo;
+  }
   return dita;
 }
 
