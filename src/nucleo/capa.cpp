@@ -73,8 +73,8 @@ bool ha_sextante_na_fonte() {
 
 std::vector<std::string> argumentos_do_chafa(
     const std::filesystem::path& imagem, std::size_t collunas,
-    std::size_t linhas) {
-  // As quatro bandeiras que importam, e todas por medição e não por leitura do
+    std::size_t linhas, bool com_sextante) {
+  // As bandeiras que importam, e todas por medição e não por leitura do
   // manual. Corri o chafa e li a sahida com `cat -v`:
   //
   //   `--polite=on`    inhibe o esconde-cursor `ESC[?25l` e o limpa-tela `ESC[2J`.
@@ -88,9 +88,23 @@ std::vector<std::string> argumentos_do_chafa(
   //
   // Nota: `--clear` NÃO toma argumento. Escrevi `--clear off` de inicio, e o
   // `off` virou nome de arquivo: «chafa: Failed to open 'off'».
+  //
+  // E as tres que NÃO entram, cada uma por medição (issue #94):
+  //   `--dither`       o proprio chafa diz «no effect with 24-bit color», e a
+  //                    Casa corre `--colors=full`. Conferi os quatro modos: dão
+  //                    o mesmo arquivo, byte a byte.
+  //   `--color-space`  serve á QUANTIZAÇÃO, e a 24 bits não ha quantização;
+  //                    `din99d` sahe egual a `rgb`, byte a byte.
+  //   `--stretch`      existe, ao contrario do que se suppunha, e é justamente
+  //                    por NÃO se passar que a proporção se guarda: medido,
+  //                    1280x720 em 40x21 sahe 40x12, e 200x200 sahe 40x20.
+  const std::string symbolos =
+      com_sextante ? "--symbols=block+half+quad+sextant"
+                   : "--symbols=block+half+quad";
   return {"chafa",
           "--format=symbols",
-          "--symbols=block+half",
+          symbolos,
+          "--work=9",
           "--size=" + std::to_string(collunas) + "x" + std::to_string(linhas),
           "--animate=off",
           "--relative=off",
@@ -183,7 +197,8 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
     if (imagem.empty()) imagem = extrahe_embutida(faixa);
     if (!imagem.empty()) {
       std::string colhido;
-      if (corre(argumentos_do_chafa(imagem, collunas, linhas), &colhido) == 0 &&
+      if (corre(argumentos_do_chafa(imagem, collunas, linhas,
+                                    ha_sextante_na_fonte()), &colhido) == 0 &&
           !colhido.empty()) {
         std::size_t principio = 0;
         while (principio < colhido.size()) {

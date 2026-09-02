@@ -81,11 +81,17 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
 // por render.
 bool ha_sextante_na_fonte();
 
-// argumentos_do_chafa — o que se corre. Meio-bloco fixado, e a geometria em
-// collunhas por linhas.
+// argumentos_do_chafa — o que se corre. Os symbolos, a geometria em collunhas
+// por linhas, e o trabalho no maximo.
+//
+// O `com_sextante` entra por PARAMETRO, e sem valor padrão: com padrão, esta
+// funcção deixaria de ser pura (o padrão avaliar-se-ia no logar da chamada e
+// iria ao fontconfig), e é a pureza que deixa a bateria aferir as DUAS listas
+// sem fonte, sem chafa e sem imagem alguma. Quem sabe a resposta é quem chama.
 std::vector<std::string> argumentos_do_chafa(const std::filesystem::path& imagem,
                                              std::size_t collunas,
-                                             std::size_t linhas);
+                                             std::size_t linhas,
+                                             bool com_sextante);
 
 // Uma CORRIDA de célullas da mesma tinta: o texto, e as duas côres. Menos um em
 // qualquer componente quer dizer «sem côr», que é o que o `ESC[39m` e o `ESC[49m` do
