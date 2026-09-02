@@ -70,6 +70,7 @@
 #include "tui/navegador.hpp"
 #include "tui/menu.hpp"
 #include "tui/prompt.hpp"
+#include "tui/sala.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
@@ -656,30 +657,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A tabella toma o que sobra em altura: as linhas de guarnição (marca, topo,
-    // espectro de oito, transporte, rodapé) mais a orla. O TOPO conta-se pelo
-    // modo, que aberto o prompt são duas linhas e não uma. A linha nova sahe
-    // d'aqui, e não de uma sobra que ninguem declarou: sobra consumida ás
-    // escondidas é o genero de acoplamento que se paga na tarefa seguinte.
+    // A guarnição em altura: marca, topo, transporte, rodapé, a orla, e a fita
+    // do espectro no pé, que a issue #92 ha de mudar de logar. O TOPO conta-se
+    // pelo modo, que aberto o prompt são duas linhas e não uma.
     const std::size_t guarnicao = 15 + tui::linhas_do_topo(digita);
-    const std::size_t alt_tab = lin > static_cast<int>(guarnicao)
-                                    ? static_cast<std::size_t>(lin) - guarnicao
-                                    : 1;
-    primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
-                                             navegador.vista().size(), alt_tab,
-                                             primeira_linha);
-    // O painel NOW PLAYING toma um quinto da largura, e nunca mais de vinte
-    // collunhas nem menos de oito: a arte quer quadrado, e o quadrado n'um terminal
-    // pede duas linhas por collunha, donde a altura sahe da largura e não ao
-    // contrario. Terminal apertado não mostra capa alguma, que roubar da tabella
-    // para mostrar arte seria trocar o que serve pelo que enfeita.
-    const std::size_t larg_capa =
-        larg >= 60 ? std::min<std::size_t>(20, larg / 5) : 0;
-    const std::size_t alt_capa =
-        larg_capa == 0 ? 0 : std::min<std::size_t>(alt_tab, larg_capa / 2 + 1);
-    const std::size_t reservado_capa = larg_capa == 0 ? 0 : larg_capa + 1;
-    const std::size_t larg_tab =
-        larg > 11 + reservado_capa ? larg - 11 - reservado_capa : 1;
+    const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
+                                      ? static_cast<std::size_t>(lin) - guarnicao
+                                      : 1;
+    // As onze collunhas da barra e do seu vão. Constante D'ESTE pintor, e não do
+    // tractado da sala: quem sabe a largura da barra é quem a pinta, e essa
+    // lavra é da tarefa irmã da bibliotheca; alargando-a, muda-se esta linha.
+    constexpr std::size_t kBarraCollunhas = 11;
+    const tui::Geometria geo =
+        tui::geometria_da_sala(larg, alt_corpo, kBarraCollunhas);
+    primeira_linha =
+        tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
+                                alt_corpo, primeira_linha);
 
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
@@ -746,12 +739,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                    tui::elemento_da_barra(navegador, menu.aberto(),
                                           menu.degrau()),
                    ftxui::text("  "),
-                   tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
-                                            larg_tab),
+                   tui::elemento_da_tabella(navegador, primeira_linha,
+                                            alt_corpo, geo.meio),
                    ftxui::text(" "),
                    tui::elemento_da_capa(
-                       galeria.capa(retracto.titulo, larg_capa, alt_capa),
-                       larg_capa, alt_capa),
+                       galeria.capa(retracto.titulo, geo.painel, geo.capa),
+                       geo.painel, geo.capa),
                }),
                ftxui::text(""),
                mostra_letra.load()
