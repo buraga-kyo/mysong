@@ -345,5 +345,198 @@ TEST_CASE("octetos que não são imagem recusam-se sem tocar o arquivo") {
   CHECK(nu::arte_embutida(faixa).empty());
 }
 
+// OS ARGUMENTOS DO CHAFA (#94), aferidos INTEIROS. Prova pura: sem chafa, sem
+// fonte e sem imagem, donde ella corre egual na machina crua.
+TEST_CASE("os argumentos do chafa pedem os symbolos ricos, e nada de letras") {
+  const std::vector<std::string> sem =
+      nu::argumentos_do_chafa("/a/cover.jpg", 40, 20, false);
+  CHECK(sem == std::vector<std::string>{
+                   "chafa", "--format=symbols", "--symbols=block+half+quad",
+                   "--work=9", "--size=40x20", "--animate=off",
+                   "--relative=off", "--polite=on", "--colors=full", "--",
+                   "/a/cover.jpg"});
+  // Com sextante muda UMA cousa, e sómente ella: a lista dos symbolos.
+  const std::vector<std::string> com =
+      nu::argumentos_do_chafa("/a/cover.jpg", 40, 20, true);
+  REQUIRE(com.size() == sem.size());
+  CHECK(com[2] == "--symbols=block+half+quad+sextant");
+  for (std::size_t i = 0; i < sem.size(); ++i)
+    if (i != 2) CHECK(com[i] == sem[i]);
+
+  // O CRIVO. As classes que metem letra e cifra dentro da arte ficam de fóra,
+  // que é a queixa da issue: medido, `--symbols=all` sahe com 7, ©, º, Ġ, ǥ e
+  // braille dentro da capa. E as duas bandeiras nullas a 24 bits tambem, que
+  // bandeira que não faz nada é mentira na linha de commando.
+  for (const std::vector<std::string>& lista : {sem, com})
+    for (const std::string& argumento : lista)
+      for (const char* proscripto :
+           {"all", "ascii", "alpha", "alnum", "digit", "extra", "technical",
+            "border", "--dither", "--color-space", "--stretch"})
+        CHECK(argumento.find(proscripto) == std::string::npos);
+}
+
+// A PROPORÇÃO (#94). Que o chafa a guarde é promessa d'elle; aqui prende-se que
+// a Casa não lhe passa nada que a quebre. Salta sem ffmpeg, como os visinhos.
+TEST_CASE("a arte enche a largura e guarda a proporção, sem esticar") {
+  // Conta CARACTERES, e não octetos: o quadrante come tres octetos e o
+  // sextante quatro, e por octeto a capa diria cento e vinte onde tem quarenta.
+  const auto collunas = [](const std::vector<nu::Corrida>& linha) {
+    std::size_t conta = 0;
+    for (const nu::Corrida& corrida : linha)
+      for (const char letra : corrida.texto)
+        if ((static_cast<unsigned char>(letra) & 0xC0) != 0x80) ++conta;
+    return conta;
+  };
+  const Cova cova;
+  const std::filesystem::path larga = cova.raiz() / "16-9.png";
+  const std::filesystem::path quadrada = cova.raiz() / "1-1.png";
+  const auto pinta = [](const std::string& medida,
+                        const std::filesystem::path& onde) {
+    return std::system(("ffmpeg -y -f lavfi -i color=c=purple:s=" + medida +
+                        " -frames:v 1 '" + onde.string() + "' >/dev/null 2>&1")
+                           .c_str()) == 0 &&
+           std::filesystem::exists(onde);
+  };
+  if (!pinta("160x90", larga) || !pinta("64x64", quadrada)) {
+    WARN("sem ffmpeg: o caso da proporção não corre");
+    return;
+  }
+  // Pedidas quarenta por vinte: a 16:9 sahe 40 por DOZE (a largura enche, a
+  // altura sobra) e a quadrada 40 por vinte. Esticadas, ambas dariam vinte
+  // linhas; cortada, a larga daria menos que quarenta collunhas.
+  const nu::CapaPintada dezaseis = nu::pinta_imagem(larga, 40, 20, false);
+  REQUIRE(dezaseis.achada);
+  CHECK(dezaseis.linhas.size() == 12u);
+  CHECK(collunas(dezaseis.linhas.front()) == 40u);
+  const nu::CapaPintada quadro = nu::pinta_imagem(quadrada, 40, 20, false);
+  REQUIRE(quadro.achada);
+  CHECK(quadro.linhas.size() == 20u);
+  CHECK(collunas(quadro.linhas.front()) == 40u);
+  // O painel apertado e o painel largo, que é o que a irmã #92 ha de dar.
+  CHECK(nu::pinta_imagem(larga, 8, 5, false).linhas.size() == 3u);
+  CHECK(nu::pinta_imagem(larga, 60, 31, false).linhas.size() == 17u);
+  // E o que não dá capa alguma, sem lançar: tamanho zero, caminho vazio, e
+  // arquivo que existe e imagem não é.
+  CHECK_FALSE(nu::pinta_imagem(larga, 0, 20, false).achada);
+  CHECK_FALSE(nu::pinta_imagem(larga, 40, 0, false).achada);
+  CHECK_FALSE(nu::pinta_imagem({}, 40, 20, false).achada);
+  cova.poe("nao-e-imagem.png");
+  CHECK_FALSE(nu::pinta_imagem(cova.raiz() / "nao-e-imagem.png", 40, 20, false)
+                  .achada);
+}
+
+// O SGR COM GLIFO LARGO (#94). Os symbolos ricos trazem caracteres de tres e de
+// quatro octetos, e o leitor acumula octeto a octeto: prende-se aqui que nenhum
+// se parte, e sobretudo o de quatro NO FIM da linha, sem repouso a seguir, que
+// é onde um leitor mal feito comeria o ultimo octeto.
+TEST_CASE("o SGR aceita glifo de tres e de quatro octetos sem partir corrida") {
+  // ▚ (U+259A, tres octetos) e 🬀 (U+1FB00, quatro), com côr a separá-los.
+  const std::vector<nu::Corrida> larga = nu::analysa_sgr(
+      "\x1b[38;2;9;8;7;48;2;1;2;3m▚\x1b[38;2;70;80;90m\U0001FB00");
+  REQUIRE(larga.size() == 2u);
+  CHECK(larga[0].texto == "▚");
+  CHECK(larga[0].texto.size() == 3u);
+  CHECK(larga[0].r_frente == 9);
+  CHECK(larga[0].b_fundo == 3);
+  CHECK(larga[1].texto == "\U0001FB00");
+  CHECK(larga[1].texto.size() == 4u);
+  CHECK(larga[1].g_frente == 80);
+
+  // Dous sextantes na MESMA corrida sahem juntos, e não partidos ao meio.
+  const std::vector<nu::Corrida> juntos =
+      nu::analysa_sgr("\x1b[38;2;1;1;1m\U0001FB00\U0001FB2D\x1b[0m");
+  REQUIRE(juntos.size() == 1u);
+  CHECK(juntos[0].texto == "\U0001FB00\U0001FB2D");
+}
+
+// O VIDEO INVERTIDO (#94), contra a linha que o chafa emitte de FACTO sobre
+// imagem chapada. Copiei-a da sahida com `cat -v` e escrevi-a aqui á mão.
+// NOTA DO NOME: o titulo do caso não traz colchete, e é de proposito. O
+// doctest_discover_tests do CMake gera a lista dos casos entre `[==[ ]==]`, e
+// um `[` no meio do nome parte a lista: o ctest recusa o projecto inteiro com
+// «add_test called with incorrect number of arguments». Medi-o aqui.
+TEST_CASE("o video invertido do chafa troca tinta e fundo da corrida") {
+  const std::vector<nu::Corrida> chapada = nu::analysa_sgr(
+      "\x1b[0m\x1b[7m\x1b[38;2;59;12;106m \x1b[0m"
+      "\x1b[38;2;0;0;0;48;2;59;12;106m ");
+  REQUIRE(chapada.size() == 2u);
+  // A primeira vem invertida: a côr que veio por TINTA vale por FUNDO, que é o
+  // que o terminal pinta. Sem a troca, a célulla sahia com o fundo do terminal.
+  CHECK(chapada[0].texto == " ");
+  CHECK(chapada[0].r_fundo == 59);
+  CHECK(chapada[0].g_fundo == 12);
+  CHECK(chapada[0].b_fundo == 106);
+  CHECK(chapada[0].r_frente == -1);
+  // A segunda é a mesma côr dita sem inversão, e o `ESC[0m` desfez a marca.
+  CHECK(chapada[1].r_fundo == 59);
+  CHECK(chapada[1].r_frente == 0);
+}
+
+// DUAS GALERIAS de escolhas differentes no mesmo processo (#94). A decisão é do
+// OBJECTO, e não do render: é por isso que a chave do cache não precisa de
+// conhecer o sextante. Se um dia ella passar a ser do render, este caso morre.
+TEST_CASE("galerias de escolha differente não misturam render algum") {
+  const Cova cova;
+  const std::filesystem::path imagem = cova.raiz() / "cover.png";
+  const std::string commando =
+      "ffmpeg -y -f lavfi -i color=c=olive:s=64x64 -frames:v 1 '" +
+      imagem.string() + "' >/dev/null 2>&1";
+  if (std::system(commando.c_str()) != 0 || !std::filesystem::exists(imagem)) {
+    WARN("sem ffmpeg: o caso das duas galerias não corre");
+    return;
+  }
+  const std::filesystem::path faixa = cova.raiz() / "01 - Um.mp3";
+  nu::Galeria sem(false), com(true);
+  REQUIRE(sem.capa(faixa, 20, 11).achada);
+  REQUIRE(com.capa(faixa, 20, 11).achada);
+  // Cada uma converteu a SUA vez: o mapa é do objecto, e não da Casa.
+  CHECK(sem.quantos_renders() == 1u);
+  CHECK(com.quantos_renders() == 1u);
+  // E pedir outra vez a cada uma não converte de novo, que o cache é d'ella.
+  sem.capa(faixa, 20, 11);
+  com.capa(faixa, 20, 11);
+  CHECK(sem.quantos_renders() == 1u);
+  CHECK(com.quantos_renders() == 1u);
+}
+
+// O VAZAMENTO da inversão (#94), que a revisão de machina nomeou. O `corrente` é
+// a côr que ATRAVESSA de uma corrida para a seguinte: trocando-o ao fechar, a
+// tinta de uma sahia por fundo da outra. O chafa 1.19 fecha toda célulla
+// invertida com `ESC[0m` e por isso a tela nunca o mostrou; a funcção, porem, é
+// publica e pura, e ha de responder certo a quem a chame com outra cousa.
+TEST_CASE("a inversão não vaza a côr de uma corrida para a seguinte") {
+  const std::vector<nu::Corrida> duas =
+      nu::analysa_sgr("\x1b[7m\x1b[38;2;1;2;3mA\x1b[38;2;9;9;9mB");
+  REQUIRE(duas.size() == 2u);
+  CHECK(duas[0].texto == "A");
+  CHECK(duas[0].r_fundo == 1);
+  CHECK(duas[0].g_fundo == 2);
+  CHECK(duas[0].b_fundo == 3);
+  CHECK(duas[0].r_frente == -1);
+  // O B fecha com a SUA côr, e com nada da primeira. Continua invertido, e é o
+  // certo: ninguem disse `ESC[27m` nem `ESC[0m`, e a norma manda a marca durar
+  // até que se a desfaça. O defeito era o (1,2,3) do A apparecer aqui.
+  CHECK(duas[1].texto == "B");
+  CHECK(duas[1].r_fundo == 9);
+  CHECK(duas[1].g_fundo == 9);
+  CHECK(duas[1].b_fundo == 9);
+  CHECK(duas[1].r_frente == -1);
+}
+
+TEST_CASE("o fim do invertido desfaz a marca, e sómente ella") {
+  const std::vector<nu::Corrida> duas =
+      nu::analysa_sgr("\x1b[7m\x1b[38;2;1;2;3mA\x1b[27mB");
+  REQUIRE(duas.size() == 2u);
+  CHECK(duas[0].r_fundo == 1);
+  CHECK(duas[0].r_frente == -1);
+  // Desfeita a marca, a MESMA côr volta ao seu logar: das côres o 27 nada diz,
+  // e por isso a tinta que estava posta continua posta, e agora por tinta.
+  CHECK(duas[1].texto == "B");
+  CHECK(duas[1].r_frente == 1);
+  CHECK(duas[1].g_frente == 2);
+  CHECK(duas[1].b_frente == 3);
+  CHECK(duas[1].r_fundo == -1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -12,6 +12,7 @@
 #include "nucleo/capa.hpp"
 
 #include "nucleo/aquisicao.hpp"  // corre(): o fork e o exec sem shell
+#include "nucleo/sonda.hpp"      // familia_com_glypho(): a prova do glypho
 
 #include <taglib/attachedpictureframe.h>
 #include <taglib/id3v2tag.h>
@@ -21,6 +22,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <cctype>
+#include <utility>
 
 namespace mysong::nucleo {
 
@@ -57,10 +59,32 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
          "x" + std::to_string(linhas);
 }
 
+// O SEXTANTE, e a classe de fonte que o desenha. Medido n'esta machina:
+// `fc-list ':charset=1fb00'` acha sómente a Noto Sans Symbols2, que Nerd Font
+// não é; a JetBrainsMono NF tem os quadrantes (U+2596) e não tem os sextantes.
+// Logo aqui sahem quadrantes, e o sextante accende-se sozinho na machina cuja
+// fonte o tenha, sem que se lhe mexa n'uma linha.
+bool ha_sextante_na_fonte() {
+  // O `static` local inicializa-se UMA vez, e desde o C++11 a norma garante-o
+  // contra fios (o «magic static»); esta Casa compila em C++17. Sem elle, o
+  // pintor pediria ao fontconfig a taboa das fontes vinte vezes por segundo.
+  static const bool desenha = familia_com_glypho(CLASSE_DA_FONTE, 0x1FB00);
+  return desenha;
+}
+
+bool sextante_de(Sextantes ajuste) {
+  switch (ajuste) {
+    case Sextantes::Sim: return true;
+    case Sextantes::Nao: return false;
+    case Sextantes::Auto: break;
+  }
+  return ha_sextante_na_fonte();
+}
+
 std::vector<std::string> argumentos_do_chafa(
     const std::filesystem::path& imagem, std::size_t collunas,
-    std::size_t linhas) {
-  // As quatro bandeiras que importam, e todas por medição e não por leitura do
+    std::size_t linhas, bool com_sextante) {
+  // As bandeiras que importam, e todas por medição e não por leitura do
   // manual. Corri o chafa e li a sahida com `cat -v`:
   //
   //   `--polite=on`    inhibe o esconde-cursor `ESC[?25l` e o limpa-tela `ESC[2J`.
@@ -74,9 +98,23 @@ std::vector<std::string> argumentos_do_chafa(
   //
   // Nota: `--clear` NÃO toma argumento. Escrevi `--clear off` de inicio, e o
   // `off` virou nome de arquivo: «chafa: Failed to open 'off'».
+  //
+  // E as tres que NÃO entram, cada uma por medição (issue #94):
+  //   `--dither`       o proprio chafa diz «no effect with 24-bit color», e a
+  //                    Casa corre `--colors=full`. Conferi os quatro modos: dão
+  //                    o mesmo arquivo, byte a byte.
+  //   `--color-space`  serve á QUANTIZAÇÃO, e a 24 bits não ha quantização;
+  //                    `din99d` sahe egual a `rgb`, byte a byte.
+  //   `--stretch`      existe, ao contrario do que se suppunha, e é justamente
+  //                    por NÃO se passar que a proporção se guarda: medido,
+  //                    1280x720 em 40x21 sahe 40x12, e 200x200 sahe 40x20.
+  const std::string symbolos =
+      com_sextante ? "--symbols=block+half+quad+sextant"
+                   : "--symbols=block+half+quad";
   return {"chafa",
           "--format=symbols",
-          "--symbols=block+half",
+          symbolos,
+          "--work=9",
           "--size=" + std::to_string(collunas) + "x" + std::to_string(linhas),
           "--animate=off",
           "--relative=off",
@@ -155,6 +193,27 @@ std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
 
 }  // namespace
 
+CapaPintada pinta_imagem(const std::filesystem::path& imagem,
+                         std::size_t collunas, std::size_t linhas,
+                         bool com_sextante) {
+  CapaPintada pintada;
+  if (imagem.empty() || collunas == 0 || linhas == 0) return pintada;
+  std::string colhido;
+  if (corre(argumentos_do_chafa(imagem, collunas, linhas, com_sextante),
+            &colhido) != 0 || colhido.empty()) return pintada;
+  std::size_t principio = 0;
+  while (principio < colhido.size()) {
+    const std::size_t fim = colhido.find('\n', principio);
+    const std::size_t ate = fim == std::string::npos ? colhido.size() : fim;
+    pintada.linhas.push_back(analysa_sgr(
+        std::string_view(colhido).substr(principio, ate - principio)));
+    if (fim == std::string::npos) break;
+    principio = fim + 1;
+  }
+  pintada.achada = !pintada.linhas.empty();
+  return pintada;
+}
+
 const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
                                  std::size_t collunas, std::size_t linhas) {
   const std::string chave = chave_do_cache(faixa, collunas, linhas);
@@ -167,24 +226,8 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
     // reescrever a etiqueta, e por isso é a que elle manda.
     std::filesystem::path imagem = capa_ao_lado(faixa);
     if (imagem.empty()) imagem = extrahe_embutida(faixa);
-    if (!imagem.empty()) {
-      std::string colhido;
-      if (corre(argumentos_do_chafa(imagem, collunas, linhas), &colhido) == 0 &&
-          !colhido.empty()) {
-        std::size_t principio = 0;
-        while (principio < colhido.size()) {
-          const std::size_t fim = colhido.find('\n', principio);
-          const std::size_t ate = fim == std::string::npos ? colhido.size() : fim;
-          pintada.linhas.push_back(
-              analysa_sgr(std::string_view(colhido).substr(principio,
-                                                           ate - principio)));
-          if (fim == std::string::npos) break;
-          principio = fim + 1;
-        }
-        pintada.achada = !pintada.linhas.empty();
-        ++renders_;
-      }
-    }
+    pintada = pinta_imagem(imagem, collunas, linhas, com_sextante_);
+    if (pintada.achada) ++renders_;
   }
   // A AUSENCIA guarda-se tambem: sem isto, album sem capa faria a Casa procurar o
   // arquivo no disco vinte vezes por segundo para achar sempre o mesmo nada.
@@ -198,7 +241,8 @@ namespace {
 // aplica_sgr — lê UM escape do chafa e assenta a côr na corrida que vem. Sómente os
 // codigos que o chafa emitte: 38;2;R;G;B, 48;2;R;G;B, 39, 49, 0 e 7. Codigo que não se
 // conheça ignora-se, e não se lança: o chafa é ferramenta alheia e pode mudar.
-void aplica_sgr(std::string_view escape, Corrida* corrida) {
+void aplica_sgr(std::string_view escape, Corrida* corrida,
+                bool* invertida) {
   // O corpo entre `ESC[` e `m`, partido por ponto e virgula.
   const std::size_t abre = escape.find('[');
   if (abre == std::string_view::npos) return;
@@ -219,6 +263,19 @@ void aplica_sgr(std::string_view escape, Corrida* corrida) {
   for (std::size_t i = 0; i < cifras.size(); ++i) {
     if (cifras[i] == 0) {
       *corrida = Corrida{corrida->texto, -1, -1, -1, -1, -1, -1};
+      *invertida = false;
+    } else if (cifras[i] == 7) {
+      // O VIDEO INVERTIDO, e não se ignora mais. O chafa emitte-o em célulla de
+      // côr chapada: diz «espaço invertido» com a TINTA posta, em vez de dizer
+      // «fundo cheio». Marca-se aqui e troca-se quando a corrida FECHA, que a
+      // ordem d'elle é `ESC[7m` ANTES da côr: trocando já, trocar-se-ia nada.
+      *invertida = true;
+    } else if (cifras[i] == 27) {
+      // O FIM do invertido. Desfaz a MARCA, e sómente ella: as côres ficam onde
+      // estavam, que o 27 nada diz d'ellas. O chafa 1.19 não o emitte, e é por
+      // isso que elle cahia no ramo do desconhecido; tratado, a inversão deixa
+      // de depender de o chafa fechar sempre com `ESC[0m`.
+      *invertida = false;
     } else if (cifras[i] == 39) {
       corrida->r_frente = corrida->g_frente = corrida->b_frente = -1;
     } else if (cifras[i] == 49) {
@@ -235,11 +292,30 @@ void aplica_sgr(std::string_view escape, Corrida* corrida) {
   }
 }
 
+// assenta — fecha a corrida na lista. Invertida, a troca faz-se n'uma CÓPIA, e
+// jamais no `corrente`: aquelle é a côr que ATRAVESSA para a corrida seguinte, e
+// trocá-lo alli faria a tinta de uma vazar por fundo da outra. Entrada que o
+// expunha: `ESC[7m ESC[38;2;1;2;3m A ESC[38;2;9;9;9m B`, onde o B sahia com o
+// (1,2,3) do A no fundo. O chafa 1.19 fecha toda célulla invertida com `ESC[0m`
+// e por isso nada sahia errado hoje; mas o analysa_sgr é funcção PUBLICA e pura,
+// e o tractado d'este modulo promette tolerar o que o chafa venha a emittir.
+void assenta(std::vector<Corrida>* corridas, const Corrida& corrente,
+             bool invertida) {
+  Corrida fechada = corrente;
+  if (invertida) {
+    std::swap(fechada.r_frente, fechada.r_fundo);
+    std::swap(fechada.g_frente, fechada.g_fundo);
+    std::swap(fechada.b_frente, fechada.b_fundo);
+  }
+  corridas->push_back(std::move(fechada));
+}
+
 }  // namespace
 
 std::vector<Corrida> analysa_sgr(std::string_view linha) {
   std::vector<Corrida> corridas;
   Corrida corrente;
+  bool invertida = false;
   for (std::size_t i = 0; i < linha.size();) {
     if (linha[i] != 0x1b) {  // texto: junta-se, octeto a octeto, á corrida corrente
       // Octeto a octeto BASTA, e o multibyte não pede cuidado algum: acumulando-se
@@ -257,13 +333,13 @@ std::vector<Corrida> analysa_sgr(std::string_view linha) {
     while (fim < linha.size() && linha[fim] != 'm' && linha[fim] != 0x1b) ++fim;
     const std::string_view corpo = linha.substr(i, fim - i + 1);
     if (!corrente.texto.empty()) {
-      corridas.push_back(corrente);
+      assenta(&corridas, corrente, invertida);
       corrente.texto.clear();
     }
-    aplica_sgr(corpo, &corrente);
+    aplica_sgr(corpo, &corrente, &invertida);
     i = fim < linha.size() ? fim + 1 : linha.size();
   }
-  if (!corrente.texto.empty()) corridas.push_back(corrente);
+  if (!corrente.texto.empty()) assenta(&corridas, corrente, invertida);
   return corridas;
 }
 

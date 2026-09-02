@@ -33,7 +33,7 @@ namespace mysong::nucleo {
 const std::vector<Requisito>& requisitos() {
   static const std::vector<Requisito> taboa = {
       {"fonte", "fonte com glifos de seta (Nerd Font)", Gravidade::Impedimento,
-       Especie::FamiliaDeFonte, "nerd",
+       Especie::FamiliaDeFonte, CLASSE_DA_FONTE,
        "baixe uma Nerd Font de nerdfonts.com para ~/.local/share/fonts e rode "
        "fc-cache -fv"},
       {"libmpv", "libmpv (a machina de som)", Gravidade::Impedimento,
@@ -140,11 +140,20 @@ bool contem_insensivel(std::string_view palheiro, std::string_view agulha) {
 //
 // Fontconfig que não inicialize conta-se FALTA, e nunca presença: o silencio
 // d'elle é ignorancia nossa, e ignorancia não se resolve por optimismo.
-bool ha_familia_de_fonte(std::string_view agulha) {
+//
+// O ceremonial (abrir a configuração, armar o padrão, listar, e desfazer os
+// quatro punhos) mora AQUI e n'um logar só, e o que varia entra por `basta`:
+// pergunta nova sobre as fontes é predicado novo, e não copia d'este bloco.
+// Pára na primeira familia que responda verdadeiro.
+bool alguma_familia(std::string_view agulha,
+                    const std::function<bool(FcPattern*)>& basta) {
+  // Agulha vazia sahe ANTES de se abrir cousa alguma: o contem_insensivel já
+  // lhe responderia não, e passear pelas fontes todas para o ouvir é gasto.
+  if (agulha.empty()) return false;
   FcConfig* configuracao = FcInitLoadConfigAndFonts();
   if (configuracao == nullptr) return false;
   FcPattern* padrao = FcPatternCreate();
-  FcObjectSet* campos = FcObjectSetBuild(FC_FAMILY, nullptr);
+  FcObjectSet* campos = FcObjectSetBuild(FC_FAMILY, FC_CHARSET, nullptr);
   FcFontSet* achadas = (padrao != nullptr && campos != nullptr)
                            ? FcFontList(configuracao, padrao, campos)
                            : nullptr;
@@ -154,14 +163,20 @@ bool ha_familia_de_fonte(std::string_view agulha) {
     FcChar8* familia = nullptr;
     if (FcPatternGetString(achadas->fonts[posicao], FC_FAMILY, 0, &familia) ==
             FcResultMatch &&
-        familia != nullptr)
-      achou = contem_insensivel(reinterpret_cast<const char*>(familia), agulha);
+        familia != nullptr &&
+        contem_insensivel(reinterpret_cast<const char*>(familia), agulha))
+      achou = basta(achadas->fonts[posicao]);
   }
   if (achadas != nullptr) FcFontSetDestroy(achadas);
   if (campos != nullptr) FcObjectSetDestroy(campos);
   if (padrao != nullptr) FcPatternDestroy(padrao);
   FcConfigDestroy(configuracao);
   return achou;
+}
+
+// ha_familia_de_fonte — o nome basta, e nada mais se pergunta á fonte.
+bool ha_familia_de_fonte(std::string_view agulha) {
+  return alguma_familia(agulha, [](FcPattern*) { return true; });
 }
 
 // ha_bibliotheca — tenta CARREGAR a bibliotheca pelo seu soname, e logo a
@@ -251,6 +266,23 @@ bool nomeado_na_forcagem(std::string_view chave) {
     resto.remove_prefix(corte + 1);
   }
   return false;
+}
+
+// familia_com_glypho — a MESMA passagem pelas fontes installadas, com o
+// predicado a perguntar pelo charset. Pelo FcFontList, e NUNCA pelo
+// FcFontMatch: aquelle lista o que está installado; este CASA, e casando
+// devolve fonte de substituição quando a pedida não existe. Medi-o n'esta
+// machina: pedindo familia que não existe, o FcFontMatch devolveu a Noto Sans,
+// cujo charset diria «sim» a glypho que Nerd Font alguma tem. Prova de glypho
+// por fonte de substituição é prova falsa, e é do genero que ninguem ve.
+bool familia_com_glypho(std::string_view agulha, char32_t ponto) {
+  return alguma_familia(agulha, [ponto](FcPattern* fonte) {
+    FcCharSet* letras = nullptr;
+    return FcPatternGetCharSet(fonte, FC_CHARSET, 0, &letras) ==
+               FcResultMatch &&
+           letras != nullptr &&
+           FcCharSetHasChar(letras, static_cast<FcChar32>(ponto)) != FcFalse;
+  });
 }
 
 namespace {

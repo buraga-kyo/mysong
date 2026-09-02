@@ -25,6 +25,8 @@
 #include <string_view>
 #include <vector>
 
+#include "nucleo/ajustes.hpp"  // Sextantes: a alavanca do operador
+
 namespace mysong::nucleo {
 
 // Os nomes de arquivo de capa que se procuram ao lado do album, na ORDEM em que se
@@ -70,11 +72,40 @@ bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos);
 std::string chave_do_cache(const std::filesystem::path& faixa,
                            std::size_t collunas, std::size_t linhas);
 
-// argumentos_do_chafa — o que se corre. Meio-bloco fixado, e a geometria em
-// collunhas por linhas.
+// ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
+// (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
+// degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a
+// que a sonda já exige; sem glypho, o sextante sahiria quadrículo vazio, e ahi
+// o remedio seria peor que o mal.
+//
+// A resposta GUARDA-SE: o fontconfig lê a taboa das fontes do systema, e o
+// pintor corre vinte vezes por segundo. UMA consulta por processo, e não uma
+// por render.
+bool ha_sextante_na_fonte();
+
+// sextante_de — resolve a alavanca do operador n'um bool. `Auto` é a regra da
+// Casa, que pergunta á fonte; `Sim` e `Nao` são a vontade d'elle, e essa não se
+// discute: quem olha o terminal é elle, e a fonte de substituição pode desenhar
+// o sextante muito bem sem que o fontconfig o saiba dizer.
+//
+// Chama-se `_de` pelo precedente do fonte_de e do volume_de, e NÃO
+// `com_sextante`: aquelle é o nome do parametro que quatro funcções d'este
+// modulo carregam, e funcção homonyma do parametro fica sombreada dentro
+// d'ellas. Sem -Wshadow isso passa calado até ao dia em que alguem escrever o
+// nome esperando a funcção e obtiver o bool, ou o contrario.
+bool sextante_de(Sextantes ajuste);
+
+// argumentos_do_chafa — o que se corre. Os symbolos, a geometria em collunhas
+// por linhas, e o trabalho no maximo.
+//
+// O `com_sextante` entra por PARAMETRO, e sem valor padrão: com padrão, esta
+// funcção deixaria de ser pura (o padrão avaliar-se-ia no logar da chamada e
+// iria ao fontconfig), e é a pureza que deixa a bateria aferir as DUAS listas
+// sem fonte, sem chafa e sem imagem alguma. Quem sabe a resposta é quem chama.
 std::vector<std::string> argumentos_do_chafa(const std::filesystem::path& imagem,
                                              std::size_t collunas,
-                                             std::size_t linhas);
+                                             std::size_t linhas,
+                                             bool com_sextante);
 
 // Uma CORRIDA de célullas da mesma tinta: o texto, e as duas côres. Menos um em
 // qualquer componente quer dizer «sem côr», que é o que o `ESC[39m` e o `ESC[49m` do
@@ -100,6 +131,14 @@ struct CapaPintada {
 // isso aferivel contra linhas escriptas á mão sem chamar o chafa.
 std::vector<Corrida> analysa_sgr(std::string_view linha);
 
+// pinta_imagem — renderiza um ARQUIVO no tamanho pedido, e é o que a Galeria
+// faz depois de achar a imagem. Sahe d'ella (issue #94) para o fita_capa a
+// alcançar sem faixa, sem etiqueta e sem cache. Tamanho zero, chafa ausente e
+// imagem recusada devolvem `achada` falso; nada lança.
+CapaPintada pinta_imagem(const std::filesystem::path& imagem,
+                         std::size_t collunas, std::size_t linhas,
+                         bool com_sextante);
+
 // ── E AGORA O QUE TOCA O MUNDO.
 
 // A GALERIA: guarda os renders já feitos, para que converter aconteça uma vez por
@@ -107,6 +146,13 @@ std::vector<Corrida> analysa_sgr(std::string_view linha);
 // milesimos, e o pintor corre vinte vezes por segundo.
 class Galeria {
  public:
+  // DOUS constructores, e nunca um parametro com valor padrão: o padrão
+  // avaliar-se-ia no logar da chamada, e cada Galeria da bateria iria ao
+  // fontconfig. O vazio segue a regra da Casa; o de um argumento toma o que os
+  // ajustes do operador resolveram.
+  Galeria() : com_sextante_(ha_sextante_na_fonte()) {}
+  explicit Galeria(bool com_sextante) : com_sextante_(com_sextante) {}
+
   // Devolve a capa da faixa no tamanho pedido. Achando-a em cache, não corre nada.
   // Capa ausente devolve `achada` falso, e isso tambem se guarda: sem guardar a
   // AUSENCIA, um album sem capa faria a Casa procurar o arquivo a cada quadro.
@@ -116,6 +162,7 @@ class Galeria {
   std::size_t quantos_renders() const noexcept;  // serve á prova do cache
 
  private:
+  const bool com_sextante_;
   std::map<std::string, CapaPintada> guardadas_;
   std::size_t renders_ = 0;
 };

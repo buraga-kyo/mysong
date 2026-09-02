@@ -52,6 +52,12 @@ struct Ajuste {
 // caso normal e cala-se; presente que se não lê é queixa.
 enum class EstadoDoArquivo { Ausente, Lido, Illegivel };
 
+// A ALAVANCA DO SEXTANTE (issue #94). Tres valores, e não um booleano: `Auto`
+// é a regra da Casa, que pergunta á fonte se ella desenha o glypho U+1FB00, e
+// os outros dous são a vontade do operador por cima d'ella. Booleano não
+// saberia dizer «não escolhi», e o --sonda não poderia mostrar a differença.
+enum class Sextantes { Auto, Sim, Nao };
+
 // O VOLUME de fabrica. Applica-se SEMPRE ao abrir, donde é este o numero que
 // vale, e não o do tocador: uma verdade, e não duas a divergirem com o tempo.
 inline constexpr int VOLUME_DA_CASA = 100;
@@ -83,6 +89,7 @@ struct Ajustes {
   Ajuste<int> volume{VOLUME_DA_CASA, Origem::Padrao};
   Ajuste<Fonte> fonte_da_busca{Fonte::YouTube, Origem::Padrao};
   Ajuste<std::size_t> baixas_simultaneas{OBREIROS_DA_BAIXA, Origem::Padrao};
+  Ajuste<Sextantes> capa_sextantes{Sextantes::Auto, Origem::Padrao};
 
   std::filesystem::path arquivo;
   EstadoDoArquivo estado = EstadoDoArquivo::Ausente;
@@ -126,6 +133,12 @@ std::optional<Fonte> fonte_de(std::string_view texto);
 // operador digitaria, para que elle possa copiar do diagnostico para o arquivo.
 std::string_view chave_da_fonte(Fonte fonte);
 
+// sextantes_de e chave_dos_sextantes — a palavra do arquivo e o inverso d'ella,
+// visinhos pela razão do fonte_de: valor novo esquecido n'um dos dous accende
+// aviso do compilador nos dous switches, e não passa calado.
+std::optional<Sextantes> sextantes_de(std::string_view texto);
+std::string_view chave_dos_sextantes(Sextantes sextantes);
+
 // volume_de e baixas_de — os dous numeros. Vazio quando o texto não é inteiro
 // INTEIRAMENTE consumido, ou quando cae fóra do que a chave admitte: o volume
 // de zero a cem, e as baixas de uma até o tecto.
@@ -138,6 +151,7 @@ std::optional<std::size_t> baixas_de(std::string_view texto);
 struct Degraus {
   std::optional<std::string> acervo_do_argumento;
   std::optional<std::string> acervo_do_ambiente;
+  std::optional<std::string> sextantes_do_ambiente;
   std::vector<Par> arquivo;
 };
 

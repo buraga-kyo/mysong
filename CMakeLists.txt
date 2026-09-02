@@ -199,6 +199,14 @@ add_executable(fita_espectro exemplos/fita_espectro.cpp)
 target_compile_options(fita_espectro PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_espectro PRIVATE mysong_core)
 
+# A FITA da capa (issue #94): a mesma ideia, para a arte do album. Pinta uma
+# imagem com os argumentos que o painel usa, e o terceiro argumento força o
+# sextante, de sorte que o operador compare os dous renders no seu terminal.
+# ACRESCENTA linha, ao lado do irmão, e não altera linha alguma.
+add_executable(fita_capa exemplos/fita_capa.cpp)
+target_compile_options(fita_capa PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(fita_capa PRIVATE mysong_core)
+
 # ─── A BARRA DE TRANSPORTE (issue #7) ───────────────────────────────────────
 # As duas peças provaveis da tela: a composição, que não conhece Tocador, e a
 # taboada das teclas, que não toca no tocador. Entram no nucleo por

@@ -32,6 +32,13 @@
 
 namespace mysong::nucleo {
 
+// A CLASSE de fonte que esta obra exige, pela agulha que o nome d'ella ha de
+// trazer. Vive aqui, e não em duas cadeias soltas: a taboa dos requisitos
+// pergunta se ha familia assim, e a capa pergunta se ELLA desenha o sextante.
+// Fossem duas, o dia em que a Casa trocasse de fonte deixaria uma para traz, e
+// a sonda diria «presente» sobre uma familia e a capa sobre outra.
+inline constexpr std::string_view CLASSE_DA_FONTE = "nerd";
+
 // A GRAVIDADE da falta, que é o que decide o destino do programa. Duas, e
 // sómente duas: o Impedimento tranca a porta, o Aviso apenas a rannge.
 enum class Gravidade { Impedimento, Aviso };
@@ -99,6 +106,15 @@ bool nomeado_na_forcagem(std::string_view chave);
 // ler variavel de ambiente: MYSONG_SONDA_FORCA nomeia, por chave curta e
 // separadas por virgula, os requisitos que se hão de ter por ausentes.
 Inquerito inquerito_do_systema();
+
+// familia_com_glypho — diz se ALGUMA familia installada cujo nome traga a
+// agulha desenha o ponto de codigo pedido. Pergunta-se pela CLASSE de fonte
+// que a obra exige, e nunca por um nome chumbado: quem corre outra Nerd Font
+// que não a d'esta machina ha de obter a mesma resposta.
+//
+// Serve á capa, que precisa de saber se o sextante (U+1FB00) tem glypho antes
+// de o pedir ao chafa: sem elle, o sextante sahe quadrículo vazio.
+bool familia_com_glypho(std::string_view agulha, char32_t ponto);
 
 }  // namespace mysong::nucleo
 

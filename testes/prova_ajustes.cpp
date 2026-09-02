@@ -216,3 +216,54 @@ TEST_CASE("a cerquilha dentro do caminho corta, que o limite é declarado") {
   REQUIRE(pares.size() == 1);
   CHECK(pares[0].valor == "/mnt/disco");
 }
+
+// A ALAVANCA DO SEXTANTE (#94). As duas traducções e a escada inteira, sem
+// tocar em disco nem em ambiente, como o resto d'esta bateria.
+TEST_CASE("a chave capa_sextantes lê-se, e a palavra torta cae no degrau") {
+  CHECK(nu::sextantes_de("auto") == nu::Sextantes::Auto);
+  CHECK(nu::sextantes_de("SIM") == nu::Sextantes::Sim);
+  CHECK(nu::sextantes_de("nao") == nu::Sextantes::Nao);
+  CHECK_FALSE(nu::sextantes_de("talvez").has_value());
+  CHECK_FALSE(nu::sextantes_de("").has_value());
+  // O inverso, que é o que o --sonda escreve: o operador ha de poder copiar do
+  // diagnostico para o arquivo sem traduzir nada.
+  CHECK(nu::chave_dos_sextantes(nu::Sextantes::Auto) == "auto");
+  CHECK(nu::chave_dos_sextantes(nu::Sextantes::Sim) == "sim");
+  CHECK(nu::chave_dos_sextantes(nu::Sextantes::Nao) == "nao");
+
+  // Sem chave alguma, vale a regra da Casa.
+  const nu::Ajustes padrao = resolvido("volume = 70\n", {});
+  CHECK(padrao.capa_sextantes.valor == nu::Sextantes::Auto);
+  CHECK(padrao.capa_sextantes.origem == nu::Origem::Padrao);
+  // Do arquivo.
+  const nu::Ajustes lido = resolvido("capa_sextantes = sim\n", {});
+  CHECK(lido.capa_sextantes.valor == nu::Sextantes::Sim);
+  CHECK(lido.capa_sextantes.origem == nu::Origem::Arquivo);
+  CHECK(lido.queixas.empty());
+  // Palavra torta: queixa nomeada com a linha, e cae no degrau de baixo.
+  const nu::Ajustes torta = resolvido("capa_sextantes = talvez\n", {});
+  CHECK(torta.capa_sextantes.valor == nu::Sextantes::Auto);
+  CHECK(torta.capa_sextantes.origem == nu::Origem::Padrao);
+  REQUIRE(torta.queixas.size() == 1u);
+  CHECK(torta.queixas.front().find("capa_sextantes") != std::string::npos);
+}
+
+TEST_CASE("o ambiente do sextante ganha do arquivo, e o torto queixa-se") {
+  nu::Degraus degraus;
+  degraus.sextantes_do_ambiente = "nao";
+  const nu::Ajustes ganhou = resolvido("capa_sextantes = sim\n", degraus);
+  CHECK(ganhou.capa_sextantes.valor == nu::Sextantes::Nao);
+  CHECK(ganhou.capa_sextantes.origem == nu::Origem::Ambiente);
+  // E o diagnostico mostra a chave com o valor e a origem, sem escape algum.
+  const std::string texto = nu::texto_dos_ajustes(ganhou);
+  CHECK(texto.find("capa_sextantes") != std::string::npos);
+  CHECK(texto.find("nao") != std::string::npos);
+  // Variavel torta AFERE-SE, ao contrario do acervo: queixa com o nome d'ella,
+  // e o valor do arquivo fica de pé.
+  nu::Degraus tortos;
+  tortos.sextantes_do_ambiente = "talvez";
+  const nu::Ajustes caiu = resolvido("capa_sextantes = sim\n", tortos);
+  CHECK(caiu.capa_sextantes.valor == nu::Sextantes::Sim);
+  REQUIRE(caiu.queixas.size() == 1u);
+  CHECK(caiu.queixas.front().find("MYSONG_CAPA_SEXTANTES") != std::string::npos);
+}

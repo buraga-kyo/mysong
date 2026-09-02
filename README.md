@@ -127,9 +127,10 @@ pobre as cores sahem erradas, e isso e limitacao declarada, nao defeito.
 Alacritty dentro de tmux funcciona, e e o arranjo em que a obra se confere.
 Mas fica registado o que NAO passa n'esse arranjo: protocolo de imagem algum.
 Nem o kitty graphics, nem o sixel: o tmux os engole. D'onde a capa do album
-nao se desenha por protocolo, e sim por MEIO-BLOCO (o caractere `▀` com
-tinta e fundo differentes, dous pixeis por celula), que e o que o chafa faz e
-o que atravessa o tmux inteiro.
+nao se desenha por protocolo, e sim por SYMBOLO DE BLOCO, que e o que o chafa
+faz e o que atravessa o tmux inteiro: blocos, meios-blocos e quadrantes, e o
+SEXTANTE quando a sua fonte o tiver. Cada symbolo leva duas cores, a tinta e o
+fundo, donde a celula vale por dous, quatro ou seis pixeis.
 
 ### De onde vem a capa que se desenha
 
@@ -145,6 +146,39 @@ mover o arquivo, e uma faixa so continua a ser um arquivo so.
 
 Faixa sem capa nenhuma nao e falha: o painel mostra um marcador de nota
 musical, para voce ver que a capa falta e nao que a tela quebrou.
+
+### Com que symbolos a capa se desenha
+
+O chafa recebe `--symbols=block+half+quad` e `--work=9`. As classes que metem
+LETRA e CIFRA dentro da arte (`all`, `ascii`, `alpha`, `digit`, `extra`,
+`technical`, `border`) ficam de fora de proposito: medido sobre uma capa do
+acervo, `--symbols=all` sahe com `7`, `©`, `º` e braille no meio da imagem.
+
+O SEXTANTE (`🬀`, U+1FB00) e o glypho de 2 por 3 sub-celullas, e e elle que dobra
+os degraus por celula. So entra quando o fontconfig disser que alguma Nerd Font
+installada o tem: sem glypho, elle sahiria quadriculo vazio, que e peor que o
+meio-bloco. Nesta machina a JetBrainsMono Nerd Font tem os quadrantes e NAO tem
+os sextantes, donde sahem quadrantes.
+
+A chave `capa_sextantes` do arquivo de ajustes governa isso: `auto` (o padrao)
+e a regra acima, `sim` pede-os sempre, e ahi quem os desenha e a fonte de
+substituicao do terminal, e `nao` nunca os pede. Antes de decidir, compare os
+dous no seu proprio terminal:
+
+```sh
+./build/fita_capa /caminho/da/capa.jpg 40x20              # a regra da Casa
+./build/fita_capa /caminho/da/capa.jpg 40x20 sextantes    # com sextante
+chafa --symbols=block+half --size=40x20 /caminho/da/capa.jpg   # o de antes
+```
+
+Dither e espaco de cor NAO se passam ao chafa, e isso e medido e nao esquecimento:
+o proprio chafa declara que o `--dither` nao tem effeito com cor de 24 bits, e o
+`--color-space` serve a quantizacao, que a 24 bits nao existe. As duas bandeiras
+dao arquivo byte a byte egual, e bandeira que nao faz nada e mentira.
+
+A arte enche a LARGURA do painel guardando a proporcao: a miniatura 16:9 do
+YouTube fica 16:9, a arte quadrada fica quadrada, e nada se estica nem se corta.
+O `--stretch` do chafa existe, e e por NAO se passar que a proporcao se guarda.
 
 ### Tudo o que vem do apt, n'uma linha
 
@@ -411,12 +445,17 @@ Chave repetida vale a ultima.
 | `volume` | inteiro de 0 a 100 | `100` |
 | `fonte_da_busca` | `youtube`, `youtube-music` ou `spotify` | `youtube` |
 | `baixas_simultaneas` | inteiro de 1 a 8 | `2` |
+| `capa_sextantes` | `auto`, `sim` ou `nao` | `auto` |
 
 A PRECEDENCIA, do mais forte para o mais fraco: o argumento da linha de
 commando, a variavel de ambiente, este arquivo, e o padrao da Casa. O
 `MYSONG_ACERVO` continua a valer, e continua a ganhar do arquivo; e vae CRU,
 sem se aferir, que quem o poz no perfil do shell manda, e o acervo nao ha de
 mudar debaixo dos pes de quem aponta para monte de rede que ainda nao montou.
+
+O `MYSONG_CAPA_SEXTANTES` ganha do arquivo do mesmo modo, e serve para virar o
+sextante por UMA corrida sem editar arquivo nenhum. Esse AFERE-SE: palavra que
+nao e `auto`, `sim` nem `nao` vira queixa e nao apaga o que o arquivo dizia.
 
 Chave desconhecida e valor que nao presta NAO derrubam cousa alguma: cae-se no
 degrau de baixo e a queixa apparece no `mysong --sonda`, que diz tambem de ONDE
