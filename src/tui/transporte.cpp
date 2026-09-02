@@ -31,6 +31,14 @@ namespace mysong::tui {
 inline constexpr std::string_view kBarraCheia = "\u2588";
 inline constexpr std::string_view kBarraVazia = "\u2591";
 
+// Os glifos dos botões. Escrevem-se por PONTO DE CODIGO pela razão da fita, e
+// ganham nome porque servem tambem de ENDEREÇO: é por elles que a caixa do rato
+// (issue #95) acha o seu segmento, e não pela ordem em que a fita os junta.
+inline constexpr std::string_view kPausar = "\u23f8";
+inline constexpr std::string_view kTocar = "\u25b6";
+inline constexpr std::string_view kAnterior = "\u23ee";
+inline constexpr std::string_view kProxima = "\u23ed";
+
 
 std::string mm_ss(double segundos) {
   // Tempo que não é tempo mostra-se como tal, e não como `00:00`: zero é uma
@@ -119,9 +127,10 @@ std::string rotulo_dos_modos(const Retracto& retracto) {
 Fita fita_dos_botoes(const Retracto& retracto, bool com_modos) {
   const bool tocando = retracto.estado == nucleo::Estado::Tocando;
   Fita fita(Sentido::Dextra);
-  fita.junta({" " + std::string(tocando ? "\u23f8" : "\u25b6") + " ",
+  fita.junta({" " + std::string(tocando ? kPausar : kTocar) + " ",
               tokens::v500, tokens::base});
-  fita.junta({" \u23ee \u23ed ", tokens::v700, tokens::text_bright});
+  fita.junta({" " + std::string(kAnterior) + " " + std::string(kProxima) + " ",
+              tokens::v700, tokens::text_bright});
   fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
               tokens::v900, tokens::text_bright});
   // Os dous modos, e SÓMENTE quando ha modo ligado: fita que dissesse «emb:
