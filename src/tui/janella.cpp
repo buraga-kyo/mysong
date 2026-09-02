@@ -819,6 +819,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       vigilia.ganha();
     // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
     // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
+    tui::Ordem ordem_do_rato;
     if (tecla.is_mouse()) {
       ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
       const ftxui::Mouse rato = copia.mouse();
@@ -860,12 +861,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           if (!menu.aberto()) menu.abre(navegador.secao());
           gesto.gesto == tui::Gesto::DegrauSobe ? menu.sobe() : menu.desce();
           return true;
-        case tui::Gesto::Anterior:
-        case tui::Gesto::Proxima:
+        // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
+        // sempre, que é quem sabe roteá-las ao video quando elle está de pé.
+        case tui::Gesto::Anterior: ordem_do_rato = {tui::Verbo::Anterior}; break;
+        case tui::Gesto::Proxima: ordem_do_rato = {tui::Verbo::Proxima}; break;
         case tui::Gesto::Busca:
+          ordem_do_rato = {tui::Verbo::Buscar, gesto.alvo};
+          break;
         case tui::Gesto::PausaOuRetoma:
-          return true;  // os que viram ordem do tocador: no commit seguinte
+          // O ⏯ e a capa perguntam á MESMA taboada do espaço: duas taboadas
+          // dariam duas verdades sobre o que alternar quer dizer.
+          ordem_do_rato =
+              tui::ordem_da_tecla(ftxui::Event::Character(' '), agora);
+          break;
       }
+      // Parado não ha o que pausar, e ahi o gesto morre aqui, consumido.
+      if (ordem_do_rato.verbo == tui::Verbo::Nada) return true;
     }
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
@@ -976,8 +987,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;
     }
 
+    // A ordem vem do RATO quando o evento é do rato, e da tecla quando é da
+    // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
+    // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
     const tui::Ordem ordem =
-        tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
+        tecla.is_mouse()
+            ? ordem_do_rato
+            : tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
       case tui::Verbo::Nada: return false;  // tecla alheia segue
       case tui::Verbo::Desce: navegador.desce(); return true;
