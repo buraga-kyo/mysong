@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <string_view>
+#include <utility>
 
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
@@ -199,6 +200,19 @@ ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
            ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                        static_cast<int>(kCapaPequenaLinhas)),
        pinta(risca, tokens::line_dim)});
+}
+
+ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
+                                  ftxui::Element baixo, std::size_t largura) {
+  if (largura == 0) return ftxui::text("");
+  // O fundo `panel` veste a collunna inteira, e é elle que a aparta do meio:
+  // orla custaria duas collunhas, que n'este painel sahem da arte.
+  const tokens::Triade fundo = tokens::rgb(tokens::panel);
+  return ftxui::vbox({pinta("TOCANDO AGORA", tokens::text_heading) | ftxui::bold,
+                      std::move(arte), elemento_da_ficha(ficha, largura),
+                      std::move(baixo)}) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
 }  // namespace mysong::tui

@@ -112,6 +112,13 @@ ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
                                      const nucleo::CapaPintada& capa,
                                      std::size_t largura);
 
+// elemento_do_painel — o TOCANDO AGORA: o titulo, a arte, a ficha logo abaixo
+// d'ella SEM VÃO, e o que o chamador quizer por baixo (o espectro, ou a letra
+// quando o `l` a pede). O de baixo entra já composto, para que esta peça não
+// conheça nem um nem outra e a bateria lh'os arme á mão.
+ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
+                                  ftxui::Element baixo, std::size_t largura);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
