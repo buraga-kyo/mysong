@@ -70,6 +70,17 @@ bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos);
 std::string chave_do_cache(const std::filesystem::path& faixa,
                            std::size_t collunas, std::size_t linhas);
 
+// ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
+// (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
+// degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a
+// que a sonda já exige; sem glypho, o sextante sahiria quadrículo vazio, e ahi
+// o remedio seria peor que o mal.
+//
+// A resposta GUARDA-SE: o fontconfig lê a taboa das fontes do systema, e o
+// pintor corre vinte vezes por segundo. UMA consulta por processo, e não uma
+// por render.
+bool ha_sextante_na_fonte();
+
 // argumentos_do_chafa — o que se corre. Meio-bloco fixado, e a geometria em
 // collunhas por linhas.
 std::vector<std::string> argumentos_do_chafa(const std::filesystem::path& imagem,

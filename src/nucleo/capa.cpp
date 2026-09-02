@@ -12,6 +12,7 @@
 #include "nucleo/capa.hpp"
 
 #include "nucleo/aquisicao.hpp"  // corre(): o fork e o exec sem shell
+#include "nucleo/sonda.hpp"      // familia_com_glypho(): a prova do glypho
 
 #include <taglib/attachedpictureframe.h>
 #include <taglib/id3v2tag.h>
@@ -55,6 +56,19 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
   // render novo e não o de antes esticado.
   return faixa.parent_path().string() + "\x1f" + std::to_string(collunas) +
          "x" + std::to_string(linhas);
+}
+
+// O SEXTANTE, e a classe de fonte que o desenha. Medido n'esta machina:
+// `fc-list ':charset=1fb00'` acha sómente a Noto Sans Symbols2, que Nerd Font
+// não é; a JetBrainsMono NF tem os quadrantes (U+2596) e não tem os sextantes.
+// Logo aqui sahem quadrantes, e o sextante accende-se sozinho na machina cuja
+// fonte o tenha, sem que se lhe mexa n'uma linha.
+bool ha_sextante_na_fonte() {
+  // O `static` local inicializa-se UMA vez, e desde o C++11 a norma garante-o
+  // contra fios (o «magic static»); esta Casa compila em C++17. Sem elle, o
+  // pintor pediria ao fontconfig a taboa das fontes vinte vezes por segundo.
+  static const bool desenha = familia_com_glypho("nerd", 0x1FB00);
+  return desenha;
 }
 
 std::vector<std::string> argumentos_do_chafa(
