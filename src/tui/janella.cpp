@@ -775,6 +775,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
            ftxui::border;
   });
 
+  // entra_na_seccao — o caminho do Enter na barra, n'um logar só. Sahe do ramo
+  // do menu porque o clique do rato (issue #95) ha de percorrer o MESMO caminho:
+  // duas copias d'estas quatro linhas de aviso divergiriam na primeira issue que
+  // acrescentasse degrau, e o dedo veria um recado e a tecla outro.
+  //
+  // Quem chama diz a SECÇÃO, e não o degrau: a taboada degrau↔secção é da barra,
+  // e este lambda não a conhece.
+  const auto entra_na_seccao = [&](tui::Secao alvo) {
+    if (navegador.vai_para(alvo)) {
+      menu.fecha();  // entrar é estar dentro: o foco volta á lista
+    } else if (alvo == tui::Secao::Albuns) {
+      aviso_da_rede = "entra por um artista primeiro";
+    } else if (alvo == tui::Secao::Faixas) {
+      aviso_da_rede = "entra por um album primeiro";
+    } else if (alvo == tui::Secao::Rede) {
+      aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+    } else {
+      aviso_da_rede = "catálogo nenhum; importa com I";
+    }
+  };
+
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
@@ -880,21 +901,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         case tui::GestoDaBarra::Desce: menu.desce(); return true;
         case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
         case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
-        case tui::GestoDaBarra::Entra: {
-          const tui::Secao alvo = menu.alvo();
-          if (navegador.vai_para(alvo)) {
-            menu.fecha();  // entrar é estar dentro: o foco volta á lista
-          } else if (alvo == tui::Secao::Albuns) {
-            aviso_da_rede = "entra por um artista primeiro";
-          } else if (alvo == tui::Secao::Faixas) {
-            aviso_da_rede = "entra por um album primeiro";
-          } else if (alvo == tui::Secao::Rede) {
-            aviso_da_rede = "a rede está vazia: busca primeiro (s)";
-          } else {
-            aviso_da_rede = "catálogo nenhum; importa com I";
-          }
+        case tui::GestoDaBarra::Entra:
+          entra_na_seccao(menu.alvo());
           return true;  // sem chão avisa-se, e o foco FICA na barra
-        }
         case tui::GestoDaBarra::Alheio:
           menu.fecha();
           break;  // e a tecla segue: faz o que sempre fez
