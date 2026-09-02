@@ -347,3 +347,33 @@ TEST_CASE("octetos que não são imagem recusam-se sem tocar o arquivo") {
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+// OS ARGUMENTOS DO CHAFA (#94), aferidos INTEIROS. Prova pura: sem chafa, sem
+// fonte e sem imagem, donde ella corre egual na machina crua.
+TEST_CASE("os argumentos do chafa pedem os symbolos ricos, e nada de letras") {
+  const std::vector<std::string> sem =
+      nu::argumentos_do_chafa("/a/cover.jpg", 40, 20, false);
+  CHECK(sem == std::vector<std::string>{
+                   "chafa", "--format=symbols", "--symbols=block+half+quad",
+                   "--work=9", "--size=40x20", "--animate=off",
+                   "--relative=off", "--polite=on", "--colors=full", "--",
+                   "/a/cover.jpg"});
+  // Com sextante muda UMA cousa, e sómente ella: a lista dos symbolos.
+  const std::vector<std::string> com =
+      nu::argumentos_do_chafa("/a/cover.jpg", 40, 20, true);
+  REQUIRE(com.size() == sem.size());
+  CHECK(com[2] == "--symbols=block+half+quad+sextant");
+  for (std::size_t i = 0; i < sem.size(); ++i)
+    if (i != 2) CHECK(com[i] == sem[i]);
+
+  // O CRIVO. As classes que metem letra e cifra dentro da arte ficam de fóra,
+  // que é a queixa da issue: medido, `--symbols=all` sahe com 7, ©, º, Ġ, ǥ e
+  // braille dentro da capa. E as duas bandeiras nullas a 24 bits tambem, que
+  // bandeira que não faz nada é mentira na linha de commando.
+  for (const std::vector<std::string>& lista : {sem, com})
+    for (const std::string& argumento : lista)
+      for (const char* proscripto :
+           {"all", "ascii", "alpha", "alnum", "digit", "extra", "technical",
+            "border", "--dither", "--color-space", "--stretch"})
+        CHECK(argumento.find(proscripto) == std::string::npos);
+}
