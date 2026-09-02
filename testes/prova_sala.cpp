@@ -102,6 +102,10 @@ TEST_CASE("o cabeçalho nomeia a colleção pela secção e pela trilha") {
   CHECK(tui::nome_da_colleccao(tui::Secao::NoRol, fundo, "") == "Geogaddi");
   CHECK(tui::nome_da_colleccao(tui::Secao::Lista, alto, "") == "SPOTIFY");
   CHECK(tui::nome_da_colleccao(tui::Secao::Lista, alto, "Verão") == "Verão");
+  // Album sem etiqueta: o degrau existe, mas o nome d'elle é vazio, e ahi vale
+  // o rotulo da secção. Medido n'um acervo de verdade, e não suposto.
+  CHECK(tui::nome_da_colleccao(tui::Secao::Faixas, {"Alan Walker", ""}, "") ==
+        "FAIXAS");
 }
 
 TEST_CASE("cada secção conta a sua especie") {

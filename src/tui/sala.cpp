@@ -103,8 +103,10 @@ std::string nome_da_colleccao(Secao secao,
                               const std::vector<std::string>& trilha,
                               const std::string& nome_do_catalogo) {
   // Dentro de alguma cousa, o nome é o do degrau em que se entrou: o artista em
-  // ÁLBUNS, o album em FAIXAS, a lista em NoRol. Fóra, o rotulo da secção.
-  const bool dentro = !trilha.empty();
+  // ÁLBUNS, o album em FAIXAS, a lista em NoRol. Fóra, o rotulo da secção. E
+  // degrau de nome VAZIO conta por fóra: o mp3 sem etiqueta de album entra
+  // n'um album que se chama nada, e o cabeçalho sahiria com o titulo em branco.
+  const bool dentro = !trilha.empty() && !trilha.back().empty();
   switch (secao) {
     case Secao::Artistas: return "ARTISTAS";
     case Secao::Albuns: return dentro ? trilha.back() : "ÁLBUNS";
