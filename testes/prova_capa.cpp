@@ -427,3 +427,46 @@ TEST_CASE("a arte enche a largura e guarda a proporção, sem esticar") {
   CHECK_FALSE(nu::pinta_imagem(cova.raiz() / "nao-e-imagem.png", 40, 20, false)
                   .achada);
 }
+
+// O SGR COM GLIFO LARGO (#94). Os symbolos ricos trazem caracteres de tres e de
+// quatro octetos, e o leitor acumula octeto a octeto: prende-se aqui que nenhum
+// se parte, e sobretudo o de quatro NO FIM da linha, sem repouso a seguir, que
+// é onde um leitor mal feito comeria o ultimo octeto.
+TEST_CASE("o SGR aceita glifo de tres e de quatro octetos sem partir corrida") {
+  // ▚ (U+259A, tres octetos) e 🬀 (U+1FB00, quatro), com côr a separá-los.
+  const std::vector<nu::Corrida> larga = nu::analysa_sgr(
+      "\x1b[38;2;9;8;7;48;2;1;2;3m▚\x1b[38;2;70;80;90m\U0001FB00");
+  REQUIRE(larga.size() == 2u);
+  CHECK(larga[0].texto == "▚");
+  CHECK(larga[0].texto.size() == 3u);
+  CHECK(larga[0].r_frente == 9);
+  CHECK(larga[0].b_fundo == 3);
+  CHECK(larga[1].texto == "\U0001FB00");
+  CHECK(larga[1].texto.size() == 4u);
+  CHECK(larga[1].g_frente == 80);
+
+  // Dous sextantes na MESMA corrida sahem juntos, e não partidos ao meio.
+  const std::vector<nu::Corrida> juntos =
+      nu::analysa_sgr("\x1b[38;2;1;1;1m\U0001FB00\U0001FB2D\x1b[0m");
+  REQUIRE(juntos.size() == 1u);
+  CHECK(juntos[0].texto == "\U0001FB00\U0001FB2D");
+}
+
+// O VIDEO INVERTIDO (#94), contra a linha que o chafa emitte de FACTO sobre
+// imagem chapada. Copiei-a da sahida com `cat -v` e escrevi-a aqui á mão.
+TEST_CASE("o ESC[7m do chafa troca tinta e fundo da corrida") {
+  const std::vector<nu::Corrida> chapada = nu::analysa_sgr(
+      "\x1b[0m\x1b[7m\x1b[38;2;59;12;106m \x1b[0m"
+      "\x1b[38;2;0;0;0;48;2;59;12;106m ");
+  REQUIRE(chapada.size() == 2u);
+  // A primeira vem invertida: a côr que veio por TINTA vale por FUNDO, que é o
+  // que o terminal pinta. Sem a troca, a célulla sahia com o fundo do terminal.
+  CHECK(chapada[0].texto == " ");
+  CHECK(chapada[0].r_fundo == 59);
+  CHECK(chapada[0].g_fundo == 12);
+  CHECK(chapada[0].b_fundo == 106);
+  CHECK(chapada[0].r_frente == -1);
+  // A segunda é a mesma côr dita sem inversão, e o `ESC[0m` desfez a marca.
+  CHECK(chapada[1].r_fundo == 59);
+  CHECK(chapada[1].r_frente == 0);
+}
