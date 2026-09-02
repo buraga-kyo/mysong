@@ -13,6 +13,7 @@
 #include <string_view>
 
 #include "tui/sala.hpp"
+#include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
@@ -27,6 +28,11 @@ constexpr std::size_t kFixoDoPainel = 4, kEspectroMinimo = 8, kCapaMinima = 4;
 // O meio não desce de quarenta collunhas, e o cabeçalho (capa pequena e o
 // separador) cede o logar á tabella quando ella ficaria com menos de tres.
 constexpr std::size_t kMeioMinimo = 40, kCabecalho = 6, kTabellaMinima = 3;
+
+// kMarcadorLinhas — a área do marcador. Seis, e não o tecto: a capa de 16 por
+// 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
+// diria «não ha capa» mais alto do que o painel diz a musica.
+constexpr std::size_t kMarcadorLinhas = 6;
 
 // pinta — o texto na tinta do token. Côr crua não entra n'esta obra.
 ftxui::Element pinta(const std::string& texto, std::string_view token) {
@@ -136,6 +142,19 @@ ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
   return ftxui::vbox({pinta(ficha.titulo, tokens::text_bright) | ftxui::bold,
                       pinta(ficha.artista, tokens::text_primary),
                       pinta(ficha.album, tokens::text_muted)});
+}
+
+std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto) {
+  const std::size_t quer = capa.achada ? capa.linhas.size() : kMarcadorLinhas;
+  return std::min(quer, tecto);
+}
+
+ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
+                                std::size_t largura, std::size_t linhas) {
+  if (largura == 0 || linhas == 0) return ftxui::text("");
+  if (capa.achada) return elemento_da_capa(capa, largura, linhas);
+  if (largura <= 2 || linhas <= 2) return ftxui::text("");
+  return elemento_da_capa(capa, largura - 2, linhas - 2);
 }
 
 }  // namespace mysong::tui

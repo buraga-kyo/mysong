@@ -21,6 +21,7 @@
 
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/capa.hpp"
 #include "nucleo/fila.hpp"
 #include "tui/navegador.hpp"
 
@@ -93,6 +94,17 @@ Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
 // elemento_da_ficha — TRES linhas, sempre as tres: ficha que encolhe faria o
 // espectro subir e descer a cada troca de faixa.
 ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura);
+
+// A ARTE: a capa já pintada, cingida ao TECTO que se pediu á Galeria.
+// `linhas_da_arte` diz quantas linhas ella toma de facto (as do chafa quando
+// achada, as do marcador quando não), para que quem compõe saiba o que sobra.
+//
+// O desconto da orla mora AQUI, e não no `elemento_da_capa`: aquelle põe
+// `border` POR FÓRA do marcador, duas linhas e duas collunhas a mais do que se
+// lhe pede, e é lavra que a tarefa irmã do rato tambem edita.
+std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto);
+ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
+                                std::size_t largura, std::size_t linhas);
 
 }  // namespace mysong::tui
 
