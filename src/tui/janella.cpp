@@ -882,14 +882,20 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
         case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
         case tui::GestoDaBarra::Entra: {
-          const tui::Secao alvo = menu.alvo();
-          if (navegador.vai_para(alvo)) {
+          // O alvo pergunta-se á taboada com as listas na mão: a barra pinta-as
+          // e o degrau nomeia-as, e as duas hão de ler a MESMA conta.
+          const tui::AlvoDaBarra alvo =
+              tui::alvo_do_degrau(menu.degrau(), navegador.rois());
+          const bool entrou = alvo.rol != 0
+                                  ? navegador.vai_para_rol(alvo.rol)
+                                  : navegador.vai_para(alvo.secao);
+          if (entrou) {
             menu.fecha();  // entrar é estar dentro: o foco volta á lista
-          } else if (alvo == tui::Secao::Albuns) {
+          } else if (alvo.secao == tui::Secao::Albuns) {
             aviso_da_rede = "entra por um artista primeiro";
-          } else if (alvo == tui::Secao::Faixas) {
-            aviso_da_rede = "entra por um album primeiro";
-          } else if (alvo == tui::Secao::Rede) {
+          } else if (alvo.secao == tui::Secao::NoRol) {
+            aviso_da_rede = "essa lista já não existe";
+          } else if (alvo.secao == tui::Secao::Rede) {
             aviso_da_rede = "a rede está vazia: busca primeiro (s)";
           } else {
             aviso_da_rede = "catálogo nenhum; importa com I";
@@ -907,7 +913,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // navegador, e verbo de foco n'aquelle enum seria verbo que o cumprir()
     // teria de fingir que não viu.
     if (tui::tecla_abre_menu(tecla)) {
-      menu.abre(navegador.secao());
+      menu.abre(navegador.secao(), navegador.rois(),
+                navegador.rol_corrente());
       return true;
     }
 
@@ -924,7 +931,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // esquerda só tem a barra. O Escape e o Backspace ficam inertes como
         // sempre: cancelar não é gesto que abra cousa alguma.
         if (!navegador.volta() && tecla == ftxui::Event::ArrowLeft)
-          menu.abre(navegador.secao());
+          menu.abre(navegador.secao(), navegador.rois(),
+                    navegador.rol_corrente());
         return true;
       case tui::Verbo::AbreBusca:
         digita = Digita::Busca;
