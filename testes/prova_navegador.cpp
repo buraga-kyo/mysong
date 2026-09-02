@@ -84,6 +84,11 @@ std::vector<std::string> textos(const tui::Navegador& navegador) {
 
 }  // namespace
 
+// A PREMISSA DA ARVORE, escripta á mão. O navegador nasce nas MINHAS MÚSICAS
+// (issue #93), que é o acervo plano; os casos que falam de artista, de album e
+// de faixa sobem á arvore no primeiro gesto, para dizerem de que secção falam
+// em vez de a herdarem de um padrão que já mudou uma vez.
+
 // O CAMINHO DO ACEITE, de ponta a ponta: de Artistas a um artista, d'elle a um
 // album, e d'alli a uma faixa que se manda tocar. Cada degrau afere-se contra a
 // taboa escripta no arnês.
@@ -92,6 +97,7 @@ TEST_CASE("de artistas a uma faixa, o caminho inteiro do aceite") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
 
   CHECK(navegador.secao() == tui::Secao::Artistas);
   CHECK(textos(navegador) == std::vector<std::string>{"Ada Lovelace", "Bach"});
@@ -130,6 +136,7 @@ TEST_CASE("a lista não dá a volta nas duas pontas") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   REQUIRE(navegador.vista().size() == 2u);
 
   CHECK(navegador.eleito() == 0u);
@@ -151,6 +158,7 @@ TEST_CASE("voltar sobe um degrau, e no alto devolve falso") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   navegador.entra();  // Albuns de Ada Lovelace
   navegador.entra();  // Faixas de Máquina
   REQUIRE(navegador.secao() == tui::Secao::Faixas);
@@ -170,6 +178,7 @@ TEST_CASE("o filtro corta a vista, sem caixa, e limpa-se com cadeia vazia") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
 
   navegador.filtra("bach");  // minusculas contra «Bach»
   CHECK(textos(navegador) == std::vector<std::string>{"Bach"});
@@ -191,6 +200,7 @@ TEST_CASE("o eleito apara-se quando a vista encurta") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   navegador.ao_fim();
   REQUIRE(navegador.eleito() == 1u);
   navegador.filtra("Bach");            // um só sobra
@@ -206,6 +216,7 @@ TEST_CASE("o termo não se herda ao descer nem ao subir") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   navegador.filtra("ada");
   REQUIRE(navegador.vista().size() == 1u);
   navegador.entra();
@@ -225,6 +236,7 @@ TEST_CASE("recarregar conserva a trilha que sobreviveu, e cede a que não") {
   {
     const nu::Biblioteca livraria(cova.banco());
     tui::Navegador navegador(livraria);
+    REQUIRE(navegador.vai_para(tui::Secao::Artistas));
     navegador.entra();
     navegador.entra();
     REQUIRE(navegador.secao() == tui::Secao::Faixas);
@@ -243,6 +255,7 @@ TEST_CASE("recarregar conserva a trilha que sobreviveu, e cede a que não") {
   }
   const nu::Biblioteca depois(cova.banco());
   tui::Navegador navegador(depois);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   navegador.entra();  // Albuns de Ada
   navegador.entra();  // Faixas de Notas
   REQUIRE(navegador.trilha() ==
@@ -254,6 +267,7 @@ TEST_CASE("acervo vazio dá vista vazia, e ordem alguma estoura") {
   const Cova cova;  // banco algum se escreve
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   CHECK(navegador.vista().empty());
   CHECK(navegador.eleito() == 0u);
   navegador.desce();
@@ -662,6 +676,7 @@ TEST_CASE("a barra entra no topo e na busca do acervo inteiro") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   REQUIRE_FALSE(navegador.entra());  // no artista
   REQUIRE_FALSE(navegador.entra());  // no album: secção das faixas
   REQUIRE(navegador.secao() == tui::Secao::Faixas);
@@ -684,6 +699,7 @@ TEST_CASE("a barra re-entra nos albuns e nas faixas pela trilha corrente") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   REQUIRE_FALSE(navegador.entra());
   REQUIRE_FALSE(navegador.entra());
   REQUIRE(navegador.secao() == tui::Secao::Faixas);
@@ -702,6 +718,7 @@ TEST_CASE("o degrau sem chão recusa sem mudar cousa alguma") {
   REQUIRE(enche(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   const std::vector<std::string> antes = textos(navegador);
   // No topo não ha artista na trilha, rede buscada nem catalogo importado.
   CHECK_FALSE(navegador.vai_para(tui::Secao::Albuns));
@@ -750,6 +767,51 @@ TEST_CASE("a barra e a tecla P levam á mesma lista das listas") {
   pela_tecla.mostra_rois();  // o caminho do «P», tal e qual
   CHECK(pela_barra.secao() == pela_tecla.secao());
   CHECK(textos(pela_barra) == textos(pela_tecla));
+}
+
+// ── A ENTRADA N'UMA LISTA PELO ID (issue #93) ───────────────────────────────
+
+TEST_CASE("as listas que a barra lê vêm do banco, e entrar n'uma pelo id abre-a") {
+  const Cova cova;
+  const CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("da manhã"));
+  REQUIRE(navegador.cria_rol("da noite"));
+  REQUIRE(navegador.rois().size() == 2);
+  CHECK(navegador.rois()[0].nome == "da manhã");  // a ordem é a do banco
+  const int qual = navegador.rois()[0].id;
+  navegador.ao_fim();           // a segunda, para o alvo ser o OUTRO
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.junta_ao_rol("/a/1.mp3"));
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
+  // Entra-se na PRIMEIRA sem passar pela lista das listas, e ella vira o alvo.
+  CHECK(navegador.vai_para_rol(qual));
+  CHECK(navegador.secao() == tui::Secao::NoRol);
+  CHECK(navegador.rol_corrente() == qual);
+  CHECK(navegador.nome_corrente() == "da manhã");
+  CHECK(navegador.trilha() == std::vector<std::string>{"da manhã"});
+  CHECK(navegador.vista().empty());  // a faixa foi para a outra
+}
+
+TEST_CASE("a lista que já não existe recusa a entrada, e nada se muta") {
+  const Cova cova;
+  const CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador sem_roleiro(livraria);
+  CHECK(sem_roleiro.rois().empty());  // punho nullo: corrida sem listas
+  CHECK_FALSE(sem_roleiro.vai_para_rol(1));
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
+  const std::vector<std::string> antes = textos(navegador);
+  CHECK_FALSE(navegador.vai_para_rol(0));
+  CHECK_FALSE(navegador.vai_para_rol(9999));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(textos(navegador) == antes);
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

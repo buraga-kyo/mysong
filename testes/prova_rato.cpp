@@ -280,13 +280,19 @@ TEST_CASE("a caixa não muda um pixel da barra nem da tabella") {
   tui::Navegador navegador(livraria);  // acervo vasio: a vista vem da rede
   navegador.mostra_rede({um, um, um});
   std::vector<ftxui::Box> degraus;
-  CHECK(papel(tui::elemento_da_barra(navegador, true, 2), 10, 7) ==
-        papel(tui::elemento_da_barra(navegador, true, 2, &degraus), 10, 7));
-  CHECK(degraus.size() == tui::DEGRAUS_DA_BARRA);
-  CHECK_FALSE(degraus[6].IsEmpty());
+  const int larg_barra = static_cast<int>(tui::LARGURA_DA_BARRA);
+  CHECK(papel(tui::elemento_da_barra(navegador, true, 2), larg_barra, 7) ==
+        papel(tui::elemento_da_barra(navegador, true, 2, 0, &degraus),
+              larg_barra, 7));
+  // Uma caixa por DEGRAU, e sómente por degrau: o titulo e a risca não o são.
+  // Sem roleiro não ha listas, donde a conta é a das minhas musicas mais as
+  // quatro de navegar, que é o que a taboada da barra diz.
+  CHECK(degraus.size() == tui::degraus_da_barra(0));
+  CHECK_FALSE(degraus.back().IsEmpty());
   std::vector<ftxui::Box> linhas;
   CHECK(papel(tui::elemento_da_tabella(navegador, 0, 5, 60), 60, 5) ==
-        papel(tui::elemento_da_tabella(navegador, 0, 5, 60, &linhas), 60, 5));
+        papel(tui::elemento_da_tabella(navegador, 0, 5, 60, {}, &linhas),
+              60, 5));
   // Tres na vista e cinco de altura: caixa alguma para o que se não pintou.
   CHECK(linhas.size() == 3);
 }

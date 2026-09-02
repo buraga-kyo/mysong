@@ -28,33 +28,54 @@
 
 namespace mysong::tui {
 
-// A barra lateral do mockup. Marca a secção em que se está e, com o FOCO na
-// barra (issue #80), marca tambem o degrau sob o dedo: o primeiro espaço do
-// rotulo vira «▸» e o fundo é o v900 do eleito da tabella, que é a cor de
-// cursor d'esta Casa. Os dous signaes convivem: o v700 diz onde se ESTÁ, o
-// «▸» diz onde o dedo aponta e QUEM manda na tecla. Sem foco, os parametros
-// novos dormem nos padrões e a pintura é a de sempre, byte por byte.
+// A LARGURA da barra, em collunhas, e FIXA. Até aqui ella crescia com o rotulo
+// mais largo; com o nome das listas dentro (issue #93), uma lista de sessenta
+// letras comeria a tabella. Vinte cabe «MINHAS MÚSICAS» com folga, deixa dezoito
+// ao nome, e o que não couber corta-se em vez de alargar a barra.
+inline constexpr std::size_t LARGURA_DA_BARRA = 20;
+
+// A BIBLIOTHECA (issue #93): o titulo, as MINHAS MÚSICAS, as listas do operador
+// pelo nome, a risca, e os quatro degraus de navegar. A ordem e os rotulos vêm
+// da taboada do menu, e não d'aqui: um só logar responde por elles.
+//
+// Marca a secção em que se está e, com o FOCO na barra (issue #80), marca
+// tambem o degrau sob o dedo: o primeiro espaço do rotulo vira «▸» e o fundo é
+// o v900 do eleito da tabella, que é a cor de cursor d'esta Casa. Os dous
+// signaes convivem: o v700 diz onde se ESTÁ, o «▸» diz onde o dedo aponta e
+// QUEM manda na tecla.
+//
+// `altura` é a que a barra tem para si, e zero quer dizer «sem limite»: posta,
+// o grupo das listas rola dentro d'ella e a barra não passa d'ella.
 //
 // As CAIXAS (issue #95) enchem-se AQUI, e não na composição da janella: quem
-// mover os paineis não move os cliques. Uma por degrau, na ordem em que elles
-// se pintam; punho nullo quer dizer «esta chamada não quer saber», e nesse caso
-// a pintura sahe a mesma, cella por cella, que o `reflect` se não põe.
+// mover os paineis não move os cliques. Uma por DEGRAU, e sómente por degrau: o
+// titulo e a risca não são degraus e não ganham caixa, donde o vector conta o
+// mesmo que a taboada do menu conta. Punho nullo quer dizer «esta chamada não
+// quer saber», e ahi a pintura sahe a mesma, cella por cella.
 ftxui::Element elemento_da_barra(const Navegador& navegador,
                                  bool com_foco = false,
                                  std::size_t degrau_eleito = 0,
+                                 std::size_t altura = 0,
                                  std::vector<ftxui::Box>* caixas = nullptr);
 
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
 //
-// As CAIXAS (issue #95) são UMA por linha que se pintou, e nunca por linha que
+// `tocando` é o CAMINHO da faixa que o motor toca (issue #92). A linha cuja
+// chave casar com elle accende em glow_core, com «▶» no logar do numero: são
+// DOUS signaes, que a eleita (o v900) diz onde o dedo está e este diz o que
+// sôa. Cadeia vazia, que é o padrão, pinta a tabella de sempre byte por byte,
+// e a prova que já existe o afere.
+//
+// As CAIXAS (issue #95) são UMA por linha que se PINTOU, e nunca por linha que
 // se não pintou: a altura que sobra abaixo da lista não é alvo de clique algum,
 // e vista vazia limpa o vector. Quem lê o vector somma-lhe a `primeira` para ir
 // da linha visivel á linha da vista.
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura,
+                                   const std::string& tocando = {},
                                    std::vector<ftxui::Box>* caixas = nullptr);
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as

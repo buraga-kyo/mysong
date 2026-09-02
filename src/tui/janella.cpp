@@ -71,6 +71,7 @@
 #include "tui/menu.hpp"
 #include "tui/prompt.hpp"
 #include "tui/rato.hpp"
+#include "tui/sala.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
@@ -489,6 +490,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
   std::vector<nucleo::LinhaDaLetra> letra;
   std::string letra_de_qual;
+  // A FICHA da faixa que sôa, guardada como a letra e pela mesma razão: o
+  // indice consultado a cada quadro seriam vinte perguntas por segundo ao
+  // banco por uma cousa que sómente muda quando a faixa muda.
+  tui::Ficha ficha;
   // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
   // assignatura, e o fio da tela troca-o na tecla `l`.
   std::atomic<bool> mostra_letra{false};
@@ -666,50 +671,49 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A tabella toma o que sobra em altura: as linhas de guarnição (marca, topo,
-    // espectro de oito, transporte, rodapé) mais a orla. O TOPO conta-se pelo
-    // modo, que aberto o prompt são duas linhas e não uma. A linha nova sahe
-    // d'aqui, e não de uma sobra que ninguem declarou: sobra consumida ás
-    // escondidas é o genero de acoplamento que se paga na tarefa seguinte.
-    const std::size_t guarnicao = 15 + tui::linhas_do_topo(digita);
-    const std::size_t alt_tab = lin > static_cast<int>(guarnicao)
-                                    ? static_cast<std::size_t>(lin) - guarnicao
-                                    : 1;
-    primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
-                                             navegador.vista().size(), alt_tab,
-                                             primeira_linha);
+    // A guarnição em altura: marca, topo, transporte, rodapé e as duas da orla,
+    // que são CINCO mais o topo. Eram quinze com a fita do espectro no pé e a
+    // linha em branco que a precedia (issue #92). Foram seis por um quadro, e
+    // ahi sobrava sempre uma fileira vazia no pé: a conta cobrava uma linha que
+    // desenho algum gastava. O TOPO conta-se pelo modo, que aberto o prompt são
+    // duas linhas e não uma.
+    const std::size_t guarnicao = 5 + tui::linhas_do_topo(digita);
+    const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
+                                      ? static_cast<std::size_t>(lin) - guarnicao
+                                      : 1;
+    // A barra mais o espaçador de duas collunhas que o hbox lhe põe ao lado. O
+    // numero é da BARRA, e a barra é lavra da issue #93: vem por isso da
+    // constante d'ella, e não de um onze escripto á mão. A geometria da sala
+    // recebe-o por PARAMETRO, que é o que faz d'esta a UNICA linha a mudar no
+    // dia em que a barra mudar de largura outra vez.
+    const std::size_t kBarraCollunhas = tui::LARGURA_DA_BARRA + 2;
+    const tui::Geometria geo =
+        tui::geometria_da_sala(larg, alt_corpo, kBarraCollunhas);
+    primeira_linha =
+        tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
+                                geo.tabella, primeira_linha);
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
-    // O painel NOW PLAYING toma um quinto da largura, e nunca mais de vinte
-    // collunhas nem menos de oito: a arte quer quadrado, e o quadrado n'um terminal
-    // pede duas linhas por collunha, donde a altura sahe da largura e não ao
-    // contrario. Terminal apertado não mostra capa alguma, que roubar da tabella
-    // para mostrar arte seria trocar o que serve pelo que enfeita.
-    const std::size_t larg_capa =
-        larg >= 60 ? std::min<std::size_t>(20, larg / 5) : 0;
-    const std::size_t alt_capa =
-        larg_capa == 0 ? 0 : std::min<std::size_t>(alt_tab, larg_capa / 2 + 1);
-    const std::size_t reservado_capa = larg_capa == 0 ? 0 : larg_capa + 1;
-    const std::size_t larg_tab =
-        larg > 11 + reservado_capa ? larg - 11 - reservado_capa : 1;
 
-    std::string trilha = "ARTISTS";
+    std::string trilha = "ARTISTAS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
     // A fonte no titulo da secção, SEMPRE: a lista pode ser da fonte anterior por
     // um instante (a busca é assynchrona), e o cabeçalho é a verdade da vigente.
     if (navegador.secao() == tui::Secao::Rede)
-      trilha = "NET · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
+      trilha = "REDE · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
     if (navegador.secao() == tui::Secao::Lista) {
       trilha = "SPOTIFY";
       if (!navegador.nome_do_catalogo().empty())
         trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
     }
-    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
-    // O SEARCH da barra (issue #80): a secção da busca no acervo tem nome
-    // proprio no topo, que «ARTISTS» n'ella seria o titulo a mentir.
-    if (navegador.secao() == tui::Secao::Busca) trilha = "SEARCH";
+    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTAS";
+    // As MINHAS MÚSICAS (issue #93): a secção do acervo plano tem nome
+    // proprio no topo, que «ARTISTAS» n'ella seria o titulo a mentir. E o
+    // topo diz o mesmo que a barra, palavra por palavra: dous nomes para a
+    // mesma secção fariam o operador procurar duas salas onde ha uma.
+    if (navegador.secao() == tui::Secao::Busca) trilha = "MINHAS MÚSICAS";
     if (navegador.secao() == tui::Secao::NoRol) {
-      trilha = "LISTS";
+      trilha = "LISTAS";
       for (const std::string& degrau : navegador.trilha())
         trilha += "  \ue0b1  " + degrau;
     }
@@ -735,12 +739,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
     if (!andamento.empty()) trilha += "   " + andamento;
 
-    // A letra relê-se sómente quando a faixa muda.
+    // A letra e a ficha relêem-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
       letra_de_qual = retracto.titulo;
       letra = retracto.titulo.empty()
                   ? std::vector<nucleo::LinhaDaLetra>()
                   : nucleo::le_lrc_do_disco(retracto.titulo);
+      nucleo::Faixa d_ella;
+      livraria.acha_por_caminho(retracto.titulo, d_ella);
+      ficha = tui::ficha_da_faixa(retracto.titulo, d_ella.titulo, d_ella.artista,
+                                  d_ella.album);
     }
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
@@ -748,29 +756,93 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
-    const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
+    // O CABEÇALHO da colleção á vista. A somma é das linhas Á VISTA, e não do
+    // acervo: com filtro posto, o operador ha de ler a conta do que VÊ.
+    tui::Colleccao colleccao;
+    colleccao.nome = tui::nome_da_colleccao(navegador.secao(), navegador.trilha(),
+                                            navegador.nome_do_catalogo());
+    colleccao.quantas = navegador.vista().size();
+    colleccao.especie = tui::especie_da_secao(navegador.secao());
+    for (const tui::Linha& qual : navegador.vista())
+      colleccao.duracao += qual.duracao;
+    colleccao.embaralhado = retracto.embaralhado;
+    colleccao.repeticao = retracto.repeticao;
+    // A capa pequena é a da PRIMEIRA linha, e sómente onde a chave é caminho de
+    // arquivo. Quem o sabe é a sala, por switch exhaustivo: secção nova accende
+    // aviso do compilador lá, e não passa calada a pedir capa de uma URL.
+    const std::string capa_do_meio =
+        tui::chave_e_caminho(navegador.secao()) && !navegador.vista().empty()
+            ? navegador.vista().front().chave
+            : std::string();
+    // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
+    // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
+    const nucleo::CapaPintada& arte =
+        galeria.capa(retracto.titulo, geo.painel, geo.capa);
+    const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
+    const std::size_t alt_baixo =
+        geo.livre > alt_arte ? geo.livre - alt_arte : 1;
+    const tui::Quadro quadro =
+        tui::compor(tocador.bandas(), geo.painel, alt_baixo);
+    // Tela estreita ou baixa não pinta painel algum, e com elle vão-se o
+    // espectro e a letra: roubar da tabella, que é onde se navega, para mostrar
+    // arte seria trocar o que serve pelo que enfeita. É o que a capa já fazia.
+    // A CAIXA da arte (issue #95) pendura-se aqui, no punho que a sala recebe:
+    // assim o `sala.*` da lavra irmã não muda uma linha, e o clique na arte
+    // continua a achar o quadro que ella pintou. Esvazia-se a cada quadro, que
+    // painel que se não pinta não ha de deixar caixa velha a apanhar cliques.
+    caixas.capa = tui::caixa_por_pintar();
+    ftxui::Element painel =
+        geo.painel == 0
+            ? ftxui::text("")
+            : tui::elemento_do_painel(
+                  ficha,
+                  tui::elemento_da_arte(arte, geo.painel, alt_arte) |
+                      ftxui::reflect(caixas.capa),
+                  mostra_letra.load()
+                      ? tui::elemento_da_letra(
+                            letra,
+                            nucleo::linha_corrente(letra, retracto.posicao),
+                            alt_baixo, geo.painel)
+                      : tui::elemento_do_espectro(quadro),
+                  geo.painel);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
                tui::elemento_do_topo(trilha, digita, contexto_do_campo,
                                      termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau(), &caixas.degraus),
+                                          menu.degrau(), alt_corpo,
+                                          &caixas.degraus),
                    ftxui::text("  "),
-                   tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
-                                            larg_tab, &caixas.linhas),
-                   ftxui::text(" "),
-                   tui::elemento_da_capa(
-                       galeria.capa(retracto.titulo, larg_capa, alt_capa),
-                       larg_capa, alt_capa, &caixas.capa),
-               }),
-               ftxui::text(""),
-               mostra_letra.load()
-                   ? tui::elemento_da_letra(
-                         letra,
-                         nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
-                   : tui::elemento_do_espectro(quadro),
-               tui::elemento_do_transporte(retracto, larg, &caixas.transporte),
+                   // `emptyElement`, e não `text("")`: o `text` pede UMA
+                   // linha ainda que nada escreva, e a faixa do meio pediria
+                   // uma a mais do que a conta lhe deu.
+                   ftxui::vbox({geo.cabecalho == 0
+                                    ? ftxui::emptyElement()
+                                    : tui::elemento_do_cabecalho(
+                                          colleccao,
+                                          galeria.capa(capa_do_meio,
+                                                       tui::kCapaPequena,
+                                                       tui::kCapaPequenaLinhas),
+                                          geo.meio),
+                                tui::elemento_da_tabella(
+                                    navegador, primeira_linha, geo.tabella,
+                                    geo.meio, retracto.titulo,
+                                    &caixas.linhas)}),
+                   ftxui::text(geo.painel == 0 ? "" : " "),
+                   std::move(painel),
+               }) |
+                   // A faixa do corpo mede EXACTAMENTE a altura contada. Por
+                   // menos que ella, a barra de sete fileiras fixas empurrava o
+                   // transporte para fóra da tela n'um terminal de doze linhas;
+                   // por mais, o `size` zera o flex e a faixa deixava de encher
+                   // a altura, d'onde o transporte e o rodapé sobiam e o pé da
+                   // tela ficava em branco (vista curta, ou letra de dous
+                   // versos). Egual cura os dous. Medido n'um pty.
+                   ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                               static_cast<int>(alt_corpo)),
+               tui::elemento_do_transporte(retracto, larg,
+                                           &caixas.transporte),
                ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
                            " · / filtra · s busca na rede"
                            " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
@@ -782,21 +854,23 @@ int erguer_tocador(const std::vector<std::string>& faixas,
            ftxui::border;
   });
 
-  // entra_na_seccao — o caminho do Enter na barra, n'um logar só. Sahe do ramo
-  // do menu porque o clique do rato (issue #95) ha de percorrer o MESMO caminho:
-  // duas copias d'estas quatro linhas de aviso divergiriam na primeira issue que
-  // acrescentasse degrau, e o dedo veria um recado e a tecla outro.
+  // entra_no_alvo — o caminho do Enter na barra, n'um logar só. Sahe do ramo do
+  // menu porque o clique do rato (issue #95) ha de percorrer o MESMO caminho:
+  // duas copias d'estes recados divergiriam na primeira issue que acrescentasse
+  // degrau, e o dedo veria um aviso e a tecla outro.
   //
-  // Quem chama diz a SECÇÃO, e não o degrau: a taboada degrau↔secção é da barra,
-  // e este lambda não a conhece.
-  const auto entra_na_seccao = [&](tui::Secao alvo) {
-    if (navegador.vai_para(alvo)) {
+  // Quem chama diz o ALVO, e não o degrau: a taboada degrau para alvo é da
+  // barra (issue #93), e este lambda não a conhece.
+  const auto entra_no_alvo = [&](const tui::AlvoDaBarra& alvo) {
+    const bool entrou = alvo.rol != 0 ? navegador.vai_para_rol(alvo.rol)
+                                      : navegador.vai_para(alvo.secao);
+    if (entrou) {
       menu.fecha();  // entrar é estar dentro: o foco volta á lista
-    } else if (alvo == tui::Secao::Albuns) {
+    } else if (alvo.secao == tui::Secao::Albuns) {
       aviso_da_rede = "entra por um artista primeiro";
-    } else if (alvo == tui::Secao::Faixas) {
-      aviso_da_rede = "entra por um album primeiro";
-    } else if (alvo == tui::Secao::Rede) {
+    } else if (alvo.secao == tui::Secao::NoRol) {
+      aviso_da_rede = "essa lista já não existe";
+    } else if (alvo.secao == tui::Secao::Rede) {
       aviso_da_rede = "a rede está vazia: busca primeiro (s)";
     } else {
       aviso_da_rede = "catálogo nenhum; importa com I";
@@ -843,10 +917,21 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           digita = Digita::Nada;
           termo_em_curso.clear();
           return true;
-        case tui::Gesto::EntraNoDegrau:
-          menu.abre(tui::secao_do_degrau(gesto.indice));
-          entra_na_seccao(tui::secao_do_degrau(gesto.indice));
+        case tui::Gesto::EntraNoDegrau: {
+          // A barra abre-se no degrau CLICADO, para que o degrau sem chão
+          // mostre onde o dedo pousou. O `abre` acorda na secção corrente, e
+          // d'ahi anda-se até elle pelas ordens que SATURAM: são quando muito
+          // uma barra de degraus, e porta que o assentasse não ha.
+          const std::vector<nucleo::Rol> listas = navegador.rois();
+          menu.abre(navegador.secao(), listas, navegador.rol_corrente());
+          while (menu.degrau() != gesto.indice) {
+            const std::size_t antes = menu.degrau();
+            antes < gesto.indice ? menu.desce() : menu.sobe();
+            if (menu.degrau() == antes) break;
+          }
+          entra_no_alvo(tui::alvo_do_degrau(gesto.indice, listas));
           return true;
+        }
         case tui::Gesto::Elege:
         case tui::Gesto::Toca:
           // Anda-se pelo sobe e pelo desce, que SATURAM: o navegador não ganha
@@ -872,7 +957,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           return true;
         case tui::Gesto::DegrauSobe:
         case tui::Gesto::DegrauDesce:
-          if (!menu.aberto()) menu.abre(navegador.secao());
+          if (!menu.aberto())
+            menu.abre(navegador.secao(), navegador.rois(),
+                      navegador.rol_corrente());
           gesto.gesto == tui::Gesto::DegrauSobe ? menu.sobe() : menu.desce();
           return true;
         // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
@@ -990,7 +1077,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
         case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
         case tui::GestoDaBarra::Entra:
-          entra_na_seccao(menu.alvo());
+          // O alvo pergunta-se á taboada com as listas na mão: a barra pinta-as
+          // e o degrau nomeia-as, e as duas hão de ler a MESMA conta.
+          entra_no_alvo(tui::alvo_do_degrau(menu.degrau(), navegador.rois()));
           return true;  // sem chão avisa-se, e o foco FICA na barra
         case tui::GestoDaBarra::Alheio:
           menu.fecha();
@@ -1003,7 +1092,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // navegador, e verbo de foco n'aquelle enum seria verbo que o cumprir()
     // teria de fingir que não viu.
     if (tui::tecla_abre_menu(tecla)) {
-      menu.abre(navegador.secao());
+      menu.abre(navegador.secao(), navegador.rois(),
+                navegador.rol_corrente());
       return true;
     }
 
@@ -1025,7 +1115,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // esquerda só tem a barra. O Escape e o Backspace ficam inertes como
         // sempre: cancelar não é gesto que abra cousa alguma.
         if (!navegador.volta() && tecla == ftxui::Event::ArrowLeft)
-          menu.abre(navegador.secao());
+          menu.abre(navegador.secao(), navegador.rois(),
+                    navegador.rol_corrente());
         return true;
       case tui::Verbo::AbreBusca:
         digita = Digita::Busca;
