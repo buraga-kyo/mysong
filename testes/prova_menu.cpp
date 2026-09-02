@@ -9,9 +9,46 @@
 
 #include <ftxui/component/event.hpp>
 
+#include <string>
+#include <vector>
+
+#include "nucleo/rol.hpp"
 #include "tui/menu.hpp"
 
+namespace nu = mysong::nucleo;
 namespace tui = mysong::tui;
+
+namespace {
+
+// listas — as listas do operador que a taboada da barra consome. Escrevem-se á
+// mão para o caso aferir contra taboa que se lê, e o id vae de dez em dez para
+// que confundir id com indice apareça em vez de passar por acaso.
+std::vector<nu::Rol> listas(int quantas) {
+  std::vector<nu::Rol> feitas;
+  for (int i = 1; i <= quantas; ++i)
+    feitas.push_back({i * 10, "lista " + std::to_string(i), 0});
+  return feitas;
+}
+
+}  // namespace
+
+TEST_CASE("a conta dos degraus da barra é a das listas mais cinco") {
+  CHECK(tui::degraus_da_barra(0) == 5);
+  CHECK(tui::degraus_da_barra(1) == 6);
+  CHECK(tui::degraus_da_barra(5) == 10);
+}
+
+// O espelho é o que garante que o dedo acorda na fileira que o Enter abriria.
+TEST_CASE("a taboada da barra é espelho fiel com zero, uma e cinco listas") {
+  for (const int quantas : {0, 1, 5}) {
+    const std::vector<nu::Rol> rois = listas(quantas);
+    for (std::size_t i = 0; i < tui::degraus_da_barra(rois.size()); ++i) {
+      const tui::AlvoDaBarra alvo = tui::alvo_do_degrau(i, rois);
+      CHECK(tui::degrau_da_secao(alvo.secao, rois, alvo.rol) == i);
+    }
+    CHECK(tui::alvo_do_degrau(99, rois).secao == tui::Secao::Busca);
+  }
+}
 
 using ftxui::Event;
 using Gesto = tui::GestoDaBarra;
