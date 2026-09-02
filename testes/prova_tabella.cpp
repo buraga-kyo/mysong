@@ -187,6 +187,7 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);  // acervo vazio, e sem roleiro
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   // No acervo, o recado manda varrer. Dentro de uma lista de faixas escolhidas á
   // mão, mandar varrer o acervo seria mandar o operador ao logar errado.
   const std::vector<std::string> acervo = pintar(navegador, 1, 70);

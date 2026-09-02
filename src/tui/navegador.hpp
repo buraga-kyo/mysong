@@ -202,7 +202,11 @@ class Navegador {
   nucleo::Roleiro* roleiro_ = nullptr;
   int rol_corrente_ = 0;
   std::string nome_corrente_;
-  Secao secao_ = Secao::Artistas;
+  // NASCE nas MINHAS MÚSICAS, e não na arvore dos artistas (issue #93): o acervo
+  // inteiro e plano é o que se quer ver ao chegar, e descer artista e album para
+  // achar a faixa é um degrau que quem chega não pediu. A arvore fica a um degrau
+  // da barra, e o `volta` d'aqui sobe a ella como sempre subiu.
+  Secao secao_ = Secao::Busca;
   std::vector<Linha> vista_;
   std::vector<Linha> rede_;  // a fonte da vista na secção Rede, e sómente n'ella
   std::vector<nucleo::Achado> achados_;  // os achados de que as linhas vieram
