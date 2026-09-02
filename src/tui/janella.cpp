@@ -817,6 +817,56 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // nada ha que acordar, e noticia de foco tecla nenhuma dá.
     if (!vigilia.pede_batida() && tui::eh_tecla_de_gente(tecla))
       vigilia.ganha();
+    // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
+    // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
+    if (tecla.is_mouse()) {
+      ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
+      const ftxui::Mouse rato = copia.mouse();
+      const tui::Retracto agora = retracto_do(tocador, projector);
+      const tui::GestoDoRato gesto = tui::gesto_do_alvo(
+          tui::alvo_do_ponto(caixas, rato.x, rato.y), rato.button, rato.motion,
+          {digita != Digita::Nada, navegador.eleito(),
+           navegador.vista().size(), agora.duracao});
+      switch (gesto.gesto) {
+        case tui::Gesto::Nada: return true;  // consumido: lixo que não vaza
+        case tui::Gesto::FechaCampo:
+          digita = Digita::Nada;
+          termo_em_curso.clear();
+          return true;
+        case tui::Gesto::EntraNoDegrau:
+          menu.abre(tui::secao_do_degrau(gesto.indice));
+          entra_na_seccao(tui::secao_do_degrau(gesto.indice));
+          return true;
+        case tui::Gesto::Elege:
+        case tui::Gesto::Toca:
+          // Anda-se pelo sobe e pelo desce, que SATURAM: o navegador não ganha
+          // `vai_a` por isto, e nem precisa, que o indice clicado está dentro
+          // da fatia á vista. No Toca a volta é de zero passos.
+          menu.fecha();
+          while (navegador.eleito() != gesto.indice) {
+            const std::size_t antes = navegador.eleito();
+            antes < gesto.indice ? navegador.desce() : navegador.sobe();
+            if (navegador.eleito() == antes) break;  // saturou: acabou a lista
+          }
+          return true;
+        case tui::Gesto::RodaSobe:
+        case tui::Gesto::RodaDesce:
+          for (std::size_t passo = 0; passo < gesto.indice; ++passo)
+            gesto.gesto == tui::Gesto::RodaSobe ? navegador.sobe()
+                                                : navegador.desce();
+          return true;
+        case tui::Gesto::DegrauSobe:
+        case tui::Gesto::DegrauDesce:
+          if (!menu.aberto()) menu.abre(navegador.secao());
+          gesto.gesto == tui::Gesto::DegrauSobe ? menu.sobe() : menu.desce();
+          return true;
+        case tui::Gesto::Anterior:
+        case tui::Gesto::Proxima:
+        case tui::Gesto::Busca:
+        case tui::Gesto::PausaOuRetoma:
+          return true;  // os que viram ordem do tocador: no commit seguinte
+      }
+    }
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
