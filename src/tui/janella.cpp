@@ -827,7 +827,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       const tui::GestoDoRato gesto = tui::gesto_do_alvo(
           tui::alvo_do_ponto(caixas, rato.x, rato.y), rato.button, rato.motion,
           {digita != Digita::Nada, navegador.eleito(),
-           navegador.vista().size(), agora.duracao});
+           navegador.vista().size(),
+           // A duração vae ZERO com a janella do video de pé, e a guarda do
+           // rato faz o resto: o clique na barra fica INERTE. A duração que
+           // este retracto sabe é a do AUDIO pausado, e o video que corre é a
+           // ELEITA, que nem sempre é a mesma faixa: video de cinco minutos com
+           // audio de tres mandaria o video ao minuto tres por um clique no fim
+           // da barra. A tecla já decidiu o mesmo por outro caminho, a busca
+           // RELATIVA: d'ella não se sabe a posição sem lhe perguntar pelo
+           // soquete, e a barra tambem não anda emquanto ella corre.
+           agora.video ? 0.0 : agora.duracao});
       switch (gesto.gesto) {
         case tui::Gesto::Nada: return true;  // consumido: lixo que não vaza
         case tui::Gesto::FechaCampo:
