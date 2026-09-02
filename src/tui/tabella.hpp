@@ -25,6 +25,12 @@
 
 namespace mysong::tui {
 
+// A LARGURA da barra, em collunhas, e FIXA. Até aqui ella crescia com o rotulo
+// mais largo; com o nome das listas dentro (issue #93), uma lista de sessenta
+// letras comeria a tabella. Vinte cabe «MINHAS MÚSICAS» com folga, deixa dezoito
+// ao nome, e o que não couber corta-se em vez de alargar a barra.
+inline constexpr std::size_t LARGURA_DA_BARRA = 20;
+
 // A barra lateral do mockup. Marca a secção em que se está e, com o FOCO na
 // barra (issue #80), marca tambem o degrau sob o dedo: o primeiro espaço do
 // rotulo vira «▸» e o fundo é o v900 do eleito da tabella, que é a cor de

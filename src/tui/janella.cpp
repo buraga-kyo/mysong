@@ -678,8 +678,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::size_t alt_capa =
         larg_capa == 0 ? 0 : std::min<std::size_t>(alt_tab, larg_capa / 2 + 1);
     const std::size_t reservado_capa = larg_capa == 0 ? 0 : larg_capa + 1;
-    const std::size_t larg_tab =
-        larg > 11 + reservado_capa ? larg - 11 - reservado_capa : 1;
+    // A barra mais o espaçador de duas collunhas que o hbox lhe põe ao lado.
+    // Vinha por um onze escripto á mão, da barra de nove; a barra é agora de
+    // vinte (issue #93), e a conta segue-lhe a constante em vez do numero.
+    const std::size_t guarda_da_barra = tui::LARGURA_DA_BARRA + 2;
+    const std::size_t larg_tab = larg > guarda_da_barra + reservado_capa
+                                     ? larg - guarda_da_barra - reservado_capa
+                                     : 1;
 
     std::string trilha = "ARTISTS";
     for (const std::string& degrau : navegador.trilha())
