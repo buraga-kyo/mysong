@@ -171,7 +171,14 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
   // mais que a conta lhe deu, e o cinge da faixa do corpo aparava a ultima do
   // espectro em silencio. Medido n'um pty de vinte linhas.
   if (largura == 0 || linhas == 0) return ftxui::emptyElement();
-  if (capa.achada) return elemento_da_capa(capa, largura, linhas);
+  // O tecto vale tambem para a capa ACHADA. O `elemento_da_capa` pinta TODAS as
+  // linhas que traz, e não olha o `linhas` que se lhe passa; a promessa do
+  // `linhas_da_arte` é o minimo entre o que veio e o tecto. Sem este cinge,
+  // capa mais alta que o tecto empurraria a ficha para fóra do painel.
+  if (capa.achada)
+    return elemento_da_capa(capa, largura, linhas) |
+           ftxui::size(ftxui::HEIGHT, ftxui::LESS_THAN,
+                       static_cast<int>(linhas));
   if (largura <= 2 || linhas <= 2) return ftxui::emptyElement();
   return elemento_da_capa(capa, largura - 2, linhas - 2);
 }

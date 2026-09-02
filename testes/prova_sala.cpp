@@ -244,3 +244,18 @@ TEST_CASE("o chip do modo accende quando o modo liga") {
   CHECK(aceso.PixelAt(x, 3).foreground_color == cor(tk::text_bright));
   CHECK(collunha_de(aceso, 3, "\u21bb") > x);
 }
+
+TEST_CASE("a arte cinge-se ao tecto que se lhe pediu") {
+  // Capa mais alta que o tecto: o chafa não a devolveria assim, mas a promessa
+  // do `linhas_da_arte` é o MINIMO, e quem compõe conta com ella. Sem o cinge,
+  // a ficha sahiria para fóra do painel.
+  const nu::CapaPintada alta = capa_de(30, 39);
+  CHECK(tui::linhas_da_arte(alta, 20) == 20);
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_painel({"Faded", "Alan Walker", "Faded"},
+                                    tui::elemento_da_arte(alta, 39, 20),
+                                    ftxui::emptyElement(), 39),
+            39, 34);
+  CHECK(linha_de(tela, 20) == std::string(39, '#'));
+  CHECK(linha_de(tela, 21).substr(0, 5) == "Faded");
+}
