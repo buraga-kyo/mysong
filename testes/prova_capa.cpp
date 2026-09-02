@@ -454,7 +454,11 @@ TEST_CASE("o SGR aceita glifo de tres e de quatro octetos sem partir corrida") {
 
 // O VIDEO INVERTIDO (#94), contra a linha que o chafa emitte de FACTO sobre
 // imagem chapada. Copiei-a da sahida com `cat -v` e escrevi-a aqui á mão.
-TEST_CASE("o ESC[7m do chafa troca tinta e fundo da corrida") {
+// NOTA DO NOME: o titulo do caso não traz colchete, e é de proposito. O
+// doctest_discover_tests do CMake gera a lista dos casos entre `[==[ ]==]`, e
+// um `[` no meio do nome parte a lista: o ctest recusa o projecto inteiro com
+// «add_test called with incorrect number of arguments». Medi-o aqui.
+TEST_CASE("o video invertido do chafa troca tinta e fundo da corrida") {
   const std::vector<nu::Corrida> chapada = nu::analysa_sgr(
       "\x1b[0m\x1b[7m\x1b[38;2;59;12;106m \x1b[0m"
       "\x1b[38;2;0;0;0;48;2;59;12;106m ");
