@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
 #include "tui/tabella.hpp"
 
@@ -89,6 +90,8 @@ class Cova {
   Cova(const Cova&) = delete;
   Cova& operator=(const Cova&) = delete;
   std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+  // O banco das LISTAS, á parte do índice, para a barra da bibliotheca as ler.
+  std::filesystem::path listas() const { return caminho_ / "rol.sqlite3"; }
 
  private:
   std::filesystem::path caminho_;
@@ -300,18 +303,26 @@ TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da folga") {
 
 namespace {
 
-// pintar_barra — o écran de papel da BARRA, nas nove collunhas e sete linhas
-// d'ella, lido cella a cella pela mesma razão do pintar da tabella.
+// pintar_barra — o écran de papel da BARRA, na largura fixa d'ella e nas
+// fileiras que se pedir, lido cella a cella pela mesma razão do pintar da
+// tabella. `altura` é a que a barra recebe (zero é «sem limite»); `fileiras` é o
+// tamanho do papel, e as duas são cousas differentes de proposito: é assim que
+// se afere que a barra NÃO passa da altura que lhe deram.
 std::vector<std::string> pintar_barra(const tui::Navegador& navegador,
-                                      bool com_foco, std::size_t degrau) {
-  ftxui::Element quadro = tui::elemento_da_barra(navegador, com_foco, degrau);
-  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(9),
-                                              ftxui::Dimension::Fixed(7));
+                                      bool com_foco, std::size_t degrau,
+                                      std::size_t altura = 0,
+                                      std::size_t fileiras = 7) {
+  const int larg = static_cast<int>(tui::LARGURA_DA_BARRA);
+  ftxui::Element quadro =
+      tui::elemento_da_barra(navegador, com_foco, degrau, altura);
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(larg),
+                            ftxui::Dimension::Fixed(static_cast<int>(fileiras)));
   ftxui::Render(ecran, quadro);
   std::vector<std::string> linhas;
-  for (int y = 0; y < 7; ++y) {
+  for (int y = 0; y < static_cast<int>(fileiras); ++y) {
     std::string linha;
-    for (int x = 0; x < 9; ++x) linha += ecran.PixelAt(x, y).character;
+    for (int x = 0; x < larg; ++x) linha += ecran.PixelAt(x, y).character;
     linhas.push_back(linha);
   }
   return linhas;
