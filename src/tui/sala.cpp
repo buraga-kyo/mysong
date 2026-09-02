@@ -12,6 +12,9 @@
 #include <filesystem>
 #include <string_view>
 #include <utility>
+#include <vector>
+
+#include <ftxui/screen/string.hpp>
 
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
@@ -169,34 +172,42 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
   return elemento_da_capa(capa, largura - 2, linhas - 2);
 }
 
+// linha_da_conta — a conta e os chips. Elles CEDEM O LOGAR quando a linha não
+// cabe, como a fita do transporte: chip aparado come o vão da capa e diz nada.
+ftxui::Element linha_da_conta(const Colleccao& qual, std::size_t largura) {
+  const bool repete = qual.repeticao != nucleo::Repeticao::Nenhuma;
+  const bool uma = qual.repeticao == nucleo::Repeticao::Uma;
+  const std::string conta =
+      texto_da_conta(qual.quantas, qual.especie, qual.duracao);
+  const std::string um = " \u21c4 EMBARALHAR ";
+  const std::string dous = std::string(" \u21bb REPETIR: ") +
+                           (!repete ? "NÃO" : uma ? "UMA" : "TODAS") + " ";
+  std::vector<ftxui::Element> partes = {pinta(conta + "  ", tokens::text_body)};
+  const int pede = ftxui::string_width(conta) + ftxui::string_width(um) +
+                   ftxui::string_width(dous);
+  if (largura >= kCapaPequena + 5 + static_cast<std::size_t>(pede)) {
+    partes.push_back(chip(um, qual.embaralhado));
+    partes.push_back(ftxui::text(" "));
+    partes.push_back(chip(dous, repete));
+  }
+  return ftxui::hbox(std::move(partes));
+}
+
 ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
                                      const nucleo::CapaPintada& capa,
                                      std::size_t largura) {
   if (largura == 0) return ftxui::text("");
-  const bool repete = colleccao.repeticao != nucleo::Repeticao::Nenhuma;
-  const bool uma = colleccao.repeticao == nucleo::Repeticao::Uma;
-  const char* qual = !repete ? "NÃO" : uma ? "UMA" : "TODAS";
   std::string risca;
   for (std::size_t c = 0; c < largura; ++c) risca += "\u2500";
   return ftxui::vbox(
       {ftxui::hbox({elemento_da_arte(capa, kCapaPequena, kCapaPequenaLinhas),
                     ftxui::text("  "),
-                    ftxui::vbox({
-                        ftxui::text(""),
-                        pinta(colleccao.nome, tokens::text_heading) |
-                            ftxui::bold,
-                        ftxui::text(""),
-                        ftxui::hbox(
-                            {pinta(texto_da_conta(colleccao.quantas,
-                                                  colleccao.especie,
-                                                  colleccao.duracao) + "  ",
-                                   tokens::text_body),
-                             chip(" \u21c4 EMBARALHAR ", colleccao.embaralhado),
-                             ftxui::text(" "),
-                             chip(std::string(" \u21bb REPETIR: ") + qual + " ",
-                                  repete)}),
-                        ftxui::text(""),
-                    })}) |
+                    ftxui::vbox({ftxui::text(""),
+                                 pinta(colleccao.nome, tokens::text_heading) |
+                                     ftxui::bold,
+                                 ftxui::text(""),
+                                 linha_da_conta(colleccao, largura),
+                                 ftxui::text("")})}) |
            ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                        static_cast<int>(kCapaPequenaLinhas)),
        pinta(risca, tokens::line_dim)});
