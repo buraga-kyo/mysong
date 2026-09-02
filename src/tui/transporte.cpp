@@ -87,15 +87,37 @@ std::string repete(std::string_view glifo, std::size_t n) {
 // Os pedaços da fita em elementos. A regra do DESIGN_SYSTEM manda que a côr da
 // seta seja a côr do segmento que ella SEGUE, e a fita já a resolveu: aqui
 // sómente se pinta o que ella diz.
-ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos) {
+ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos,
+                                CaixasDoTransporte* caixas) {
   std::vector<ftxui::Element> partes;
-  partes.reserve(pedacos.size());
+  partes.reserve(pedacos.size() + 1);
   for (const Pedaco& pedaco : pedacos) {
     const tokens::Triade frente = tokens::rgb(pedaco.tinta);
     const tokens::Triade tras = tokens::rgb(pedaco.fundo);
-    partes.push_back(ftxui::text(pedaco.texto) |
-                     ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
-                     ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b)));
+    const auto vestir = [&](const std::string& texto) {
+      return ftxui::text(texto) |
+             ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
+             ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b));
+    };
+    const std::size_t salto = pedaco.texto.find(kProxima);
+    if (caixas != nullptr && !pedaco.juncao && salto != std::string::npos) {
+      // O segmento dos DOUS saltos parte-se ao meio, em textos de EGUAL tinta e
+      // egual fundo: as cellas sahem as mesmas, e cada glypho ganha caixa
+      // propria. Caixa do pedaço inteiro não saberia dizer em qual dos dous o
+      // dedo pousou, e partir a FITA em dous segmentos metteria entre elles um
+      // glypho de junção, que é mudar o desenho para achar o dedo.
+      partes.push_back(vestir(pedaco.texto.substr(0, salto)) |
+                       ftxui::reflect(caixas->anterior));
+      partes.push_back(vestir(pedaco.texto.substr(salto)) |
+                       ftxui::reflect(caixas->proxima));
+      continue;
+    }
+    ftxui::Element parte = vestir(pedaco.texto);
+    if (caixas != nullptr && !pedaco.juncao &&
+        (pedaco.texto.find(kPausar) != std::string::npos ||
+         pedaco.texto.find(kTocar) != std::string::npos))
+      parte = parte | ftxui::reflect(caixas->pausa);
+    partes.push_back(std::move(parte));
   }
   return ftxui::hbox(std::move(partes));
 }
@@ -152,7 +174,11 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
 }
 
 ftxui::Element elemento_do_transporte(const Retracto& retracto,
-                                      std::size_t largura) {
+                                      std::size_t largura,
+                                      CaixasDoTransporte* caixas) {
+  // Esvazia-se á entrada, e antes de toda sahida antecipada: linha que se não
+  // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
+  if (caixas != nullptr) *caixas = CaixasDoTransporte();
   if (largura == 0) return ftxui::text("");
 
   const std::string relogio =
@@ -182,7 +208,7 @@ ftxui::Element elemento_do_transporte(const Retracto& retracto,
       enchimento(retracto.posicao, retracto.duracao, larg_barra);
 
   return ftxui::hbox({
-      fita_em_elemento(fita.compor()),
+      fita_em_elemento(fita.compor(), caixas),
       ftxui::text(" "),
       pinta(repete(kBarraCheia, cheias), tokens::v500),
       pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset),
