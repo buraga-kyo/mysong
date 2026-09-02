@@ -8,9 +8,15 @@
 #include <doctest/doctest.h>
 
 #include <ftxui/component/mouse.hpp>
+#include <ftxui/dom/node.hpp>
 #include <ftxui/screen/box.hpp>
+#include <ftxui/screen/screen.hpp>
+
+#include <string>
 
 #include "tui/rato.hpp"
+#include "tui/tabella.hpp"
+#include "tui/transporte.hpp"
 
 namespace tui = mysong::tui;
 using ftxui::Mouse;
@@ -190,4 +196,48 @@ TEST_CASE("o transporte, a capa e a busca dão o gesto que dizem") {
   CHECK(clicou(caixas, 21, 30, sem).gesto == tui::Gesto::Nada);
   CHECK(clicou(caixas, 5, 6, estado).gesto == tui::Gesto::EntraNoDegrau);
   CHECK(clicou(caixas, 5, 6, estado).indice == 3);
+}
+
+namespace {
+
+// papel — o écran de PAPEL, com os escapes dentro. Compara-se o `ToString`, e
+// não as cellas nuas, de proposito: a côr entra na comparação, e caracter egual
+// com tinta differente já seria a caixa a mudar a pintura.
+std::string papel(ftxui::Element quadro, int largura, int altura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(largura), ftxui::Dimension::Fixed(altura));
+  ftxui::Render(ecran, quadro);
+  return ecran.ToString();
+}
+
+}  // namespace
+
+TEST_CASE("a caixa não muda um pixel do transporte") {
+  tui::Retracto retracto;
+  retracto.estado = mysong::nucleo::Estado::Tocando;
+  retracto.posicao = 30.0;
+  retracto.duracao = 120.0;
+  for (const int largura : {30, 60, 100}) {
+    const std::size_t larg = static_cast<std::size_t>(largura);
+    tui::CaixasDoTransporte caixas;
+    CHECK(papel(tui::elemento_do_transporte(retracto, larg), largura, 1) ==
+          papel(tui::elemento_do_transporte(retracto, larg, &caixas), largura, 1));
+    // E as caixas encheram-se: sem isto, a egualdade valeria tambem para quem
+    // se esquecesse de as pôr, e a prova não provaria cousa alguma.
+    CHECK_FALSE(caixas.pausa.IsEmpty());
+    CHECK_FALSE(caixas.saltos.IsEmpty());
+    CHECK_FALSE(caixas.progresso().IsEmpty());
+  }
+}
+
+TEST_CASE("a caixa não muda um pixel da capa") {
+  const mysong::nucleo::CapaPintada sem_capa;  // o marcador do album sem arte
+  ftxui::Box caixa;
+  CHECK(papel(tui::elemento_da_capa(sem_capa, 20, 11), 20, 11) ==
+        papel(tui::elemento_da_capa(sem_capa, 20, 11, &caixa), 20, 11));
+  CHECK_FALSE(caixa.IsEmpty());
+  // Terminal apertado não mostra capa alguma, e a caixa fica VAZIA em vez de
+  // ficar a do quadro anterior a apanhar cliques sobre a tabella.
+  tui::elemento_da_capa(sem_capa, 0, 0, &caixa);
+  CHECK(caixa.IsEmpty());
 }
