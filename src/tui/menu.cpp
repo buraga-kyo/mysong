@@ -35,6 +35,23 @@ std::size_t degrau_da_secao(Secao secao) noexcept {
   return 0;
 }
 
+// A CONTA dos degraus da bibliotheca (issue #93): um para as MINHAS MÚSICAS, um
+// por lista do operador, e os quatro de navegar. Barra que não conte as listas
+// d'elle não é bibliotheca, é um menu.
+std::size_t degraus_da_barra(std::size_t listas) noexcept {
+  return 1 + listas + 4;
+}
+
+AlvoDaBarra alvo_do_degrau(std::size_t degrau,
+                           const std::vector<nucleo::Rol>& listas) {
+  if (degrau == 0 || degrau >= degraus_da_barra(listas.size()))
+    return {Secao::Busca, 0};
+  if (degrau <= listas.size()) return {Secao::NoRol, listas[degrau - 1].id};
+  constexpr Secao navegar[4] = {Secao::Artistas, Secao::Albuns, Secao::Rede,
+                                Secao::Lista};
+  return {navegar[degrau - listas.size() - 1], 0};
+}
+
 bool tecla_abre_menu(const ftxui::Event& tecla) noexcept {
   return tecla == ftxui::Event::Tab || tecla == ftxui::Event::TabReverse;
 }

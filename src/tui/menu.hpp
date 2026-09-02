@@ -22,9 +22,11 @@
 #pragma once
 
 #include <cstddef>
+#include <vector>
 
 #include <ftxui/component/event.hpp>
 
+#include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
 
 namespace mysong::tui {
@@ -37,6 +39,29 @@ inline constexpr std::size_t DEGRAUS_DA_BARRA = 7;
 // pintura de hoje: é lá que se está, um degrau abaixo.
 Secao secao_do_degrau(std::size_t degrau) noexcept;
 std::size_t degrau_da_secao(Secao secao) noexcept;
+
+// ── A BARRA DA BIBLIOTHECA (issue #93) ──────────────────────────────────────
+// Os degraus deixaram de ser sete: são as MINHAS MÚSICAS, uma fileira por lista
+// do operador, e os quatro de navegar. Quem determina a conta é ELLE, donde ella
+// entra por parametro em vez de morar n'uma constante d'este arquivo.
+
+// O ALVO de um degrau: ou uma SECÇÃO, ou UMA lista pelo seu ID. As duas cousas
+// n'um só logar porque a barra é uma só, e taboada apartada obrigaria quem entra
+// a perguntar «de qual das duas veio este degrau?» em todo ramo. E é o ID, e não
+// o indice na barra: apagada uma lista entre abrir a barra e teclar Enter, o
+// indice desloca-se e entrar-se-hia na lista errada; o id não se desloca.
+struct AlvoDaBarra {
+  Secao secao = Secao::Busca;
+  int rol = 0;  // sómente quando a secção é NoRol; zero nas demais
+};
+
+std::size_t degraus_da_barra(std::size_t listas) noexcept;
+
+// A taboada degrau→alvo, na ordem da barra: é a MESMA ordem da pintura, e mudar
+// uma sem a outra faria o Enter abrir cousa que o marcador não diz. Degrau fóra
+// da conta cahe no primeiro, e não estoura.
+AlvoDaBarra alvo_do_degrau(std::size_t degrau,
+                           const std::vector<nucleo::Rol>& listas);
 
 // tecla_abre_menu — o Tab, e o Shift+Tab com elle: havendo sómente dous focos,
 // avançar e voltar são o mesmo gesto, e tecla morta não se dá a quem explora.
