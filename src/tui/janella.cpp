@@ -849,7 +849,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             antes < gesto.indice ? navegador.desce() : navegador.sobe();
             if (navegador.eleito() == antes) break;  // saturou: acabou a lista
           }
-          return true;
+          // O Toca SEGUE, e não pára aqui: elle é o Entra, e quem o cumpre é a
+          // taboada de baixo. Parando, o segundo clique elegia o que já estava
+          // eleito e mais nada, que foi o que a prova no pty accusou.
+          if (gesto.gesto == tui::Gesto::Elege) return true;
+          ordem_do_rato = {tui::Verbo::Entra};
+          break;
         case tui::Gesto::RodaSobe:
         case tui::Gesto::RodaDesce:
           for (std::size_t passo = 0; passo < gesto.indice; ++passo)
