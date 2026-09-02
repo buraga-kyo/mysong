@@ -171,3 +171,30 @@ TEST_CASE("o impedimento tranca a porta ainda que venha com avisos") {
   CHECK(relatorio.faltas().size() == 2);
   CHECK(relatorio.ha_impedimento());
 }
+
+// A CONSULTA DO GLYPHO (#94). Depende das fontes que a machina tem installadas,
+// e por isso cada caso salta com WARN quando a fonte que elle precisa falta: é
+// o mesmo arranjo com que a prova da capa salta sem ffmpeg. O que se afere aqui
+// não é o desenho do glypho, que ninguem mede sem olho; é a HONESTIDADE da
+// resposta, e sobretudo que ella nunca venha de fonte de substituição.
+TEST_CASE("o glypho pergunta-se pela classe de fonte, e não por um nome") {
+  // A agulha vazia responde ausente, e nunca «achei qualquer uma»: crivo que
+  // casa tudo daria sextante em machina que não tem nenhum.
+  CHECK_FALSE(nu::familia_com_glypho("", 0x1FB00));
+  // Nome que familia alguma traz responde ausente. É AQUI que o FcFontMatch
+  // mentiria: elle casaria n'uma fonte de substituição, cujo charset nada diz
+  // sobre a fonte que o operador de facto usa.
+  CHECK_FALSE(nu::familia_com_glypho("familia que nao existe nenhuma", 0x0041));
+
+  if (!nu::familia_com_glypho("nerd", 0x2596)) {
+    WARN("sem Nerd Font installada: os casos do quadrante e do sextante saltam");
+    return;
+  }
+  // O QUADRANTE, que a Nerd Font tem, e o MEIO-BLOCO, que toda fonte de
+  // terminal tem: a consulta responde SIM aos dous, donde ella sabe achar.
+  CHECK(nu::familia_com_glypho("nerd", 0x2596));
+  CHECK(nu::familia_com_glypho("nerd", 0x2580));
+  // E o ponto que fonte alguma da machina tem (area de uso privado bem funda)
+  // responde NÃO: sem isto, a consulta poderia estar a dizer sim a tudo.
+  CHECK_FALSE(nu::familia_com_glypho("nerd", 0x10FFFD));
+}
