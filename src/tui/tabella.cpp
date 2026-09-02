@@ -75,6 +75,15 @@ std::string reticencias(const std::string& crua, std::size_t largura) {
   return cortada.size() < crua.size() ? cortada + "…" : cortada;
 }
 
+// risca — a linha de separar o grupo das listas dos degraus de navegar, da
+// largura da barra. Concatena-se em laço porque «─» leva tres octetos, e o
+// std::string de repetir só sabe repetir octeto.
+ftxui::Element risca() {
+  std::string feita;
+  for (std::size_t i = 0; i < LARGURA_DA_BARRA; ++i) feita += "─";
+  return pinta(feita, tokens::line_dim);
+}
+
 }  // namespace
 
 ftxui::Element caret_do_campo() {
@@ -107,7 +116,11 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
   // A sala das LISTAS (a do `P`) não tem fileira aqui, e n'ella accende-se
   // nenhuma: accender a do alto seria dizer que se está onde não se está.
   const bool ha_fileira = navegador.secao() != Secao::Rois;
+  // O TITULO, em caixa alta e no text_heading do systema. Não é degrau: o dedo
+  // não pousa n'elle, e a taboada não o conta.
   std::vector<ftxui::Element> linhas;
+  linhas.push_back(
+      pinta(apara(" BIBLIOTECA", LARGURA_DA_BARRA), tokens::text_heading));
   const std::size_t quantos = degraus_da_barra(listas.size());
   for (std::size_t qual = 0; qual < quantos; ++qual) {
     // A fileira que ACCENDE vem da taboada, e não de comparação á mão: a barra e
@@ -139,6 +152,10 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
     linhas.push_back(std::move(linha));
+    // O SEPARADOR onde a bibliotheca acaba e os degraus de navegar começam. Sem
+    // lista alguma elle fica logo abaixo das minhas musicas, e a barra conserva
+    // as sete fileiras que sempre teve.
+    if (qual == listas.size()) linhas.push_back(risca());
   }
   return ftxui::vbox(std::move(linhas));
 }
