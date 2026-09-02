@@ -183,6 +183,27 @@ std::filesystem::path extrahe_embutida(const std::filesystem::path& faixa) {
 
 }  // namespace
 
+CapaPintada pinta_imagem(const std::filesystem::path& imagem,
+                         std::size_t collunas, std::size_t linhas,
+                         bool com_sextante) {
+  CapaPintada pintada;
+  if (imagem.empty() || collunas == 0 || linhas == 0) return pintada;
+  std::string colhido;
+  if (corre(argumentos_do_chafa(imagem, collunas, linhas, com_sextante),
+            &colhido) != 0 || colhido.empty()) return pintada;
+  std::size_t principio = 0;
+  while (principio < colhido.size()) {
+    const std::size_t fim = colhido.find('\n', principio);
+    const std::size_t ate = fim == std::string::npos ? colhido.size() : fim;
+    pintada.linhas.push_back(analysa_sgr(
+        std::string_view(colhido).substr(principio, ate - principio)));
+    if (fim == std::string::npos) break;
+    principio = fim + 1;
+  }
+  pintada.achada = !pintada.linhas.empty();
+  return pintada;
+}
+
 const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
                                  std::size_t collunas, std::size_t linhas) {
   const std::string chave = chave_do_cache(faixa, collunas, linhas);
@@ -195,25 +216,8 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
     // reescrever a etiqueta, e por isso é a que elle manda.
     std::filesystem::path imagem = capa_ao_lado(faixa);
     if (imagem.empty()) imagem = extrahe_embutida(faixa);
-    if (!imagem.empty()) {
-      std::string colhido;
-      if (corre(argumentos_do_chafa(imagem, collunas, linhas,
-                                    ha_sextante_na_fonte()), &colhido) == 0 &&
-          !colhido.empty()) {
-        std::size_t principio = 0;
-        while (principio < colhido.size()) {
-          const std::size_t fim = colhido.find('\n', principio);
-          const std::size_t ate = fim == std::string::npos ? colhido.size() : fim;
-          pintada.linhas.push_back(
-              analysa_sgr(std::string_view(colhido).substr(principio,
-                                                           ate - principio)));
-          if (fim == std::string::npos) break;
-          principio = fim + 1;
-        }
-        pintada.achada = !pintada.linhas.empty();
-        ++renders_;
-      }
-    }
+    pintada = pinta_imagem(imagem, collunas, linhas, ha_sextante_na_fonte());
+    if (pintada.achada) ++renders_;
   }
   // A AUSENCIA guarda-se tambem: sem isto, album sem capa faria a Casa procurar o
   // arquivo no disco vinte vezes por segundo para achar sempre o mesmo nada.

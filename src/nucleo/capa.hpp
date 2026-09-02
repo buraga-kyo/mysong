@@ -117,6 +117,14 @@ struct CapaPintada {
 // isso aferivel contra linhas escriptas á mão sem chamar o chafa.
 std::vector<Corrida> analysa_sgr(std::string_view linha);
 
+// pinta_imagem — renderiza um ARQUIVO no tamanho pedido, e é o que a Galeria
+// faz depois de achar a imagem. Sahe d'ella (issue #94) para o fita_capa a
+// alcançar sem faixa, sem etiqueta e sem cache. Tamanho zero, chafa ausente e
+// imagem recusada devolvem `achada` falso; nada lança.
+CapaPintada pinta_imagem(const std::filesystem::path& imagem,
+                         std::size_t collunas, std::size_t linhas,
+                         bool com_sextante);
+
 // ── E AGORA O QUE TOCA O MUNDO.
 
 // A GALERIA: guarda os renders já feitos, para que converter aconteça uma vez por
