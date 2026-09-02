@@ -47,9 +47,15 @@ ftxui::Element elemento_da_barra(const Navegador& navegador,
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
+//
+// As CAIXAS (issue #95) são UMA por linha que se pintou, e nunca por linha que
+// se não pintou: a altura que sobra abaixo da lista não é alvo de clique algum,
+// e vista vazia limpa o vector. Quem lê o vector somma-lhe a `primeira` para ir
+// da linha visivel á linha da vista.
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
-                                   std::size_t largura);
+                                   std::size_t largura,
+                                   std::vector<ftxui::Box>* caixas = nullptr);
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
 // vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.

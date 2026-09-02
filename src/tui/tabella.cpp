@@ -141,7 +141,12 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
 
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
-                                   std::size_t largura) {
+                                   std::size_t largura,
+                                   std::vector<ftxui::Box>* caixas) {
+  // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
+  // antecipada que deixasse as caixas do quadro anterior faria o clique acertar
+  // linhas que já não estão na tela.
+  if (caixas != nullptr) caixas->clear();
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
   if (vista.empty()) {
@@ -191,6 +196,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   const std::size_t larg_titulo = largura > fixas ? largura - fixas : 1;
 
   std::vector<ftxui::Element> linhas;
+  // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
+  // referencia, e realloque no meio do quadro deixá-la-hia pendurada.
+  if (caixas != nullptr)
+    caixas->assign(fim_da_fatia - primeira, caixa_por_pintar());
   for (std::size_t i = primeira; i < fim_da_fatia; ++i) {
     const Linha& linha = vista[i];
     const bool eleita = i == navegador.eleito();
@@ -210,6 +219,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
       pintada = pintada | ftxui::bgcolor(
                               ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
+    if (caixas != nullptr)
+      pintada = pintada | ftxui::reflect((*caixas)[i - primeira]);
     linhas.push_back(std::move(pintada));
   }
   return ftxui::vbox(std::move(linhas));
