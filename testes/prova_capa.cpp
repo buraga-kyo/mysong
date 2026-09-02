@@ -499,5 +499,44 @@ TEST_CASE("galerias de escolha differente não misturam render algum") {
   CHECK(com.quantos_renders() == 1u);
 }
 
+// O VAZAMENTO da inversão (#94), que a revisão de machina nomeou. O `corrente` é
+// a côr que ATRAVESSA de uma corrida para a seguinte: trocando-o ao fechar, a
+// tinta de uma sahia por fundo da outra. O chafa 1.19 fecha toda célulla
+// invertida com `ESC[0m` e por isso a tela nunca o mostrou; a funcção, porem, é
+// publica e pura, e ha de responder certo a quem a chame com outra cousa.
+TEST_CASE("a inversão não vaza a côr de uma corrida para a seguinte") {
+  const std::vector<nu::Corrida> duas =
+      nu::analysa_sgr("\x1b[7m\x1b[38;2;1;2;3mA\x1b[38;2;9;9;9mB");
+  REQUIRE(duas.size() == 2u);
+  CHECK(duas[0].texto == "A");
+  CHECK(duas[0].r_fundo == 1);
+  CHECK(duas[0].g_fundo == 2);
+  CHECK(duas[0].b_fundo == 3);
+  CHECK(duas[0].r_frente == -1);
+  // O B fecha com a SUA côr, e com nada da primeira. Continua invertido, e é o
+  // certo: ninguem disse `ESC[27m` nem `ESC[0m`, e a norma manda a marca durar
+  // até que se a desfaça. O defeito era o (1,2,3) do A apparecer aqui.
+  CHECK(duas[1].texto == "B");
+  CHECK(duas[1].r_fundo == 9);
+  CHECK(duas[1].g_fundo == 9);
+  CHECK(duas[1].b_fundo == 9);
+  CHECK(duas[1].r_frente == -1);
+}
+
+TEST_CASE("o fim do invertido desfaz a marca, e sómente ella") {
+  const std::vector<nu::Corrida> duas =
+      nu::analysa_sgr("\x1b[7m\x1b[38;2;1;2;3mA\x1b[27mB");
+  REQUIRE(duas.size() == 2u);
+  CHECK(duas[0].r_fundo == 1);
+  CHECK(duas[0].r_frente == -1);
+  // Desfeita a marca, a MESMA côr volta ao seu logar: das côres o 27 nada diz,
+  // e por isso a tinta que estava posta continua posta, e agora por tinta.
+  CHECK(duas[1].texto == "B");
+  CHECK(duas[1].r_frente == 1);
+  CHECK(duas[1].g_frente == 2);
+  CHECK(duas[1].b_frente == 3);
+  CHECK(duas[1].r_fundo == -1);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
