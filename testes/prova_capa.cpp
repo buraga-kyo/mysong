@@ -377,3 +377,53 @@ TEST_CASE("os argumentos do chafa pedem os symbolos ricos, e nada de letras") {
             "border", "--dither", "--color-space", "--stretch"})
         CHECK(argumento.find(proscripto) == std::string::npos);
 }
+
+// A PROPORÇÃO (#94). Que o chafa a guarde é promessa d'elle; aqui prende-se que
+// a Casa não lhe passa nada que a quebre. Salta sem ffmpeg, como os visinhos.
+TEST_CASE("a arte enche a largura e guarda a proporção, sem esticar") {
+  // Conta CARACTERES, e não octetos: o quadrante come tres octetos e o
+  // sextante quatro, e por octeto a capa diria cento e vinte onde tem quarenta.
+  const auto collunas = [](const std::vector<nu::Corrida>& linha) {
+    std::size_t conta = 0;
+    for (const nu::Corrida& corrida : linha)
+      for (const char letra : corrida.texto)
+        if ((static_cast<unsigned char>(letra) & 0xC0) != 0x80) ++conta;
+    return conta;
+  };
+  const Cova cova;
+  const std::filesystem::path larga = cova.raiz() / "16-9.png";
+  const std::filesystem::path quadrada = cova.raiz() / "1-1.png";
+  const auto pinta = [](const std::string& medida,
+                        const std::filesystem::path& onde) {
+    return std::system(("ffmpeg -y -f lavfi -i color=c=purple:s=" + medida +
+                        " -frames:v 1 '" + onde.string() + "' >/dev/null 2>&1")
+                           .c_str()) == 0 &&
+           std::filesystem::exists(onde);
+  };
+  if (!pinta("160x90", larga) || !pinta("64x64", quadrada)) {
+    WARN("sem ffmpeg: o caso da proporção não corre");
+    return;
+  }
+  // Pedidas quarenta por vinte: a 16:9 sahe 40 por DOZE (a largura enche, a
+  // altura sobra) e a quadrada 40 por vinte. Esticadas, ambas dariam vinte
+  // linhas; cortada, a larga daria menos que quarenta collunhas.
+  const nu::CapaPintada dezaseis = nu::pinta_imagem(larga, 40, 20, false);
+  REQUIRE(dezaseis.achada);
+  CHECK(dezaseis.linhas.size() == 12u);
+  CHECK(collunas(dezaseis.linhas.front()) == 40u);
+  const nu::CapaPintada quadro = nu::pinta_imagem(quadrada, 40, 20, false);
+  REQUIRE(quadro.achada);
+  CHECK(quadro.linhas.size() == 20u);
+  CHECK(collunas(quadro.linhas.front()) == 40u);
+  // O painel apertado e o painel largo, que é o que a irmã #92 ha de dar.
+  CHECK(nu::pinta_imagem(larga, 8, 5, false).linhas.size() == 3u);
+  CHECK(nu::pinta_imagem(larga, 60, 31, false).linhas.size() == 17u);
+  // E o que não dá capa alguma, sem lançar: tamanho zero, caminho vazio, e
+  // arquivo que existe e imagem não é.
+  CHECK_FALSE(nu::pinta_imagem(larga, 0, 20, false).achada);
+  CHECK_FALSE(nu::pinta_imagem(larga, 40, 0, false).achada);
+  CHECK_FALSE(nu::pinta_imagem({}, 40, 20, false).achada);
+  cova.poe("nao-e-imagem.png");
+  CHECK_FALSE(nu::pinta_imagem(cova.raiz() / "nao-e-imagem.png", 40, 20, false)
+                  .achada);
+}
