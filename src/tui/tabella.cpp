@@ -66,6 +66,14 @@ std::string apara(const std::string& crua, std::size_t largura) {
   return feita;
 }
 
+// reticencias — o corte com «…» no fim, para o nome que não cabe na barra. A
+// conta é por CODEPOINT, como a do `cortar`, e o «…» só entra havendo corte:
+// nome que cabe sahe intacto, que ponto a mais em nome inteiro seria mentira.
+std::string reticencias(const std::string& crua, std::size_t largura) {
+  const std::string cortada = cortar(crua, largura);
+  return cortada.size() < crua.size() ? cortada + "…" : cortada;
+}
+
 }  // namespace
 
 ftxui::Element caret_do_campo() {
@@ -114,8 +122,12 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
     // elle ganha do v700 quando os dous cahem na mesma fileira: o cursor é o
     // signal mais novo, e é elle que diz quem manda na tecla.
     const bool sob_o_dedo = com_foco && qual == degrau_eleito;
+    // A largura é a da barra, e não a do rotulo: o «▸» toma a primeira collunha
+    // e o resto vae aparado, que é o que faz a barra não alargar por um nome.
     const std::string texto =
-        sob_o_dedo ? "▸" + std::string(rotulo + 1) : std::string(rotulo);
+        apara(std::string(sob_o_dedo ? "▸" : " ") +
+                  reticencias(std::string(rotulo + 1), LARGURA_DA_BARRA - 2),
+              LARGURA_DA_BARRA);
     ftxui::Element linha =
         pinta(texto, aqui || sob_o_dedo ? tokens::text_bright
                                         : tokens::text_muted);
