@@ -196,7 +196,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
         recado = "  (lista alguma lida: `I` cola a URL de uma do Spotify)";
         break;
       case Secao::Busca:
-        recado = "  (nada casa com esse termo)";
+        // As MINHAS MÚSICAS abrem com termo VAZIO (issue #93): não havendo
+        // termo, quem está vazio é o acervo, e culpar o termo mandaria o
+        // operador procurar erro de escripta que elle não commetteu.
+        if (!navegador.termo().empty()) recado = "  (nada casa com esse termo)";
         break;
       case Secao::Artistas:
       case Secao::Albuns:

@@ -204,6 +204,13 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   navegador.mostra_rede(std::vector<nu::Achado>{});
   const std::vector<std::string> rede = pintar(navegador, 1, 70);
   CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
+
+  // Nas MINHAS MÚSICAS o recado depende do TERMO: sem elle, quem está vazio é o
+  // acervo, e mandar procurar erro de escripta seria mandar ao logar errado.
+  REQUIRE(navegador.vai_para(tui::Secao::Busca));
+  CHECK(pintar(navegador, 1, 70)[0].find("varra o acervo") != std::string::npos);
+  navegador.filtra("zzz");
+  CHECK(pintar(navegador, 1, 70)[0].find("esse termo") != std::string::npos);
 }
 
 
