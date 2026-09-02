@@ -392,5 +392,39 @@ TEST_CASE("a lista apparece, muda e some da barra no mesmo quadro") {
   CHECK_FALSE(tem("de tarde"));
 }
 
+TEST_CASE("o nome comprido corta-se com reticencias, e a barra não alarga") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol(std::string(60, 'z')));
+  const std::vector<std::string> barra = pintar_barra(navegador, false, 0, 0, 8);
+  CHECK(barra[2] == " " + std::string(18, 'z') + "…");
+  for (const std::string& linha : barra)
+    CHECK(escriptas(linha + "|") == tui::LARGURA_DA_BARRA + 1);
+}
+
+TEST_CASE("a barra não passa da altura que lhe deram, e o eleito fica á vista") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  for (int i = 10; i < 60; ++i)
+    REQUIRE(navegador.cria_rol("lista " + std::to_string(i)));
+  // Altura de doze: as sete fileiras fixas e cinco listas, e nada mais. O papel
+  // vae de vinte, que barra que passasse da altura appareceria n'elle.
+  for (const std::size_t degrau : {std::size_t{1}, std::size_t{25},
+                                   std::size_t{50}}) {
+    const std::vector<std::string> barra =
+        pintar_barra(navegador, true, degrau, 12, 20);
+    std::size_t dedos = 0;
+    for (std::size_t i = 0; i < barra.size(); ++i) {
+      if (barra[i].find("▸") != std::string::npos) ++dedos;
+      if (i >= 12) CHECK(escriptas(barra[i] + "|") == 1);  // fileira em branco
+    }
+    CHECK(dedos == 1);  // o degrau eleito está sempre á vista
+  }
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
