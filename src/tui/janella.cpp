@@ -497,7 +497,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
   // assignatura, e o fio da tela troca-o na tecla `l`.
   std::atomic<bool> mostra_letra{false};
-  nucleo::Galeria galeria;  // a capa converte-se uma vez por album e por tamanho
+  // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
+  nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:

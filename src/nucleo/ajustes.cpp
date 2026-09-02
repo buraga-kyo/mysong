@@ -171,6 +171,24 @@ std::string_view chave_da_fonte(Fonte fonte) {
   return "fonte sem nome";
 }
 
+// sextantes_de — as tres palavras, e sómente ellas. Nome que não é nenhuma
+// devolve vazio, e a queixa fica com quem chama, pela regra do fonte_de.
+std::optional<Sextantes> sextantes_de(std::string_view texto) {
+  if (egual_sem_caixa(texto, "auto")) return Sextantes::Auto;
+  if (egual_sem_caixa(texto, "sim")) return Sextantes::Sim;
+  if (egual_sem_caixa(texto, "nao")) return Sextantes::Nao;
+  return std::nullopt;
+}
+
+std::string_view chave_dos_sextantes(Sextantes sextantes) {
+  switch (sextantes) {
+    case Sextantes::Auto: return "auto";
+    case Sextantes::Sim: return "sim";
+    case Sextantes::Nao: return "nao";
+  }
+  return "valor sem nome";
+}
+
 std::optional<int> volume_de(std::string_view texto) {
   const std::optional<int> numero = inteiro_de(texto);
   if (!numero || *numero < 0 || *numero > VOLUME_DA_CASA) return std::nullopt;
@@ -220,6 +238,12 @@ void resolver(const Degraus& degraus,
       else
         ajustes->queixa(onde + "baixas_simultaneas «" + par.valor +
                        "» não é numero de um a oito");
+    } else if (par.chave == "capa_sextantes") {
+      if (const auto quer = sextantes_de(par.valor))
+        ajustes->capa_sextantes = {*quer, Origem::Arquivo};
+      else
+        ajustes->queixa(onde + "capa_sextantes «" + par.valor +
+                       "» não é auto, sim nem nao");
     } else {
       ajustes->queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
     }
@@ -231,6 +255,19 @@ void resolver(const Degraus& degraus,
   if (degraus.acervo_do_ambiente)
     ajustes->acervo = {std::filesystem::path(*degraus.acervo_do_ambiente),
                       Origem::Ambiente};
+  // O sextante do AMBIENTE, e este AFERE-SE, ao contrario do acervo: palavra
+  // que não é nenhuma das tres não aponta para logar algum do mundo, é erro de
+  // dedo, e a queixa nomeia-a. Vale mais aqui que nas outras chaves: é a que o
+  // operador ha de querer virar por UMA corrida, para comparar os dous renders
+  // no proprio terminal, sem editar arquivo nenhum.
+  if (degraus.sextantes_do_ambiente) {
+    if (const auto quer = sextantes_de(*degraus.sextantes_do_ambiente))
+      ajustes->capa_sextantes = {*quer, Origem::Ambiente};
+    else
+      ajustes->queixa("MYSONG_CAPA_SEXTANTES «" +
+                     *degraus.sextantes_do_ambiente +
+                     "» não é auto, sim nem nao");
+  }
   // O ARGUMENTO, que é o degrau de cima, e este AFERE-SE: quem o digita está a
   // olhar para a tela agora, e ha de saber já que errou o caminho.
   if (degraus.acervo_do_argumento) {
@@ -319,6 +356,9 @@ Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
   degraus.acervo_do_argumento = do_argumento;
   const char* const posto = std::getenv("MYSONG_ACERVO");
   if (posto != nullptr && posto[0] != '\0') degraus.acervo_do_ambiente = posto;
+  const char* const sextante = std::getenv("MYSONG_CAPA_SEXTANTES");
+  if (sextante != nullptr && sextante[0] != '\0')
+    degraus.sextantes_do_ambiente = sextante;
   std::string texto;
   ajustes.estado = ler_o_arquivo(ajustes.arquivo, &texto, &ajustes);
   if (ajustes.estado == EstadoDoArquivo::Lido)
@@ -400,6 +440,10 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
   linha_do_ajuste(&texto, "baixas_simultaneas",
                   std::to_string(ajustes.baixas_simultaneas.valor),
                   ajustes.baixas_simultaneas.origem);
+  linha_do_ajuste(
+      &texto, "capa_sextantes",
+      std::string(chave_dos_sextantes(ajustes.capa_sextantes.valor)),
+      ajustes.capa_sextantes.origem);
   // O CAMINHO vae sempre, ainda que o arquivo não exista: sem elle, quem
   // escreveu o arquivo no logar errado não tem como descobrir qual é o certo.
   texto += "\n  arquivo: " + ajustes.arquivo.string() + " (";
