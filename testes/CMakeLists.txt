@@ -123,6 +123,10 @@ target_sources(mysong_testes PRIVATE prova_estaleiro.cpp)
 # alinhamento de columna sem o olho de quem abriu o programa.
 target_sources(mysong_testes PRIVATE prova_tabella.cpp)
 
+# ─── A PROVA DA SALA (issue #92) ────────────────────────────────────────────
+# Ao lado da prova da tabella, que é a peça que a sala estende: linha NOVA.
+target_sources(mysong_testes PRIVATE prova_sala.cpp)
+
 # ─── A PROVA DO CORREIO (issue #12) ─────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_correio.cpp)
 
