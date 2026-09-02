@@ -258,8 +258,15 @@ ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas
 }
 
 ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
-                                std::size_t collunas, std::size_t linhas) {
+                                std::size_t collunas, std::size_t linhas,
+                                ftxui::Box* caixa) {
+  // Esvazia-se á entrada: terminal apertado não mostra capa alguma, e a caixa
+  // do quadro anterior deixaria o clique a pausar sobre a tabella.
+  if (caixa != nullptr) *caixa = caixa_por_pintar();
   if (collunas == 0 || linhas == 0) return ftxui::text("");
+  const auto lembrar = [caixa](ftxui::Element pintada) {
+    return caixa == nullptr ? pintada : pintada | ftxui::reflect(*caixa);
+  };
   if (capa.achada) {
     // Cada corrida vira UM elemento com a sua tinta. Não se passa a cadeia crua do
     // chafa: o FTXUI contaria os octetos do escape como LARGURA, e a capa esmagaria a
@@ -283,7 +290,7 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
       }
       pintadas.push_back(ftxui::hbox(std::move(corridas)));
     }
-    return ftxui::vbox(std::move(pintadas));
+    return lembrar(ftxui::vbox(std::move(pintadas)));
   }
 
   // O MARCADOR: uma nota musical no meio de um quadro de orla, com os tokens d'esta
@@ -300,7 +307,7 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
       pintadas.push_back(pinta(std::string(collunas, ' '), tokens::inset));
     }
   }
-  return ftxui::vbox(std::move(pintadas)) | ftxui::border;
+  return lembrar(ftxui::vbox(std::move(pintadas)) | ftxui::border);
 }
 
 }  // namespace mysong::tui

@@ -68,8 +68,12 @@ ftxui::Element elemento_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas
 // A CAPA no painel (issue #16). Achada, pinta-se linha a linha, com os escapes que o
 // chafa produziu passados intactos. Não achada, desenha-se o MARCADOR com os tokens
 // d'esta Casa: um buraco não diz nada, e o marcador diz «este album não tem capa».
+//
+// A CAIXA (issue #95) é UMA, a do quadro inteiro: o clique n'ella pausa e
+// retoma. Sem capa que caiba, ella sahe VAZIA, e não a do quadro anterior.
 ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
-                                std::size_t collunas, std::size_t linhas);
+                                std::size_t collunas, std::size_t linhas,
+                                ftxui::Box* caixa = nullptr);
 
 // caret_do_campo — a cella de UMA collunha onde o cursor do terminal pousa
 // emquanto ha prompt aberto. É o UNICO logar d'esta obra que pede foco, e é de
