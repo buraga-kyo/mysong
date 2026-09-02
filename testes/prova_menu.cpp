@@ -148,5 +148,30 @@ TEST_CASE("o Tab alterna e a seta anda saturando nos extremos") {
   CHECK(menu.alvo() == tui::Secao::Busca);
 }
 
+TEST_CASE("a barra satura nos extremos com zero, uma, cinco e cincoenta listas") {
+  for (const int quantas : {0, 1, 5, 50}) {
+    const std::vector<nu::Rol> rois = listas(quantas);
+    tui::Menu menu;
+    menu.abre(tui::Secao::Busca, rois, 0);
+    CHECK(menu.degrau() == 0);
+    for (int i = 0; i < 99; ++i) menu.sobe();
+    CHECK(menu.degrau() == 0);  // menu não é carrossel
+    for (int i = 0; i < 99; ++i) menu.desce();
+    CHECK(menu.degrau() + 1 == tui::degraus_da_barra(rois.size()));
+    menu.ao_principio();
+    CHECK(menu.degrau() == 0);
+    menu.ao_fim();
+    CHECK(menu.degrau() + 1 == tui::degraus_da_barra(rois.size()));
+  }
+}
+
+TEST_CASE("dentro de uma lista a barra acorda na fileira d'ella") {
+  const std::vector<nu::Rol> rois = listas(3);
+  tui::Menu menu;
+  menu.abre(tui::Secao::NoRol, rois, 30);
+  CHECK(menu.degrau() == 3);
+  CHECK(tui::alvo_do_degrau(menu.degrau(), rois).rol == 30);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

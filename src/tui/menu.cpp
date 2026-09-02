@@ -121,7 +121,15 @@ Secao Menu::alvo() const noexcept { return secao_do_degrau(degrau_); }
 
 void Menu::abre(Secao corrente) noexcept {
   aberto_ = true;
+  degraus_ = DEGRAUS_DA_BARRA;
   degrau_ = degrau_da_secao(corrente);
+}
+
+void Menu::abre(Secao corrente, const std::vector<nucleo::Rol>& listas,
+                int rol_corrente) {
+  aberto_ = true;
+  degraus_ = degraus_da_barra(listas.size());
+  degrau_ = degrau_da_secao(corrente, listas, rol_corrente);
 }
 
 void Menu::fecha() noexcept { aberto_ = false; }
@@ -131,12 +139,14 @@ void Menu::sobe() noexcept {
 }
 
 void Menu::desce() noexcept {
-  if (degrau_ + 1 < DEGRAUS_DA_BARRA) ++degrau_;
+  if (degrau_ + 1 < degraus_) ++degrau_;
 }
 
 void Menu::ao_principio() noexcept { degrau_ = 0; }
 
-void Menu::ao_fim() noexcept { degrau_ = DEGRAUS_DA_BARRA - 1; }
+void Menu::ao_fim() noexcept {
+  degrau_ = degraus_ > 0 ? degraus_ - 1 : 0;
+}
 
 }  // namespace mysong::tui
 

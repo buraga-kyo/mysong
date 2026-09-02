@@ -108,6 +108,12 @@ class Menu {
   // abre — o Tab vindo da lista. O degrau eleito nasce na secção CORRENTE,
   // que é o que o esboço aprovado mostra: o marcador acorda onde se está.
   void abre(Secao corrente) noexcept;
+  // abre — o mesmo, com as listas do operador na mão (issue #93). A CONTA dos
+  // degraus guarda-se, e as ordens saturam por ella. Guardá-la não envelhece:
+  // com a barra aberta, toda tecla que cria, renomeia ou apaga uma lista é
+  // alheia á barra, e o ramo Alheio fecha-a antes de a tecla correr.
+  void abre(Secao corrente, const std::vector<nucleo::Rol>& listas,
+            int rol_corrente);
   void fecha() noexcept;
 
   void sobe() noexcept;  // saturam nos extremos: menu não é carrossel
@@ -118,6 +124,7 @@ class Menu {
  private:
   bool aberto_ = false;
   std::size_t degrau_ = 0;
+  std::size_t degraus_ = DEGRAUS_DA_BARRA;
 };
 
 }  // namespace mysong::tui
