@@ -248,3 +248,22 @@ TEST_CASE("a chave capa_sextantes lê-se, e a palavra torta cae no degrau") {
   CHECK(torta.queixas.front().find("capa_sextantes") != std::string::npos);
 }
 
+TEST_CASE("o ambiente do sextante ganha do arquivo, e o torto queixa-se") {
+  nu::Degraus degraus;
+  degraus.sextantes_do_ambiente = "nao";
+  const nu::Ajustes ganhou = resolvido("capa_sextantes = sim\n", degraus);
+  CHECK(ganhou.capa_sextantes.valor == nu::Sextantes::Nao);
+  CHECK(ganhou.capa_sextantes.origem == nu::Origem::Ambiente);
+  // E o diagnostico mostra a chave com o valor e a origem, sem escape algum.
+  const std::string texto = nu::texto_dos_ajustes(ganhou);
+  CHECK(texto.find("capa_sextantes") != std::string::npos);
+  CHECK(texto.find("nao") != std::string::npos);
+  // Variavel torta AFERE-SE, ao contrario do acervo: queixa com o nome d'ella,
+  // e o valor do arquivo fica de pé.
+  nu::Degraus tortos;
+  tortos.sextantes_do_ambiente = "talvez";
+  const nu::Ajustes caiu = resolvido("capa_sextantes = sim\n", tortos);
+  CHECK(caiu.capa_sextantes.valor == nu::Sextantes::Sim);
+  REQUIRE(caiu.queixas.size() == 1u);
+  CHECK(caiu.queixas.front().find("MYSONG_CAPA_SEXTANTES") != std::string::npos);
+}
