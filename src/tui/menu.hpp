@@ -103,12 +103,13 @@ class Menu {
  public:
   bool aberto() const noexcept;
   std::size_t degrau() const noexcept;
-  Secao alvo() const noexcept;  // a secção do degrau eleito
 
-  // abre — o Tab vindo da lista. O degrau eleito nasce na secção CORRENTE,
-  // que é o que o esboço aprovado mostra: o marcador acorda onde se está.
-  void abre(Secao corrente) noexcept;
-  // abre — o mesmo, com as listas do operador na mão (issue #93). A CONTA dos
+  // abre — o Tab vindo da lista, com as listas do operador na mão. O degrau
+  // eleito nasce na secção CORRENTE, que é o que o esboço aprovado mostra: o
+  // marcador acorda onde se está. E o ALVO já não é d'esta classe: quem entra
+  // pergunta-o á taboada, que é quem sabe qual degrau é lista e qual é secção.
+  //
+  // A CONTA dos
   // degraus guarda-se, e as ordens saturam por ella. Guardá-la não envelhece:
   // com a barra aberta, toda tecla que cria, renomeia ou apaga uma lista é
   // alheia á barra, e o ramo Alheio fecha-a antes de a tecla correr.

@@ -127,27 +127,6 @@ TEST_CASE("a tecla alheia é alheia e é ella que faz o atalho valer") {
     CHECK(tui::gesto_da_barra(alheia) == Gesto::Alheio);
 }
 
-TEST_CASE("o Tab alterna e a seta anda saturando nos extremos") {
-  tui::Menu menu;
-  CHECK_FALSE(menu.aberto());
-  menu.abre(tui::Secao::NoRol);  // dentro de uma lista: acorda em LISTS
-  CHECK(menu.aberto());
-  CHECK(menu.alvo() == tui::Secao::Rois);
-  menu.sobe();  // LISTS, NET, SEARCH, TRACKS, ALBUMS, ARTISTS, e satura
-  for (int i = 0; i < 9; ++i) menu.sobe();
-  CHECK(menu.alvo() == tui::Secao::Artistas);
-  for (int i = 0; i < 9; ++i) menu.desce();  // até SPOTIFY, e satura
-  CHECK(menu.alvo() == tui::Secao::Lista);
-  menu.ao_principio();
-  CHECK(menu.degrau() == 0);
-  menu.ao_fim();
-  CHECK(menu.degrau() + 1 == tui::DEGRAUS_DA_BARRA);
-  menu.fecha();
-  CHECK_FALSE(menu.aberto());
-  menu.abre(tui::Secao::Busca);  // reabrir assenta na secção corrente
-  CHECK(menu.alvo() == tui::Secao::Busca);
-}
-
 TEST_CASE("a barra satura nos extremos com zero, uma, cinco e cincoenta listas") {
   for (const int quantas : {0, 1, 5, 50}) {
     const std::vector<nu::Rol> rois = listas(quantas);
@@ -162,6 +141,10 @@ TEST_CASE("a barra satura nos extremos com zero, uma, cinco e cincoenta listas")
     CHECK(menu.degrau() == 0);
     menu.ao_fim();
     CHECK(menu.degrau() + 1 == tui::degraus_da_barra(rois.size()));
+    menu.fecha();
+    CHECK_FALSE(menu.aberto());
+    menu.abre(tui::Secao::Artistas, rois, 0);  // reabrir assenta na corrente
+    CHECK(menu.degrau() == rois.size() + 1);
   }
 }
 

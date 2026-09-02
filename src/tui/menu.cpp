@@ -117,14 +117,6 @@ GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept {
 
 bool Menu::aberto() const noexcept { return aberto_; }
 std::size_t Menu::degrau() const noexcept { return degrau_; }
-Secao Menu::alvo() const noexcept { return secao_do_degrau(degrau_); }
-
-void Menu::abre(Secao corrente) noexcept {
-  aberto_ = true;
-  degraus_ = DEGRAUS_DA_BARRA;
-  degrau_ = degrau_da_secao(corrente);
-}
-
 void Menu::abre(Secao corrente, const std::vector<nucleo::Rol>& listas,
                 int rol_corrente) {
   aberto_ = true;
