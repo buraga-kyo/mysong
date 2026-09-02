@@ -127,8 +127,9 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
   // risca e os quatro de navegar. Com altura posta, o grupo ROLA no que sobra,
   // que barra mais alta que a tela empurraria o transporte para fóra do quadro.
   // Altura zero é «sem limite», e é o que a bateria usa para as ver todas.
+  const std::size_t fixas = degraus_da_barra(0) + 2;  // o titulo e a risca
   const std::size_t cabe =
-      altura == 0 ? listas.size() : (altura > 7 ? altura - 7 : 0);
+      altura == 0 ? listas.size() : (altura > fixas ? altura - fixas : 0);
   const std::size_t olhado = com_foco ? degrau_eleito : corrente;
   const std::size_t primeira = primeira_a_mostrar(
       olhado > 0 && olhado <= listas.size() ? olhado - 1 : 0, listas.size(),

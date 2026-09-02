@@ -31,12 +31,18 @@ namespace mysong::tui {
 // ao nome, e o que não couber corta-se em vez de alargar a barra.
 inline constexpr std::size_t LARGURA_DA_BARRA = 20;
 
-// A barra lateral do mockup. Marca a secção em que se está e, com o FOCO na
-// barra (issue #80), marca tambem o degrau sob o dedo: o primeiro espaço do
-// rotulo vira «▸» e o fundo é o v900 do eleito da tabella, que é a cor de
-// cursor d'esta Casa. Os dous signaes convivem: o v700 diz onde se ESTÁ, o
-// «▸» diz onde o dedo aponta e QUEM manda na tecla. Sem foco, os parametros
-// novos dormem nos padrões e a pintura é a de sempre, byte por byte.
+// A BIBLIOTHECA (issue #93): o titulo, as MINHAS MÚSICAS, as listas do operador
+// pelo nome, a risca, e os quatro degraus de navegar. A ordem e os rotulos vêm
+// da taboada do menu, e não d'aqui: um só logar responde por elles.
+//
+// Marca a secção em que se está e, com o FOCO na barra (issue #80), marca
+// tambem o degrau sob o dedo: o primeiro espaço do rotulo vira «▸» e o fundo é
+// o v900 do eleito da tabella, que é a cor de cursor d'esta Casa. Os dous
+// signaes convivem: o v700 diz onde se ESTÁ, o «▸» diz onde o dedo aponta e
+// QUEM manda na tecla.
+//
+// `altura` é a que a barra tem para si, e zero quer dizer «sem limite»: posta,
+// o grupo das listas rola dentro d'ella e a barra não passa d'ella.
 ftxui::Element elemento_da_barra(const Navegador& navegador,
                                  bool com_foco = false,
                                  std::size_t degrau_eleito = 0,
