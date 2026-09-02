@@ -53,16 +53,6 @@ TEST_CASE("a taboada da barra é espelho fiel com zero, uma e cinco listas") {
 using ftxui::Event;
 using Gesto = tui::GestoDaBarra;
 
-TEST_CASE("a taboada do degrau e a da secção são espelho fiel") {
-  for (std::size_t i = 0; i < tui::DEGRAUS_DA_BARRA; ++i)
-    CHECK(tui::degrau_da_secao(tui::secao_do_degrau(i)) == i);
-  // Dentro de uma lista o degrau é o das LISTAS, como na pintura de hoje.
-  CHECK(tui::degrau_da_secao(tui::Secao::NoRol) ==
-        tui::degrau_da_secao(tui::Secao::Rois));
-  // Degrau fóra da conta não estoura: cahe no primeiro.
-  CHECK(tui::secao_do_degrau(99) == tui::Secao::Artistas);
-}
-
 TEST_CASE("a ordem da barra é as minhas musicas, as listas, e os de navegar") {
   const std::vector<nu::Rol> rois = listas(2);
   CHECK(tui::alvo_do_degrau(0, rois).secao == tui::Secao::Busca);

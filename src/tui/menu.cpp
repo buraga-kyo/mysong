@@ -7,34 +7,6 @@
 
 namespace mysong::tui {
 
-// A taboada degrau→secção, na ordem do mockup: é a MESMA ordem da pintura da
-// tabella, e mudar uma sem a outra faria o Enter abrir secção que o marcador
-// não diz. Degrau fóra da conta cahe no primeiro, e não estoura.
-Secao secao_do_degrau(std::size_t degrau) noexcept {
-  constexpr Secao degraus[DEGRAUS_DA_BARRA] = {
-      Secao::Artistas, Secao::Albuns, Secao::Faixas, Secao::Busca,
-      Secao::Rede,     Secao::Rois,   Secao::Lista};
-  return degrau < DEGRAUS_DA_BARRA ? degraus[degrau] : Secao::Artistas;
-}
-
-// O caminho de volta. O switch não tem `default`, de proposito: secção nova
-// que se accrescente ao enum deixa de compilar aqui, em vez de abrir a barra
-// com o degrau eleito n'um logar qualquer.
-std::size_t degrau_da_secao(Secao secao) noexcept {
-  switch (secao) {
-    case Secao::Artistas: return 0;
-    case Secao::Albuns: return 1;
-    case Secao::Faixas: return 2;
-    case Secao::Busca: return 3;
-    case Secao::Rede: return 4;
-    case Secao::Rois: return 5;
-    // Dentro de uma lista o degrau é o das LISTAS, como na pintura de hoje.
-    case Secao::NoRol: return 5;
-    case Secao::Lista: return 6;
-  }
-  return 0;
-}
-
 // A CONTA dos degraus da bibliotheca (issue #93): um para as MINHAS MÚSICAS, um
 // por lista do operador, e os quatro de navegar. Barra que não conte as listas
 // d'elle não é bibliotheca, é um menu.

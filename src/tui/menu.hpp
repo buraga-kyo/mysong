@@ -32,15 +32,6 @@
 
 namespace mysong::tui {
 
-// Os SETE degraus da barra, na ordem do mockup. A taboada degrau↔secção vive
-// aqui e na pintura da tabella; sete é a conta das duas.
-inline constexpr std::size_t DEGRAUS_DA_BARRA = 7;
-
-// A taboada. Dentro de uma lista (NoRol) o degrau é o das LISTAS, como na
-// pintura de hoje: é lá que se está, um degrau abaixo.
-Secao secao_do_degrau(std::size_t degrau) noexcept;
-std::size_t degrau_da_secao(Secao secao) noexcept;
-
 // ── A BARRA DA BIBLIOTHECA (issue #93) ──────────────────────────────────────
 // Os degraus deixaram de ser sete: são as MINHAS MÚSICAS, uma fileira por lista
 // do operador, e os quatro de navegar. Quem determina a conta é ELLE, donde ella
@@ -125,7 +116,7 @@ class Menu {
  private:
   bool aberto_ = false;
   std::size_t degrau_ = 0;
-  std::size_t degraus_ = DEGRAUS_DA_BARRA;
+  std::size_t degraus_ = 0;  // a conta com que a barra se abriu
 };
 
 }  // namespace mysong::tui
