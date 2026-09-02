@@ -63,6 +63,36 @@ TEST_CASE("a taboada do degrau e a da secção são espelho fiel") {
   CHECK(tui::secao_do_degrau(99) == tui::Secao::Artistas);
 }
 
+TEST_CASE("a ordem da barra é as minhas musicas, as listas, e os de navegar") {
+  const std::vector<nu::Rol> rois = listas(2);
+  CHECK(tui::alvo_do_degrau(0, rois).secao == tui::Secao::Busca);
+  CHECK(tui::alvo_do_degrau(1, rois).rol == 10);
+  CHECK(tui::alvo_do_degrau(2, rois).rol == 20);
+  CHECK(tui::alvo_do_degrau(3, rois).secao == tui::Secao::Artistas);
+  CHECK(tui::alvo_do_degrau(4, rois).secao == tui::Secao::Albuns);
+  CHECK(tui::alvo_do_degrau(5, rois).secao == tui::Secao::Rede);
+  CHECK(tui::alvo_do_degrau(6, rois).secao == tui::Secao::Lista);
+  CHECK(tui::rotulo_do_degrau(0, rois) == "MINHAS MÚSICAS");
+  CHECK(tui::rotulo_do_degrau(2, rois) == "lista 2");
+  CHECK(tui::rotulo_do_degrau(4, rois) == "ÁLBUNS");
+  CHECK(tui::rotulo_do_degrau(6, rois) == "SPOTIFY");
+}
+
+TEST_CASE("as secções sem fileira propria acordam onde a barra as mostra") {
+  const std::vector<nu::Rol> rois = listas(3);
+  // As FAIXAS de um album acendem ÁLBUNS, que é o degrau de que se veio.
+  CHECK(tui::degrau_da_secao(tui::Secao::Faixas, rois, 0) ==
+        tui::degrau_da_secao(tui::Secao::Albuns, rois, 0));
+  // As LISTAS abrem-se pelo `P`: degrau algum da barra as tem por alvo, e ellas
+  // acordam no alto em vez de acenderem fileira que o operador não pode eleger.
+  CHECK(tui::degrau_da_secao(tui::Secao::Rois, rois, 0) == 0);
+  for (std::size_t i = 0; i < tui::degraus_da_barra(rois.size()); ++i)
+    CHECK(tui::alvo_do_degrau(i, rois).secao != tui::Secao::Rois);
+  // Dentro de uma lista o degrau é o d'ELLA; o id que sumiu cahe no alto.
+  CHECK(tui::degrau_da_secao(tui::Secao::NoRol, rois, 20) == 2);
+  CHECK(tui::degrau_da_secao(tui::Secao::NoRol, rois, 999) == 0);
+}
+
 TEST_CASE("o Tab e o Shift+Tab abrem o menu e mais tecla alguma o abre") {
   CHECK(tui::tecla_abre_menu(Event::Tab));
   CHECK(tui::tecla_abre_menu(Event::TabReverse));
