@@ -967,7 +967,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // geral, que é a ordem declarada no tractado d'elle. A tecla que a barra
     // não conhece FECHA-A e segue ao fluxo de sempre, e é por isso que o ramo
     // Alheio não retorna: o atalho vale na barra porque passa por aqui.
-    if (menu.aberto()) {
+    //
+    // E o Event::Custom NÃO passa por aqui. Elle é a batida do relogio, e não
+    // tecla de gente: cahindo no Alheio, FECHAVA o menu vinte vezes por
+    // segundo, donde com musica a tocar a barra não ficava aberta nem pelo Tab
+    // nem pela roda do rato. Medido n'um pty, e é o que descobre o rato: parado
+    // o tocador, a batida é rara e o defeito não apparecia.
+    if (menu.aberto() && tecla != ftxui::Event::Custom) {
       switch (tui::gesto_da_barra(tecla)) {
         case tui::GestoDaBarra::Fecha: menu.fecha(); return true;
         case tui::GestoDaBarra::Sobe: menu.sobe(); return true;
