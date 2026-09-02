@@ -22,6 +22,7 @@
 #include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
 #include "tui/tabella.hpp"
+#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
 namespace tui = mysong::tui;
@@ -431,6 +432,54 @@ TEST_CASE("a barra não passa da altura que lhe deram, e o eleito fica á vista"
     }
     CHECK(dedos == 1);  // o degrau eleito está sempre á vista
   }
+}
+
+namespace {
+
+// com_som — a tabella com uma faixa a sôar, no écran de papel: aqui lê-se
+// tambem a CÔR da cella, que os dous signaes se distinguem pela tinta.
+ftxui::Screen com_som(const tui::Navegador& navegador,
+                      const std::string& tocando) {
+  ftxui::Element quadro = tui::elemento_da_tabella(navegador, 0, 2, 60, tocando);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(60),
+                                              ftxui::Dimension::Fixed(2));
+  ftxui::Render(ecran, quadro);
+  return ecran;
+}
+
+ftxui::Color cor(std::string_view token) {
+  const mysong::tui::tokens::Triade c = mysong::tui::tokens::rgb(token);
+  return ftxui::Color::RGB(c.r, c.g, c.b);
+}
+
+}  // namespace
+
+TEST_CASE("a faixa que sôa accende com signal proprio ao lado do da eleita") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.mostra_rede({achado("Toccata", "Canal", 542),
+                         achado("Fuga", "Outro", 65)});
+  navegador.desce();  // a ELEITA passa a ser a segunda
+  namespace tk = mysong::tui::tokens;
+  // Sôa a PRIMEIRA, e a eleita é a segunda: dous signaes em linhas differentes.
+  const ftxui::Screen dous = com_som(navegador, "https://y/Toccata");
+  CHECK(dous.PixelAt(1, 0).character == "▶");
+  CHECK(dous.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
+  CHECK(dous.PixelAt(0, 1).background_color == cor(tk::v900));
+  // E o «▶» NÃO empurra o titulo: elle toma o logar do numero, e a columna do
+  // titulo cahe na mesma collunha com signal e sem elle.
+  CHECK(dous.PixelAt(4, 0).character == "T");
+  CHECK(dous.PixelAt(4, 1).character == "F");
+  // Sôa a MESMA que está eleita: o fundo é o v900 e a tinta o glow_core.
+  const ftxui::Screen um = com_som(navegador, "https://y/Fuga");
+  CHECK(um.PixelAt(1, 1).character == "▶");
+  CHECK(um.PixelAt(0, 1).background_color == cor(tk::v900));
+  CHECK(um.PixelAt(0, 1).foreground_color == cor(tk::glow_core));
+  // Caminho que não casa com chave alguma não accende linha nenhuma.
+  const ftxui::Screen nada = com_som(navegador, "/musica/outra.mp3");
+  CHECK(nada.PixelAt(1, 0).character != "▶");
+  CHECK(nada.PixelAt(1, 1).character != "▶");
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒

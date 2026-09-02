@@ -240,6 +240,10 @@ target_include_directories(mysong_testes SYSTEM PRIVATE ${SQLITE3_INCLUDE_DIRS})
 # ─── A NAVEGAÇÃO DA BIBLIOTHECA (issue #9) ──────────────────────────────────
 target_sources(mysong_core PRIVATE src/tui/navegador.cpp src/tui/tabella.cpp)
 
+# ─── A SALA EM TRES PAINEIS (issue #92) ─────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha ao lado da tabella que ella estende.
+target_sources(mysong_core PRIVATE src/tui/sala.cpp)
+
 # ─── A AQUISIÇÃO (issue #11) ────────────────────────────────────────────────
 # A unica camada que toca a rede. Não pede dependencia nova: chama o yt-dlp por
 # fork e exec, e escreve a etiqueta com a taglib, que já entrou na issue #8.
