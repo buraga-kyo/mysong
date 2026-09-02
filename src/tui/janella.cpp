@@ -686,24 +686,26 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      ? larg - guarda_da_barra - reservado_capa
                                      : 1;
 
-    std::string trilha = "ARTISTS";
+    std::string trilha = "ARTISTAS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
     // A fonte no titulo da secção, SEMPRE: a lista pode ser da fonte anterior por
     // um instante (a busca é assynchrona), e o cabeçalho é a verdade da vigente.
     if (navegador.secao() == tui::Secao::Rede)
-      trilha = "NET · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
+      trilha = "REDE · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
     if (navegador.secao() == tui::Secao::Lista) {
       trilha = "SPOTIFY";
       if (!navegador.nome_do_catalogo().empty())
         trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
     }
-    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
-    // O SEARCH da barra (issue #80): a secção da busca no acervo tem nome
-    // proprio no topo, que «ARTISTS» n'ella seria o titulo a mentir.
-    if (navegador.secao() == tui::Secao::Busca) trilha = "SEARCH";
+    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTAS";
+    // As MINHAS MÚSICAS (issue #93): a secção do acervo plano tem nome
+    // proprio no topo, que «ARTISTAS» n'ella seria o titulo a mentir. E o
+    // topo diz o mesmo que a barra, palavra por palavra: dous nomes para a
+    // mesma secção fariam o operador procurar duas salas onde ha uma.
+    if (navegador.secao() == tui::Secao::Busca) trilha = "MINHAS MÚSICAS";
     if (navegador.secao() == tui::Secao::NoRol) {
-      trilha = "LISTS";
+      trilha = "LISTAS";
       for (const std::string& degrau : navegador.trilha())
         trilha += "  \ue0b1  " + degrau;
     }
