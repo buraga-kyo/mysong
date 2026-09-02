@@ -259,3 +259,26 @@ TEST_CASE("a arte cinge-se ao tecto que se lhe pediu") {
   CHECK(linha_de(tela, 20) == std::string(39, '#'));
   CHECK(linha_de(tela, 21).substr(0, 5) == "Faded");
 }
+
+// A ALTURA EXACTA, que é o que a geometria promette a quem compõe. O elemento
+// que nada pinta ha de medir ZERO: medindo um, a peça pede mais linha do que a
+// conta lhe deu, e quem cinge a faixa apara a ultima em silencio.
+TEST_CASE("o painel sem capa não abre fileira parasita") {
+  const nu::CapaPintada nenhuma;
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_painel({"Faded", "Alan Walker", "Faded"},
+                                    tui::elemento_da_arte(nenhuma, 39, 0),
+                                    ftxui::text("BAIXO"), 39),
+            39, 9);
+  CHECK(linha_de(tela, 0).substr(0, 13) == "TOCANDO AGORA");
+  CHECK(linha_de(tela, 1).substr(0, 5) == "Faded");
+  CHECK(linha_de(tela, 2).substr(0, 11) == "Alan Walker");
+  CHECK(linha_de(tela, 4).substr(0, 5) == "BAIXO");
+  // A FONTE do defeito, aferida á parte para que a razão fique escripta: o
+  // `text` vazio do FTXUI mede UMA linha, e o `emptyElement` mede zero.
+  CHECK(linha_de(papel(ftxui::vbox({ftxui::emptyElement(), ftxui::text("X")}),
+                       3, 2),
+                 0)[0] == 'X');
+  CHECK(linha_de(papel(ftxui::vbox({ftxui::text(""), ftxui::text("X")}), 3, 2),
+                 1)[0] == 'X');
+}
