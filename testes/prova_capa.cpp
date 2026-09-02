@@ -474,3 +474,30 @@ TEST_CASE("o video invertido do chafa troca tinta e fundo da corrida") {
   CHECK(chapada[1].r_fundo == 59);
   CHECK(chapada[1].r_frente == 0);
 }
+
+// DUAS GALERIAS de escolhas differentes no mesmo processo (#94). A decisão é do
+// OBJECTO, e não do render: é por isso que a chave do cache não precisa de
+// conhecer o sextante. Se um dia ella passar a ser do render, este caso morre.
+TEST_CASE("galerias de escolha differente não misturam render algum") {
+  const Cova cova;
+  const std::filesystem::path imagem = cova.raiz() / "cover.png";
+  const std::string commando =
+      "ffmpeg -y -f lavfi -i color=c=olive:s=64x64 -frames:v 1 '" +
+      imagem.string() + "' >/dev/null 2>&1";
+  if (std::system(commando.c_str()) != 0 || !std::filesystem::exists(imagem)) {
+    WARN("sem ffmpeg: o caso das duas galerias não corre");
+    return;
+  }
+  const std::filesystem::path faixa = cova.raiz() / "01 - Um.mp3";
+  nu::Galeria sem(false), com(true);
+  REQUIRE(sem.capa(faixa, 20, 11).achada);
+  REQUIRE(com.capa(faixa, 20, 11).achada);
+  // Cada uma converteu a SUA vez: o mapa é do objecto, e não da Casa.
+  CHECK(sem.quantos_renders() == 1u);
+  CHECK(com.quantos_renders() == 1u);
+  // E pedir outra vez a cada uma não converte de novo, que o cache é d'ella.
+  sem.capa(faixa, 20, 11);
+  com.capa(faixa, 20, 11);
+  CHECK(sem.quantos_renders() == 1u);
+  CHECK(com.quantos_renders() == 1u);
+}
