@@ -38,9 +38,16 @@ ftxui::Element elemento_da_barra(const Navegador& navegador,
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
+//
+// `tocando` é o CAMINHO da faixa que o motor toca (issue #92). A linha cuja
+// chave casar com elle accende em glow_core, com «▶» no logar do numero: são
+// DOUS signaes, que a eleita (o v900) diz onde o dedo está e este diz o que
+// sôa. Cadeia vazia, que é o padrão, pinta a tabella de sempre byte por byte,
+// e a prova que já existe o afere.
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
-                                   std::size_t largura);
+                                   std::size_t largura,
+                                   const std::string& tocando = {});
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
 // vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.
