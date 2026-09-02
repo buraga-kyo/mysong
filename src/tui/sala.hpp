@@ -17,8 +17,10 @@
 
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include "nucleo/fila.hpp"
+#include "tui/navegador.hpp"
 
 namespace mysong::tui {
 
@@ -43,6 +45,17 @@ std::string texto_da_duracao(int segundos);
 
 // texto_da_conta — «4 FAIXAS, 14min». Um sahe no singular e sem o `s`.
 std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao);
+
+// especie_da_secao — o que se conta em cada secção da barra lateral.
+Especie especie_da_secao(Secao secao);
+
+// nome_da_colleccao — o titulo do cabeçalho. O vocabulario FIXO vae em caixa
+// alta; o nome vindo do acervo (artista, album, lista, catalogo) sahe VERBATIM,
+// que caixa alta byte a byte estragaria o UTF-8 acentuado do portuguez
+// («Canção» sahiria «CANçãO»), e taboa de caixa Unicode esta Casa não carrega.
+std::string nome_da_colleccao(Secao secao,
+                              const std::vector<std::string>& trilha,
+                              const std::string& nome_do_catalogo);
 
 }  // namespace mysong::tui
 

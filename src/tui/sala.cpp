@@ -44,6 +44,39 @@ std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao) {
   return feita;
 }
 
+Especie especie_da_secao(Secao secao) {
+  switch (secao) {
+    case Secao::Artistas: return Especie::Artistas;
+    case Secao::Albuns: return Especie::Albuns;
+    case Secao::Rois: return Especie::Listas;
+    case Secao::Rede: return Especie::Achados;
+    case Secao::Faixas:
+    case Secao::Busca:
+    case Secao::NoRol:
+    case Secao::Lista: break;
+  }
+  return Especie::Faixas;
+}
+
+std::string nome_da_colleccao(Secao secao,
+                              const std::vector<std::string>& trilha,
+                              const std::string& nome_do_catalogo) {
+  // Dentro de alguma cousa, o nome é o do degrau em que se entrou: o artista em
+  // ÁLBUNS, o album em FAIXAS, a lista em NoRol. Fóra, o rotulo da secção.
+  const bool dentro = !trilha.empty();
+  switch (secao) {
+    case Secao::Artistas: return "ARTISTAS";
+    case Secao::Albuns: return dentro ? trilha.back() : "ÁLBUNS";
+    case Secao::Faixas: return dentro ? trilha.back() : "FAIXAS";
+    case Secao::Busca: return "MINHAS MÚSICAS";
+    case Secao::Rede: return "REDE";
+    case Secao::Rois: return "LISTAS";
+    case Secao::NoRol: return dentro ? trilha.back() : "LISTAS";
+    case Secao::Lista: break;
+  }
+  return nome_do_catalogo.empty() ? "SPOTIFY" : nome_do_catalogo;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
