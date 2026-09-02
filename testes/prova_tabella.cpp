@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "nucleo/biblioteca.hpp"
+#include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
@@ -90,6 +91,8 @@ class Cova {
   Cova(const Cova&) = delete;
   Cova& operator=(const Cova&) = delete;
   std::filesystem::path banco() const { return caminho_ / "indice.sqlite3"; }
+  // O banco das LISTAS, á parte do índice, para a barra da bibliotheca as ler.
+  std::filesystem::path listas() const { return caminho_ / "rol.sqlite3"; }
 
  private:
   std::filesystem::path caminho_;
@@ -188,6 +191,7 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);  // acervo vazio, e sem roleiro
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   // No acervo, o recado manda varrer. Dentro de uma lista de faixas escolhidas á
   // mão, mandar varrer o acervo seria mandar o operador ao logar errado.
   const std::vector<std::string> acervo = pintar(navegador, 1, 70);
@@ -201,6 +205,13 @@ TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
   navegador.mostra_rede(std::vector<nu::Achado>{});
   const std::vector<std::string> rede = pintar(navegador, 1, 70);
   CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
+
+  // Nas MINHAS MÚSICAS o recado depende do TERMO: sem elle, quem está vazio é o
+  // acervo, e mandar procurar erro de escripta seria mandar ao logar errado.
+  REQUIRE(navegador.vai_para(tui::Secao::Busca));
+  CHECK(pintar(navegador, 1, 70)[0].find("varra o acervo") != std::string::npos);
+  navegador.filtra("zzz");
+  CHECK(pintar(navegador, 1, 70)[0].find("esse termo") != std::string::npos);
 }
 
 
@@ -300,18 +311,26 @@ TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da folga") {
 
 namespace {
 
-// pintar_barra — o écran de papel da BARRA, nas nove collunhas e sete linhas
-// d'ella, lido cella a cella pela mesma razão do pintar da tabella.
+// pintar_barra — o écran de papel da BARRA, na largura fixa d'ella e nas
+// fileiras que se pedir, lido cella a cella pela mesma razão do pintar da
+// tabella. `altura` é a que a barra recebe (zero é «sem limite»); `fileiras` é o
+// tamanho do papel, e as duas são cousas differentes de proposito: é assim que
+// se afere que a barra NÃO passa da altura que lhe deram.
 std::vector<std::string> pintar_barra(const tui::Navegador& navegador,
-                                      bool com_foco, std::size_t degrau) {
-  ftxui::Element quadro = tui::elemento_da_barra(navegador, com_foco, degrau);
-  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(9),
-                                              ftxui::Dimension::Fixed(7));
+                                      bool com_foco, std::size_t degrau,
+                                      std::size_t altura = 0,
+                                      std::size_t fileiras = 7) {
+  const int larg = static_cast<int>(tui::LARGURA_DA_BARRA);
+  ftxui::Element quadro =
+      tui::elemento_da_barra(navegador, com_foco, degrau, altura);
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(larg),
+                            ftxui::Dimension::Fixed(static_cast<int>(fileiras)));
   ftxui::Render(ecran, quadro);
   std::vector<std::string> linhas;
-  for (int y = 0; y < 7; ++y) {
+  for (int y = 0; y < static_cast<int>(fileiras); ++y) {
     std::string linha;
-    for (int x = 0; x < 9; ++x) linha += ecran.PixelAt(x, y).character;
+    for (int x = 0; x < larg; ++x) linha += ecran.PixelAt(x, y).character;
     linhas.push_back(linha);
   }
   return linhas;
@@ -323,21 +342,96 @@ TEST_CASE("com o foco na barra o dedo pinta-se n'uma fileira só") {
   const Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
-  const std::vector<std::string> linhas = pintar_barra(navegador, true, 5);
-  CHECK(linhas[5] == "▸LISTS   ");
-  CHECK(linhas[0] == " ARTISTS ");  // a corrente fica, sem dedo
+  // Sem lista alguma: o titulo, as minhas musicas, a risca, e os quatro.
+  const std::vector<std::string> linhas = pintar_barra(navegador, true, 4);
+  REQUIRE(linhas.size() == 7);
+  CHECK(linhas[0] == " BIBLIOTECA         ");
+  CHECK(linhas[1] == " MINHAS MÚSICAS     ");
+  CHECK(linhas[3] == " ARTISTAS           ");
+  CHECK(linhas[4] == " ÁLBUNS             ");
+  CHECK(linhas[6] == "▸SPOTIFY            ");
   for (std::size_t i = 0; i < linhas.size(); ++i)
-    if (i != 5) CHECK(linhas[i].find("▸") == std::string::npos);
+    if (i != 6) CHECK(linhas[i].find("▸") == std::string::npos);
 }
 
-TEST_CASE("sem foco a barra não tem dedo algum e é a de sempre") {
+TEST_CASE("sem foco a barra não tem dedo algum, e toda fileira mede vinte") {
   const Cova cova;
   nu::Biblioteca livraria(cova.banco());
-  tui::Navegador navegador(livraria);
-  for (const std::string& linha : pintar_barra(navegador, false, 3))
+  tui::Navegador navegador(livraria);  // nasce nas MINHAS MÚSICAS
+  for (const std::string& linha : pintar_barra(navegador, false, 3)) {
     CHECK(linha.find("▸") == std::string::npos);
+    CHECK(escriptas(linha + "|") == tui::LARGURA_DA_BARRA + 1);
+  }
   // E o dedo sobre a fileira corrente soma os dous signaes n'uma só.
-  CHECK(pintar_barra(navegador, true, 0)[0] == "▸ARTISTS ");
+  CHECK(pintar_barra(navegador, true, 0)[1] == "▸MINHAS MÚSICAS     ");
+}
+
+TEST_CASE("as listas do operador entram na barra pelo nome, na ordem do banco") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("da noite"));
+  REQUIRE(navegador.cria_rol("da manhã"));
+  const std::vector<std::string> barra = pintar_barra(navegador, false, 0, 0, 9);
+  REQUIRE(barra.size() == 9);
+  CHECK(barra[1] == " MINHAS MÚSICAS     ");
+  CHECK(barra[2] == " da manhã           ");
+  CHECK(barra[3] == " da noite           ");
+  CHECK(barra[5] == " ARTISTAS           ");  // depois da risca
+}
+
+TEST_CASE("a lista apparece, muda e some da barra no mesmo quadro") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  const auto tem = [&](const std::string& nome) {
+    for (const std::string& linha : pintar_barra(navegador, false, 0, 0, 9))
+      if (linha.find(nome) != std::string::npos) return true;
+    return false;
+  };
+  REQUIRE(navegador.cria_rol("da manhã"));
+  CHECK(tem("da manhã"));
+  REQUIRE(navegador.renomeia_rol("de tarde"));
+  CHECK_FALSE(tem("da manhã"));
+  CHECK(tem("de tarde"));
+  REQUIRE(navegador.apaga_rol());
+  CHECK_FALSE(tem("de tarde"));
+}
+
+TEST_CASE("o nome comprido corta-se com reticencias, e a barra não alarga") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol(std::string(60, 'z')));
+  const std::vector<std::string> barra = pintar_barra(navegador, false, 0, 0, 8);
+  CHECK(barra[2] == " " + std::string(18, 'z') + "…");
+  for (const std::string& linha : barra)
+    CHECK(escriptas(linha + "|") == tui::LARGURA_DA_BARRA + 1);
+}
+
+TEST_CASE("a barra não passa da altura que lhe deram, e o eleito fica á vista") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  for (int i = 10; i < 60; ++i)
+    REQUIRE(navegador.cria_rol("lista " + std::to_string(i)));
+  // Altura de doze: as sete fileiras fixas e cinco listas, e nada mais. O papel
+  // vae de vinte, que barra que passasse da altura appareceria n'elle.
+  for (const std::size_t degrau : {std::size_t{1}, std::size_t{25},
+                                   std::size_t{50}}) {
+    const std::vector<std::string> barra =
+        pintar_barra(navegador, true, degrau, 12, 20);
+    std::size_t dedos = 0;
+    for (std::size_t i = 0; i < barra.size(); ++i) {
+      if (barra[i].find("▸") != std::string::npos) ++dedos;
+      if (i >= 12) CHECK(escriptas(barra[i] + "|") == 1);  // fileira em branco
+    }
+    CHECK(dedos == 1);  // o degrau eleito está sempre á vista
+  }
 }
 
 namespace {

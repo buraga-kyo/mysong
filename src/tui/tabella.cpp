@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "tui/menu.hpp"
 #include "tui/tokens.hpp"
 #include "tui/transporte.hpp"
 
@@ -66,6 +67,23 @@ std::string apara(const std::string& crua, std::size_t largura) {
   return feita;
 }
 
+// reticencias — o corte com «…» no fim, para o nome que não cabe na barra. A
+// conta é por CODEPOINT, como a do `cortar`, e o «…» só entra havendo corte:
+// nome que cabe sahe intacto, que ponto a mais em nome inteiro seria mentira.
+std::string reticencias(const std::string& crua, std::size_t largura) {
+  const std::string cortada = cortar(crua, largura);
+  return cortada.size() < crua.size() ? cortada + "…" : cortada;
+}
+
+// risca — a linha de separar o grupo das listas dos degraus de navegar, da
+// largura da barra. Concatena-se em laço porque «─» leva tres octetos, e o
+// std::string de repetir só sabe repetir octeto.
+ftxui::Element risca() {
+  std::string feita;
+  for (std::size_t i = 0; i < LARGURA_DA_BARRA; ++i) feita += "─";
+  return pinta(feita, tokens::line_dim);
+}
+
 }  // namespace
 
 ftxui::Element caret_do_campo() {
@@ -88,37 +106,62 @@ ftxui::Element elemento_da_trilha(const std::string& trilha,
 }
 
 ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
-                                 std::size_t degrau_eleito) {
-  // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
-  // faz o dedo do operador errar o alvo que já sabia de memoria.
-  const std::pair<Secao, const char*> degraus[] = {
-      {Secao::Artistas, " ARTISTS "},
-      {Secao::Albuns, " ALBUMS  "},
-      {Secao::Faixas, " TRACKS  "},
-      {Secao::Busca, " SEARCH  "},
-      {Secao::Rede, " NET     "},
-      {Secao::Rois, " LISTS   "},
-      {Secao::Lista, " SPOTIFY "},
-  };
+                                 std::size_t degrau_eleito,
+                                 std::size_t altura) {
+  // As listas lêem-se A CADA PINTURA, e não de cópia guardada: o aceite pede que
+  // a lista creada, renomeada ou apagada appareça, mude ou suma no MESMO quadro,
+  // e cópia guardada envelheceria justamente n'esse.
+  const std::vector<nucleo::Rol> listas = navegador.rois();
+  const std::size_t corrente =
+      degrau_da_secao(navegador.secao(), listas, navegador.rol_corrente());
+  // A sala das LISTAS (a do `P`) não tem fileira aqui, e n'ella accende-se
+  // nenhuma: accender a do alto seria dizer que se está onde não se está.
+  const bool ha_fileira = navegador.secao() != Secao::Rois;
+  // O TITULO, em caixa alta e no text_heading do systema. Não é degrau: o dedo
+  // não pousa n'elle, e a taboada não o conta.
   std::vector<ftxui::Element> linhas;
-  std::size_t qual = 0;
-  for (const auto& [degrau, rotulo] : degraus) {
-    // Dentro de uma lista, a fileira que accende é a das LISTAS: é lá que se está,
-    // um degrau abaixo. Fileira propria para o dentro seria fileira que o operador
-    // nunca pode eleger, e barra com degrau morto ensina o dedo a errar.
-    const bool aqui = navegador.secao() == degrau ||
-                      (degrau == Secao::Rois &&
-                       navegador.secao() == Secao::NoRol);
+  linhas.push_back(
+      pinta(apara(" BIBLIOTECA", LARGURA_DA_BARRA), tokens::text_heading));
+  const std::size_t quantos = degraus_da_barra(listas.size());
+  // O que a barra gasta fóra do grupo das listas: o titulo, as minhas musicas, a
+  // risca e os quatro de navegar. Com altura posta, o grupo ROLA no que sobra,
+  // que barra mais alta que a tela empurraria o transporte para fóra do quadro.
+  // Altura zero é «sem limite», e é o que a bateria usa para as ver todas.
+  const std::size_t fixas = degraus_da_barra(0) + 2;  // o titulo e a risca
+  const std::size_t cabe =
+      altura == 0 ? listas.size() : (altura > fixas ? altura - fixas : 0);
+  const std::size_t olhado = com_foco ? degrau_eleito : corrente;
+  const std::size_t primeira = primeira_a_mostrar(
+      olhado > 0 && olhado <= listas.size() ? olhado - 1 : 0, listas.size(),
+      cabe, 0);
+  for (std::size_t qual = 0; qual < quantos; ++qual) {
+    // A fileira que ACCENDE vem da taboada, e não de comparação á mão: a barra e
+    // a machina do foco hão de responder pela MESMA conta.
+    const bool aqui = ha_fileira && qual == corrente;
+    // A risca vae ANTES do primeiro degrau de navegar, e não depois do ultimo da
+    // lista: a fileira da lista pode estar fóra da janella, e a risca não.
+    if (qual == listas.size() + 1) linhas.push_back(risca());
+    const bool eh_lista = qual > 0 && qual <= listas.size();
+    if (eh_lista && (qual - 1 < primeira || qual - 1 >= primeira + cabe))
+      continue;
     // O DEDO da barra (issue #80). O «▸» toma o logar do primeiro espaço do
     // rotulo, e a largura não muda; o fundo é o v900 do eleito da tabella. E
     // elle ganha do v700 quando os dous cahem na mesma fileira: o cursor é o
     // signal mais novo, e é elle que diz quem manda na tecla.
     const bool sob_o_dedo = com_foco && qual == degrau_eleito;
+    // A largura é a da barra, e não a do rotulo: o «▸» toma a primeira collunha
+    // e o resto vae aparado, que é o que faz a barra não alargar por um nome.
     const std::string texto =
-        sob_o_dedo ? "▸" + std::string(rotulo + 1) : std::string(rotulo);
-    ftxui::Element linha =
-        pinta(texto, aqui || sob_o_dedo ? tokens::text_bright
-                                        : tokens::text_muted);
+        apara(std::string(sob_o_dedo ? "▸" : " ") +
+                  reticencias(rotulo_do_degrau(qual, listas),
+                              LARGURA_DA_BARRA - 2),
+              LARGURA_DA_BARRA);
+    // A lista do operador vae mais clara que os degraus de navegar: n'esta barra
+    // ella é o conteudo, e elles são o caminho.
+    ftxui::Element linha = pinta(
+        texto, aqui || sob_o_dedo
+                   ? tokens::text_bright
+                   : (eh_lista ? tokens::text_primary : tokens::text_muted));
     if (aqui || sob_o_dedo) {
       const tokens::Triade fundo =
           tokens::rgb(sob_o_dedo ? tokens::v900 : tokens::v700);
@@ -126,7 +169,6 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
     linhas.push_back(std::move(linha));
-    ++qual;
   }
   return ftxui::vbox(std::move(linhas));
 }
@@ -156,7 +198,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
         recado = "  (lista alguma lida: `I` cola a URL de uma do Spotify)";
         break;
       case Secao::Busca:
-        recado = "  (nada casa com esse termo)";
+        // As MINHAS MÚSICAS abrem com termo VAZIO (issue #93): não havendo
+        // termo, quem está vazio é o acervo, e culpar o termo mandaria o
+        // operador procurar erro de escripta que elle não commetteu.
+        if (!navegador.termo().empty()) recado = "  (nada casa com esse termo)";
         break;
       case Secao::Artistas:
       case Secao::Albuns:

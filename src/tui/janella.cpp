@@ -671,34 +671,38 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
                                       ? static_cast<std::size_t>(lin) - guarnicao
                                       : 1;
-    // As onze collunhas da barra e do seu vão. Constante D'ESTE pintor, e não do
-    // tractado da sala: quem sabe a largura da barra é quem a pinta, e essa
-    // lavra é da tarefa irmã da bibliotheca; alargando-a, muda-se esta linha.
-    constexpr std::size_t kBarraCollunhas = 11;
+    // A barra mais o espaçador de duas collunhas que o hbox lhe põe ao lado. O
+    // numero é da BARRA, e a barra é lavra da issue #93: vem por isso da
+    // constante d'ella, e não de um onze escripto á mão. A geometria da sala
+    // recebe-o por PARAMETRO, que é o que faz d'esta a UNICA linha a mudar no
+    // dia em que a barra mudar de largura outra vez.
+    const std::size_t kBarraCollunhas = tui::LARGURA_DA_BARRA + 2;
     const tui::Geometria geo =
         tui::geometria_da_sala(larg, alt_corpo, kBarraCollunhas);
     primeira_linha =
         tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
                                 geo.tabella, primeira_linha);
 
-    std::string trilha = "ARTISTS";
+    std::string trilha = "ARTISTAS";
     for (const std::string& degrau : navegador.trilha())
       trilha += "  \ue0b1  " + degrau;
     // A fonte no titulo da secção, SEMPRE: a lista pode ser da fonte anterior por
     // um instante (a busca é assynchrona), e o cabeçalho é a verdade da vigente.
     if (navegador.secao() == tui::Secao::Rede)
-      trilha = "NET · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
+      trilha = "REDE · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
     if (navegador.secao() == tui::Secao::Lista) {
       trilha = "SPOTIFY";
       if (!navegador.nome_do_catalogo().empty())
         trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
     }
-    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTS";
-    // O SEARCH da barra (issue #80): a secção da busca no acervo tem nome
-    // proprio no topo, que «ARTISTS» n'ella seria o titulo a mentir.
-    if (navegador.secao() == tui::Secao::Busca) trilha = "SEARCH";
+    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTAS";
+    // As MINHAS MÚSICAS (issue #93): a secção do acervo plano tem nome
+    // proprio no topo, que «ARTISTAS» n'ella seria o titulo a mentir. E o
+    // topo diz o mesmo que a barra, palavra por palavra: dous nomes para a
+    // mesma secção fariam o operador procurar duas salas onde ha uma.
+    if (navegador.secao() == tui::Secao::Busca) trilha = "MINHAS MÚSICAS";
     if (navegador.secao() == tui::Secao::NoRol) {
-      trilha = "LISTS";
+      trilha = "LISTAS";
       for (const std::string& degrau : navegador.trilha())
         trilha += "  \ue0b1  " + degrau;
     }
@@ -789,7 +793,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau()),
+                                          menu.degrau(), alt_corpo),
                    ftxui::text("  "),
                    // `emptyElement`, e não `text("")`: o `text` pede UMA
                    // linha ainda que nada escreva, e a faixa do meio pediria
@@ -936,14 +940,20 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
         case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
         case tui::GestoDaBarra::Entra: {
-          const tui::Secao alvo = menu.alvo();
-          if (navegador.vai_para(alvo)) {
+          // O alvo pergunta-se á taboada com as listas na mão: a barra pinta-as
+          // e o degrau nomeia-as, e as duas hão de ler a MESMA conta.
+          const tui::AlvoDaBarra alvo =
+              tui::alvo_do_degrau(menu.degrau(), navegador.rois());
+          const bool entrou = alvo.rol != 0
+                                  ? navegador.vai_para_rol(alvo.rol)
+                                  : navegador.vai_para(alvo.secao);
+          if (entrou) {
             menu.fecha();  // entrar é estar dentro: o foco volta á lista
-          } else if (alvo == tui::Secao::Albuns) {
+          } else if (alvo.secao == tui::Secao::Albuns) {
             aviso_da_rede = "entra por um artista primeiro";
-          } else if (alvo == tui::Secao::Faixas) {
-            aviso_da_rede = "entra por um album primeiro";
-          } else if (alvo == tui::Secao::Rede) {
+          } else if (alvo.secao == tui::Secao::NoRol) {
+            aviso_da_rede = "essa lista já não existe";
+          } else if (alvo.secao == tui::Secao::Rede) {
             aviso_da_rede = "a rede está vazia: busca primeiro (s)";
           } else {
             aviso_da_rede = "catálogo nenhum; importa com I";
@@ -961,7 +971,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // navegador, e verbo de foco n'aquelle enum seria verbo que o cumprir()
     // teria de fingir que não viu.
     if (tui::tecla_abre_menu(tecla)) {
-      menu.abre(navegador.secao());
+      menu.abre(navegador.secao(), navegador.rois(),
+                navegador.rol_corrente());
       return true;
     }
 
@@ -978,7 +989,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // esquerda só tem a barra. O Escape e o Backspace ficam inertes como
         // sempre: cancelar não é gesto que abra cousa alguma.
         if (!navegador.volta() && tecla == ftxui::Event::ArrowLeft)
-          menu.abre(navegador.secao());
+          menu.abre(navegador.secao(), navegador.rois(),
+                    navegador.rol_corrente());
         return true;
       case tui::Verbo::AbreBusca:
         digita = Digita::Busca;

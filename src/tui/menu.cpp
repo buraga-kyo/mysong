@@ -7,32 +7,58 @@
 
 namespace mysong::tui {
 
-// A taboada degrau→secção, na ordem do mockup: é a MESMA ordem da pintura da
-// tabella, e mudar uma sem a outra faria o Enter abrir secção que o marcador
-// não diz. Degrau fóra da conta cahe no primeiro, e não estoura.
-Secao secao_do_degrau(std::size_t degrau) noexcept {
-  constexpr Secao degraus[DEGRAUS_DA_BARRA] = {
-      Secao::Artistas, Secao::Albuns, Secao::Faixas, Secao::Busca,
-      Secao::Rede,     Secao::Rois,   Secao::Lista};
-  return degrau < DEGRAUS_DA_BARRA ? degraus[degrau] : Secao::Artistas;
+// A CONTA dos degraus da bibliotheca (issue #93): um para as MINHAS MÚSICAS, um
+// por lista do operador, e os quatro de navegar. Barra que não conte as listas
+// d'elle não é bibliotheca, é um menu.
+std::size_t degraus_da_barra(std::size_t listas) noexcept {
+  return 1 + listas + 4;
 }
 
-// O caminho de volta. O switch não tem `default`, de proposito: secção nova
-// que se accrescente ao enum deixa de compilar aqui, em vez de abrir a barra
-// com o degrau eleito n'um logar qualquer.
-std::size_t degrau_da_secao(Secao secao) noexcept {
+AlvoDaBarra alvo_do_degrau(std::size_t degrau,
+                           const std::vector<nucleo::Rol>& listas) {
+  if (degrau == 0 || degrau >= degraus_da_barra(listas.size()))
+    return {Secao::Busca, 0};
+  if (degrau <= listas.size()) return {Secao::NoRol, listas[degrau - 1].id};
+  constexpr Secao navegar[4] = {Secao::Artistas, Secao::Albuns, Secao::Rede,
+                                Secao::Lista};
+  return {navegar[degrau - listas.size() - 1], 0};
+}
+
+// O switch não leva `default`, pela regra da taboada velha: secção nova que se
+// accrescente ao enum deixa de compilar aqui, em vez de acordar a barra n'um
+// degrau qualquer.
+std::size_t degrau_da_secao(Secao secao, const std::vector<nucleo::Rol>& listas,
+                            int rol_corrente) {
   switch (secao) {
-    case Secao::Artistas: return 0;
-    case Secao::Albuns: return 1;
-    case Secao::Faixas: return 2;
-    case Secao::Busca: return 3;
-    case Secao::Rede: return 4;
-    case Secao::Rois: return 5;
-    // Dentro de uma lista o degrau é o das LISTAS, como na pintura de hoje.
-    case Secao::NoRol: return 5;
-    case Secao::Lista: return 6;
+    case Secao::Busca: return 0;
+    case Secao::Rois: return 0;  // as listas abrem-se pelo `P`, e não pela barra
+    case Secao::Artistas: return listas.size() + 1;
+    case Secao::Albuns:
+    case Secao::Faixas: return listas.size() + 2;
+    case Secao::Rede: return listas.size() + 3;
+    case Secao::Lista: return listas.size() + 4;
+    case Secao::NoRol:
+      for (std::size_t i = 0; i < listas.size(); ++i)
+        if (listas[i].id == rol_corrente) return i + 1;
+      return 0;  // apagada por outra mão entre dous quadros: cahe no alto
   }
   return 0;
+}
+
+std::string rotulo_do_degrau(std::size_t degrau,
+                             const std::vector<nucleo::Rol>& listas) {
+  if (degrau > 0 && degrau <= listas.size()) return listas[degrau - 1].nome;
+  switch (alvo_do_degrau(degrau, listas).secao) {
+    case Secao::Busca: return "MINHAS MÚSICAS";
+    case Secao::Artistas: return "ARTISTAS";
+    case Secao::Albuns: return "ÁLBUNS";
+    case Secao::Rede: return "REDE";
+    case Secao::Lista: return "SPOTIFY";
+    case Secao::Faixas:
+    case Secao::Rois:
+    case Secao::NoRol: break;  // não são degraus da barra
+  }
+  return "MINHAS MÚSICAS";
 }
 
 bool tecla_abre_menu(const ftxui::Event& tecla) noexcept {
@@ -63,11 +89,11 @@ GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept {
 
 bool Menu::aberto() const noexcept { return aberto_; }
 std::size_t Menu::degrau() const noexcept { return degrau_; }
-Secao Menu::alvo() const noexcept { return secao_do_degrau(degrau_); }
-
-void Menu::abre(Secao corrente) noexcept {
+void Menu::abre(Secao corrente, const std::vector<nucleo::Rol>& listas,
+                int rol_corrente) {
   aberto_ = true;
-  degrau_ = degrau_da_secao(corrente);
+  degraus_ = degraus_da_barra(listas.size());
+  degrau_ = degrau_da_secao(corrente, listas, rol_corrente);
 }
 
 void Menu::fecha() noexcept { aberto_ = false; }
@@ -77,12 +103,14 @@ void Menu::sobe() noexcept {
 }
 
 void Menu::desce() noexcept {
-  if (degrau_ + 1 < DEGRAUS_DA_BARRA) ++degrau_;
+  if (degrau_ + 1 < degraus_) ++degrau_;
 }
 
 void Menu::ao_principio() noexcept { degrau_ = 0; }
 
-void Menu::ao_fim() noexcept { degrau_ = DEGRAUS_DA_BARRA - 1; }
+void Menu::ao_fim() noexcept {
+  degrau_ = degraus_ > 0 ? degraus_ - 1 : 0;
+}
 
 }  // namespace mysong::tui
 
