@@ -13,8 +13,10 @@
 #include <vector>
 
 #include "tui/sala.hpp"
+#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
+namespace tk = mysong::tui::tokens;
 namespace tui = mysong::tui;
 
 namespace {
@@ -55,6 +57,12 @@ int collunha_de(const ftxui::Screen& ecran, int y, const std::string& glifo) {
   for (int x = 0; x < ecran.dimx(); ++x)
     if (ecran.PixelAt(x, y).character == glifo) return x;
   return -1;
+}
+
+// cor — a côr do FTXUI que o token nomeia, para se comparar cella a cella.
+ftxui::Color cor(std::string_view token) {
+  const tk::Triade c = tk::rgb(token);
+  return ftxui::Color::RGB(c.r, c.g, c.b);
 }
 
 }  // namespace
@@ -210,4 +218,25 @@ TEST_CASE("o cabeçalho diz o nome e a conta e risca o separador") {
       papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 59), 59, 6);
   CHECK(collunha_de(curta, 3, "\u21c4") == -1);
   CHECK(linha_de(curta, 1).substr(12, 8) == "GEOGADDI");
+}
+
+TEST_CASE("o chip do modo accende quando o modo liga") {
+  tui::Colleccao qual;
+  qual.nome = "GEOGADDI";
+  qual.quantas = 4;
+  const ftxui::Screen apagado =
+      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105), 105, 6);
+  const int x = collunha_de(apagado, 3, "\u21c4");
+  REQUIRE(x > 0);
+  CHECK(apagado.PixelAt(x, 3).foreground_color == cor(tk::text_faint));
+  qual.embaralhado = true;
+  qual.repeticao = nu::Repeticao::Todas;
+  const ftxui::Screen aceso =
+      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105), 105, 6);
+  // A collunha é a MESMA: o chip apagado guarda o logar do aceso, e a linha da
+  // conta não muda de largura quando o operador tecla `z`.
+  CHECK(collunha_de(aceso, 3, "\u21c4") == x);
+  CHECK(aceso.PixelAt(x, 3).background_color == cor(tk::v700));
+  CHECK(aceso.PixelAt(x, 3).foreground_color == cor(tk::text_bright));
+  CHECK(collunha_de(aceso, 3, "\u21bb") > x);
 }
