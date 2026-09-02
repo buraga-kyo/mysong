@@ -345,9 +345,6 @@ TEST_CASE("octetos que não são imagem recusam-se sem tocar o arquivo") {
   CHECK(nu::arte_embutida(faixa).empty());
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
-// ══════════════════════════════════════════════════════════════════════════
-
 // OS ARGUMENTOS DO CHAFA (#94), aferidos INTEIROS. Prova pura: sem chafa, sem
 // fonte e sem imagem, donde ella corre egual na machina crua.
 TEST_CASE("os argumentos do chafa pedem os symbolos ricos, e nada de letras") {
@@ -501,3 +498,6 @@ TEST_CASE("galerias de escolha differente não misturam render algum") {
   CHECK(sem.quantos_renders() == 1u);
   CHECK(com.quantos_renders() == 1u);
 }
+
+//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+// ══════════════════════════════════════════════════════════════════════════
