@@ -23,6 +23,7 @@
 #include "tui/rato.hpp"
 #include "tui/tabella.hpp"
 #include "tui/transporte.hpp"
+#include "tui/vigilia.hpp"
 
 namespace tui = mysong::tui;
 using ftxui::Mouse;
@@ -288,4 +289,20 @@ TEST_CASE("a caixa não muda um pixel da barra nem da tabella") {
         papel(tui::elemento_da_tabella(navegador, 0, 5, 60, &linhas), 60, 5));
   // Tres na vista e cinco de altura: caixa alguma para o que se não pintou.
   CHECK(linhas.size() == 3);
+}
+
+TEST_CASE("o evento de rato conta por tecla de gente e acorda a vigilia") {
+  ftxui::Mouse rato;
+  rato.button = Mouse::Left;
+  rato.motion = Mouse::Pressed;
+  CHECK(tui::eh_tecla_de_gente(ftxui::Event::Mouse("", rato)));
+  // O Custom continua de fóra: é a batida do proprio relogio, e batida que
+  // acordasse faria o somno da issue #82 impossivel.
+  CHECK_FALSE(tui::eh_tecla_de_gente(ftxui::Event::Custom));
+  tui::Vigilia vigilia;
+  vigilia.perde();
+  REQUIRE_FALSE(vigilia.pede_batida());
+  vigilia.ganha();  // é o que o ramo do rato faz por esta tecla de gente
+  CHECK(vigilia.pede_batida());
+  CHECK(vigilia.acordou());
 }
