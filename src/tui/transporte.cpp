@@ -207,11 +207,24 @@ ftxui::Element elemento_do_transporte(const Retracto& retracto,
   const std::size_t cheias =
       enchimento(retracto.posicao, retracto.duracao, larg_barra);
 
+  // As duas metades da barra reflectem-se á parte, e a união d'ellas é que dá a
+  // barra inteira: n'um hbox aninhado o FTXUI reparte a sobra por outro grupo, e
+  // o que se ganharia em uma linha pagar-se-hia em desenho torto na tela
+  // apertada. A união sabe tratar a metade de largura zero, que é o principio e
+  // o fim de toda faixa.
+  ftxui::Element cheia = pinta(repete(kBarraCheia, cheias), tokens::v500);
+  ftxui::Element vazia =
+      pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset);
+  if (caixas != nullptr) {
+    cheia = cheia | ftxui::reflect(caixas->barra_cheia);
+    vazia = vazia | ftxui::reflect(caixas->barra_vazia);
+  }
+
   return ftxui::hbox({
       fita_em_elemento(fita.compor(), caixas),
       ftxui::text(" "),
-      pinta(repete(kBarraCheia, cheias), tokens::v500),
-      pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset),
+      std::move(cheia),
+      std::move(vazia),
       pinta(relogio, tokens::text_bright),
       pinta(som, tokens::text_muted),
   });
