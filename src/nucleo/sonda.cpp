@@ -253,6 +253,41 @@ bool nomeado_na_forcagem(std::string_view chave) {
   return false;
 }
 
+// familia_com_glypho — o FcFontList outra vez, e NUNCA o FcFontMatch. Aquelle
+// lista o que está installado; este CASA, e casando devolve fonte de
+// substituição quando a pedida não existe. Medi-o n'esta machina: pedindo
+// familia que não existe, o FcFontMatch devolveu a Noto Sans, cujo charset
+// diria «sim» a glypho que Nerd Font alguma tem. Prova de glypho por fonte de
+// substituição é prova falsa, e é o genero de erro que ninguem ve.
+bool familia_com_glypho(std::string_view agulha, char32_t ponto) {
+  if (agulha.empty()) return false;
+  FcConfig* configuracao = FcInitLoadConfigAndFonts();
+  if (configuracao == nullptr) return false;
+  FcPattern* padrao = FcPatternCreate();
+  FcObjectSet* campos = FcObjectSetBuild(FC_FAMILY, FC_CHARSET, nullptr);
+  FcFontSet* achadas = (padrao != nullptr && campos != nullptr)
+                           ? FcFontList(configuracao, padrao, campos)
+                           : nullptr;
+  bool desenha = false;
+  for (int posicao = 0;
+       achadas != nullptr && posicao < achadas->nfont && !desenha; ++posicao) {
+    FcPattern* fonte = achadas->fonts[posicao];
+    FcChar8* familia = nullptr;
+    FcCharSet* letras = nullptr;
+    if (FcPatternGetString(fonte, FC_FAMILY, 0, &familia) == FcResultMatch &&
+        familia != nullptr &&
+        contem_insensivel(reinterpret_cast<const char*>(familia), agulha) &&
+        FcPatternGetCharSet(fonte, FC_CHARSET, 0, &letras) == FcResultMatch &&
+        letras != nullptr)
+      desenha = FcCharSetHasChar(letras, static_cast<FcChar32>(ponto)) != FcFalse;
+  }
+  if (achadas != nullptr) FcFontSetDestroy(achadas);
+  if (campos != nullptr) FcObjectSetDestroy(campos);
+  if (padrao != nullptr) FcPatternDestroy(padrao);
+  FcConfigDestroy(configuracao);
+  return desenha;
+}
+
 namespace {
 
 // forcado — traduz especie e alvo na chave da taboa, e pergunta pela forçagem.

@@ -100,6 +100,15 @@ bool nomeado_na_forcagem(std::string_view chave);
 // separadas por virgula, os requisitos que se hão de ter por ausentes.
 Inquerito inquerito_do_systema();
 
+// familia_com_glypho — diz se ALGUMA familia installada cujo nome traga a
+// agulha desenha o ponto de codigo pedido. Pergunta-se pela CLASSE de fonte
+// que a obra exige, e nunca por um nome chumbado: quem corre outra Nerd Font
+// que não a d'esta machina ha de obter a mesma resposta.
+//
+// Serve á capa, que precisa de saber se o sextante (U+1FB00) tem glypho antes
+// de o pedir ao chafa: sem elle, o sextante sahe quadrículo vazio.
+bool familia_com_glypho(std::string_view agulha, char32_t ponto);
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
