@@ -657,10 +657,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A guarnição em altura: marca, topo, transporte, rodapé, a orla, e a fita
-    // do espectro no pé, que a issue #92 ha de mudar de logar. O TOPO conta-se
-    // pelo modo, que aberto o prompt são duas linhas e não uma.
-    const std::size_t guarnicao = 15 + tui::linhas_do_topo(digita);
+    // A guarnição em altura: marca, topo, transporte, rodapé e a orla. Eram
+    // quinze com a fita do espectro no pé e a linha em branco que a precedia;
+    // sahidas ellas, as nove libertas vão para o meio (issue #92). O TOPO
+    // conta-se pelo modo, que aberto o prompt são duas linhas e não uma.
+    const std::size_t guarnicao = 6 + tui::linhas_do_topo(digita);
     const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
                                       ? static_cast<std::size_t>(lin) - guarnicao
                                       : 1;
@@ -730,7 +731,30 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
-    const tui::Quadro quadro = tui::compor(tocador.bandas(), larg, 8);
+    // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
+    // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
+    const nucleo::CapaPintada& arte =
+        galeria.capa(retracto.titulo, geo.painel, geo.capa);
+    const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
+    const std::size_t alt_baixo =
+        geo.livre > alt_arte ? geo.livre - alt_arte : 1;
+    const tui::Quadro quadro =
+        tui::compor(tocador.bandas(), geo.painel, alt_baixo);
+    // Tela estreita ou baixa não pinta painel algum, e com elle vão-se o
+    // espectro e a letra: roubar da tabella, que é onde se navega, para mostrar
+    // arte seria trocar o que serve pelo que enfeita. É o que a capa já fazia.
+    ftxui::Element painel =
+        geo.painel == 0
+            ? ftxui::text("")
+            : tui::elemento_do_painel(
+                  {}, tui::elemento_da_arte(arte, geo.painel, alt_arte),
+                  mostra_letra.load()
+                      ? tui::elemento_da_letra(
+                            letra,
+                            nucleo::linha_corrente(letra, retracto.posicao),
+                            alt_baixo, geo.painel)
+                      : tui::elemento_do_espectro(quadro),
+                  geo.painel);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
                tui::elemento_do_topo(trilha, digita, contexto_do_campo,
@@ -741,17 +765,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                    ftxui::text("  "),
                    tui::elemento_da_tabella(navegador, primeira_linha,
                                             alt_corpo, geo.meio),
-                   ftxui::text(" "),
-                   tui::elemento_da_capa(
-                       galeria.capa(retracto.titulo, geo.painel, geo.capa),
-                       geo.painel, geo.capa),
+                   ftxui::text(geo.painel == 0 ? "" : " "),
+                   std::move(painel),
                }),
-               ftxui::text(""),
-               mostra_letra.load()
-                   ? tui::elemento_da_letra(
-                         letra,
-                         nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
-                   : tui::elemento_do_espectro(quadro),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
                            " · / filtra · s busca na rede"
