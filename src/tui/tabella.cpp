@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "tui/rato.hpp"
 #include "tui/tokens.hpp"
 #include "tui/transporte.hpp"
 
@@ -88,7 +89,8 @@ ftxui::Element elemento_da_trilha(const std::string& trilha,
 }
 
 ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
-                                 std::size_t degrau_eleito) {
+                                 std::size_t degrau_eleito,
+                                 std::vector<ftxui::Box>* caixas) {
   // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
   // faz o dedo do operador errar o alvo que já sabia de memoria.
   const std::pair<Secao, const char*> degraus[] = {
@@ -100,6 +102,11 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
       {Secao::Rois, " LISTS   "},
       {Secao::Lista, " SPOTIFY "},
   };
+  // O vector dimensiona-se UMA vez, ANTES do laço: o `reflect` guarda
+  // REFERENCIA para a caixa, e vector que realloque no meio do quadro deixaria
+  // referencia pendurada a apontar memoria já mudada de logar.
+  if (caixas != nullptr)
+    caixas->assign(sizeof(degraus) / sizeof(degraus[0]), caixa_por_pintar());
   std::vector<ftxui::Element> linhas;
   std::size_t qual = 0;
   for (const auto& [degrau, rotulo] : degraus) {
@@ -125,6 +132,7 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
       linha = linha | ftxui::bgcolor(
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
+    if (caixas != nullptr) linha = linha | ftxui::reflect((*caixas)[qual]);
     linhas.push_back(std::move(linha));
     ++qual;
   }

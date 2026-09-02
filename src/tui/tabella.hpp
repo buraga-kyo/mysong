@@ -17,7 +17,10 @@
 #pragma once
 
 #include <cstddef>
+#include <vector>
+
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/box.hpp>
 
 #include "nucleo/capa.hpp"
 #include "nucleo/letra.hpp"
@@ -31,9 +34,15 @@ namespace mysong::tui {
 // cursor d'esta Casa. Os dous signaes convivem: o v700 diz onde se ESTÁ, o
 // «▸» diz onde o dedo aponta e QUEM manda na tecla. Sem foco, os parametros
 // novos dormem nos padrões e a pintura é a de sempre, byte por byte.
+//
+// As CAIXAS (issue #95) enchem-se AQUI, e não na composição da janella: quem
+// mover os paineis não move os cliques. Uma por degrau, na ordem em que elles
+// se pintam; punho nullo quer dizer «esta chamada não quer saber», e nesse caso
+// a pintura sahe a mesma, cella por cella, que o `reflect` se não põe.
 ftxui::Element elemento_da_barra(const Navegador& navegador,
                                  bool com_foco = false,
-                                 std::size_t degrau_eleito = 0);
+                                 std::size_t degrau_eleito = 0,
+                                 std::vector<ftxui::Box>* caixas = nullptr);
 
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
