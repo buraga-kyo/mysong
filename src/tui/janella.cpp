@@ -447,13 +447,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> pede_catalogo{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
-  // O RATO NÃO SE RASTREIA. O FTXUI liga-o por defeito, e liga-o no modo mais largo
-  // que existe: `ESC[?1003h`, que manda uma sequencia de escape a cada MEXIDA do rato,
-  // ainda que ninguem carregue em botão algum. Dentro de tmux essas sequencias vazam, e
-  // o que o operador vê é o teclado a cuspir lixo e a comer teclas.
+  // O RATO PEDE-SE Á MÃO (issue #95), e o rastreio do FTXUI fica desligado. Não é
+  // desconfiança: elle liga QUATRO modos de uma vez, e um d'elles é o `ESC[?1003h`,
+  // que manda uma sequencia de escape a cada MEXIDA do rato, ainda que ninguem
+  // carregue em botão algum. Dentro de tmux essas sequencias vazam, e o que o
+  // operador vê é o teclado a cuspir lixo e a comer teclas. Medido no FTXUI v7.0.3,
+  // em `app.cpp`: com o rastreio ligado sahem o 1000, o 1003, o 1015 e o 1006.
   //
-  // E esta Casa não usa rato: tratador de rato algum se ligou em issue alguma. Pagar o
-  // custo inteiro de um recurso que não se consome não é neutro, é este defeito.
+  // D'esses quatro esta Casa consome DOUS: o 1000, que manda o botão a descer e a
+  // subir, e o 1006, que os manda no formato SGR, de coordenada sem o tecto de
+  // duzentas e vinte e tres collunhas do formato velho. Ligam-se abaixo, ao lado do
+  // modo do foco, e desfazem-se logo depois do laço.
   tela.TrackMouse(false);
   std::atomic<bool> sahir{false};
   // O MODO de digitar. Um enum, e não booleanos ao lado: dous booleanos
@@ -1145,9 +1149,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // Liga-se antes do Loop e desliga-se logo depois, no mesmo assentar e
   // desfazer que o FTXUI pratica com o que é d'elle; aviso que chegue antes
   // do parser espera no buffer do tty, que o Install não descarta entrada.
-  std::cout << "\x1b[?1004h" << std::flush;
+  //
+  // E PEDE-SE O RATO com elle (issue #95): o 1000 dá o botão a descer e a subir,
+  // e o 1006 dá-os em SGR. O 1003 fica de fóra, e é esse o ponto da issue.
+  std::cout << "\x1b[?1004h\x1b[?1000h\x1b[?1006h" << std::flush;
   tela.Loop(janella);
-  std::cout << "\x1b[?1004l" << std::flush;
+  std::cout << "\x1b[?1006l\x1b[?1000l\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
