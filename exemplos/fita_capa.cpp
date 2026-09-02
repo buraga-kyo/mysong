@@ -76,3 +76,45 @@ std::string tela_de(const nu::CapaPintada& capa) {
 }
 
 }  // namespace
+
+int main(int argc, char** argv) {
+  if (argc < 3 || argc > 4) {
+    std::fprintf(stderr, "uso: fita_capa <imagem> <LARGURAxALTURA>"
+                         " [sextantes|sem-sextantes]\n");
+    return 2;
+  }
+  std::size_t collunas = 0, linhas = 0;
+  if (!medida_de(argv[2], &collunas, &linhas)) {
+    std::fprintf(stderr, "fita_capa: «%s» não é LARGURAxALTURA\n", argv[2]);
+    return 2;
+  }
+  // Sem o terceiro argumento vale a regra da Casa, que pergunta á fonte. Com
+  // elle, o operador compara os dous renders no MESMO terminal e decide.
+  bool com_sextante = nu::ha_sextante_na_fonte();
+  if (argc == 4) {
+    const std::string_view forcado(argv[3]);
+    if (forcado == "sextantes") {
+      com_sextante = true;
+    } else if (forcado == "sem-sextantes") {
+      com_sextante = false;
+    } else {
+      std::fprintf(stderr, "fita_capa: «%s» não é sextantes nem"
+                           " sem-sextantes\n", argv[3]);
+      return 2;
+    }
+  }
+  const nu::CapaPintada capa =
+      nu::pinta_imagem(argv[1], collunas, linhas, com_sextante);
+  // Capa que não sahe queixa-se no ERRO e deixa a sahida padrão limpa: assim o
+  // `fita_capa ... > arquivo.ans` não grava meia tela por cima de nada.
+  if (!capa.achada) {
+    std::fprintf(stderr, "fita_capa: render nenhum de «%s»\n", argv[1]);
+    return 2;
+  }
+  std::fputs(tela_de(capa).c_str(), stdout);
+  return 0;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+// ══════════════════════════════════════════════════════════════════════════
