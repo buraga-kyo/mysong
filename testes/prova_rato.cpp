@@ -333,3 +333,6 @@ TEST_CASE("o botão direito é mudo tambem com o campo de digitar aberto") {
   CHECK(tui::gesto_do_alvo(linha, Mouse::Left, Mouse::Pressed, digita).gesto ==
         tui::Gesto::FechaCampo);
 }
+
+//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+// ══════════════════════════════════════════════════════════════════════════
