@@ -752,5 +752,49 @@ TEST_CASE("a barra e a tecla P levam á mesma lista das listas") {
   CHECK(textos(pela_barra) == textos(pela_tecla));
 }
 
+// ── A ENTRADA N'UMA LISTA PELO ID (issue #93) ───────────────────────────────
+
+TEST_CASE("as listas que a barra lê vêm do banco, e entrar n'uma pelo id abre-a") {
+  const Cova cova;
+  const CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("da manhã"));
+  REQUIRE(navegador.cria_rol("da noite"));
+  REQUIRE(navegador.rois().size() == 2);
+  CHECK(navegador.rois()[0].nome == "da manhã");  // a ordem é a do banco
+  const int qual = navegador.rois()[0].id;
+  navegador.ao_fim();           // a segunda, para o alvo ser o OUTRO
+  REQUIRE_FALSE(navegador.entra());
+  REQUIRE(navegador.junta_ao_rol("/a/1.mp3"));
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
+  // Entra-se na PRIMEIRA sem passar pela lista das listas, e ella vira o alvo.
+  CHECK(navegador.vai_para_rol(qual));
+  CHECK(navegador.secao() == tui::Secao::NoRol);
+  CHECK(navegador.rol_corrente() == qual);
+  CHECK(navegador.nome_corrente() == "da manhã");
+  CHECK(navegador.trilha() == std::vector<std::string>{"da manhã"});
+  CHECK(navegador.vista().empty());  // a faixa foi para a outra
+}
+
+TEST_CASE("a lista que já não existe recusa a entrada, e nada se muta") {
+  const Cova cova;
+  const CovaDoRol coval;
+  REQUIRE(enche(cova.banco()));
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador sem_roleiro(livraria);
+  CHECK(sem_roleiro.rois().empty());  // punho nullo: corrida sem listas
+  CHECK_FALSE(sem_roleiro.vai_para_rol(1));
+  nu::Roleiro roleiro(coval.banco());
+  tui::Navegador navegador(livraria, &roleiro);
+  const std::vector<std::string> antes = textos(navegador);
+  CHECK_FALSE(navegador.vai_para_rol(0));
+  CHECK_FALSE(navegador.vai_para_rol(9999));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(textos(navegador) == antes);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
