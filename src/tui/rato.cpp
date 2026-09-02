@@ -13,6 +13,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/rato.hpp"
 
+#include <cmath>
+
 namespace mysong::tui {
 
 ftxui::Box CaixasDoTransporte::progresso() const noexcept {
@@ -59,6 +61,48 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept {
   const ftxui::Box barra = baixo.progresso();
   if (barra.Contain(x, y)) return {Peca::Progresso, 0, fracao_na(barra, x)};
   return {};  // a orla, o rodapé e o espectro não respondem ao rato
+}
+
+GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
+                          ftxui::Mouse::Motion movimento,
+                          const EstadoDoRato& estado) noexcept {
+  // Só o botão a DESCER conta, e a guarda vem ANTES de toda comparação. O
+  // soltar chega sempre: sem esta linha, cada clique valeria por dous.
+  if (movimento != ftxui::Mouse::Pressed) return {};
+  const bool roda =
+      botao == ftxui::Mouse::WheelUp || botao == ftxui::Mouse::WheelDown;
+  if (botao != ftxui::Mouse::Left && !roda) return {};
+  // Com o campo aberto o clique é o Escape, e nada mais: o rato não escreve no
+  // termo, e a tela não ha de mudar debaixo de quem está a digitar.
+  if (estado.digitando) return {Gesto::FechaCampo, 0, 0.0};
+  const bool sobe = botao == ftxui::Mouse::WheelUp;
+  if (roda) {
+    if (alvo.peca == Peca::Degrau)
+      return {sobe ? Gesto::DegrauSobe : Gesto::DegrauDesce, 0, 0.0};
+    if (alvo.peca == Peca::Linha)
+      return {sobe ? Gesto::RodaSobe : Gesto::RodaDesce, LINHAS_POR_DENTE, 0.0};
+    return {};  // roda fóra da lista e da barra não governa cousa alguma
+  }
+  switch (alvo.peca) {
+    case Peca::Degrau: return {Gesto::EntraNoDegrau, alvo.indice, 0.0};
+    case Peca::Linha:
+      // Indice além da vista é o quadro que envelheceu entre a pintura e o
+      // clique. Não se elege ás cegas: o quadro seguinte já mostra o certo.
+      if (alvo.indice >= estado.quantas) return {};
+      return {alvo.indice == estado.eleito ? Gesto::Toca : Gesto::Elege,
+              alvo.indice, 0.0};
+    case Peca::Capa:
+    case Peca::Pausa: return {Gesto::PausaOuRetoma, 0, 0.0};
+    case Peca::Anterior: return {Gesto::Anterior, 0, 0.0};
+    case Peca::Proxima: return {Gesto::Proxima, 0, 0.0};
+    case Peca::Progresso:
+      // Duração que não presta não se busca. Buscar o segundo zero seria
+      // affirmar o principio, e o que ha é a Casa ainda não saber a duração.
+      if (!std::isfinite(estado.duracao) || estado.duracao <= 0.0) return {};
+      return {Gesto::Busca, 0, estado.duracao * alvo.fracao};
+    case Peca::Nada: break;
+  }
+  return {};
 }
 
 }  // namespace mysong::tui
