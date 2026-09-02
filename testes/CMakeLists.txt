@@ -169,3 +169,6 @@ target_sources(mysong_testes PRIVATE prova_menu.cpp)
 
 # ─── Prova da vigilia do desenho (issue #82): por target_sources, a regra ───
 target_sources(mysong_testes PRIVATE prova_vigilia.cpp)
+
+# ─── Prova do rato (issue #95): por target_sources, a regra ─────────────────
+target_sources(mysong_testes PRIVATE prova_rato.cpp)
