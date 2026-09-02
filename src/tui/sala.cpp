@@ -165,9 +165,13 @@ Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
 
 ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
   if (largura == 0) return ftxui::text("");
+  // As TRES linhas levam o token, e não sómente a primeira: as duas de baixo
+  // estão vazias hoje, e linha vazia sem tinta é a que amanhã ganha texto e
+  // sahe na côr de repouso sem que ninguem repare.
   if (ficha.titulo.empty())
     return ftxui::vbox({pinta("(nada toca)", tokens::text_faint),
-                        ftxui::text(""), ftxui::text("")});
+                        pinta("", tokens::text_faint),
+                        pinta("", tokens::text_faint)});
   return ftxui::vbox({pinta(ficha.titulo, tokens::text_bright) | ftxui::bold,
                       pinta(ficha.artista, tokens::text_primary),
                       pinta(ficha.album, tokens::text_muted)});

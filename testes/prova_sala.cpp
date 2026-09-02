@@ -12,7 +12,10 @@
 #include <string>
 #include <vector>
 
+#include "nucleo/letra.hpp"
+#include "tui/espectro.hpp"
 #include "tui/sala.hpp"
+#include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
@@ -327,4 +330,30 @@ TEST_CASE("sómente tres secções trazem caminho de arquivo por chave") {
   CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Rede));
   CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Rois));
   CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Lista));
+}
+
+TEST_CASE("a ficha sem etiqueta cahe no nome do arquivo") {
+  const tui::Ficha crua =
+      tui::ficha_da_faixa("/acervo/Alan Walker/Faded.mp3", "", "", "");
+  CHECK(crua.titulo == "Faded");
+  CHECK(crua.artista.empty());
+  const tui::Ficha posta = tui::ficha_da_faixa("/acervo/x.mp3", "Faded",
+                                               "Alan Walker", "Different");
+  CHECK(posta.titulo == "Faded");
+  CHECK(posta.album == "Different");
+  // Caminho vazio dá ficha vazia, que é o que diz «nada toca».
+  CHECK(tui::ficha_da_faixa("", "Faded", "Alan Walker", "").titulo.empty());
+}
+
+TEST_CASE("a ficha vazia mede tres linhas e sahe apagada") {
+  const ftxui::Screen tela = papel(tui::elemento_da_ficha({}, 39), 39, 5);
+  CHECK(linha_de(tela, 0).substr(0, 11) == "(nada toca)");
+  CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::text_faint));
+  // Tres linhas, e não uma: sem ellas o espectro subiria e desceria a cada
+  // troca de faixa. A quarta fica intacta.
+  const ftxui::Screen painel = papel(
+      tui::elemento_do_painel({}, ftxui::emptyElement(), ftxui::text("BAIXO"),
+                              39),
+      39, 6);
+  CHECK(linha_de(painel, 4).substr(0, 5) == "BAIXO");
 }
