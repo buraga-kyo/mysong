@@ -68,7 +68,7 @@ bool ha_sextante_na_fonte() {
   // O `static` local inicializa-se UMA vez, e desde o C++11 a norma garante-o
   // contra fios (o «magic static»); esta Casa compila em C++17. Sem elle, o
   // pintor pediria ao fontconfig a taboa das fontes vinte vezes por segundo.
-  static const bool desenha = familia_com_glypho("nerd", 0x1FB00);
+  static const bool desenha = familia_com_glypho(CLASSE_DA_FONTE, 0x1FB00);
   return desenha;
 }
 

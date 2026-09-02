@@ -32,6 +32,13 @@
 
 namespace mysong::nucleo {
 
+// A CLASSE de fonte que esta obra exige, pela agulha que o nome d'ella ha de
+// trazer. Vive aqui, e não em duas cadeias soltas: a taboa dos requisitos
+// pergunta se ha familia assim, e a capa pergunta se ELLA desenha o sextante.
+// Fossem duas, o dia em que a Casa trocasse de fonte deixaria uma para traz, e
+// a sonda diria «presente» sobre uma familia e a capa sobre outra.
+inline constexpr std::string_view CLASSE_DA_FONTE = "nerd";
+
 // A GRAVIDADE da falta, que é o que decide o destino do programa. Duas, e
 // sómente duas: o Impedimento tranca a porta, o Aviso apenas a rannge.
 enum class Gravidade { Impedimento, Aviso };

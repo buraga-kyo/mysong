@@ -33,7 +33,7 @@ namespace mysong::nucleo {
 const std::vector<Requisito>& requisitos() {
   static const std::vector<Requisito> taboa = {
       {"fonte", "fonte com glifos de seta (Nerd Font)", Gravidade::Impedimento,
-       Especie::FamiliaDeFonte, "nerd",
+       Especie::FamiliaDeFonte, CLASSE_DA_FONTE,
        "baixe uma Nerd Font de nerdfonts.com para ~/.local/share/fonts e rode "
        "fc-cache -fv"},
       {"libmpv", "libmpv (a machina de som)", Gravidade::Impedimento,
