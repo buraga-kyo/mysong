@@ -270,6 +270,12 @@ void aplica_sgr(std::string_view escape, Corrida* corrida,
       // «fundo cheio». Marca-se aqui e troca-se quando a corrida FECHA, que a
       // ordem d'elle é `ESC[7m` ANTES da côr: trocando já, trocar-se-ia nada.
       *invertida = true;
+    } else if (cifras[i] == 27) {
+      // O FIM do invertido. Desfaz a MARCA, e sómente ella: as côres ficam onde
+      // estavam, que o 27 nada diz d'ellas. O chafa 1.19 não o emitte, e é por
+      // isso que elle cahia no ramo do desconhecido; tratado, a inversão deixa
+      // de depender de o chafa fechar sempre com `ESC[0m`.
+      *invertida = false;
     } else if (cifras[i] == 39) {
       corrida->r_frente = corrida->g_frente = corrida->b_frente = -1;
     } else if (cifras[i] == 49) {
@@ -286,18 +292,22 @@ void aplica_sgr(std::string_view escape, Corrida* corrida,
   }
 }
 
-// assenta — fecha a corrida na lista, trocando tinta e fundo quando o `ESC[7m`
-// o pediu. Medido sobre imagem chapada de 400 por 400: vinte occorrencias em
-// vinte e uma linhas, uma columna inteira que o painel pintava com o fundo do
-// terminal. Sobre as capas do acervo são zero, e é por isso que o defeito
-// atravessou tantas corridas sem que ninguem o visse.
-void assenta(std::vector<Corrida>* corridas, Corrida* corrente, bool invertida) {
+// assenta — fecha a corrida na lista. Invertida, a troca faz-se n'uma CÓPIA, e
+// jamais no `corrente`: aquelle é a côr que ATRAVESSA para a corrida seguinte, e
+// trocá-lo alli faria a tinta de uma vazar por fundo da outra. Entrada que o
+// expunha: `ESC[7m ESC[38;2;1;2;3m A ESC[38;2;9;9;9m B`, onde o B sahia com o
+// (1,2,3) do A no fundo. O chafa 1.19 fecha toda célulla invertida com `ESC[0m`
+// e por isso nada sahia errado hoje; mas o analysa_sgr é funcção PUBLICA e pura,
+// e o tractado d'este modulo promette tolerar o que o chafa venha a emittir.
+void assenta(std::vector<Corrida>* corridas, const Corrida& corrente,
+             bool invertida) {
+  Corrida fechada = corrente;
   if (invertida) {
-    std::swap(corrente->r_frente, corrente->r_fundo);
-    std::swap(corrente->g_frente, corrente->g_fundo);
-    std::swap(corrente->b_frente, corrente->b_fundo);
+    std::swap(fechada.r_frente, fechada.r_fundo);
+    std::swap(fechada.g_frente, fechada.g_fundo);
+    std::swap(fechada.b_frente, fechada.b_fundo);
   }
-  corridas->push_back(*corrente);
+  corridas->push_back(std::move(fechada));
 }
 
 }  // namespace
@@ -323,13 +333,13 @@ std::vector<Corrida> analysa_sgr(std::string_view linha) {
     while (fim < linha.size() && linha[fim] != 'm' && linha[fim] != 0x1b) ++fim;
     const std::string_view corpo = linha.substr(i, fim - i + 1);
     if (!corrente.texto.empty()) {
-      assenta(&corridas, &corrente, invertida);
+      assenta(&corridas, corrente, invertida);
       corrente.texto.clear();
     }
     aplica_sgr(corpo, &corrente, &invertida);
     i = fim < linha.size() ? fim + 1 : linha.size();
   }
-  if (!corrente.texto.empty()) assenta(&corridas, &corrente, invertida);
+  if (!corrente.texto.empty()) assenta(&corridas, corrente, invertida);
   return corridas;
 }
 
