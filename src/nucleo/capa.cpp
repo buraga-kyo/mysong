@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <cctype>
+#include <utility>
 
 namespace mysong::nucleo {
 
@@ -231,7 +232,8 @@ namespace {
 // aplica_sgr — lê UM escape do chafa e assenta a côr na corrida que vem. Sómente os
 // codigos que o chafa emitte: 38;2;R;G;B, 48;2;R;G;B, 39, 49, 0 e 7. Codigo que não se
 // conheça ignora-se, e não se lança: o chafa é ferramenta alheia e pode mudar.
-void aplica_sgr(std::string_view escape, Corrida* corrida) {
+void aplica_sgr(std::string_view escape, Corrida* corrida,
+                bool* invertida) {
   // O corpo entre `ESC[` e `m`, partido por ponto e virgula.
   const std::size_t abre = escape.find('[');
   if (abre == std::string_view::npos) return;
@@ -252,6 +254,13 @@ void aplica_sgr(std::string_view escape, Corrida* corrida) {
   for (std::size_t i = 0; i < cifras.size(); ++i) {
     if (cifras[i] == 0) {
       *corrida = Corrida{corrida->texto, -1, -1, -1, -1, -1, -1};
+      *invertida = false;
+    } else if (cifras[i] == 7) {
+      // O VIDEO INVERTIDO, e não se ignora mais. O chafa emitte-o em célulla de
+      // côr chapada: diz «espaço invertido» com a TINTA posta, em vez de dizer
+      // «fundo cheio». Marca-se aqui e troca-se quando a corrida FECHA, que a
+      // ordem d'elle é `ESC[7m` ANTES da côr: trocando já, trocar-se-ia nada.
+      *invertida = true;
     } else if (cifras[i] == 39) {
       corrida->r_frente = corrida->g_frente = corrida->b_frente = -1;
     } else if (cifras[i] == 49) {
@@ -268,11 +277,26 @@ void aplica_sgr(std::string_view escape, Corrida* corrida) {
   }
 }
 
+// assenta — fecha a corrida na lista, trocando tinta e fundo quando o `ESC[7m`
+// o pediu. Medido sobre imagem chapada de 400 por 400: vinte occorrencias em
+// vinte e uma linhas, uma columna inteira que o painel pintava com o fundo do
+// terminal. Sobre as capas do acervo são zero, e é por isso que o defeito
+// atravessou tantas corridas sem que ninguem o visse.
+void assenta(std::vector<Corrida>* corridas, Corrida* corrente, bool invertida) {
+  if (invertida) {
+    std::swap(corrente->r_frente, corrente->r_fundo);
+    std::swap(corrente->g_frente, corrente->g_fundo);
+    std::swap(corrente->b_frente, corrente->b_fundo);
+  }
+  corridas->push_back(*corrente);
+}
+
 }  // namespace
 
 std::vector<Corrida> analysa_sgr(std::string_view linha) {
   std::vector<Corrida> corridas;
   Corrida corrente;
+  bool invertida = false;
   for (std::size_t i = 0; i < linha.size();) {
     if (linha[i] != 0x1b) {  // texto: junta-se, octeto a octeto, á corrida corrente
       // Octeto a octeto BASTA, e o multibyte não pede cuidado algum: acumulando-se
@@ -290,13 +314,13 @@ std::vector<Corrida> analysa_sgr(std::string_view linha) {
     while (fim < linha.size() && linha[fim] != 'm' && linha[fim] != 0x1b) ++fim;
     const std::string_view corpo = linha.substr(i, fim - i + 1);
     if (!corrente.texto.empty()) {
-      corridas.push_back(corrente);
+      assenta(&corridas, &corrente, invertida);
       corrente.texto.clear();
     }
-    aplica_sgr(corpo, &corrente);
+    aplica_sgr(corpo, &corrente, &invertida);
     i = fim < linha.size() ? fim + 1 : linha.size();
   }
-  if (!corrente.texto.empty()) corridas.push_back(corrente);
+  if (!corrente.texto.empty()) assenta(&corridas, &corrente, invertida);
   return corridas;
 }
 
