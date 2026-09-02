@@ -83,11 +83,17 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
 // por render.
 bool ha_sextante_na_fonte();
 
-// com_sextante — resolve a alavanca do operador n'um bool. `Auto` é a regra da
+// sextante_de — resolve a alavanca do operador n'um bool. `Auto` é a regra da
 // Casa, que pergunta á fonte; `Sim` e `Nao` são a vontade d'elle, e essa não se
 // discute: quem olha o terminal é elle, e a fonte de substituição pode desenhar
 // o sextante muito bem sem que o fontconfig o saiba dizer.
-bool com_sextante(Sextantes ajuste);
+//
+// Chama-se `_de` pelo precedente do fonte_de e do volume_de, e NÃO
+// `com_sextante`: aquelle é o nome do parametro que quatro funcções d'este
+// modulo carregam, e funcção homonyma do parametro fica sombreada dentro
+// d'ellas. Sem -Wshadow isso passa calado até ao dia em que alguem escrever o
+// nome esperando a funcção e obtiver o bool, ou o contrario.
+bool sextante_de(Sextantes ajuste);
 
 // argumentos_do_chafa — o que se corre. Os symbolos, a geometria em collunhas
 // por linhas, e o trabalho no maximo.

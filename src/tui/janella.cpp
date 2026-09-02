@@ -483,7 +483,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // assignatura, e o fio da tela troca-o na tecla `l`.
   std::atomic<bool> mostra_letra{false};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
-  nucleo::Galeria galeria(nucleo::com_sextante(ajustes.capa_sextantes.valor));
+  nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:

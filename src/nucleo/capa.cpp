@@ -72,7 +72,7 @@ bool ha_sextante_na_fonte() {
   return desenha;
 }
 
-bool com_sextante(Sextantes ajuste) {
+bool sextante_de(Sextantes ajuste) {
   switch (ajuste) {
     case Sextantes::Sim: return true;
     case Sextantes::Nao: return false;
