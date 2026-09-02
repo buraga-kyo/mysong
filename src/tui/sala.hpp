@@ -106,6 +106,12 @@ std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto);
 ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
                                 std::size_t largura, std::size_t linhas);
 
+// elemento_do_cabecalho — a colleção á vista por cima da tabella: capa pequena,
+// nome, conta com os chips, separador. SEIS linhas, as que a geometria reservou.
+ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
+                                     const nucleo::CapaPintada& capa,
+                                     std::size_t largura);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒

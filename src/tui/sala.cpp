@@ -33,6 +33,8 @@ constexpr std::size_t kMeioMinimo = 40, kCabecalho = 6, kTabellaMinima = 3;
 // 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
 // diria «não ha capa» mais alto do que o painel diz a musica.
 constexpr std::size_t kMarcadorLinhas = 6;
+// A capa pequena do cabeçalho: dez por cinco, que a cella é de dous por um.
+constexpr std::size_t kCapaPequena = 10, kCapaPequenaLinhas = 5;
 
 // pinta — o texto na tinta do token. Côr crua não entra n'esta obra.
 ftxui::Element pinta(const std::string& texto, std::string_view token) {
@@ -50,6 +52,15 @@ const char* substantivo_da(Especie especie, bool um) {
     case Especie::Faixas: break;
   }
   return um ? "FAIXA" : "FAIXAS";
+}
+
+// chip — o modo aceso ou apagado, e PRESENTE nos dous casos: chip que sommisse
+// mudaria a largura da linha da conta a cada tecla, e a tela saltaria sozinha.
+ftxui::Element chip(const std::string& texto, bool aceso) {
+  if (!aceso) return pinta(texto, tokens::text_faint);
+  const tokens::Triade fundo = tokens::rgb(tokens::v700);
+  return pinta(texto, tokens::text_bright) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
 }
 }  // namespace
 
@@ -155,6 +166,39 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
   if (capa.achada) return elemento_da_capa(capa, largura, linhas);
   if (largura <= 2 || linhas <= 2) return ftxui::text("");
   return elemento_da_capa(capa, largura - 2, linhas - 2);
+}
+
+ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
+                                     const nucleo::CapaPintada& capa,
+                                     std::size_t largura) {
+  if (largura == 0) return ftxui::text("");
+  const bool repete = colleccao.repeticao != nucleo::Repeticao::Nenhuma;
+  const bool uma = colleccao.repeticao == nucleo::Repeticao::Uma;
+  const char* qual = !repete ? "NÃO" : uma ? "UMA" : "TODAS";
+  std::string risca;
+  for (std::size_t c = 0; c < largura; ++c) risca += "\u2500";
+  return ftxui::vbox(
+      {ftxui::hbox({elemento_da_arte(capa, kCapaPequena, kCapaPequenaLinhas),
+                    ftxui::text("  "),
+                    ftxui::vbox({
+                        ftxui::text(""),
+                        pinta(colleccao.nome, tokens::text_heading) |
+                            ftxui::bold,
+                        ftxui::text(""),
+                        ftxui::hbox(
+                            {pinta(texto_da_conta(colleccao.quantas,
+                                                  colleccao.especie,
+                                                  colleccao.duracao) + "  ",
+                                   tokens::text_body),
+                             chip(" \u21c4 EMBARALHAR ", colleccao.embaralhado),
+                             ftxui::text(" "),
+                             chip(std::string(" \u21bb REPETIR: ") + qual + " ",
+                                  repete)}),
+                        ftxui::text(""),
+                    })}) |
+           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                       static_cast<int>(kCapaPequenaLinhas)),
+       pinta(risca, tokens::line_dim)});
 }
 
 }  // namespace mysong::tui
