@@ -661,11 +661,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int col = ftxui::Terminal::Size().dimx;
     const int lin = ftxui::Terminal::Size().dimy;
     const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A guarnição em altura: marca, topo, transporte, rodapé e a orla. Eram
-    // quinze com a fita do espectro no pé e a linha em branco que a precedia;
-    // sahidas ellas, as nove libertas vão para o meio (issue #92). O TOPO
-    // conta-se pelo modo, que aberto o prompt são duas linhas e não uma.
-    const std::size_t guarnicao = 6 + tui::linhas_do_topo(digita);
+    // A guarnição em altura: marca, topo, transporte, rodapé e as duas da orla,
+    // que são CINCO mais o topo. Eram quinze com a fita do espectro no pé e a
+    // linha em branco que a precedia (issue #92). Foram seis por um quadro, e
+    // ahi sobrava sempre uma fileira vazia no pé: a conta cobrava uma linha que
+    // desenho algum gastava. O TOPO conta-se pelo modo, que aberto o prompt são
+    // duas linhas e não uma.
+    const std::size_t guarnicao = 5 + tui::linhas_do_topo(digita);
     const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
                                       ? static_cast<std::size_t>(lin) - guarnicao
                                       : 1;
@@ -792,8 +794,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                    tui::elemento_da_barra(navegador, menu.aberto(),
                                           menu.degrau()),
                    ftxui::text("  "),
+                   // `emptyElement`, e não `text("")`: o `text` pede UMA
+                   // linha ainda que nada escreva, e a faixa do meio pediria
+                   // uma a mais do que a conta lhe deu.
                    ftxui::vbox({geo.cabecalho == 0
-                                    ? ftxui::text("")
+                                    ? ftxui::emptyElement()
                                     : tui::elemento_do_cabecalho(
                                           colleccao,
                                           galeria.capa(capa_do_meio,

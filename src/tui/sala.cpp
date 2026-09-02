@@ -166,9 +166,13 @@ std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto) {
 
 ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
                                 std::size_t largura, std::size_t linhas) {
-  if (largura == 0 || linhas == 0) return ftxui::text("");
+  // `emptyElement`, e NÃO `text("")`: o `text` do FTXUI pede sempre UMA linha,
+  // ainda que nada escreva. Devolvendo-o, o painel sem capa pedia uma linha a
+  // mais que a conta lhe deu, e o cinge da faixa do corpo aparava a ultima do
+  // espectro em silencio. Medido n'um pty de vinte linhas.
+  if (largura == 0 || linhas == 0) return ftxui::emptyElement();
   if (capa.achada) return elemento_da_capa(capa, largura, linhas);
-  if (largura <= 2 || linhas <= 2) return ftxui::text("");
+  if (largura <= 2 || linhas <= 2) return ftxui::emptyElement();
   return elemento_da_capa(capa, largura - 2, linhas - 2);
 }
 
