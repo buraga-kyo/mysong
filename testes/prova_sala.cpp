@@ -7,12 +7,43 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 #include <string>
 #include <vector>
 
 #include "tui/sala.hpp"
 
+namespace nu = mysong::nucleo;
 namespace tui = mysong::tui;
+
+namespace {
+
+// papel — o écran de PAPEL, lido cella a cella: o `ToString` metteria escape
+// no meio dos bytes, e contar bytes seria contar a tinta.
+ftxui::Screen papel(ftxui::Element quadro, int largura, int altura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
+                                              ftxui::Dimension::Fixed(altura));
+  ftxui::Render(ecran, quadro);
+  return ecran;
+}
+
+std::string linha_de(const ftxui::Screen& ecran, int y) {
+  std::string dita;
+  for (int x = 0; x < ecran.dimx(); ++x) dita += ecran.PixelAt(x, y).character;
+  return dita;
+}
+
+// capa_de — a capa que o chafa devolveria, armada á mão. Chafa algum corre aqui.
+nu::CapaPintada capa_de(std::size_t quantas, std::size_t largura) {
+  nu::CapaPintada capa;
+  capa.achada = quantas > 0;
+  for (std::size_t l = 0; l < quantas; ++l)
+    capa.linhas.push_back({nu::Corrida{std::string(largura, '#')}});
+  return capa;
+}
+
+}  // namespace
 
 TEST_CASE("a somma da colleção diz-se por extenso") {
   CHECK(tui::texto_da_duracao(0).empty());
@@ -105,4 +136,23 @@ TEST_CASE("terminal baixo cede a capa, depois o cabeçalho, depois o painel") {
   CHECK(rasa.painel == 0);
   CHECK(rasa.cabecalho == 0);
   CHECK(rasa.tabella == 5);
+}
+
+// A ARTE não tem altura reservada: a de 16 por 9 sahe mais baixa que o tecto.
+TEST_CASE("a ficha vem na linha seguinte á ultima da capa") {
+  const tui::Ficha ficha{"Dawn Chorus", "Boards of Canada", "Geogaddi"};
+  for (int alta : {11, 20}) {
+    const nu::CapaPintada capa = capa_de(static_cast<std::size_t>(alta), 39);
+    CHECK(tui::linhas_da_arte(capa, 20) == static_cast<std::size_t>(alta));
+    const ftxui::Screen tela = papel(
+        tui::elemento_do_painel(ficha, tui::elemento_da_arte(capa, 39, 20),
+                                ftxui::text(""), 39),
+        39, 34);
+    CHECK(linha_de(tela, 0).substr(0, 13) == "TOCANDO AGORA");
+    CHECK(linha_de(tela, 1) == std::string(39, '#'));
+    CHECK(linha_de(tela, alta) == std::string(39, '#'));
+    CHECK(linha_de(tela, alta + 1).substr(0, 11) == "Dawn Chorus");
+    CHECK(linha_de(tela, alta + 2).substr(0, 16) == "Boards of Canada");
+    CHECK(linha_de(tela, alta + 3).substr(0, 8) == "Geogaddi");
+  }
 }
