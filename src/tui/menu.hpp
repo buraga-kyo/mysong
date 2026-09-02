@@ -63,6 +63,13 @@ std::size_t degraus_da_barra(std::size_t listas) noexcept;
 AlvoDaBarra alvo_do_degrau(std::size_t degrau,
                            const std::vector<nucleo::Rol>& listas);
 
+// O caminho de volta, para a barra acordar onde se ESTÁ. A secção que a barra
+// não mostra acorda no alto: as LISTAS sahiram d'ella (abrem-se pelo `P`), e as
+// FAIXAS de um album acendem ÁLBUNS, que é o degrau de que se veio. Dentro de
+// uma lista o degrau é o d'ELLA, achado pelo id.
+std::size_t degrau_da_secao(Secao secao, const std::vector<nucleo::Rol>& listas,
+                            int rol_corrente);
+
 // tecla_abre_menu — o Tab, e o Shift+Tab com elle: havendo sómente dous focos,
 // avançar e voltar são o mesmo gesto, e tecla morta não se dá a quem explora.
 bool tecla_abre_menu(const ftxui::Event& tecla) noexcept;

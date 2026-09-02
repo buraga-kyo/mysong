@@ -52,6 +52,27 @@ AlvoDaBarra alvo_do_degrau(std::size_t degrau,
   return {navegar[degrau - listas.size() - 1], 0};
 }
 
+// O switch não leva `default`, pela regra da taboada velha: secção nova que se
+// accrescente ao enum deixa de compilar aqui, em vez de acordar a barra n'um
+// degrau qualquer.
+std::size_t degrau_da_secao(Secao secao, const std::vector<nucleo::Rol>& listas,
+                            int rol_corrente) {
+  switch (secao) {
+    case Secao::Busca: return 0;
+    case Secao::Rois: return 0;  // as listas abrem-se pelo `P`, e não pela barra
+    case Secao::Artistas: return listas.size() + 1;
+    case Secao::Albuns:
+    case Secao::Faixas: return listas.size() + 2;
+    case Secao::Rede: return listas.size() + 3;
+    case Secao::Lista: return listas.size() + 4;
+    case Secao::NoRol:
+      for (std::size_t i = 0; i < listas.size(); ++i)
+        if (listas[i].id == rol_corrente) return i + 1;
+      return 0;  // apagada por outra mão entre dous quadros: cahe no alto
+  }
+  return 0;
+}
+
 bool tecla_abre_menu(const ftxui::Event& tecla) noexcept {
   return tecla == ftxui::Event::Tab || tecla == ftxui::Event::TabReverse;
 }
