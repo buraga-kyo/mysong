@@ -106,7 +106,8 @@ ftxui::Element elemento_da_trilha(const std::string& trilha,
 }
 
 ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
-                                 std::size_t degrau_eleito) {
+                                 std::size_t degrau_eleito,
+                                 std::size_t altura) {
   // As listas lêem-se A CADA PINTURA, e não de cópia guardada: o aceite pede que
   // a lista creada, renomeada ou apagada appareça, mude ou suma no MESMO quadro,
   // e cópia guardada envelheceria justamente n'esse.
@@ -122,10 +123,26 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
   linhas.push_back(
       pinta(apara(" BIBLIOTECA", LARGURA_DA_BARRA), tokens::text_heading));
   const std::size_t quantos = degraus_da_barra(listas.size());
+  // O que a barra gasta fóra do grupo das listas: o titulo, as minhas musicas, a
+  // risca e os quatro de navegar. Com altura posta, o grupo ROLA no que sobra,
+  // que barra mais alta que a tela empurraria o transporte para fóra do quadro.
+  // Altura zero é «sem limite», e é o que a bateria usa para as ver todas.
+  const std::size_t cabe =
+      altura == 0 ? listas.size() : (altura > 7 ? altura - 7 : 0);
+  const std::size_t olhado = com_foco ? degrau_eleito : corrente;
+  const std::size_t primeira = primeira_a_mostrar(
+      olhado > 0 && olhado <= listas.size() ? olhado - 1 : 0, listas.size(),
+      cabe, 0);
   for (std::size_t qual = 0; qual < quantos; ++qual) {
     // A fileira que ACCENDE vem da taboada, e não de comparação á mão: a barra e
     // a machina do foco hão de responder pela MESMA conta.
     const bool aqui = ha_fileira && qual == corrente;
+    // A risca vae ANTES do primeiro degrau de navegar, e não depois do ultimo da
+    // lista: a fileira da lista pode estar fóra da janella, e a risca não.
+    if (qual == listas.size() + 1) linhas.push_back(risca());
+    const bool eh_lista = qual > 0 && qual <= listas.size();
+    if (eh_lista && (qual - 1 < primeira || qual - 1 >= primeira + cabe))
+      continue;
     // O DEDO da barra (issue #80). O «▸» toma o logar do primeiro espaço do
     // rotulo, e a largura não muda; o fundo é o v900 do eleito da tabella. E
     // elle ganha do v700 quando os dous cahem na mesma fileira: o cursor é o
@@ -140,7 +157,6 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
               LARGURA_DA_BARRA);
     // A lista do operador vae mais clara que os degraus de navegar: n'esta barra
     // ella é o conteudo, e elles são o caminho.
-    const bool eh_lista = qual > 0 && qual <= listas.size();
     ftxui::Element linha = pinta(
         texto, aqui || sob_o_dedo
                    ? tokens::text_bright
@@ -152,10 +168,6 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
     linhas.push_back(std::move(linha));
-    // O SEPARADOR onde a bibliotheca acaba e os degraus de navegar começam. Sem
-    // lista alguma elle fica logo abaixo das minhas musicas, e a barra conserva
-    // as sete fileiras que sempre teve.
-    if (qual == listas.size()) linhas.push_back(risca());
   }
   return ftxui::vbox(std::move(linhas));
 }

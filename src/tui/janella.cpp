@@ -749,7 +749,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau()),
+                                          menu.degrau(), alt_tab),
                    ftxui::text("  "),
                    tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
                                             larg_tab),

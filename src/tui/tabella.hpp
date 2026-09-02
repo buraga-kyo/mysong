@@ -39,7 +39,8 @@ inline constexpr std::size_t LARGURA_DA_BARRA = 20;
 // novos dormem nos padrões e a pintura é a de sempre, byte por byte.
 ftxui::Element elemento_da_barra(const Navegador& navegador,
                                  bool com_foco = false,
-                                 std::size_t degrau_eleito = 0);
+                                 std::size_t degrau_eleito = 0,
+                                 std::size_t altura = 0);
 
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
