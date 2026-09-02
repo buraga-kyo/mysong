@@ -83,6 +83,51 @@ struct Alvo {
 // se soma nem se tira aqui, e quem o fizesse erraria por uma collunha.
 Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept;
 
+// Os GESTOS que o rato pede. Não são verbos do tocador: `Toca`, `Anterior`,
+// `Proxima`, `Busca` e `PausaOuRetoma` viram Ordem na janella, que é quem tem o
+// tocador na mão; os demais governam o navegador e o menu.
+enum class Gesto {
+  Nada,
+  FechaCampo,     // com campo de digitar aberto, o clique fecha-o e pára ahi
+  EntraNoDegrau,  // o mesmo caminho do Enter na barra, no degrau clicado
+  Elege,          // a linha clicada não era a eleita
+  Toca,           // clicou-se na JÁ eleita: é o duplo clique, sem cronometro
+  Anterior, PausaOuRetoma, Proxima, Busca,
+  RodaSobe, RodaDesce,      // na tabella, LINHAS_POR_DENTE de cada vez
+  DegrauSobe, DegrauDesce,  // sobre a barra, um degrau de cada vez
+};
+
+// Tres linhas por dente. Uma seria a roda a arrastar-se; uma tela inteira seria
+// perder o logar de vista. Tres é o passo que o dedo já conhece de outras casas.
+inline constexpr std::size_t LINHAS_POR_DENTE = 3;
+
+// O ESTADO da tela de que a taboada depende, em cópia de valores: assim a
+// bateria arma o caso á mão, sem navegador, sem tocador e sem tela.
+struct EstadoDoRato {
+  bool digitando = false;   // ha campo de digitar aberto
+  std::size_t eleito = 0;   // a linha eleita, em indice absoluto da vista
+  std::size_t quantas = 0;  // quantas linhas tem a vista
+  double duracao = 0.0;     // a da faixa, que é o que a busca multiplica
+};
+
+// O gesto e o que elle carrega: o `indice` é o degrau ou a linha, e o `alvo` é
+// a posição em SEGUNDOS da busca. Zero nos demais, de proposito: gesto que não
+// tem alvo não ha de carregar numero que alguem possa vir a ler.
+struct GestoDoRato {
+  Gesto gesto = Gesto::Nada;
+  std::size_t indice = 0;
+  double alvo = 0.0;
+};
+
+// gesto_do_alvo — a taboada. SÓMENTE `Pressed` conta: o soltar chega sempre, que
+// o modo 1000 manda o `m` do SGR, e a mexida não chega, que o 1003 se não liga;
+// ignoram-se os dous, e o segundo por não depender de o terminal se comportar.
+// Botão direito e do meio não fazem nada: o direito é o menu de contexto da
+// issue #96, e prometter aqui seria prometter a mesma cousa duas vezes.
+GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
+                          ftxui::Mouse::Motion movimento,
+                          const EstadoDoRato& estado) noexcept;
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
