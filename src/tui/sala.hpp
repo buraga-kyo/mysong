@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include <ftxui/dom/elements.hpp>
+
 #include "nucleo/fila.hpp"
 #include "tui/navegador.hpp"
 
@@ -73,6 +75,24 @@ struct Geometria {
 // geometria_da_sala — todos os numeros da composição, n'uma conta só.
 Geometria geometria_da_sala(std::size_t largura, std::size_t altura,
                             std::size_t collunhas_da_barra);
+
+// A FICHA da faixa que toca. Valores, e não punho para o tocador nem para o
+// indice: assim a bateria arma-a á mão, sem motor e sem banco.
+struct Ficha {
+  std::string titulo;
+  std::string artista;
+  std::string album;
+};
+
+// ficha_da_faixa — a ficha do caminho, com as etiquetas do indice quando as ha.
+// Sem etiqueta, o nome do arquivo serve de titulo: buraco na ficha faria o
+// painel dizer que nada toca na hora em que alguma cousa toca.
+Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
+                     const std::string& artista, const std::string& album);
+
+// elemento_da_ficha — TRES linhas, sempre as tres: ficha que encolhe faria o
+// espectro subir e descer a cada troca de faixa.
+ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura);
 
 }  // namespace mysong::tui
 

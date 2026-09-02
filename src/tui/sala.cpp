@@ -9,8 +9,11 @@
 // Q.E.D. .......... a bateria arma os retractos á mão e afere-a em papel.
 // ══════════════════════════════════════════════════════════════════════════
 #include <algorithm>
+#include <filesystem>
+#include <string_view>
 
 #include "tui/sala.hpp"
+#include "tui/tokens.hpp"
 
 namespace mysong::tui {
 namespace {
@@ -24,6 +27,12 @@ constexpr std::size_t kFixoDoPainel = 4, kEspectroMinimo = 8, kCapaMinima = 4;
 // O meio não desce de quarenta collunhas, e o cabeçalho (capa pequena e o
 // separador) cede o logar á tabella quando ella ficaria com menos de tres.
 constexpr std::size_t kMeioMinimo = 40, kCabecalho = 6, kTabellaMinima = 3;
+
+// pinta — o texto na tinta do token. Côr crua não entra n'esta obra.
+ftxui::Element pinta(const std::string& texto, std::string_view token) {
+  const tokens::Triade c = tokens::rgb(token);
+  return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
+}
 
 // substantivo_da — o que se conta, em caixa alta. Singular SEM o `s`.
 const char* substantivo_da(Especie especie, bool um) {
@@ -108,6 +117,25 @@ Geometria geometria_da_sala(std::size_t largura, std::size_t altura,
   geo.cabecalho = altura >= kCabecalho + kTabellaMinima ? kCabecalho : 0;
   geo.tabella = altura > geo.cabecalho ? altura - geo.cabecalho : 1;
   return geo;
+}
+
+Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
+                     const std::string& artista, const std::string& album) {
+  if (caminho.empty()) return {};
+  Ficha ficha{titulo, artista, album};
+  if (ficha.titulo.empty())
+    ficha.titulo = std::filesystem::path(caminho).stem().string();
+  return ficha;
+}
+
+ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
+  if (largura == 0) return ftxui::text("");
+  if (ficha.titulo.empty())
+    return ftxui::vbox({pinta("(nada toca)", tokens::text_faint),
+                        ftxui::text(""), ftxui::text("")});
+  return ftxui::vbox({pinta(ficha.titulo, tokens::text_bright) | ftxui::bold,
+                      pinta(ficha.artista, tokens::text_primary),
+                      pinta(ficha.album, tokens::text_muted)});
 }
 
 }  // namespace mysong::tui
