@@ -290,6 +290,21 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `T` | baixa TODAS as faixas da lista lida |
 | `q` | sahe |
 
+### O rato
+
+Clicar n'um degrau da barra entra n'elle; clicar n'uma faixa elege-a, e clicar na
+JÁ eleita toca-a. Os botoes do transporte fazem o que dizem, o clique na barra de
+progresso busca a posicao, o clique na capa pausa e retoma, e a roda anda tres
+linhas na lista, ou um degrau sobre a barra. Botao direito nao faz nada ainda.
+Dentro do tmux, isto pede `set -g mouse on`.
+
+E ha um preco a declarar, que e a primeira cousa que se nota: pedido o modo dos
+botoes, o emulador passa a entregar o CLIQUE e o ARRASTO ao programa, donde
+SELECCIONAR TEXTO na tela do mysong passa a pedir a tecla Shift carregada, como
+ja succede em todo programa de terminal que use rato. O mysong nao pede o modo de
+toda MEXIDA, que e o que dentro do tmux vazaria lixo para o teclado: mover o rato
+pela tela sem carregar em botao algum nao produz cousa alguma.
+
 Duas buscas ha, e ellas nao sao a mesma: o `/` FILTRA o que esta a vista, sem
 tocar a rede; o `s` PERGUNTA ao YouTube. Na secção NET, Enter encommenda a baixa
 do achado eleito, e duas baixas correm ao mesmo tempo no maximo: as demais
