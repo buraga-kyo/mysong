@@ -187,3 +187,27 @@ TEST_CASE("sem capa o marcador toma seis linhas e a ficha vem na setima") {
   CHECK(collunha_de(tela, 7, "\u2500") == -1);
   CHECK(linha_de(tela, 7).substr(0, 11) == "Dawn Chorus");
 }
+
+TEST_CASE("o cabeçalho diz o nome e a conta e risca o separador") {
+  tui::Colleccao qual;
+  qual.nome = "GEOGADDI";
+  qual.quantas = 4;
+  qual.duracao = 840;
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105), 105, 6);
+  CHECK(linha_de(tela, 0).substr(0, 10) == std::string(10, '#'));
+  CHECK(linha_de(tela, 1).substr(12, 8) == "GEOGADDI");
+  CHECK(linha_de(tela, 3).find("4 FAIXAS, 14min") == 12);
+  CHECK(collunha_de(tela, 5, "\u2500") == 0);
+  CHECK(collunha_de(tela, 4, "\u2500") == -1);
+  // Meio estreito: os chips cedem o logar, e o vão da capa fica de pé. A
+  // fronteira é exacta: em sessenta collunhas elles cabem, em cincoenta e nove
+  // não, e ahi a linha da conta sahe sósinha.
+  CHECK(collunha_de(papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 60),
+                          60, 6),
+                    3, "\u21c4") == 30);
+  const ftxui::Screen curta =
+      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 59), 59, 6);
+  CHECK(collunha_de(curta, 3, "\u21c4") == -1);
+  CHECK(linha_de(curta, 1).substr(12, 8) == "GEOGADDI");
+}
