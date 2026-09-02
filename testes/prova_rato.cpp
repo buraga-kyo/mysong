@@ -306,3 +306,30 @@ TEST_CASE("o evento de rato conta por tecla de gente e acorda a vigilia") {
   CHECK(vigilia.pede_batida());
   CHECK(vigilia.acordou());
 }
+
+TEST_CASE("com a janella do video de pé o clique na barra fica inerte") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  // A janella arma o estado com duração ZERO emquanto o video corre: a que o
+  // retracto sabe é a do AUDIO pausado, e a janella que corre é a da faixa
+  // ELEITA, que nem sempre é a mesma. Buscar por ella seria mandar o video a
+  // uma posição contada n'outro arco.
+  const tui::EstadoDoRato com_video{false, 21, 40, 0.0};
+  CHECK(clicou(caixas, 11, 30, com_video).gesto == tui::Gesto::Nada);
+  CHECK(clicou(caixas, 21, 30, com_video).gesto == tui::Gesto::Nada);
+  // O resto do transporte SEGUE a governar: o `cumprir` rotea-o á janella.
+  CHECK(clicou(caixas, 2, 30, com_video).gesto == tui::Gesto::PausaOuRetoma);
+  CHECK(clicou(caixas, 5, 30, com_video).gesto == tui::Gesto::Anterior);
+}
+
+TEST_CASE("o botão direito é mudo tambem com o campo de digitar aberto") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  const tui::EstadoDoRato digita{true, 21, 40, 200.0};
+  const tui::Alvo linha = tui::alvo_do_ponto(caixas, 30, 4);
+  // Desempate conservador: a guarda do BOTÃO vem antes da do campo, donde o
+  // direito não fecha nada. Elle é da issue #96, e fechar o campo seria
+  // dar-lhe officio antes de ella lho definir.
+  CHECK(tui::gesto_do_alvo(linha, Mouse::Right, Mouse::Pressed, digita).gesto ==
+        tui::Gesto::Nada);
+  CHECK(tui::gesto_do_alvo(linha, Mouse::Left, Mouse::Pressed, digita).gesto ==
+        tui::Gesto::FechaCampo);
+}
