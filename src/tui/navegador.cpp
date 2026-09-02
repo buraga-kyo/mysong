@@ -210,6 +210,11 @@ const std::string& Navegador::nome_corrente() const noexcept {
   return nome_corrente_;
 }
 
+std::vector<nucleo::Rol> Navegador::rois() const {
+  if (roleiro_ == nullptr) return {};
+  return roleiro_->rois();
+}
+
 int Navegador::id_do_eleito() const {
   if (secao_ != Secao::Rois || vista_.empty()) return 0;
   return std::atoi(vista_[eleito_].chave.c_str());
@@ -476,6 +481,25 @@ bool Navegador::vai_para(Secao alvo) {
       return false;  // dentro de uma lista não é degrau da barra
   }
   secao_ = alvo;
+  termo_.clear();
+  eleito_ = 0;
+  refaz_vista();
+  return true;
+}
+
+bool Navegador::vai_para_rol(int id) {
+  if (roleiro_ == nullptr || id == 0) return false;
+  // O nome vem do BANCO, e não da vista da barra: ella pode estar a pintar uma
+  // lista que outra mão apagou entre dous quadros, e entrar n'ella mostraria
+  // vista vazia sem dizer porque. Não achando o id, nada se muta.
+  std::string nome;
+  for (const nucleo::Rol& rol : roleiro_->rois())
+    if (rol.id == id) nome = rol.nome;
+  if (nome.empty()) return false;
+  rol_corrente_ = id;
+  nome_corrente_ = nome;
+  trilha_ = {nome};
+  secao_ = Secao::NoRol;
   termo_.clear();
   eleito_ = 0;
   refaz_vista();

@@ -142,6 +142,12 @@ class Navegador {
   int rol_corrente() const noexcept;
   const std::string& nome_corrente() const noexcept;
 
+  // As LISTAS do operador, na ordem em que o banco as dá, para a BARRA as pintar
+  // pelo nome (issue #93). Vem do banco a cada chamada, e não de cópia guardada:
+  // cópia envelheceria no quadro em que se cria ou apaga uma lista, e o aceite
+  // pede que ella appareça e suma no MESMO quadro. Vazio sem roleiro.
+  std::vector<nucleo::Rol> rois() const;
+
   // As sete operações. Todas relêem a vista depois de mutar, e todas devolvem
   // falso quando não ha roleiro, quando não ha lista eleita, ou quando a camada de
   // baixo recusou. A tela não ha de adivinhar qual dos tres foi.
@@ -177,6 +183,14 @@ class Navegador {
   // verdadeiro o termo limpa-se e o eleito volta ao alto: entrar é entrar de
   // novo, o mesmo que a tecla de atalho faz.
   bool vai_para(Secao alvo);
+
+  // vai_para_rol — a entrada n'UMA lista pela barra (issue #93). Abre o dentro
+  // d'ella sem passar pela lista das listas, que é o que a barra da bibliotheca
+  // pede: o nome n'ella É a lista, e não um atalho para a sala onde ellas moram.
+  // E elege-a por ALVO do `a`, como entrar por `P` e Enter já elegia.
+  // FALSO sem roleiro e com id que já não existe; no falso NADA muda, para que a
+  // tela avise e fique onde está, pela regra do vai_para.
+  bool vai_para_rol(int id);
 
  private:
   void refaz_vista();
