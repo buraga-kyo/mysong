@@ -358,5 +358,39 @@ TEST_CASE("sem foco a barra não tem dedo algum, e toda fileira mede vinte") {
   CHECK(pintar_barra(navegador, true, 0)[1] == "▸MINHAS MÚSICAS     ");
 }
 
+TEST_CASE("as listas do operador entram na barra pelo nome, na ordem do banco") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  REQUIRE(navegador.cria_rol("da noite"));
+  REQUIRE(navegador.cria_rol("da manhã"));
+  const std::vector<std::string> barra = pintar_barra(navegador, false, 0, 0, 9);
+  REQUIRE(barra.size() == 9);
+  CHECK(barra[1] == " MINHAS MÚSICAS     ");
+  CHECK(barra[2] == " da manhã           ");
+  CHECK(barra[3] == " da noite           ");
+  CHECK(barra[5] == " ARTISTAS           ");  // depois da risca
+}
+
+TEST_CASE("a lista apparece, muda e some da barra no mesmo quadro") {
+  const Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  nu::Roleiro roleiro(cova.listas());
+  tui::Navegador navegador(livraria, &roleiro);
+  const auto tem = [&](const std::string& nome) {
+    for (const std::string& linha : pintar_barra(navegador, false, 0, 0, 9))
+      if (linha.find(nome) != std::string::npos) return true;
+    return false;
+  };
+  REQUIRE(navegador.cria_rol("da manhã"));
+  CHECK(tem("da manhã"));
+  REQUIRE(navegador.renomeia_rol("de tarde"));
+  CHECK_FALSE(tem("da manhã"));
+  CHECK(tem("de tarde"));
+  REQUIRE(navegador.apaga_rol());
+  CHECK_FALSE(tem("de tarde"));
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
