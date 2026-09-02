@@ -65,6 +65,26 @@ ftxui::Color cor(std::string_view token) {
   return ftxui::Color::RGB(c.r, c.g, c.b);
 }
 
+// sala_de — as TRES collunnas montadas como o pintor as monta, para se aferir
+// que peça alguma empurra as visinhas. A barra vae por um texto de nove
+// collunhas: o que importa aqui é a largura d'ella, e não o conteudo.
+ftxui::Screen sala_de(const std::string& nome) {
+  tui::Colleccao qual;
+  qual.nome = nome;
+  qual.quantas = 4;
+  qual.duracao = 840;
+  return papel(
+      ftxui::hbox(
+          {ftxui::text(std::string(9, 'B')), ftxui::text("  "),
+           ftxui::vbox({tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105),
+                        ftxui::text("T")}),
+           ftxui::text(" "),
+           tui::elemento_do_painel({"a", "b", "c"},
+                                   tui::elemento_da_arte(capa_de(5, 39), 39, 5),
+                                   ftxui::text("E"), 39)}),
+      156, 2);
+}
+
 }  // namespace
 
 TEST_CASE("a somma da colleção diz-se por extenso") {
@@ -281,4 +301,19 @@ TEST_CASE("o painel sem capa não abre fileira parasita") {
                  0)[0] == 'X');
   CHECK(linha_de(papel(ftxui::vbox({ftxui::text(""), ftxui::text("X")}), 3, 2),
                  1)[0] == 'X');
+}
+
+TEST_CASE("nome comprido não empurra a barra nem o painel") {
+  // O `flex_shrink_x` do FTXUI nasce ZERO: pedindo o meio mais do que ha, o
+  // hbox cahe no encolhimento DURO e apara todos os irmãos por egual, ainda os
+  // que pedem largura EGUAL. Medido: sem o cinge, a barra cahia de nove a oito
+  // e o painel de trinta e nove a trinta e dous.
+  const int curto = collunha_de(sala_de("GEOGADDI"), 0, "T");
+  const int comprido = collunha_de(sala_de(std::string(120, 'N')), 0, "T");
+  CHECK(curto == 117);
+  CHECK(comprido == curto);
+  CHECK(linha_de(sala_de(std::string(120, 'N')), 0).substr(0, 11) ==
+        "BBBBBBBBB  ");
+  // E o nome comprido escreve-se até onde cabe, sem invadir o painel.
+  CHECK(linha_de(sala_de(std::string(120, 'N')), 1).substr(23, 4) == "NNNN");
 }
