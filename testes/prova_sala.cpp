@@ -357,3 +357,35 @@ TEST_CASE("a ficha vazia mede tres linhas e sahe apagada") {
       39, 6);
   CHECK(linha_de(painel, 4).substr(0, 5) == "BAIXO");
 }
+
+// O `l` troca o espectro pela letra, e a issue #92 promette o MESMO
+// rectangulo: mesma largura, mesma altura, mesmo canto. Aqui prova-se com a
+// letra CHEIA; letra curta occupa menos linhas e deixa o resto em branco, que
+// é o que a peça da letra sempre fez, e não desloca cousa alguma por ser o
+// ultimo filho do painel.
+TEST_CASE("a letra e o espectro tomam o mesmo rectangulo do painel") {
+  const tui::Ficha ficha{"Faded", "Alan Walker", "Faded"};
+  const nu::CapaPintada capa = capa_de(11, 39);
+  std::vector<mysong::nucleo::LinhaDaLetra> versos;
+  for (int i = 0; i < 12; ++i)
+    versos.push_back({static_cast<double>(i), "verso " + std::to_string(i)});
+  const ftxui::Screen com_letra =
+      papel(tui::elemento_do_painel(ficha, tui::elemento_da_arte(capa, 39, 20),
+                                    tui::elemento_da_letra(versos, 4, 8, 39),
+                                    39),
+            39, 26);
+  const ftxui::Screen com_bandas = papel(
+      tui::elemento_do_painel(
+          ficha, tui::elemento_da_arte(capa, 39, 20),
+          tui::elemento_do_espectro(tui::compor(std::vector<float>(24, 1.0f),
+                                                39, 8)),
+          39),
+      39, 26);
+  const std::string vazia(39, ' ');
+  for (const ftxui::Screen& qual : {std::cref(com_letra), std::cref(com_bandas)}) {
+    CHECK(linha_de(qual, 14).substr(0, 5) == "Faded");  // a ficha acaba na 14
+    CHECK(linha_de(qual, 15) != vazia);                 // o de baixo abre na 15
+    CHECK(linha_de(qual, 22) != vazia);                 // e fecha na 22
+    CHECK(linha_de(qual, 23) == vazia);                 // e não passa d'ahi
+  }
+}
