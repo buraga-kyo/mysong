@@ -809,11 +809,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                    ftxui::text(geo.painel == 0 ? "" : " "),
                    std::move(painel),
                }) |
-                   // A faixa do corpo cinge-se á altura contada. A barra tem
-                   // SETE fileiras fixas, e n'um terminal de doze linhas ella
-                   // sósinha empurrava o transporte e o rodapé de teclas para
-                   // fóra da tela. Medido n'um pty, e não suposto.
-                   ftxui::size(ftxui::HEIGHT, ftxui::LESS_THAN,
+                   // A faixa do corpo mede EXACTAMENTE a altura contada. Por
+                   // menos que ella, a barra de sete fileiras fixas empurrava o
+                   // transporte para fóra da tela n'um terminal de doze linhas;
+                   // por mais, o `size` zera o flex e a faixa deixava de encher
+                   // a altura, d'onde o transporte e o rodapé sobiam e o pé da
+                   // tela ficava em branco (vista curta, ou letra de dous
+                   // versos). Egual cura os dous. Medido n'um pty.
+                   ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                static_cast<int>(alt_corpo)),
                tui::elemento_do_transporte(retracto, larg),
                ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
