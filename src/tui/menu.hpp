@@ -9,8 +9,8 @@
 // Tecla que a barra não conhece FECHA-A e segue á taboada de sempre, e é assim
 // que o atalho continua a levar á mesma secção que a barra leva.
 //
-// DOMÍNIO ......... a tecla que o terminal entrega, e a secção corrente na
-//                   hora de abrir.
+// DOMÍNIO ......... a tecla que o terminal entrega, e a secção corrente e as
+//                   listas do operador na hora de abrir.
 // CONTRA-DOMÍNIO .. um GestoDaBarra, e o degrau eleito da barra.
 // INVARIANTE ...... o degrau eleito está SEMPRE entre zero e o ultimo: as
 //                   ordens saturam nos extremos, e ordem alguma o põe fóra. E
@@ -85,9 +85,10 @@ enum class GestoDaBarra { Alheio, Fecha, Sobe, Desce, AoPrincipio, AoFim,
 // VOLTA (seta esquerda, Escape, Backspace) aqui fecha sem trocar secção.
 GestoDaBarra gesto_da_barra(const ftxui::Event& tecla) noexcept;
 
-// A MACHINA. Dous campos e nada mais: se o menu está aberto, e qual degrau
-// está eleito. Não conhece o Navegador por dentro: quem abre DIZ-LHE a secção
-// corrente, e quem entra pergunta-lhe o alvo e vae elle proprio ao navegador.
+// A MACHINA. Tres campos e nada mais: se o menu está aberto, qual degrau está
+// eleito, e quantos degraus ha. Não conhece o Navegador por dentro: quem abre
+// DIZ-LHE a secção corrente e as listas, e quem entra pergunta o alvo á taboada
+// e vae elle proprio ao navegador.
 // Fechar não esquece o degrau de proposito: o estado que fica é inerte, e
 // abrir torna a assentá-lo na secção corrente.
 class Menu {
@@ -100,10 +101,10 @@ class Menu {
   // marcador acorda onde se está. E o ALVO já não é d'esta classe: quem entra
   // pergunta-o á taboada, que é quem sabe qual degrau é lista e qual é secção.
   //
-  // A CONTA dos
-  // degraus guarda-se, e as ordens saturam por ella. Guardá-la não envelhece:
-  // com a barra aberta, toda tecla que cria, renomeia ou apaga uma lista é
-  // alheia á barra, e o ramo Alheio fecha-a antes de a tecla correr.
+  // A CONTA dos degraus guarda-se, e as ordens saturam por ella. Guardá-la não
+  // a faz envelhecer: com a barra aberta, toda tecla que cria, renomeia ou
+  // apaga uma lista é alheia á barra, e o ramo Alheio fecha-a antes de a tecla
+  // correr.
   void abre(Secao corrente, const std::vector<nucleo::Rol>& listas,
             int rol_corrente);
   void fecha() noexcept;
