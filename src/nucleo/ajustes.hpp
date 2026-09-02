@@ -151,6 +151,7 @@ std::optional<std::size_t> baixas_de(std::string_view texto);
 struct Degraus {
   std::optional<std::string> acervo_do_argumento;
   std::optional<std::string> acervo_do_ambiente;
+  std::optional<std::string> sextantes_do_ambiente;
   std::vector<Par> arquivo;
 };
 

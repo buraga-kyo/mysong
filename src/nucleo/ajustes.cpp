@@ -255,6 +255,19 @@ void resolver(const Degraus& degraus,
   if (degraus.acervo_do_ambiente)
     ajustes->acervo = {std::filesystem::path(*degraus.acervo_do_ambiente),
                       Origem::Ambiente};
+  // O sextante do AMBIENTE, e este AFERE-SE, ao contrario do acervo: palavra
+  // que não é nenhuma das tres não aponta para logar algum do mundo, é erro de
+  // dedo, e a queixa nomeia-a. Vale mais aqui que nas outras chaves: é a que o
+  // operador ha de querer virar por UMA corrida, para comparar os dous renders
+  // no proprio terminal, sem editar arquivo nenhum.
+  if (degraus.sextantes_do_ambiente) {
+    if (const auto quer = sextantes_de(*degraus.sextantes_do_ambiente))
+      ajustes->capa_sextantes = {*quer, Origem::Ambiente};
+    else
+      ajustes->queixa("MYSONG_CAPA_SEXTANTES «" +
+                     *degraus.sextantes_do_ambiente +
+                     "» não é auto, sim nem nao");
+  }
   // O ARGUMENTO, que é o degrau de cima, e este AFERE-SE: quem o digita está a
   // olhar para a tela agora, e ha de saber já que errou o caminho.
   if (degraus.acervo_do_argumento) {
@@ -343,6 +356,9 @@ Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
   degraus.acervo_do_argumento = do_argumento;
   const char* const posto = std::getenv("MYSONG_ACERVO");
   if (posto != nullptr && posto[0] != '\0') degraus.acervo_do_ambiente = posto;
+  const char* const sextante = std::getenv("MYSONG_CAPA_SEXTANTES");
+  if (sextante != nullptr && sextante[0] != '\0')
+    degraus.sextantes_do_ambiente = sextante;
   std::string texto;
   ajustes.estado = ler_o_arquivo(ajustes.arquivo, &texto, &ajustes);
   if (ajustes.estado == EstadoDoArquivo::Lido)
