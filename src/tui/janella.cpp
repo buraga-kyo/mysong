@@ -480,6 +480,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
   std::vector<nucleo::LinhaDaLetra> letra;
   std::string letra_de_qual;
+  // A FICHA da faixa que sôa, guardada como a letra e pela mesma razão: o
+  // indice consultado a cada quadro seriam vinte perguntas por segundo ao
+  // banco por uma cousa que sómente muda quando a faixa muda.
+  tui::Ficha ficha;
   // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
   // assignatura, e o fio da tela troca-o na tecla `l`.
   std::atomic<bool> mostra_letra{false};
@@ -718,12 +722,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
     if (!andamento.empty()) trilha += "   " + andamento;
 
-    // A letra relê-se sómente quando a faixa muda.
+    // A letra e a ficha relêem-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
       letra_de_qual = retracto.titulo;
       letra = retracto.titulo.empty()
                   ? std::vector<nucleo::LinhaDaLetra>()
                   : nucleo::le_lrc_do_disco(retracto.titulo);
+      nucleo::Faixa d_ella;
+      livraria.acha_por_caminho(retracto.titulo, d_ella);
+      ficha = tui::ficha_da_faixa(retracto.titulo, d_ella.titulo, d_ella.artista,
+                                  d_ella.album);
     }
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
@@ -768,7 +776,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         geo.painel == 0
             ? ftxui::text("")
             : tui::elemento_do_painel(
-                  {}, tui::elemento_da_arte(arte, geo.painel, alt_arte),
+                  ficha, tui::elemento_da_arte(arte, geo.painel, alt_arte),
                   mostra_letra.load()
                       ? tui::elemento_da_letra(
                             letra,
@@ -794,8 +802,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                           geo.meio),
                                 tui::elemento_da_tabella(navegador,
                                                          primeira_linha,
-                                                         geo.tabella,
-                                                         geo.meio)}),
+                                                         geo.tabella, geo.meio,
+                                                         retracto.titulo)}),
                    ftxui::text(geo.painel == 0 ? "" : " "),
                    std::move(painel),
                }),
