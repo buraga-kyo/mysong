@@ -70,6 +70,7 @@
 #include "tui/navegador.hpp"
 #include "tui/menu.hpp"
 #include "tui/prompt.hpp"
+#include "tui/rato.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
@@ -478,6 +479,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // toca, e por isso elle não pede tranca.
   std::string aviso_da_rede;
   std::size_t primeira_linha = 0;
+  // AS CAIXAS da tela (issue #95). Vivem n'esta pilha, e não dentro do pintor: o
+  // `reflect` guarda referencia para ellas, e o tratador de eventos lê-as DEPOIS
+  // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
+  // pintura.
+  tui::CaixasDaTela caixas;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -672,6 +678,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     primeira_linha = tui::primeira_a_mostrar(navegador.eleito(),
                                              navegador.vista().size(), alt_tab,
                                              primeira_linha);
+    caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
     // O painel NOW PLAYING toma um quinto da largura, e nunca mais de vinte
     // collunhas nem menos de oito: a arte quer quadrado, e o quadrado n'um terminal
     // pede duas linhas por collunha, donde a altura sahe da largura e não ao
@@ -748,14 +755,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      termo_em_curso, larg),
                ftxui::hbox({
                    tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau()),
+                                          menu.degrau(), &caixas.degraus),
                    ftxui::text("  "),
                    tui::elemento_da_tabella(navegador, primeira_linha, alt_tab,
-                                            larg_tab),
+                                            larg_tab, &caixas.linhas),
                    ftxui::text(" "),
                    tui::elemento_da_capa(
                        galeria.capa(retracto.titulo, larg_capa, alt_capa),
-                       larg_capa, alt_capa),
+                       larg_capa, alt_capa, &caixas.capa),
                }),
                ftxui::text(""),
                mostra_letra.load()
@@ -763,7 +770,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          letra,
                          nucleo::linha_corrente(letra, retracto.posicao), 8, larg)
                    : tui::elemento_do_espectro(quadro),
-               tui::elemento_do_transporte(retracto, larg),
+               tui::elemento_do_transporte(retracto, larg, &caixas.transporte),
                ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
                            " · / filtra · s busca na rede"
                            " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
