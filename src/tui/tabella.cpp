@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "tui/menu.hpp"
 #include "tui/tokens.hpp"
 #include "tui/transporte.hpp"
 
@@ -97,26 +98,21 @@ ftxui::Element elemento_da_trilha(const std::string& trilha,
 
 ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
                                  std::size_t degrau_eleito) {
-  // A ordem é a do mockup, e ella não muda com a secção: barra que se reordena
-  // faz o dedo do operador errar o alvo que já sabia de memoria.
-  const std::pair<Secao, const char*> degraus[] = {
-      {Secao::Artistas, " ARTISTS "},
-      {Secao::Albuns, " ALBUMS  "},
-      {Secao::Faixas, " TRACKS  "},
-      {Secao::Busca, " SEARCH  "},
-      {Secao::Rede, " NET     "},
-      {Secao::Rois, " LISTS   "},
-      {Secao::Lista, " SPOTIFY "},
-  };
+  // As listas lêem-se A CADA PINTURA, e não de cópia guardada: o aceite pede que
+  // a lista creada, renomeada ou apagada appareça, mude ou suma no MESMO quadro,
+  // e cópia guardada envelheceria justamente n'esse.
+  const std::vector<nucleo::Rol> listas = navegador.rois();
+  const std::size_t corrente =
+      degrau_da_secao(navegador.secao(), listas, navegador.rol_corrente());
+  // A sala das LISTAS (a do `P`) não tem fileira aqui, e n'ella accende-se
+  // nenhuma: accender a do alto seria dizer que se está onde não se está.
+  const bool ha_fileira = navegador.secao() != Secao::Rois;
   std::vector<ftxui::Element> linhas;
-  std::size_t qual = 0;
-  for (const auto& [degrau, rotulo] : degraus) {
-    // Dentro de uma lista, a fileira que accende é a das LISTAS: é lá que se está,
-    // um degrau abaixo. Fileira propria para o dentro seria fileira que o operador
-    // nunca pode eleger, e barra com degrau morto ensina o dedo a errar.
-    const bool aqui = navegador.secao() == degrau ||
-                      (degrau == Secao::Rois &&
-                       navegador.secao() == Secao::NoRol);
+  const std::size_t quantos = degraus_da_barra(listas.size());
+  for (std::size_t qual = 0; qual < quantos; ++qual) {
+    // A fileira que ACCENDE vem da taboada, e não de comparação á mão: a barra e
+    // a machina do foco hão de responder pela MESMA conta.
+    const bool aqui = ha_fileira && qual == corrente;
     // O DEDO da barra (issue #80). O «▸» toma o logar do primeiro espaço do
     // rotulo, e a largura não muda; o fundo é o v900 do eleito da tabella. E
     // elle ganha do v700 quando os dous cahem na mesma fileira: o cursor é o
@@ -126,11 +122,16 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
     // e o resto vae aparado, que é o que faz a barra não alargar por um nome.
     const std::string texto =
         apara(std::string(sob_o_dedo ? "▸" : " ") +
-                  reticencias(std::string(rotulo + 1), LARGURA_DA_BARRA - 2),
+                  reticencias(rotulo_do_degrau(qual, listas),
+                              LARGURA_DA_BARRA - 2),
               LARGURA_DA_BARRA);
-    ftxui::Element linha =
-        pinta(texto, aqui || sob_o_dedo ? tokens::text_bright
-                                        : tokens::text_muted);
+    // A lista do operador vae mais clara que os degraus de navegar: n'esta barra
+    // ella é o conteudo, e elles são o caminho.
+    const bool eh_lista = qual > 0 && qual <= listas.size();
+    ftxui::Element linha = pinta(
+        texto, aqui || sob_o_dedo
+                   ? tokens::text_bright
+                   : (eh_lista ? tokens::text_primary : tokens::text_muted));
     if (aqui || sob_o_dedo) {
       const tokens::Triade fundo =
           tokens::rgb(sob_o_dedo ? tokens::v900 : tokens::v700);
@@ -138,7 +139,6 @@ ftxui::Element elemento_da_barra(const Navegador& navegador, bool com_foco,
                           ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
     }
     linhas.push_back(std::move(linha));
-    ++qual;
   }
   return ftxui::vbox(std::move(linhas));
 }
