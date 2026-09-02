@@ -72,6 +72,15 @@ bool ha_sextante_na_fonte() {
   return desenha;
 }
 
+bool com_sextante(Sextantes ajuste) {
+  switch (ajuste) {
+    case Sextantes::Sim: return true;
+    case Sextantes::Nao: return false;
+    case Sextantes::Auto: break;
+  }
+  return ha_sextante_na_fonte();
+}
+
 std::vector<std::string> argumentos_do_chafa(
     const std::filesystem::path& imagem, std::size_t collunas,
     std::size_t linhas, bool com_sextante) {
@@ -217,7 +226,7 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
     // reescrever a etiqueta, e por isso é a que elle manda.
     std::filesystem::path imagem = capa_ao_lado(faixa);
     if (imagem.empty()) imagem = extrahe_embutida(faixa);
-    pintada = pinta_imagem(imagem, collunas, linhas, ha_sextante_na_fonte());
+    pintada = pinta_imagem(imagem, collunas, linhas, com_sextante_);
     if (pintada.achada) ++renders_;
   }
   // A AUSENCIA guarda-se tambem: sem isto, album sem capa faria a Casa procurar o

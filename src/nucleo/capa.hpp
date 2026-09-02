@@ -25,6 +25,8 @@
 #include <string_view>
 #include <vector>
 
+#include "nucleo/ajustes.hpp"  // Sextantes: a alavanca do operador
+
 namespace mysong::nucleo {
 
 // Os nomes de arquivo de capa que se procuram ao lado do album, na ORDEM em que se
@@ -81,6 +83,12 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
 // por render.
 bool ha_sextante_na_fonte();
 
+// com_sextante — resolve a alavanca do operador n'um bool. `Auto` é a regra da
+// Casa, que pergunta á fonte; `Sim` e `Nao` são a vontade d'elle, e essa não se
+// discute: quem olha o terminal é elle, e a fonte de substituição pode desenhar
+// o sextante muito bem sem que o fontconfig o saiba dizer.
+bool com_sextante(Sextantes ajuste);
+
 // argumentos_do_chafa — o que se corre. Os symbolos, a geometria em collunhas
 // por linhas, e o trabalho no maximo.
 //
@@ -132,6 +140,13 @@ CapaPintada pinta_imagem(const std::filesystem::path& imagem,
 // milesimos, e o pintor corre vinte vezes por segundo.
 class Galeria {
  public:
+  // DOUS constructores, e nunca um parametro com valor padrão: o padrão
+  // avaliar-se-ia no logar da chamada, e cada Galeria da bateria iria ao
+  // fontconfig. O vazio segue a regra da Casa; o de um argumento toma o que os
+  // ajustes do operador resolveram.
+  Galeria() : com_sextante_(ha_sextante_na_fonte()) {}
+  explicit Galeria(bool com_sextante) : com_sextante_(com_sextante) {}
+
   // Devolve a capa da faixa no tamanho pedido. Achando-a em cache, não corre nada.
   // Capa ausente devolve `achada` falso, e isso tambem se guarda: sem guardar a
   // AUSENCIA, um album sem capa faria a Casa procurar o arquivo a cada quadro.
@@ -141,6 +156,7 @@ class Galeria {
   std::size_t quantos_renders() const noexcept;  // serve á prova do cache
 
  private:
+  const bool com_sextante_;
   std::map<std::string, CapaPintada> guardadas_;
   std::size_t renders_ = 0;
 };
