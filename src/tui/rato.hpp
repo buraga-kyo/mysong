@@ -44,6 +44,45 @@ struct CaixasDoTransporte {
   ftxui::Box progresso() const noexcept;
 };
 
+// CaixasDaTela — o que o quadro ANTERIOR deixou escripto. Enchem-se DENTRO de
+// quem pinta cada peça, e não na composição da janella: assim quem move os
+// paineis não move os cliques, e a assignatura de quem pinta ganha parametro
+// de omissão, que é o que deixa as tarefas irmãs entrar sem quebrar nada.
+struct CaixasDaTela {
+  // Uma por degrau da barra lateral, na ordem em que ella os pinta.
+  std::vector<ftxui::Box> degraus;
+  // Uma por linha VISIVEL da tabella, e sómente por linha que existe: a altura
+  // que sobra abaixo da lista não é alvo de cousa alguma.
+  std::vector<ftxui::Box> linhas;
+  // A linha da vista que está no alto: é ella que faz o indice VISIVEL virar o
+  // indice ABSOLUTO da vista do navegador, que é o que a eleição consome.
+  std::size_t primeira_linha = 0;
+  ftxui::Box capa = caixa_por_pintar();
+  CaixasDoTransporte transporte;
+};
+
+// As PEÇAS que o dedo pode achar. `Nada` não é falha: a orla, o rodapé dos
+// atalhos e o espectro não respondem ao rato, e hão de dizer que não respondem.
+enum class Peca {
+  Nada, Degrau, Linha, Capa, Anterior, Pausa, Proxima, Progresso,
+};
+
+// Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é o degrau
+// na barra e o indice ABSOLUTO da vista na tabella; a `fracao` é sómente da
+// barra de progresso, e vae de zero, na primeira collunha, a um, na ultima.
+struct Alvo {
+  Peca peca = Peca::Nada;
+  std::size_t indice = 0;
+  double fracao = 0.0;
+};
+
+// alvo_do_ponto — a geometria, e nada mais: que peça está debaixo de (x, y).
+// O ponto é o que o `Event::Mouse` entrega, e elle JÁ chega na conta do `Box`:
+// medido no FTXUI v7.0.3, o parser guarda o argumento cru do SGR, que conta de
+// um, e o laço da tela tira-lhe o `cursor_x_`, que vale um em tela cheia. Nada
+// se soma nem se tira aqui, e quem o fizesse erraria por uma collunha.
+Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept;
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
