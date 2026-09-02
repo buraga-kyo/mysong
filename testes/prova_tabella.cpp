@@ -334,21 +334,28 @@ TEST_CASE("com o foco na barra o dedo pinta-se n'uma fileira só") {
   const Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
-  const std::vector<std::string> linhas = pintar_barra(navegador, true, 5);
-  CHECK(linhas[5] == "▸LISTS   ");
-  CHECK(linhas[0] == " ARTISTS ");  // a corrente fica, sem dedo
+  // Sem lista alguma: o titulo, as minhas musicas, a risca, e os quatro.
+  const std::vector<std::string> linhas = pintar_barra(navegador, true, 4);
+  REQUIRE(linhas.size() == 7);
+  CHECK(linhas[0] == " BIBLIOTECA         ");
+  CHECK(linhas[1] == " MINHAS MÚSICAS     ");
+  CHECK(linhas[3] == " ARTISTAS           ");
+  CHECK(linhas[4] == " ÁLBUNS             ");
+  CHECK(linhas[6] == "▸SPOTIFY            ");
   for (std::size_t i = 0; i < linhas.size(); ++i)
-    if (i != 5) CHECK(linhas[i].find("▸") == std::string::npos);
+    if (i != 6) CHECK(linhas[i].find("▸") == std::string::npos);
 }
 
-TEST_CASE("sem foco a barra não tem dedo algum e é a de sempre") {
+TEST_CASE("sem foco a barra não tem dedo algum, e toda fileira mede vinte") {
   const Cova cova;
   nu::Biblioteca livraria(cova.banco());
-  tui::Navegador navegador(livraria);
-  for (const std::string& linha : pintar_barra(navegador, false, 3))
+  tui::Navegador navegador(livraria);  // nasce nas MINHAS MÚSICAS
+  for (const std::string& linha : pintar_barra(navegador, false, 3)) {
     CHECK(linha.find("▸") == std::string::npos);
+    CHECK(escriptas(linha + "|") == tui::LARGURA_DA_BARRA + 1);
+  }
   // E o dedo sobre a fileira corrente soma os dous signaes n'uma só.
-  CHECK(pintar_barra(navegador, true, 0)[0] == "▸ARTISTS ");
+  CHECK(pintar_barra(navegador, true, 0)[1] == "▸MINHAS MÚSICAS     ");
 }
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
