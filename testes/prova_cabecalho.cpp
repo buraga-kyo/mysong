@@ -265,5 +265,30 @@ TEST_CASE("o trilho anda em v600, e o que falta fica em line_dim") {
             .foreground_color == cor(tk::v600));
 }
 
+TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
+  // As fronteiras, contadas á mão: as quatro peças cabem até ás 110 collunhas
+  // (51 da esquerda, 52 da direita, 7 do nome minimo), tres até ás 98, duas até
+  // ás 83, e uma até ás 74. Cedem INTEIRAS, e nunca aparadas: aparar partiria
+  // um par de tinta e fundo ao meio, que é a emenda que o aceite proscreve.
+  const auto linha_em = [](std::size_t larga) {
+    return pedaco(papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong,
+                                                   "NO FEAR!", larga),
+                        static_cast<int>(larga)),
+                  0, static_cast<int>(larga));
+  };
+  CHECK(linha_em(110).find("REPETIR") != std::string::npos);
+  CHECK(linha_em(109).find("REPETIR") == std::string::npos);
+  CHECK(linha_em(98).find("EMBARALHAR") != std::string::npos);
+  CHECK(linha_em(97).find("EMBARALHAR") == std::string::npos);
+  CHECK(linha_em(83).find("100%") != std::string::npos);
+  CHECK(linha_em(82).find("100%") == std::string::npos);
+  CHECK(linha_em(74).find("00:19") != std::string::npos);
+  CHECK(linha_em(73).find("00:19") == std::string::npos);
+  // As tres ABAS ficam em toda largura: ellas são a navegação, e navegação que
+  // sommisse deixaria o operador sem porta para a secção seguinte.
+  for (const std::size_t larga : {60, 73, 83, 109, 167})
+    CHECK(linha_em(larga).find("MY SONG") != std::string::npos);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
