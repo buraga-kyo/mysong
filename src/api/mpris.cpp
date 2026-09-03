@@ -153,7 +153,13 @@ bool escreve_propriedade(DBusMessageIter* pae, const std::string& interface,
     return true;
   }
   if (nome == "Volume") {
-    escreve_variante_duplo(pae, porcento_para_volume(tocador.volume()));
+    // Calada a Casa (issue #106), o barramento diz ZERO: no MPRIS o Volume é o
+    // que se OUVE, e o guardado é o que se ha de devolver ao desmudar. Sahe do
+    // retracto, que é UMA tomada da tranca: em duas, o mudo e o numero podiam
+    // vir de momentos differentes, e o playerctl lia som onde não ha.
+    const nucleo::Retracto agora = tocador.retracto();
+    escreve_variante_duplo(
+        pae, agora.mudo ? 0.0 : porcento_para_volume(agora.volume));
     return true;
   }
   // Os DOUS MODOS (issue #62). Sahem do retracto, que é UMA tomada da tranca.
@@ -365,6 +371,7 @@ struct CasaDoMpris::Punho {
   // barramento pagaria por ella.
   nucleo::Estado ultimo_estado = nucleo::Estado::Parado;
   int ultimo_volume = -1;
+  bool ultimo_mudo = false;
   std::string ultima_faixa = "\x01";  // valor impossivel, para forçar o primeiro
   bool ultimo_embaralhado = false;
   nucleo::Repeticao ultima_repeticao = nucleo::Repeticao::Nenhuma;
@@ -574,16 +581,20 @@ void CasaDoMpris::pulsa() {
     dbus_message_unref(pedido);
   }
 
-  // E o pregão, sómente quando muda. A comparação é dos CINCO: estado, volume,
-  // faixa e os dous modos, colhidos de UMA tomada da tranca do tocador.
+  // E o pregão, sómente quando muda. A comparação é dos SEIS: estado, volume,
+  // mudo, faixa e os dous modos, colhidos de UMA tomada da tranca do tocador.
+  // O mudo entra por si (issue #106): calar não mexe no volume guardado, donde
+  // sem esta linha o F9 mudava o que o barramento diz e não o annunciava.
   const nucleo::Retracto agora = punho_->tocador.retracto();
   if (agora.estado != punho_->ultimo_estado ||
       agora.volume != punho_->ultimo_volume ||
+      agora.mudo != punho_->ultimo_mudo ||
       agora.faixa != punho_->ultima_faixa ||
       agora.embaralhado != punho_->ultimo_embaralhado ||
       agora.repeticao != punho_->ultima_repeticao) {
     punho_->ultimo_estado = agora.estado;
     punho_->ultimo_volume = agora.volume;
+    punho_->ultimo_mudo = agora.mudo;
     punho_->ultima_faixa = agora.faixa;
     punho_->ultimo_embaralhado = agora.embaralhado;
     punho_->ultima_repeticao = agora.repeticao;
