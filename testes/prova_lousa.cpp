@@ -13,7 +13,9 @@
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <vector>
 
+#include <signal.h>
 #include <unistd.h>
 
 #include "nucleo/ajustes.hpp"
@@ -306,6 +308,32 @@ TEST_CASE("a capa embutida vae ao cache uma vez, e a segunda vista não escreve"
     ::unsetenv("XDG_CACHE_HOME");
   else
     ::setenv("XDG_CACHE_HOME", guardado.c_str(), 1);
+}
+
+TEST_CASE("a lousa amarra os quatro signaes de sahida que se apanham") {
+  CHECK(nu::signal_amarrado(SIGHUP));
+  CHECK(nu::signal_amarrado(SIGINT));
+  CHECK(nu::signal_amarrado(SIGQUIT));
+  CHECK(nu::signal_amarrado(SIGTERM));
+  CHECK(nu::signaes_da_lousa().size() == 4u);
+}
+
+TEST_CASE("os que se não podem apanhar ficam de fóra da lista") {
+  // Pedil-os ao systema seria um «não» calado, e a lista passaria a promettr o
+  // que não cumpre. Contra estes dous a rede é o PR_SET_PDEATHSIG com SIGKILL.
+  CHECK_FALSE(nu::signal_amarrado(SIGKILL));
+  CHECK_FALSE(nu::signal_amarrado(SIGSTOP));
+  // E signal que não mata pela acção padrão tambem não entra: o do tamanho da
+  // janella chega a cada arrasto de borda, e amarrál-o seria matar a lousa por
+  // se redimensionar o terminal.
+  CHECK_FALSE(nu::signal_amarrado(SIGWINCH));
+  CHECK_FALSE(nu::signal_amarrado(0));
+}
+
+TEST_CASE("a lista não traz repetido, que sigaction de repetido perde o de antes") {
+  std::vector<int> quaes = nu::signaes_da_lousa();
+  std::sort(quaes.begin(), quaes.end());
+  CHECK(std::unique(quaes.begin(), quaes.end()) == quaes.end());
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒

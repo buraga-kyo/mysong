@@ -83,6 +83,18 @@ std::string versao_da_lousa();
 // texto_dos_ajustes: escape algum sahe d'aqui.
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 
+// signaes_da_lousa — os signaes de sahida que a lousa AMARRA emquanto está de
+// pé: HUP, INT, QUIT e TERM. São os que matam o processo pela acção padrão
+// d'elles e que se podem apanhar. O SIGKILL e o SIGSTOP não entram, e não por
+// esquecimento: apanhál-os é impossivel, e pedil-o ao systema é um «não» calado
+// que faria esta lista mentir. Contra esses dous a rede é o PR_SET_PDEATHSIG.
+//
+// PURA, e a bateria afere-a sem erguer processo nem instalar tratador algum.
+const std::vector<int>& signaes_da_lousa();
+
+// signal_amarrado — se aquelle numero está na lista acima.
+bool signal_amarrado(int signal) noexcept;
+
 // COLLUNHA_DO_EMPURRAO — onde nasce a janella que nada mostra. Negativa para
 // cahir fóra de todo terminal, e não MAIS negativa por uma razão medida: a
 // coordenada de uma janella do X11 é inteiro de dezasseis bits com signal, e o
