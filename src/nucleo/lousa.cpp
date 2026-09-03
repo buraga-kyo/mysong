@@ -50,6 +50,19 @@ void mata_o_filho() {
 // não via o fim do cano, que o outro filho ainda o segurava. O pedido de sahir
 // em ORDEM deixava de valer, e sobrava sómente o PR_SET_PDEATHSIG.
 int ergue(int* cano) noexcept {
+  // O ARGV ergue-se ANTES do fork, e não dentro do filho. Depois do fork o
+  // filho tem UM fio, e ali sómente é legitimo o que serve a tratador de
+  // signal; alocar não serve. Quando esta lousa nasce, a libmpv já ergueu os
+  // fios d'ella: um d'elles pode estar dentro do `malloc`, com a fechadura da
+  // arena na mão, no instante do fork, e o filho herdaria essa fechadura
+  // tomada por fio que ali não existe, e travava para sempre a segurar a ponta
+  // do cano. A memoria vem COPIADA, d'onde os `c_str()` valem no filho.
+  const std::vector<std::string> ordem = argumentos_da_lousa();
+  std::vector<char*> argv;
+  argv.reserve(ordem.size() + 1);
+  for (const std::string& um : ordem)
+    argv.push_back(const_cast<char*>(um.c_str()));
+  argv.push_back(nullptr);
   int par[2] = {-1, -1};
   if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, par) != 0) return -1;
   const ::pid_t filho = ::fork();
@@ -75,11 +88,6 @@ int ergue(int* cano) noexcept {
     // utilizador é um), o orphão vae parar a elle e não ao pid um, d'onde ella
     // cala-se. Falha ABERTA, e a corrida que cobre é de microsegundos.
     if (::getppid() == 1) ::_exit(0);
-    const std::vector<std::string> ordem = argumentos_da_lousa();
-    std::vector<char*> argv;
-    for (const std::string& um : ordem)
-      argv.push_back(const_cast<char*>(um.c_str()));
-    argv.push_back(nullptr);
     ::execvp(argv[0], argv.data());
     ::_exit(127);  // o 127 do shell para «commando não achado»
   }
