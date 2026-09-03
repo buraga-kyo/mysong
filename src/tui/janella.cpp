@@ -778,53 +778,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                             abaixo.altura, abaixo.largura)
                       : tui::elemento_do_espectro(quadro),
                   sala.painel.largura);
-    return ftxui::vbox({
-               ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
-               tui::elemento_do_topo(trilha, digita, contexto_do_campo,
-                                     termo_em_curso, larg),
-               ftxui::hbox({
-                   tui::elemento_da_barra(navegador, menu.aberto(),
-                                          menu.degrau(), alt_corpo,
-                                          &caixas.degraus),
-                   ftxui::text("  "),
-                   // `emptyElement`, e não `text("")`: o `text` pede UMA
-                   // linha ainda que nada escreva, e a faixa do meio pediria
-                   // uma a mais do que a conta lhe deu.
-                   ftxui::vbox({geo.cabecalho == 0
-                                    ? ftxui::emptyElement()
-                                    : tui::elemento_do_cabecalho(
-                                          colleccao,
-                                          galeria.capa(capa_do_meio,
-                                                       tui::kCapaPequena,
-                                                       tui::kCapaPequenaLinhas),
-                                          geo.meio),
-                                tui::elemento_da_tabella(
-                                    navegador, primeira_linha, geo.tabella,
-                                    geo.meio, retracto.titulo,
-                                    &caixas.linhas)}),
-                   ftxui::text(geo.painel == 0 ? "" : " "),
-                   std::move(painel),
-               }) |
-                   // A faixa do corpo mede EXACTAMENTE a altura contada. Por
-                   // menos que ella, a barra de sete fileiras fixas empurrava o
-                   // transporte para fóra da tela n'um terminal de doze linhas;
-                   // por mais, o `size` zera o flex e a faixa deixava de encher
-                   // a altura, d'onde o transporte e o rodapé sobiam e o pé da
-                   // tela ficava em branco (vista curta, ou letra de dous
-                   // versos). Egual cura os dous. Medido n'um pty.
-                   ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
-                               static_cast<int>(alt_corpo)),
-               tui::elemento_do_transporte(retracto, larg,
-                                           &caixas.transporte),
-               ftxui::text("↑↓ anda · → entra · ← volta · Tab menu"
-                           " · / filtra · s busca na rede"
-                           " · f fonte · b baixa por URL · r varre · l letra · espaço pausa"
-                           " · n/p faixa · P listas · c cria · a junta · t retira"
-                           " · K/J move · R renomeia · D apaga · v video"
-                           " · I spotify · T baixa todas · q sahe") |
-                   ftxui::dim,
-           }) |
-           ftxui::border;
   });
 
   // entra_no_alvo — o caminho do Enter na barra, n'um logar só. Sahe do ramo do
