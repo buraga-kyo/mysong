@@ -208,7 +208,36 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
   return ftxui::hbox(std::move(partes));
 }
 
+// As tintas da aba, n'um logar só: a corrente é BLOCO SOLIDO, v600 com texto
+// v50, que é o gesto do site d'elle onde o que está sob a mão vira bloco cheio;
+// as outras ficam no `raised`, que é o degrau de repouso do chrome. O fundo
+// serve tambem á FITA, que d'elle tira a côr das junções: lidos em dous
+// logares, a seta sahiria de uma côr e o bloco de outra.
+std::string_view fundo_da_aba(bool corrente) {
+  return corrente ? tokens::v600 : tokens::raised;
+}
+std::string_view tinta_da_aba(bool corrente) {
+  return corrente ? tokens::v50 : tokens::text_primary;
+}
+
 }  // namespace
+
+std::string rotulo_da_aba(Aba aba) {
+  // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
+  // rotulo como se ha de mostrar, e não lh'a accrescenta ás escondidas.
+  switch (aba) {
+    case Aba::Playlists: return " " + std::string(kListas) + " PLAYLISTS ";
+    case Aba::Download: return " " + std::string(kBaixa) + " DOWNLOAD ";
+    case Aba::MySong: break;
+  }
+  return " " + std::string(kNota) + " MY SONG ";
+}
+
+ftxui::Element elemento_da_aba(Aba aba, bool corrente) {
+  return vestir(rotulo_da_aba(aba), tinta_da_aba(corrente),
+                fundo_da_aba(corrente)) |
+         ftxui::bold;
+}
 
 }  // namespace mysong::tui
 
