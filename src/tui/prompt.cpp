@@ -155,8 +155,13 @@ ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
   if (aceita_letra(modo))
     campo.push_back(caret(ftxui::Color::RGB(viva.r, viva.g, viva.b)));
   campo.push_back(ftxui::filler());
+  // O CINGE, e é cinto de segurança: o corte por collunhas já guarda o caret
+  // dentro da tela, e este guarda-o no dia em que o corte errar. Caret fóra da
+  // ultima collunha faz o FTXUI mandar deslocamento NEGATIVO ao terminal.
   return ftxui::hbox(std::move(campo)) |
-         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+         ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
+                     static_cast<int>(largura));
 }
 
 }  // namespace mysong::tui
