@@ -38,11 +38,6 @@ std::string texto_da_duracao(int segundos);
 // texto_da_conta — «4 FAIXAS, 14min». Um sahe no singular e sem o `s`.
 std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao);
 
-// chave_e_caminho — a `chave` das linhas d'esta secção é caminho de arquivo?
-// Na Rede ella é URL, nas listas é numero, no catalogo é vazia, e pedir capa
-// d'essas poria a Casa a procurar arquivo inexistente a cada quadro.
-bool chave_e_caminho(Secao secao);
-
 // especie_da_secao — o que se conta em cada secção da barra lateral.
 Especie especie_da_secao(Secao secao);
 
@@ -134,10 +129,6 @@ Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
 std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto);
 ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
                                 std::size_t largura, std::size_t linhas);
-
-// A capa pequena do cabeçalho: dez collunhas por cinco linhas, que a cella do
-// terminal é de dous por um. Quem pede a capa á Galeria pede-a n'este tamanho.
-inline constexpr std::size_t kCapaPequena = 10, kCapaPequenaLinhas = 5;
 
 // elemento_do_divisor — a collunha que aparta as duas metades, em `line_dim`. É
 // collunha PROPRIA, e não orla do painel: orla custaria duas de cada lado, e

@@ -326,17 +326,6 @@ TEST_CASE("recado comprido não empurra a pauta nem o painel") {
   CHECK(linha_de(sala_de(std::string(120, 'R')), 0).substr(1, 7) == "MY SONG");
 }
 
-TEST_CASE("sómente tres secções trazem caminho de arquivo por chave") {
-  CHECK(tui::chave_e_caminho(tui::Secao::Faixas));
-  CHECK(tui::chave_e_caminho(tui::Secao::Busca));
-  CHECK(tui::chave_e_caminho(tui::Secao::NoRol));
-  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Artistas));
-  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Albuns));
-  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Rede));
-  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Rois));
-  CHECK_FALSE(tui::chave_e_caminho(tui::Secao::Lista));
-}
-
 TEST_CASE("a ficha sem etiqueta cahe no nome do arquivo") {
   const tui::Ficha crua =
       tui::ficha_da_faixa("/acervo/Alan Walker/Faded.mp3", "", "", "");
