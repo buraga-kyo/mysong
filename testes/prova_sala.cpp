@@ -267,6 +267,26 @@ TEST_CASE("sem capa o marcador toma seis linhas, e o de baixo vem na setima") {
   CHECK(linha_de(tela, 6).substr(0, 5) == "BAIXO");
 }
 
+TEST_CASE("a capa mais estreita que o painel sahe centrada n'elle") {
+  // O chafa guarda a proporção: a capa quadrada n'um painel de 83 collunhas
+  // com tecto de 28 linhas sahe com pouco mais de metade da largura. Sem o
+  // centro ella ficava encostada á esquerda, com o vão todo de um lado só.
+  const nu::CapaPintada estreita = capa_de(4, 40);
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_painel(tui::elemento_da_arte(estreita, 40, 4),
+                                    ftxui::text("BAIXO"), 80),
+            80, 6);
+  const std::string linha = linha_de(tela, 0);
+  CHECK(linha.substr(0, 20) == std::string(20, ' '));
+  CHECK(linha.substr(20, 40) == std::string(40, '#'));
+  // A capa que enche a largura NÃO se desloca de uma collunha.
+  const ftxui::Screen cheia =
+      papel(tui::elemento_do_painel(tui::elemento_da_arte(capa_de(4, 80), 80, 4),
+                                    ftxui::text("BAIXO"), 80),
+            80, 6);
+  CHECK(linha_de(cheia, 0) == std::string(80, '#'));
+}
+
 TEST_CASE("a arte cinge-se ao tecto que se lhe pediu") {
   // Capa mais alta que o tecto: o chafa não a devolveria assim, mas a promessa
   // do `linhas_da_arte` é o MINIMO, e quem compõe conta com ella. Sem o cinge,
