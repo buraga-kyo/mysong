@@ -938,7 +938,25 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      (sala.chapa.vazio() ? 0 : 1))));
     if (!sala.rodape.vazio())
       tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
-    return ftxui::vbox(std::move(tudo));
+    ftxui::Element corpo = ftxui::vbox(std::move(tudo));
+    if (!menu.aberto) return corpo;
+    // A LINHA ALVO em coordenadas da tela. Vem da SALA, e não das caixas do
+    // rato: ellas enchem-se no `reflect`, que corre DEPOIS d'esta composição, e
+    // n'este ponto do quadro estão todas por pintar. A conta é a mesma que a
+    // pauta faz, e não outra: a linha visivel é a absoluta menos a rolagem.
+    ftxui::Box linha_alvo = tui::caixa_por_pintar();
+    if (menu.faixa >= primeira_linha &&
+        menu.faixa - primeira_linha < sala.pauta.altura)
+      linha_alvo = {
+          static_cast<int>(sala.pauta.x),
+          static_cast<int>(sala.pauta.x + sala.pauta.largura) - 1,
+          static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha),
+          static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha)};
+    return ftxui::dbox(
+        {std::move(corpo),
+         tui::flutuante_do_menu(
+             menu, linha_alvo, sala.cabecalho.largura,
+             tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0)});
   });
 
   // vai_para_aba — o caminho das teclas `1` `2` `3`, n'um logar só. Sahe do
