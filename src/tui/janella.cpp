@@ -1189,6 +1189,34 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;  // dentro do modo, tecla alguma sahe para fóra
     }
 
+    // AS SETAS (issue #107) andam pelo LAYOUT, e deixaram de voltar e de
+    // entrar. Tratam DEPOIS do campo e da pergunta, e pela mesma razão que
+    // ellas: com modo modal aberto, a tela não ha de mudar debaixo de quem
+    // está a responder. Modo modal que venha depois d'este (o menu de contexto
+    // da issue #96) trata-se ACIMA d'esta linha, e as setas cedem-lhe sem que
+    // este ramo saiba d'elle.
+    //
+    // Dentro da PAUTA o `↑` e o `↓` continuam a andar na LISTA, e sómente no
+    // alto d'ella o `↑` sobe ao cabeçalho: sahir da lista á primeira seta
+    // tiraria ao operador o gesto que elle mais faz. O `←` e o `→` sahem para
+    // as visinhas, e á esquerda da pauta não ha visinha alguma: a seta FICA, e
+    // não volta degrau algum, que voltar é o Escape e o Backspace.
+    if (const tui::Direcao rumo = tui::rumo_da_tecla(tecla);
+        rumo != tui::Direcao::Nenhuma) {
+      if (foco == tui::Focavel::Pauta) {
+        if (rumo == tui::Direcao::Baixo) {
+          navegador.desce();
+          return true;
+        }
+        if (rumo == tui::Direcao::Cima && navegador.eleito() > 0) {
+          navegador.sobe();
+          return true;
+        }
+      }
+      foco = tui::salto(caixas, foco, rumo);
+      return true;
+    }
+
     // AS TECLAS DAS ABAS (issue #102) tratam DEPOIS do campo e ANTES da
     // taboada geral. É a ordem que a barra tinha, e pela mesma razão: com o
     // campo aberto, o `1` é o algarismo um do termo, e não a aba.
