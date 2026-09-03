@@ -502,6 +502,7 @@ Chave repetida vale a ultima.
 | `fonte_da_busca` | `youtube`, `youtube-music` ou `spotify` | `youtube` |
 | `baixas_simultaneas` | inteiro de 1 a 8 | `2` |
 | `capa_sextantes` | `auto`, `sim` ou `nao` | `auto` |
+| `lousa` | `auto`, `sim` ou `nao` | `auto` |
 
 A PRECEDENCIA, do mais forte para o mais fraco: o argumento da linha de
 commando, a variavel de ambiente, este arquivo, e o padrao da Casa. O
@@ -512,6 +513,12 @@ mudar debaixo dos pes de quem aponta para monte de rede que ainda nao montou.
 O `MYSONG_CAPA_SEXTANTES` ganha do arquivo do mesmo modo, e serve para virar o
 sextante por UMA corrida sem editar arquivo nenhum. Esse AFERE-SE: palavra que
 nao e `auto`, `sim` nem `nao` vira queixa e nao apaga o que o arquivo dizia.
+
+O `MYSONG_LOUSA` faz o mesmo pela capa nitida, e afere-se do mesmo modo. Com
+`auto`, a lousa ergue-se havendo DISPLAY e havendo o programa. Com `sim`, a
+pergunta do DISPLAY salta-se, que a variavel e palpite sobre haver X11 ao
+alcance e o senhor pode saber melhor; a falta do programa nao salta, que essa
+nao e palpite. Com `nao`, a capa fica nos symbolos do chafa.
 
 Chave desconhecida e valor que nao presta NAO derrubam cousa alguma: cae-se no
 degrau de baixo e a queixa apparece no `mysong --sonda`, que diz tambem de ONDE
