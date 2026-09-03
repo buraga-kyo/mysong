@@ -324,6 +324,9 @@ que ella deixar.
 
 | tecla | o que faz |
 |---|---|
+| `1` / `2` / `3` | vae a aba MY SONG, PLAYLISTS, DOWNLOAD |
+| Tab | cicla as tres abas |
+| `o` | dentro das MY SONG, cicla a vista: faixas, artistas, albuns |
 | espaco | pausa tocando, retoma pausado |
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
@@ -355,10 +358,12 @@ que ella deixar.
 
 ### O rato
 
-Clicar n'um degrau da barra entra n'elle; clicar n'uma faixa elege-a, e clicar na
-JÁ eleita toca-a. Os botoes do transporte fazem o que dizem, o clique na barra de
-progresso busca a posicao, o clique na capa pausa e retoma, e a roda anda tres
-linhas na lista, ou um degrau sobre a barra. Botao direito nao faz nada ainda.
+Clicar n'uma aba do cabecalho vae a ella; clicar n'uma faixa elege-a, e clicar
+na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
+no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
+clique na capa pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
+cabecalho a roda fica muda: n'uma fita de tres abas ella trocaria de seccao por
+acaso, com o dedo a caminho de outra peca. Botao direito nao faz nada ainda.
 Dentro do tmux, isto pede `set -g mouse on`.
 
 E ha um preco a declarar, que e a primeira cousa que se nota: pedido o modo dos
