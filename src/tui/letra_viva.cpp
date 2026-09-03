@@ -125,6 +125,9 @@ void posta_na_tela(const std::string& texto, std::size_t largura,
     glifos.emplace_back("…");
   }
   viva->collunha = (largura - glifos.size()) / 2;
+  // O VERSO sahe do MESMO corte, e não de um segundo: cortado outra vez adeante,
+  // a chapa em XIROD poderia dizer o que a linha em mono não diz.
+  for (const std::string& glifo : glifos) viva->verso += glifo;
   viva->texto = embaralha(glifos, viva->resolvida, qual, quadro);
 }
 
@@ -165,6 +168,7 @@ QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
                      std::llround(sobe * static_cast<double>(vao)));
       viva.resolvida = sobe;
       viva.tinta = tinta_da_subida(sobe);
+      viva.sobe = true;
     } else if (!ha_proxima || posicao < proximo) {
       viva.linha_da_tela = leitura;
       viva.resolvida = 1.0;
@@ -193,6 +197,14 @@ const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro) {
   if (quadro.corrente < 0) return nullptr;
   const std::size_t qual = static_cast<std::size_t>(quadro.corrente);
   return qual < quadro.linhas.size() ? &quadro.linhas[qual] : nullptr;
+}
+
+const LinhaViva* linha_que_sobe_do_rio(const QuadroDaLetra& quadro) {
+  // A PRIMEIRA que sobe, e não a ultima: sendo uma só, as duas seriam a mesma,
+  // e parando na primeira o laço não percorre o rio inteiro por nada.
+  for (const LinhaViva& viva : quadro.linhas)
+    if (viva.sobe) return &viva;
+  return nullptr;
 }
 
 Rectangulo caixa_da_corrente(const QuadroDaLetra& quadro) {
