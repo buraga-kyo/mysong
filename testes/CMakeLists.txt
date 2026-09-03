@@ -181,5 +181,8 @@ target_sources(mysong_testes PRIVATE prova_rato.cpp)
 # ─── Prova da lousa (issue #103): por target_sources, a regra ───────────────
 target_sources(mysong_testes PRIVATE prova_lousa.cpp)
 
+# ─── Prova do letreiro (issue #108): por target_sources, a regra ───────────
+target_sources(mysong_testes PRIVATE prova_letreiro.cpp)
+
 # ─── Prova do cabeçalho em abas (issue #102): por target_sources, a regra ────
 target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)
