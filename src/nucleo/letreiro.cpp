@@ -29,7 +29,7 @@ namespace mysong::nucleo {
 // alguma os torna a partir. Ordem d'elles pelo `argumentos_do_chafa`: o que
 // governa primeiro, o alvo por ultimo.
 std::vector<std::string> argumentos_do_letreiro(
-    const Pedido& pedido, std::size_t margem,
+    const PedidoDaChapa& pedido, std::size_t margem,
     const std::filesystem::path& sahida) {
   return {"pango-view",
           "--font=" + pedido.familia + " " + std::to_string(pedido.corpo),
@@ -63,7 +63,7 @@ std::size_t margem_da_chapa(Medida crua, std::size_t cellulas,
 }
 
 // chave_do_letreiro — o FNV-1a da Casa, o mesmo que dá nome á arte em cache.
-std::string chave_do_letreiro(const Pedido& pedido) {
+std::string chave_do_letreiro(const PedidoDaChapa& pedido) {
   // Os campos costuram-se com o octeto NULLO, que em nenhum d'elles apparece:
   // sem costura, texto «AB» com tinta «C» e texto «A» com tinta «BC» dariam a
   // mesma somma, e o que se veria era a chapa de outra aba.
@@ -77,7 +77,7 @@ std::string chave_do_letreiro(const Pedido& pedido) {
   return somma_dos_octetos(tudo);
 }
 
-std::filesystem::path caminho_da_chapa_em_cache(const Pedido& pedido) {
+std::filesystem::path caminho_da_chapa_em_cache(const PedidoDaChapa& pedido) {
   // `letreiro/` ao lado de `capas/`, e não misturado com ellas: o que se guarda
   // aqui é palavra, e apagar uma pasta não ha de levar a outra.
   const std::filesystem::path raiz = raiz_do_cache();
@@ -140,7 +140,7 @@ std::filesystem::path desfaz(const std::filesystem::path& meio) {
 // Por TEMPORARIO e RENAME, pelo molde do arquivo da capa: o rename no mesmo
 // systema de arquivos é atomico, e resolve de graça a corrida entre duas
 // instancias do tocador sobre a mesma chapa.
-std::filesystem::path rasteriza(const Pedido& pedido) {
+std::filesystem::path rasteriza(const PedidoDaChapa& pedido) {
   const std::filesystem::path onde = caminho_da_chapa_em_cache(pedido);
   if (onde.empty()) return {};
   std::error_code erro;

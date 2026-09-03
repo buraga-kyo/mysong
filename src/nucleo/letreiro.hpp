@@ -37,7 +37,7 @@ inline constexpr int CORPO_DA_MARCA = 22;
 
 // Um PEDIDO de chapa. As tintas vão em hexadecimal por o `pango-view` as
 // querer assim, e vêm SEMPRE de `tui::tokens`: côr crua não entra n'esta obra.
-struct Pedido {
+struct PedidoDaChapa {
   std::string texto;
   std::string familia{FAMILIA_DA_MARCA};
   std::string tinta;
@@ -53,7 +53,7 @@ struct Pedido {
 // vertical e o horizontal: a folga vae em cima e em baixo, e nunca aos lados,
 // que largura a mais deslocaria a palavra dentro da caixa.
 std::vector<std::string> argumentos_do_letreiro(
-    const Pedido& pedido, std::size_t margem,
+    const PedidoDaChapa& pedido, std::size_t margem,
     const std::filesystem::path& sahida);
 
 // margem_da_chapa — a folga, em pixeis, que casa a proporção da chapa com a
@@ -69,12 +69,12 @@ std::size_t margem_da_chapa(Medida crua, std::size_t cellulas, Medida cellula);
 // chave_do_letreiro — o nome do arquivo em cache, e a somma de TODO o pedido:
 // texto, tintas, corpo e célullas. As célullas entram porque a proporção sahe
 // d'ellas, e chapa da mesma palavra em caixa mais larga é outra imagem.
-std::string chave_do_letreiro(const Pedido& pedido);
+std::string chave_do_letreiro(const PedidoDaChapa& pedido);
 
 // caminho_da_chapa_em_cache — `$XDG_CACHE_HOME/mysong/letreiro/<chave>.png`,
 // ao lado das capas e pela mesma razão: o Überzug++ lê DISCO, e não memoria.
 // Vazio sem XDG_CACHE_HOME e sem HOME, que ahi cache não ha.
-std::filesystem::path caminho_da_chapa_em_cache(const Pedido& pedido);
+std::filesystem::path caminho_da_chapa_em_cache(const PedidoDaChapa& pedido);
 
 // parecer_do_letreiro — a decisão, PURA pelo molde do `parecer_da_lousa`: o
 // mundo entra por dous bools, para que o caminho da recusa se observe n'esta
@@ -108,7 +108,7 @@ class Letreiro {
   // mais. Vazio quando não ha letreiro, ou quando o pango-view falhou; e o
   // vazio GUARDA-SE tambem, que tornar a tentar a cada quadro seria erguer
   // processo vinte vezes por segundo por uma chapa que não ha de vir.
-  const std::filesystem::path& chapa(const Pedido& pedido);
+  const std::filesystem::path& chapa(const PedidoDaChapa& pedido);
 
  private:
   Parecer parecer_;
