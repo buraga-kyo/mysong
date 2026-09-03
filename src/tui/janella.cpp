@@ -225,6 +225,7 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   retracto.posicao = agora.posicao;
   retracto.duracao = agora.duracao;
   retracto.volume = agora.volume;
+  retracto.mudo = agora.mudo;
   retracto.tamanho = agora.tamanho;
   retracto.embaralhado = agora.embaralhado;
   retracto.repeticao = agora.repeticao;
@@ -303,6 +304,10 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     // socket ou o barramento, e a tecla assentaria o contrario do que se viu.
     case tui::Verbo::Embaralhar: tocador.alterna_embaralhar(); break;
     case tui::Verbo::Repetir: tocador.cicla_repetir(); break;
+    // O MUDO (issue #106) cala o MOTOR de audio, e não a janella do video: essa
+    // tem o volume d'ella pelo soquete, e calá-la sem lh'o dizer deixaria o
+    // segundo F9 a devolver um volume que ella nunca teve.
+    case tui::Verbo::Mudo: tocador.alterna_mudo(); break;
     // Os verbos da navegação não passam por aqui: quem os cumpre é o navegador,
     // e elle não é do tocador. Ficam nomeados um a um para que o `switch`
     // continue exhaustivo, e para que verbo novo acenda aviso e não silencio.
@@ -339,14 +344,17 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // ellas mudam a cada issue que dá tecla nova, e assim quem as procura sabe
 // onde estão. As tres primeiras são as da issue #102, que são as unicas
 // teclas d'esta tela que ninguem conhece de outra casa.
-// Cabe em CENTO E DEZASEIS collunhas, e o piso do esboço é cento e vinte.
-// Linha que
-// transbordasse aparar-se-hia em silencio, e o que se perderia seria o FIM,
+// Cabe em CENTO E QUINZE collunhas, e o piso do esboço é cento e vinte. Linha
+// que transbordasse aparar-se-hia em silencio, e o que se perderia seria o FIM,
 // onde moram as teclas que menos se usam e que ninguem adivinha; o que não
 // coube está no README, e a linha diz que lá está.
+//
+// As seis de funcção (issue #106) entraram, e para lhes caber o logar sahiram
+// o Enter, o espaço e o `n`/`p`, que dizem o que o F7, o F6 e o F8 já dizem, e
+// sahiu o `o` da vista, que a chapa por cima da pauta annuncia por si.
 constexpr const char* kDicas =
-    "1 2 3 abas · Tab cicla · o vista · Enter toca · espaço pausa"
-    " · n/p faixa · F2 renomeia · Del apaga · q sahe · README";
+    "1 2 3 abas · Tab cicla · F6 F7 F8 transporte · F9 mudo"
+    " · F10 F11 volume · F2 renomeia · Del apaga · q sahe · README";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a

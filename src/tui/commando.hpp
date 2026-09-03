@@ -69,6 +69,9 @@ enum class Verbo {
   // reaprende. Quem pergunta ao operador é a tela; estes verbos sómente dizem
   // que se pediu.
   RenomeiaFaixa, ApagaFaixa,
+  // O MUDO (issue #106). Verbo PURO, como os dous modos: quem guarda o volume e
+  // quem o devolve é o TOCADOR, de uma tomada só da sua tranca.
+  Mudo,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),
