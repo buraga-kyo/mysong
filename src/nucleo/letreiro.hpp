@@ -75,8 +75,10 @@ std::size_t margem_da_chapa(Medida crua, std::size_t cellulas,
                             std::size_t linhas, Medida cellula);
 
 // chave_do_letreiro — o nome do arquivo em cache, e a somma de TODO o pedido:
-// texto, tintas, corpo e célullas. As célullas entram porque a proporção sahe
-// d'ellas, e chapa da mesma palavra em caixa mais larga é outra imagem.
+// texto, tintas, corpo, célullas e FILEIRAS. As duas medidas da caixa entram
+// porque a proporção sahe d'ellas, e chapa da mesma palavra em caixa mais
+// larga, ou mais alta, é outra imagem: a de uma linha servida no logar da de
+// duas viria do cache já feita, e sahiria esmagada.
 std::string chave_do_letreiro(const PedidoDaChapa& pedido);
 
 // caminho_da_chapa_em_cache — `$XDG_CACHE_HOME/mysong/letreiro/<chave>.png`,

@@ -72,7 +72,8 @@ std::string chave_do_letreiro(const PedidoDaChapa& pedido) {
   std::string tudo = pedido.texto;
   for (const std::string& campo :
        {pedido.familia, pedido.tinta, pedido.fundo,
-        std::to_string(pedido.corpo), std::to_string(pedido.cellulas)}) {
+        std::to_string(pedido.corpo), std::to_string(pedido.cellulas),
+        std::to_string(pedido.linhas)}) {
     tudo.push_back('\0');
     tudo += campo;
   }
