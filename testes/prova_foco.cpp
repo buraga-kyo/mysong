@@ -164,6 +164,11 @@ TEST_CASE("peça por pintar não recebe foco nem o dá") {
   sem_painel.capa = tui::caixa_por_pintar();
   CHECK(tui::salto(sem_painel, Focavel::Pauta, Direcao::Dextra) ==
         Focavel::Pauta);
+  // E o foco que estava n'ella TORNA Á PAUTA, em vez de ficar preso: peça sem
+  // caixa não tem candidata alguma, e as quatro setas ficariam mudas.
+  for (const Direcao rumo :
+       {Direcao::Cima, Direcao::Baixo, Direcao::Esquerda, Direcao::Dextra})
+    CHECK(tui::salto(sem_painel, Focavel::Capa, rumo) == Focavel::Pauta);
   // E rumo nenhum não mexe em cousa alguma.
   CHECK(salto_de(Focavel::Tocar, Direcao::Nenhuma) == Focavel::Tocar);
 }

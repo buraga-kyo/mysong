@@ -82,7 +82,11 @@ Focavel salto(const CaixasDaTela& caixas, Focavel corrente,
               Direcao rumo) noexcept {
   if (rumo == Direcao::Nenhuma) return corrente;
   const ftxui::Box d_onde = caixa_da_peca(caixas, corrente);
-  if (d_onde.IsEmpty()) return corrente;  // peça por pintar não salta
+  // Peça que SAHIU da tela devolve o foco á pauta, que é a de nascença. Sem
+  // isto o foco ficava preso: encolhido o terminal, o painel desapparece com a
+  // capa, ou a fita cede o REPETIR, e a peça que tinha a mão deixa de ter
+  // caixa; sem caixa não ha candidata, e as quatro setas ficavam mudas.
+  if (d_onde.IsEmpty()) return Focavel::Pauta;
   const bool vertical = rumo == Direcao::Cima || rumo == Direcao::Baixo;
   const int sentido =
       (rumo == Direcao::Cima || rumo == Direcao::Esquerda) ? -1 : 1;

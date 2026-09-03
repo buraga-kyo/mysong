@@ -67,7 +67,9 @@ inline constexpr int PESO_DE_TRAVES = 2;
 //
 // Sem candidata, devolve a corrente: a tela não tem beira por onde
 // o foco caia, nem volta ao principio, que dar a volta faria a seta levar o
-// olho ao canto opposto d'onde elle olhava.
+// olho ao canto opposto d'onde elle olhava. Peça que SAHIU da tela devolve o
+// foco á PAUTA: encolhido o terminal, o painel vae-se com a capa, e foco preso
+// n'uma peça sem caixa deixaria as quatro setas mudas.
 Focavel salto(const CaixasDaTela& caixas, Focavel corrente,
               Direcao rumo) noexcept;
 
