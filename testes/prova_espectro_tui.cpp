@@ -530,6 +530,36 @@ TEST_CASE("tempo negativo ou não finito não derruba pico algum") {
   }
 }
 
+// ── C15 · a batida RELATIVA ao pico da columna ─────────────────────────────
+// Os tres pontos que a issue #132 nomeia, e cada um aparta uma regra. Arma-se
+// nos AGUDOS porque é lá que o tecto absoluto falhava: elle raro chega a 0,9 da
+// fita, e a batida d'elle passaria despercebida por não ser grande, sómente
+// grande PARA ELLE. Painel de tres: teto 24, e 0,6 dá 14 degraus, um cheio e
+// resto seis, d'onde duas célullas e a base na linha 2.
+TEST_CASE("a batida mede-se contra o pico da columna, com piso de meio") {
+  const std::vector<float> centros = centros_em(8000.0f);  // agudos, o amarello
+  const tk::Triade rampa = tk::mistura(tk::v500, tk::panel_hi, 0.55);
+
+  // Seis decimos com o pico em seis decimos: a banda está no proprio topo e
+  // passa do piso. ACCENDE, e o tecto absoluto nunca lhe daria isto.
+  const es::Quadro bate = es::compor(bandas_uniformes(0.6f), 4, 3, false,
+                                     centros, bandas_uniformes(0.6f));
+  REQUIRE(bate.em(2, 0).pinta);
+  CHECK(es::mesma_tinta(bate.em(2, 0).tinta, tk::rgb(tk::data2)));
+
+  // Os mesmos seis decimos com o pico em um: 0,6 não chega a 0,9 vezes 1, e a
+  // columna fica FRIA. É a banda que já deu mais e ainda não tornou a dar.
+  const es::Quadro cede = es::compor(bandas_uniformes(0.6f), 4, 3, false,
+                                     centros, bandas_uniformes(1.0f));
+  CHECK(es::mesma_tinta(cede.em(2, 0).tinta, rampa));
+
+  // Quatro decimos com o pico em quatro decimos: no topo de si, mas debaixo do
+  // PISO. Sem elle, a passagem baixa e o silencio piscarião sem parar.
+  const es::Quadro baixa = es::compor(bandas_uniformes(0.4f), 4, 3, false,
+                                      centros, bandas_uniformes(0.4f));
+  CHECK(es::mesma_tinta(baixa.em(2, 0).tinta, rampa));
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
