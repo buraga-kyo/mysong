@@ -58,6 +58,7 @@
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
 #include "nucleo/lixeira.hpp"
+#include "nucleo/letreiro.hpp"
 #include "nucleo/lousa.hpp"
 #include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
@@ -71,6 +72,7 @@
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
+#include "tui/letra_viva.hpp"
 #include "tui/menu_contexto.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
@@ -187,14 +189,15 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += ':';
   marca += agora.faixa;
   marca += ':';
-  // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
-  // pagava a animação que não mostrava: medido em cento e trinta e dous KiB por segundo,
-  // contra dous e sete pausado. Assignatura ha de resumir o que se VÊ, e não o que ha.
-  if (!mostra_letra)
-    for (const float banda : tocador.bandas())
-      marca += static_cast<char>(
-          static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
-                           99.0f) + 32);
+  // As bandas entram SEMPRE, desde a issue #109. Até ella, a letra tomava o logar
+  // do espectro e o painel da letra pagava a animação que não mostrava; agora a
+  // letra mora POR CIMA do espectro, e o espectro está sempre á vista. É tambem
+  // por estas bandas que o rio anda entre um segundo e o seguinte: a posição
+  // entra na marca em segundos inteiros, e sem ellas o rio subiria aos saltos.
+  for (const float banda : tocador.bandas())
+    marca += static_cast<char>(
+        static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
+                         99.0f) + 32);
   marca += ':';
   marca += recado;
   marca += mostra_letra ? 'L' : 'e';
@@ -557,9 +560,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // indice consultado a cada quadro seriam vinte perguntas por segundo ao
   // banco por uma cousa que sómente muda quando a faixa muda.
   tui::Ficha ficha;
-  // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
-  // assignatura, e o fio da tela troca-o na tecla `l`.
-  std::atomic<bool> mostra_letra{false};
+  // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
+  // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
+  // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
+  //
+  // ATOMICO, e não bool nú: o fio do relogio lê-o para o pôr na assignatura, e o
+  // fio da tela troca-o na tecla `l`.
+  std::atomic<bool> mostra_letra{true};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
   nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
   // A LOUSA (issue #103) e o arquivario que a serve. Vivem n'esta pilha, ao
@@ -567,6 +574,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // por viver aqui que a sahida da tela leva a janella d'ella junto.
   nucleo::Lousa lousa(ajustes.lousa.valor);
   nucleo::Arquivario arquivario;
+  // O LETREIRO (issue #108) vive ao lado d'ella, e pela mesma chave: a chapa
+  // que elle rasteriza é a lousa quem a põe, e desligada ella não ha onde.
+  nucleo::Letreiro letreiro(ajustes.lousa.valor);
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
@@ -784,6 +794,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     for (const tui::Linha& qual : navegador.vista())
       chapa.duracao += qual.duracao;
     chapa.vista = tui::nome_da_vista(navegador.secao());
+    // A pauta vazia não pinta recado algum (issue #111): o conselho sobe á
+    // chapa, que é a linha em que se lê o estado do logar em que se está.
+    if (navegador.vista().empty())
+      chapa.conselho = tui::conselho_do_vazio(navegador.secao(),
+                                              !navegador.termo().empty());
     // As ENCOMMENDAS ganham logar proprio na DOWNLOAD, que é onde a issue as
     // pede por cima da lista. Nas outras abas ellas descem ao recado, que alli
     // a linha não é d'ellas e o que importa é a secção em que se está.
@@ -894,6 +909,31 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                              rectangulo.collunas))),
                 caixas.capa.y_min, rectangulo.collunas, rectangulo.linhas);
     caixas.capa = tui::caixa_por_pintar();
+    // AS CHAPAS DAS ABAS (issue #108), pela MESMA lousa e com a mesma
+    // disciplina: a ordem sae do QUADRO, e as caixas são as do quadro
+    // anterior, que são as unicas que o `reflect` já encheu.
+    const std::size_t escritas = lousa.escritas();
+    std::filesystem::path ultima_chapa;
+    for (const tui::ChapaDaAba& ordem : tui::ordens_das_chapas(
+             caixas.cabecalho, tui::aba_da_secao(navegador.secao()),
+             lousa.disponivel() && letreiro.disponivel(),
+             vigilia.pede_batida())) {
+      const std::filesystem::path* chapa = nullptr;
+      if (ordem.poe) chapa = &letreiro.chapa(tui::pedido_da_chapa(ordem));
+      // Chapa que não veio TIRA a que estava, e não a deixa: a aba trocou de
+      // degrau, e a imagem velha mentiria sobre onde o operador está.
+      if (chapa == nullptr || chapa->empty()) {
+        lousa.tira(tui::identidade_da_chapa(ordem.aba));
+        continue;
+      }
+      lousa.poe(tui::identidade_da_chapa(ordem.aba), *chapa, ordem.collunha,
+                ordem.linha, ordem.largura, 1);
+      ultima_chapa = *chapa;
+    }
+    // O EMPURRÃO, e sómente havendo ordem nova: a chapa tem UMA linha, e a
+    // janella de uma linha do Überzug++ fica preta até que outra ordem chegue.
+    if (!ultima_chapa.empty() && lousa.escritas() != escritas)
+      lousa.empurra(ultima_chapa);
     // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
     // painel, e marcador algum: a janella d'ella chega um quadro depois, e
     // n'esse quadro o operador não ha de ver nota musical por baixo da capa.
@@ -906,18 +946,21 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
+    // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
+    // base d'elle e sobe por cima. Escondido o rio pelo `l`, o quadro d'elle sae
+    // VAZIO, e a composição devolve o espectro tal qual; faixa sem `.lrc` faz o
+    // mesmo por si, que letra alguma se inventa.
+    const tui::QuadroDaLetra rio =
+        mostra_letra.load()
+            ? tui::quadro_da_letra(letra, retracto.posicao, abaixo.largura,
+                                   abaixo.altura)
+            : tui::QuadroDaLetra{};
     ftxui::Element painel =
         sala.painel.vazio()
             ? ftxui::emptyElement()
             : tui::elemento_do_painel(
                   std::move(quadro_da_arte) | ftxui::reflect(caixas.capa),
-                  mostra_letra.load()
-                      ? tui::elemento_da_letra(
-                            letra,
-                            nucleo::linha_corrente(letra, retracto.posicao),
-                            abaixo.altura, abaixo.largura)
-                      : tui::elemento_do_espectro(quadro),
-                  sala.painel.largura);
+                  tui::elemento_do_rio(quadro, rio), sala.painel.largura);
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
     // pela razão que a composição velha ensinou: por menos, o pé da tela fica
     // em branco; por mais, o rodapé sahe d'ella.
@@ -1718,6 +1761,12 @@ int main(int argc, char** argv) {
         nucleo::parecer_da_lousa(ajustes.lousa.valor, nucleo::ha_display(),
                                  !versao_da_lousa.empty()),
         versao_da_lousa);
+    // O LETREIRO (issue #108) logo abaixo d'ella, que d'ella depende: diz
+    // «Xirod, pango-view» de pé, e a razão deitado. Tambem fóra da taboa dos
+    // requisitos, e pela mesma razão: a XIROD não tranca porta alguma.
+    std::cout << nucleo::texto_do_letreiro(nucleo::parecer_do_letreiro(
+        ajustes.lousa.valor, nucleo::ha_pango_view(),
+        nucleo::ha_familia_da_marca()));
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 

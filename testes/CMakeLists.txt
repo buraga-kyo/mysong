@@ -181,8 +181,16 @@ target_sources(mysong_testes PRIVATE prova_rato.cpp)
 # ─── Prova da lousa (issue #103): por target_sources, a regra ───────────────
 target_sources(mysong_testes PRIVATE prova_lousa.cpp)
 
+# ─── Prova do letreiro (issue #108): por target_sources, a regra ───────────
+target_sources(mysong_testes PRIVATE prova_letreiro.cpp)
+
 # ─── Prova do cabeçalho em abas (issue #102): por target_sources, a regra ────
 target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)
+
+# ─── Prova do rio da letra (issue #109): por target_sources, a regra ─────────
+# Sem terminal, sem som e sem relogio: o rio é funcção da POSIÇÃO, e a posição
+# escreve-se á mão. A composição sobre o espectro prova-se em écran de papel.
+target_sources(mysong_testes PRIVATE prova_letra_viva.cpp)
 
 # ─── Prova do menu de contexto (issue #96): por target_sources, a regra ─────
 target_sources(mysong_testes PRIVATE prova_menu_contexto.cpp)

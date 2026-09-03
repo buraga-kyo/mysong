@@ -12,6 +12,7 @@
 
 #include <ftxui/dom/node.hpp>
 #include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/string.hpp>
 
 #include <filesystem>
 #include <string>
@@ -100,16 +101,145 @@ class Cova {
 
 }  // namespace
 
+TEST_CASE("o corte da pauta conta CELLAS, e o glypho largo vale duas") {
+  // Cabendo, sahe INTEIRO e enchido: a columna promette largura fixa.
+  CHECK(tui::apara_collunhas("Fuga", 8) == "Fuga    ");
+  CHECK(ftxui::string_width(tui::apara_collunhas("Fuga", 8)) == 8);
+  // Não cabendo, a ultima cella leva a reticencia, e a conta bate na cella.
+  CHECK(tui::apara_collunhas("Toccata e Fuga", 8) == "Toccata\u2026");
+  CHECK(ftxui::string_width(tui::apara_collunhas("Toccata e Fuga", 8)) == 8);
+  // O CJK toma DUAS cellas por glypho: cinco glyphos pedem dez, e em oito
+  // cabem tres (seis cellas) mais a reticencia. Contando por codepoint, sete
+  // d'elles «cabiam» em oito e a linha sahia com seis cellas a mais.
+  const std::string cjk = "\u6771\u4eac\u97f3\u697d\u796d";  // 5 glyphos, 10 cellas
+  CHECK(ftxui::string_width(cjk) == 10);
+  const std::string cortado = tui::apara_collunhas(cjk, 8);
+  CHECK(ftxui::string_width(cortado) == 8);
+  CHECK(cortado == "\u6771\u4eac\u97f3\u2026 ");
+  // Largura IMPAR deixa uma cella orphã antes do «…»: enche-se de espaço, e a
+  // conta continua exacta. Sem o enchimento a columna encolhia uma cella.
+  CHECK(ftxui::string_width(tui::apara_collunhas(cjk, 7)) == 7);
+  CHECK(ftxui::string_width(tui::apara_collunhas(cjk, 3)) == 3);
+  CHECK(tui::apara_collunhas("Fuga", 0).empty());
+}
+
+namespace {
+
+// cellas_dos — a somma das larguras dos pedaços. É o invariante da pauta: os
+// vãos e as margens tambem são pedaços, d'onde a somma HA DE dar a largura.
+std::size_t cellas_dos(const std::vector<tui::PedacoDaPauta>& pedacos) {
+  std::size_t total = 0;
+  for (const tui::PedacoDaPauta& pedaco : pedacos)
+    total += static_cast<std::size_t>(ftxui::string_width(pedaco.texto));
+  return total;
+}
+
+std::string dito(const std::vector<tui::PedacoDaPauta>& pedacos) {
+  std::string feita;
+  for (const tui::PedacoDaPauta& pedaco : pedacos) feita += pedaco.texto;
+  return feita;
+}
+
+tui::Linha faixa_de(const std::string& texto, const std::string& autor,
+                    int numero, int duracao) {
+  tui::Linha feita;
+  feita.texto = texto;
+  feita.autor = autor;
+  feita.numero = numero;
+  feita.duracao = duracao;
+  return feita;
+}
+
+}  // namespace
+
+TEST_CASE("a somma das columnas da linha É a largura da pauta") {
+  const tui::Linha curta = faixa_de("Fuga", "A", 4, 96);
+  // Titulo de cento e vinte caracteres, e titulo em CJK: os dous casos que
+  // empurravam as columnas. A somma ha de dar a largura em todos.
+  const tui::Linha comprida = faixa_de(std::string(120, 'x'), "Canal", 12, 542);
+  const tui::Linha larga =
+      faixa_de("\u6771\u4eac\u97f3\u697d\u796d", "\u4e2d\u6587", 7, 200);
+  for (const std::size_t quanto : {10u, 12u, 20u, 30u, 40u, 59u, 83u, 167u}) {
+    for (const tui::Linha& qual : {curta, comprida, larga}) {
+      const tui::Medidas faixas = tui::medidas_da_pauta(quanto, true, false);
+      CHECK(cellas_dos(tui::pedacos_da_linha(qual, faixas, 542, true)) == quanto);
+      const tui::Medidas nomes = tui::medidas_da_pauta(quanto, true, true);
+      CHECK(cellas_dos(tui::pedacos_da_linha(qual, nomes, 12, false)) == quanto);
+    }
+  }
+}
+
+TEST_CASE("a linha da pauta diz numero, titulo, artista, régua e tempo") {
+  const tui::Medidas medidas = tui::medidas_da_pauta(59, true, false);
+  const tui::Linha qual =
+      faixa_de("Montagem Lunar Celestia 1.0", "TOKYOPHILE", 4, 96);
+  const std::string linha = dito(tui::pedacos_da_linha(qual, medidas, 267, false));
+  CHECK(linha.substr(0, 5) == "    4");  // a cella do ▶ vazia, e o № á direita
+  // O titulo de vinte e sete cellas n'uma columna de vinte e quatro: corta-se,
+  // e a reticencia diz que se cortou.
+  CHECK(linha.find("Montagem Lunar Celestia\u2026") != std::string::npos);
+  CHECK(linha.find("TOKYOPHILE") != std::string::npos);
+  // Noventa e seis segundos de duzentos e sessenta e sete: duas cellas de seis.
+  CHECK(linha.find("\u25b0\u25b0\u25b1\u25b1\u25b1\u25b1") != std::string::npos);
+  CHECK(linha.find("01:36") != std::string::npos);
+  // A que SÔA leva o «▶» na cella d'elle, e NÃO perde o numero.
+  const std::vector<tui::PedacoDaPauta> soando =
+      tui::pedacos_da_linha(qual, medidas, 267, true);
+  CHECK(dito(soando).substr(0, 7) == " \u25b6  4");
+  namespace tk = mysong::tui::tokens;
+  for (const tui::PedacoDaPauta& pedaco : soando)
+    if (pedaco.negrito) CHECK(pedaco.tinta == tk::glow_soft);
+  // A vista que CONTA nomes: o nome, a conta de faixas, e a régua pela conta.
+  const tui::Medidas nomes = tui::medidas_da_pauta(40, false, true);
+  const std::string nome =
+      dito(tui::pedacos_da_linha(faixa_de("MXZI", "", 12, 0), nomes, 24, false));
+  CHECK(nome.find("MXZI") != std::string::npos);
+  CHECK(nome.find("  12") != std::string::npos);
+  CHECK(nome.find("\u25b0\u25b0\u25b0\u25b1\u25b1\u25b1") != std::string::npos);
+}
+
+TEST_CASE("as columnas da pauta cedem por ordem de serviço") {
+  // A metade esquerda de uma tela de 167 collunhas: abrem-se todas.
+  const tui::Medidas larga = tui::medidas_da_pauta(83, true, false);
+  CHECK(larga.marcador == 1);
+  CHECK(larga.numero == 3);
+  CHECK(larga.regua == 6);
+  CHECK(larga.conta == 5);  // MM:SS
+  CHECK(larga.artista == 19);
+  CHECK(larga.titulo == 40);
+  CHECK(larga.titulo >= 2 * larga.artista);  // dous terços contra um
+  // A ESTREITA cede o ARTISTA, e mais nada: elle é o primeiro a ceder.
+  const tui::Medidas media = tui::medidas_da_pauta(40, true, false);
+  CHECK(media.artista == 0);
+  CHECK(media.regua == 6);
+  CHECK(media.titulo == 18);
+  // Depois d'elle cede a RÉGUA, e depois o TEMPO.
+  CHECK(tui::medidas_da_pauta(30, true, false).regua == 6);
+  CHECK(tui::medidas_da_pauta(29, true, false).regua == 0);
+  CHECK(tui::medidas_da_pauta(20, true, false).conta == 0);
+  // A pauta MINIMA: as duas margens e o titulo. Nem o marcador cabe.
+  const tui::Medidas minima = tui::medidas_da_pauta(10, true, false);
+  CHECK(minima.marcador == 0);
+  CHECK(minima.titulo == 8);
+  // A vista que CONTA nomes não tem № nem artista: o que ella conta vae na
+  // columna da direita, em quatro cellas, e a régua mede-se por elle.
+  const tui::Medidas conta = tui::medidas_da_pauta(83, true, true);
+  CHECK(conta.numero == 0);
+  CHECK(conta.artista == 0);
+  CHECK(conta.conta == 4);
+  CHECK(conta.titulo == 67);
+}
+
 TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita") {
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
-  navegador.mostra_rede({achado("Toccata", "Canal do Orgao", 542),
-                         achado("Fuga", "Outro Canal", 65)});
+  navegador.mostra_rede({achado("Toccata", "Canal Bach", 542),
+                         achado("Fuga", "Outro", 65)});
   const std::vector<std::string> linhas = pintar(navegador, 2, 60);
   REQUIRE(linhas.size() == 2);
   CHECK(linhas[0].find("Toccata") != std::string::npos);
-  CHECK(linhas[0].find("Canal do Orgao") != std::string::npos);
+  CHECK(linhas[0].find("Canal Bach") != std::string::npos);
   CHECK(linhas[0].find("09:02") != std::string::npos);
   CHECK(linhas[1].find("01:05") != std::string::npos);
 }
@@ -162,38 +292,103 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   // FATIA, ella abre-se para as duas e as columnas alinham.
   const std::string comprido(75, 'x');
   navegador.mostra_rede({achado(comprido, {}, 100),
-                         achado("Fuga", "Canal do Orgao", 65)});
+                         achado("Fuga", "Canal Bach", 65)});
   const std::vector<std::string> linhas = pintar(navegador, 2, 60);
   REQUIRE(linhas.size() == 2);
-  CHECK(linhas[1].find("Canal do Orgao") != std::string::npos);
+  CHECK(linhas[1].find("Canal Bach") != std::string::npos);
   CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
 }
 
-TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
+TEST_CASE("cada linha pintada deixa a sua caixa para o rato") {
+  Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.mostra_rede({achado("Toccata", "Canal", 542),
+                         achado("Fuga", "Outro", 65),
+                         achado("Aria", "Terceiro", 100)});
+  std::vector<ftxui::Box> caixas;
+  ftxui::Element quadro =
+      tui::elemento_da_tabella(navegador, 0, 2, 60, {}, &caixas);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(60),
+                                              ftxui::Dimension::Fixed(2));
+  ftxui::Render(ecran, quadro);
+  // UMA caixa por linha PINTADA, e não por linha da vista: a terceira ficou
+  // fóra da fatia, e clique algum a ha de acertar. E ella toma a LARGURA
+  // inteira, que o bloco da eleita a veste de orla a orla.
+  REQUIRE(caixas.size() == 2);
+  CHECK(caixas[0].x_min == 0);
+  CHECK(caixas[0].x_max == 59);
+  CHECK(caixas[0].y_min == 0);
+  CHECK(caixas[1].y_min == 1);
+  // Vista vazia limpa o vector: caixa velha faria o clique acertar linha que
+  // já não está na tela.
+  navegador.mostra_rede(std::vector<nu::Achado>{});
+  tui::elemento_da_tabella(navegador, 0, 2, 60, {}, &caixas);
+  CHECK(caixas.empty());
+}
+
+TEST_CASE("as vistas de artistas e albuns adaptam as columnas") {
+  Cova cova;
+  {
+    nu::Escriba escriba(cova.banco());
+    nu::Faixa uma;
+    uma.caminho = "/m/a.mp3";
+    uma.artista = "MXZI";
+    uma.album = "Slowed";
+    uma.titulo = "MONTAGEM TOMADA";
+    uma.numero = 1;
+    uma.duracao = 85;
+    REQUIRE(escriba.grava(uma));
+    uma.caminho = "/m/b.mp3";
+    uma.titulo = "IMMORTAL DE FINALE";
+    uma.numero = 2;
+    uma.duracao = 66;
+    REQUIRE(escriba.grava(uma));
+    REQUIRE(escriba.conclui());
+  }
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
+  // NOME não é faixa: № algum á esquerda, tempo algum á direita, e régua
+  // alguma emquanto a bibliotheca não souber contar as faixas do artista.
+  const std::vector<std::string> artistas = pintar(navegador, 1, 60);
+  CHECK(artistas[0].substr(0, 6) == "  MXZI");
+  CHECK(artistas[0].find(":") == std::string::npos);
+  CHECK(artistas[0].find("\u25b1") == std::string::npos);
+  navegador.entra();  // o album do artista: `entra` só diz sim na FAIXA
+  REQUIRE(navegador.secao() == tui::Secao::Albuns);
+  CHECK(pintar(navegador, 1, 60)[0].substr(0, 8) == "  Slowed");
+  navegador.entra();  // as faixas do album
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  const std::vector<std::string> faixas = pintar(navegador, 2, 60);
+  // E aqui as columnas da faixa voltam todas: o №, a régua e o tempo.
+  CHECK(faixas[0].substr(0, 5) == "    1");
+  CHECK(faixas[0].find("MONTAGEM TOMADA") != std::string::npos);
+  CHECK(faixas[0].find("\u25b0\u25b0\u25b0\u25b0\u25b0\u25b0") != std::string::npos);
+  CHECK(faixas[0].find("01:25") != std::string::npos);
+  CHECK(faixas[1].find("01:06") != std::string::npos);
+}
+
+TEST_CASE("o conselho do vazio é por SECÇÃO, e a pauta fica vazia") {
+  // No acervo o conselho manda varrer, e diz a tecla. Dentro de uma lista
+  // escolhida á mão, mandar varrer o acervo seria mandar ao logar errado.
+  const auto diz = [](tui::Secao q) { return tui::conselho_do_vazio(q, false); };
+  CHECK(diz(tui::Secao::Artistas) == "varra o acervo (r)");
+  CHECK(diz(tui::Secao::Rois).find("cria uma") != std::string::npos);
+  CHECK(diz(tui::Secao::Rede).find("outra vez") != std::string::npos);
+  CHECK(diz(tui::Secao::NoRol).find("tecla a") != std::string::npos);
+  // Nas MINHAS MÚSICAS elle depende do TERMO: sem elle o vazio é do acervo.
+  CHECK(diz(tui::Secao::Busca) == "varra o acervo (r)");
+  CHECK(tui::conselho_do_vazio(tui::Secao::Busca, true) ==
+        "nada casa com esse termo");
+  // E a PAUTA fica vazia de facto: cella por pintar não tem glypho algum.
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);  // acervo vazio, e sem roleiro
   REQUIRE(navegador.vai_para(tui::Secao::Artistas));
-  // No acervo, o recado manda varrer. Dentro de uma lista de faixas escolhidas á
-  // mão, mandar varrer o acervo seria mandar o operador ao logar errado.
-  const std::vector<std::string> acervo = pintar(navegador, 1, 70);
-  CHECK(acervo[0].find("varra o acervo") != std::string::npos);
-
-  navegador.mostra_rois();
-  const std::vector<std::string> listas = pintar(navegador, 1, 70);
-  CHECK(listas[0].find("cria uma") != std::string::npos);
-  CHECK(listas[0].find("varra o acervo") == std::string::npos);
-
-  navegador.mostra_rede(std::vector<nu::Achado>{});
-  const std::vector<std::string> rede = pintar(navegador, 1, 70);
-  CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
-
-  // Nas MINHAS MÚSICAS o recado depende do TERMO: sem elle, quem está vazio é o
-  // acervo, e mandar procurar erro de escripta seria mandar ao logar errado.
-  REQUIRE(navegador.vai_para(tui::Secao::Busca));
-  CHECK(pintar(navegador, 1, 70)[0].find("varra o acervo") != std::string::npos);
-  navegador.filtra("zzz");
-  CHECK(pintar(navegador, 1, 70)[0].find("esse termo") != std::string::npos);
+  const std::vector<std::string> vazia = pintar(navegador, 2, 70);
+  CHECK(vazia[0].empty());
+  CHECK(vazia[1].empty());
 }
 
 
@@ -228,17 +423,22 @@ TEST_CASE("a faixa que sôa accende com signal proprio ao lado do da eleita") {
   // Sôa a PRIMEIRA, e a eleita é a segunda: dous signaes em linhas differentes.
   const ftxui::Screen dous = com_som(navegador, "https://y/Toccata");
   CHECK(dous.PixelAt(1, 0).character == "▶");
-  CHECK(dous.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
-  CHECK(dous.PixelAt(0, 1).background_color == cor(tk::v900));
-  // E o «▶» NÃO empurra o titulo: elle toma o logar do numero, e a columna do
-  // titulo cahe na mesma collunha com signal e sem elle.
-  CHECK(dous.PixelAt(4, 0).character == "T");
-  CHECK(dous.PixelAt(4, 1).character == "F");
-  // Sôa a MESMA que está eleita: o fundo é o v900 e a tinta o glow_core.
+  CHECK(dous.PixelAt(1, 0).foreground_color == cor(tk::glow_core));
+  // A ELEITA é BLOCO: o v600 veste a linha de ORLA A ORLA, e a que não é eleita
+  // não leva fundo algum. É o gesto do sitio d'esta Casa.
+  CHECK(dous.PixelAt(0, 1).background_color == cor(tk::v600));
+  CHECK(dous.PixelAt(59, 1).background_color == cor(tk::v600));
+  CHECK(dous.PixelAt(0, 0).background_color != cor(tk::v600));
+  // E o «▶» NÃO empurra o titulo: elle tem cella PROPRIA, e a columna do titulo
+  // cahe na mesma collunha com signal e sem elle.
+  CHECK(dous.PixelAt(7, 0).character == "T");
+  CHECK(dous.PixelAt(7, 1).character == "F");
+  // Sôa a MESMA que está eleita: o bloco troca o violeta pelo glow_core, e o
+  // texto sahe em panel, que é o fundo escuro por cima do claro.
   const ftxui::Screen um = com_som(navegador, "https://y/Fuga");
   CHECK(um.PixelAt(1, 1).character == "▶");
-  CHECK(um.PixelAt(0, 1).background_color == cor(tk::v900));
-  CHECK(um.PixelAt(0, 1).foreground_color == cor(tk::glow_core));
+  CHECK(um.PixelAt(0, 1).background_color == cor(tk::glow_core));
+  CHECK(um.PixelAt(7, 1).foreground_color == cor(tk::panel));
   // Caminho que não casa com chave alguma não accende linha nenhuma.
   const ftxui::Screen nada = com_som(navegador, "/musica/outra.mp3");
   CHECK(nada.PixelAt(1, 0).character != "▶");

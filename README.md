@@ -228,16 +228,46 @@ disco e nao memoria. O nome sahe do conteudo, donde duas faixas com a mesma arte
 partilham um arquivo so. Apagar essa pasta nao perde nada: a proxima corrida
 torna a escrever.
 
+### As palavras de marca em XIROD, pelo letreiro
+
+Havendo lousa, havendo o `pango-view` e havendo a fonte XIROD installada, as
+tres palavras do cabecalho (MY SONG, PLAYLISTS, DOWNLOAD) deixam o mono e sahem
+na XIROD, que e a fonte de exhibicao do RADICAL-OS. Terminal algum troca de
+fonte por celula: a palavra rasteriza-se em imagem e vae por cima da celula pela
+mesma lousa que poe a capa. Os DADOS (o nome da faixa, o tempo, o volume) ficam
+em mono, que e o que o design d'esta Casa manda.
+
+A XIROD nao vem do apt: mora no repositorio do RADICAL-OS, em
+`src/assets/fonts/Xirod.otf`.
+
+```sh
+cp <RADICAL-OS>/src/assets/fonts/Xirod.otf ~/.local/share/fonts/
+fc-cache -f
+sudo apt install pango1.0-tools   # o pango-view, que desenha a palavra
+mysong --sonda | tail -2          # diz «letreiro: Xirod, pango-view»
+```
+
+Cada aba tem tres chapas (a corrente, a apagada e a que tem o foco). Cada uma
+rasteriza-se UMA vez e fica em `$XDG_CACHE_HOME/mysong/letreiro/<somma>.png`,
+donde a segunda corrida do tocador nao chama o pango-view uma vez sequer.
+Apagar essa pasta nao perde nada.
+
+Faltando qualquer das tres cousas, o cabecalho fica exactamente como estava, com
+as palavras em mono negrito, e aviso algum apparece na tela: quem quiser saber
+porque pergunta ao `--sonda`. A alavanca e a MESMA da lousa, e nao ha outra:
+`lousa = nao` (ou `MYSONG_LOUSA=nao`) desliga a capa nitida e o letreiro juntos,
+que a chapa sem lousa nao tem onde se pôr.
+
 ### Tudo o que vem do apt, n'uma linha
 
 ```sh
 sudo apt install build-essential cmake git libmpv-dev libtag1-dev \
   libsqlite3-dev libpipewire-0.3-dev libfftw3-dev libdbus-1-dev \
-  libcurl4-openssl-dev libfontconfig-dev mpv chafa
+  libcurl4-openssl-dev libfontconfig-dev mpv chafa pango1.0-tools
 ```
 
-Ficam de fora d'esta linha, de proposito: a fonte (que vem do release das Nerd
-Fonts, secao acima), o yt-dlp (que do apt sahe velho), e o FTXUI com o doctest
+Ficam de fora d'esta linha, de proposito: as fontes (a Nerd Font, que vem do
+release d'ellas, e a XIROD, que vem do RADICAL-OS; as duas secoes acima), o yt-dlp (que do apt sahe velho), e o FTXUI com o doctest
 (que o CMake busca por FetchContent).
 
 ## Como se compila
@@ -372,6 +402,41 @@ Abaixo de CEM collunhas o painel some e a pauta toma a tela toda. A capa nunca
 passa de quarenta e cinco por cento da altura do painel, e o espectro toma o
 que ella deixar.
 
+### A pauta
+
+A lista das musicas nao e planilha: e uma folha de leitura. Cada linha traz, da
+esquerda para a direita, a cella do «▶» de quem soa, o numero da faixa (tres
+cellas, encostado a direita), o TITULO, o ARTISTA, a REGUA da duracao, e o tempo
+em MM:SS.
+
+```
+    1  97Kickstvr, without you   97Kickstvr   ▰▰▱▱▱▱ 03:09
+ ▶  2  FUNK ESTRANHO, SUPER SL…  ALXIKE       ▰▰▱▱▱▱ 02:30
+    3  NO FEAR!                  ANDROMEDA    ▰▱▱▱▱▱ 01:49
+```
+
+A ELEITA e um BLOCO: a linha inteira ganha fundo violeta e o texto todo sae
+claro, de orla a orla. Quem toca leva o «▶» e o titulo aceso; sendo a mesma que
+esta eleita, o bloco troca o violeta pelo violeta claro do foco.
+
+A REGUA e textura, e nao relogio: seis cellas, cheias na proporcao da faixa mais
+comprida que se ve. O tempo exacto vae ao lado. Nao havendo o que medir, ella
+fica em branco em vez de mostrar seis cellas vazias.
+
+O titulo e o artista dividem o que sobra em dous tercos e um terco, e cortam com
+«…» contando CELLAS do terminal: nome em japones ou chines toma duas cellas por
+glifo, e a linha nao alarga por isso.
+
+Apertando a tela, as columnas cedem por ordem de servico: primeiro o artista,
+depois a regua, depois o tempo, e por fim o numero. O titulo fica ate ao fim.
+
+Nas vistas de ARTISTAS e de ALBUNS (tecla `o`) as columnas adaptam-se: o nome
+toma a largura, sem numero de faixa e sem tempo.
+
+Com o acervo vazio a pauta fica VAZIA, e e a chapa que diz o que fazer:
+`varra o acervo (r)`. Dentro de uma lista, ou na DOWNLOAD, ella diz a tecla
+d'aquelle logar em vez de mandar varrer.
+
 ### As teclas
 
 | tecla | o que faz |
@@ -396,7 +461,7 @@ que ella deixar.
 | `s` | busca na rede, pelo yt-dlp; Enter no achado baixa-o |
 | `f` | troca a fonte da busca, dentro da lista da rede: YouTube, YouTube Music, Spotify |
 | `b` | baixa por URL |
-| `l` | troca o espectro pela letra |
+| `l` | esconde e mostra a letra sobre o espectro |
 | `r` | varre o acervo outra vez |
 | `P` | as listas |
 | `c` | cria lista (pede o nome) |
@@ -495,6 +560,40 @@ Para ver os quatro grupos lado a lado, com os nomes por baixo de cada um:
 
 ```sh
 ./build/fita_espectro 72 12
+```
+
+### A letra: o rio sobre o espectro
+
+A letra nao se alterna mais com o espectro. Ella mora POR CIMA delle e esta
+sempre a vista, subindo como um rio:
+
+- Cada linha nasce na BASE do painel quatro segundos antes do instante della, ou
+  no intervalo desde a linha anterior quando esse intervalo e menor. Nasce sem
+  forma: os glifos sao embaralhados a partir das PROPRIAS letras da linha, em
+  tom apagado, e os espacos entre as palavras ficam onde estao.
+- Subindo, a linha ganha forma DO MEIO PARA AS PONTAS e ganha luz, e chega a
+  LINHA DE LEITURA (um terco do alto do painel) inteira e em brilho cheio no
+  instante exacto em que a voz a canta.
+- Ali ella fica ate a proxima chegar. Dai sobe uma linha por segundo, apagando,
+  e some na linha zero.
+
+A celula que tem letra pinta a letra com o fundo do painel, escondendo SO a
+celula da barra debaixo della. O espaco entre as palavras deixa passar a barra,
+e por isso o verso parece sair do espectro em vez de assentar numa tarja.
+
+Faixa sem `.lrc` nao mostra letra nenhuma, e nem um aviso: letra alguma se
+inventa. A busca da letra continua a acontecer uma vez so, no download.
+
+O `l` passou a esconder e a mostrar o rio, e nasce MOSTRANDO. O espectro nunca
+some por causa desta tecla.
+
+Para ver o rio sem abrir o tocador, com um espectro armado da propria posicao:
+
+```sh
+./build/fita_letra 72 14 6      # a linha nasce na base, embaralhada
+./build/fita_letra 72 14 10     # subiu, quase resolvida
+./build/fita_letra 72 14 12     # chegou a linha de leitura, e a anterior apaga
+./build/fita_letra 72 14 11 /caminho/da/faixa.lrc   # com a letra de verdade
 ```
 
 ### O video
