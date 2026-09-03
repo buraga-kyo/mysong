@@ -235,6 +235,7 @@ std::string texto_da_chapa(const Chapa& chapa) {
 // que as duas leiam a MESMA cadeia e não divirjam de uma collunha.
 static std::string esquerda_da_chapa(const Chapa& chapa) {
   std::string dita = " " + texto_da_chapa(chapa);
+  if (!chapa.conselho.empty()) dita += "  " + chapa.conselho;
   if (!chapa.encommendas.empty()) dita += "  " + chapa.encommendas;
   return dita;
 }
@@ -252,6 +253,11 @@ ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
   std::vector<ftxui::Element> partes = {
       pinta(" " + texto_da_chapa(chapa), tokens::text_heading) | ftxui::bold};
+  // O CONSELHO em glow_soft, logo depois da conta: a pauta vazia é o unico
+  // estado em que a chapa tem de CHAMAR o dedo, e o glow é d'esta Casa o que
+  // chama. Vae antes das encommendas, que ellas correm com a lista cheia.
+  if (!chapa.conselho.empty())
+    partes.push_back(pinta("  " + chapa.conselho, tokens::glow_soft));
   // As ENCOMMENDAS em data2, que é o amarello do Poente Contido: ellas são
   // ESTADO em curso, e estado é acento. Vão logo á direita do texto, e nunca
   // no fim: alli o primeiro aviso comprido comia-lhes o logar.
