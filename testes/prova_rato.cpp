@@ -144,11 +144,11 @@ tui::GestoDoRato clicou(const tui::CaixasDaTela& caixas, int x, int y,
 TEST_CASE("com o campo aberto o clique fecha-o, e pára ahi") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato digita{true, 21, 40, 200.0};
-  // A linha, o degrau e o botão: TODO alvo dá a mesma cousa, que é o campo a
+  // A linha, a aba e o botão: TODO alvo dá a mesma cousa, que é o campo a
   // fechar-se. A tela não ha de mudar debaixo de quem está a digitar.
-  for (const int y : {4, 6, 30})
-    CHECK(clicou(caixas, y == 6 ? 5 : (y == 30 ? 2 : 30), y, digita).gesto ==
-          tui::Gesto::FechaCampo);
+  CHECK(clicou(caixas, 30, 4, digita).gesto == tui::Gesto::FechaCampo);
+  CHECK(clicou(caixas, 5, 0, digita).gesto == tui::Gesto::FechaCampo);
+  CHECK(clicou(caixas, 34, 0, digita).gesto == tui::Gesto::FechaCampo);
   // E a roda tambem: o rato não escreve no termo por caminho algum.
   CHECK(tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, 30, 4), Mouse::WheelDown,
                            Mouse::Pressed, digita)
@@ -179,38 +179,42 @@ tui::GestoDoRato rodou(const tui::CaixasDaTela& caixas, int x, int y, bool sobe,
 
 }  // namespace
 
-TEST_CASE("a roda anda tres linhas na tabella, e um degrau sobre a barra") {
+TEST_CASE("a roda anda tres linhas na pauta, e fica muda em toda a mais peça") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato estado{false, 21, 40, 200.0};
   const tui::GestoDoRato desce = rodou(caixas, 30, 4, false, estado);
   CHECK(desce.gesto == tui::Gesto::RodaDesce);
   CHECK(desce.indice == tui::LINHAS_POR_DENTE);
   CHECK(rodou(caixas, 30, 4, true, estado).gesto == tui::Gesto::RodaSobe);
-  CHECK(rodou(caixas, 5, 6, false, estado).gesto == tui::Gesto::DegrauDesce);
-  CHECK(rodou(caixas, 5, 6, true, estado).gesto == tui::Gesto::DegrauSobe);
-  // Fóra da lista e da barra a roda não governa cousa alguma: nem volume, nem
-  // busca. Prometter-lhe officio seria prometter o que a issue não pediu.
-  CHECK(rodou(caixas, 2, 30, true, estado).gesto == tui::Gesto::Nada);
+  // Sobre a barra a roda andava um degrau; sobre uma fita de tres abas ella
+  // trocaria de secção por acaso, com o dedo a caminho de outra peça.
+  CHECK(rodou(caixas, 5, 0, true, estado).gesto == tui::Gesto::Nada);
+  CHECK(rodou(caixas, 5, 0, false, estado).gesto == tui::Gesto::Nada);
+  // E fóra da pauta ella não governa cousa alguma: nem volume, nem busca.
+  CHECK(rodou(caixas, 34, 0, true, estado).gesto == tui::Gesto::Nada);
   CHECK(rodou(caixas, 70, 8, true, estado).gesto == tui::Gesto::Nada);
 }
 
-TEST_CASE("o transporte, a capa e a busca dão o gesto que dizem") {
+TEST_CASE("o cabeçalho, a capa e a busca dão o gesto que dizem") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato estado{false, 21, 40, 200.0};
-  CHECK(clicou(caixas, 5, 30, estado).gesto == tui::Gesto::Anterior);
-  CHECK(clicou(caixas, 8, 30, estado).gesto == tui::Gesto::Proxima);
-  CHECK(clicou(caixas, 2, 30, estado).gesto == tui::Gesto::PausaOuRetoma);
-  // A capa é o mesmo gesto do ⏯: quem clica na arte quer calar o que toca.
+  CHECK(clicou(caixas, 37, 0, estado).gesto == tui::Gesto::Anterior);
+  CHECK(clicou(caixas, 40, 0, estado).gesto == tui::Gesto::Proxima);
+  CHECK(clicou(caixas, 34, 0, estado).gesto == tui::Gesto::PausaOuRetoma);
+  CHECK(clicou(caixas, 90, 0, estado).gesto == tui::Gesto::Embaralha);
+  CHECK(clicou(caixas, 100, 0, estado).gesto == tui::Gesto::Repete);
+  // A capa é o mesmo gesto do botão de tocar: quem clica na arte quer calar.
   CHECK(clicou(caixas, 70, 8, estado).gesto == tui::Gesto::PausaOuRetoma);
-  const tui::GestoDoRato busca = clicou(caixas, 21, 30, estado);
+  const tui::GestoDoRato busca = clicou(caixas, 21, 1, estado);
   CHECK(busca.gesto == tui::Gesto::Busca);
   CHECK(busca.alvo == doctest::Approx(200.0 * 10.0 / 19.0));
   // Sem duração não se busca. Zero seria affirmar o principio, e o que ha é a
   // Casa ainda não saber quanto a faixa dura.
   const tui::EstadoDoRato sem{false, 21, 40, 0.0};
-  CHECK(clicou(caixas, 21, 30, sem).gesto == tui::Gesto::Nada);
-  CHECK(clicou(caixas, 5, 6, estado).gesto == tui::Gesto::EntraNoDegrau);
-  CHECK(clicou(caixas, 5, 6, estado).indice == 3);
+  CHECK(clicou(caixas, 21, 1, sem).gesto == tui::Gesto::Nada);
+  const tui::GestoDoRato aba = clicou(caixas, 15, 0, estado);
+  CHECK(aba.gesto == tui::Gesto::VaiParaAba);
+  CHECK(aba.indice == 1);
 }
 
 namespace {
