@@ -160,19 +160,25 @@ std::string onde_da_chapa(Secao secao, const std::vector<std::string>& trilha,
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
   Sala sala;
   if (largura == 0 || altura == 0) return sala;
-  // A ESCADA DO PÉ (issue #125), do mais dispensavel ao mais essencial: cede
-  // primeiro o rodapé, e sómente depois a segunda linha da fita. As duas cedem
-  // ANTES do corpo: tocador sem lista alguma é dar o caminho e fechar a porta.
-  std::size_t campo = campo_aberto ? 1u : 0u, trilho = 1, fita = 2, rodape = 1;
+  // A ESCADA DO PÉ (issue #125, aparada pela #129), do mais dispensavel ao mais
+  // essencial: cede primeiro o rodapé, depois o trilho. As duas cedem ANTES do
+  // corpo: tocador sem lista alguma é dar o caminho e fechar a porta.
+  //
+  // A FITA É RASA, de UMA fileira. Teve duas por uma leva, e o operador quis
+  // de volta a rasa: a fileira de baixo ficava vazia debaixo do rotulo, e o
+  // que elle queria era o CENTRO, que fica (o grupo das abas no meio da
+  // largura, e o texto centrado em cada segmento). Da altura sahe tambem a
+  // chapa em XIROD, que por isso torna a uma fileira sem se lhe tocar.
+  std::size_t campo = campo_aberto ? 1u : 0u, trilho = 1, fita = 1, rodape = 1;
   const auto pe = [&] { return campo + trilho + fita + rodape; };
   if (altura < pe() + 1) rodape = 0;
-  if (altura < pe() + 1) fita = 1;
   // O TRILHO fecha a escada, e cede tambem elle antes do corpo: com o campo
   // aberto n'uma tela de tres linhas, o pé pedia as tres e a lista sommia.
   if (altura < pe() + 1) trilho = 0;
-  // O degenerado, que a issue não governa: tela que nem para o pé chega, e
-  // ahi cede o campo, que o corpo já não tem o que ceder.
-  if (altura < pe()) campo = 0;
+  // O CAMPO fecha a escada: cede quando, ficando, deixaria o corpo sem fileira
+  // alguma. Duas linhas com o campo aberto pediam as duas para o pé, e a lista
+  // sommia, contra a promessa do aceite.
+  if (altura < pe() + 1) campo = 0;
   std::size_t y = altura;  // a primeira linha ainda por repartir, contada do pé
   if (rodape != 0) sala.rodape = {0, --y, largura, 1};
   y -= fita;

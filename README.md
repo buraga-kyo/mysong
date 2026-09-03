@@ -272,11 +272,11 @@ sudo apt install pango1.0-tools   # o pango-view, que desenha a palavra
 mysong --sonda | tail -2          # diz «letreiro: Xirod, pango-view»
 ```
 
-A chapa toma a caixa INTEIRA do rotulo: na fita do pe, que tem duas linhas, a
-palavra sai ao dobro do corpo e ocupa as duas, a partir da linha de cima do
-segmento; na fita rasa de uma linha ella sai como sempre saiu. O corpo e a
+A chapa toma a caixa INTEIRA do rotulo, seja qual for a altura d'ella: na fita
+do pe, que tem UMA linha, a palavra sai no corpo de uma linha. O corpo e a
 folga de cima e de baixo saem da altura da caixa, para a palavra nao ficar
-esmagada nem deixar o mono espreitar por baixo.
+esmagada nem deixar o mono espreitar por baixo; caixa mais alta daria palavra
+maior, sem se lhe tocar no punho.
 
 Cada aba tem tres chapas (a corrente, a apagada e a que tem o foco), e cada
 altura da caixa da a sua. Cada uma rasteriza-se UMA vez e fica em
@@ -431,12 +431,12 @@ Apertando a tela, quem cede sao as PONTAS, e por esta ordem: primeiro o nome
 corta, depois o REPETIR, depois o EMBARALHAR, depois o tempo; sómente quando
 nem assim cabe e que o grupo deixa o centro e se encosta. As abas ficam
 sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz,
-e clicar em QUALQUER das duas linhas do segmento vale o mesmo; clicar no
-trilho busca a posicao.
+e clicar em qualquer cella do segmento vale o mesmo; clicar no trilho busca a
+posicao.
 
 Encolhendo a tela em ALTURA, quem cede e o pe: sae primeiro o rodape das
-dicas, depois a fita volta a UMA linha, e o trilho e o ultimo. Nunca se mostra
-o tocador sem lista alguma.
+dicas, depois o trilho, e o campo de digitar por ultimo. A fita e a que fica.
+Nunca se mostra o tocador sem lista alguma.
 
 Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
 (`MY SONG, 42 FAIXAS, 1h29, FAIXAS`), com os degraus de dentro apartados por
