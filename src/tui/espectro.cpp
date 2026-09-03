@@ -45,16 +45,16 @@ Registro registro_da_banda(float centro_em_hertz) {
 
 // O switch sem `default`, de proposito: registro novo accende aviso do
 // compilador aqui e no nome, e o gate da issue #64 o converte em recusa. Com
-// `default` o registro novo sahiria violeta e sem nome, calado. O return de
+// `default` o registro novo sahiria rosa e sem nome, calado. O return de
 // baixo existe só porque a linguagem não sabe que o switch é exhaustivo.
 std::string_view tinta_do_registro(Registro registro) {
   switch (registro) {
-    case Registro::Graves: return tokens::v500;
+    case Registro::Graves: return tokens::glow_hot;
     case Registro::MediosGraves: return tokens::data5;
     case Registro::MediosAgudos: return tokens::data3;
     case Registro::Agudos: return tokens::data2;
   }
-  return tokens::v500;
+  return tokens::glow_hot;
 }
 
 std::string_view nome_do_registro(Registro registro) {
@@ -88,6 +88,24 @@ std::string glifo_do_degrau(int degrau) {
   // terceiro octeto de U+2580 é 0x80, d'onde o de U+2580 + k é 0x80 + k, e k
   // vae de 1 a 8, que é U+2581 (um oitavo) a U+2588 (o bloco cheio).
   return std::string{'\xe2', '\x96', static_cast<char>('\x80' + k)};
+}
+
+void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
+                  double segundos) {
+  // Tamanho differente ZERA, e não conserva o que havia: colheita de outro
+  // tamanho é de outro contracto, e pico velho mentiria sobre banda nova.
+  if (picos.size() != bandas.size()) picos.assign(bandas.size(), 0.0f);
+  // Tempo que não anda não derruba pico: quadro repetido, relogio a recuar e
+  // NaN valem todos a passagem NULLA, que deixa o pico onde estava.
+  const double passou =
+      (std::isfinite(segundos) && segundos > 0.0) ? segundos : 0.0;
+  // Decaimento CONTINUO, e não um degrau por quadro: assim o pico cae o mesmo
+  // em um segundo, corra a fita a vinte quadros por segundo ou a cinco.
+  const double resto = std::pow(0.5, passou / MEIA_VIDA_DO_PICO_S);
+  for (std::size_t b = 0; b < bandas.size(); ++b) {
+    const float cahido = static_cast<float>(cingido(picos[b]) * resto);
+    picos[b] = std::max(cingido(bandas[b]), cahido);
+  }
 }
 
 std::vector<float> centros_das_bandas(
@@ -188,11 +206,28 @@ Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
       centros[faixa.principio + (faixa.fim - faixa.principio - 1) / 2]);
 }
 
+// columna_quente — A BATIDA d'esta columna, e são DOUS regimes.
+//   Sem picos, o tecto ABSOLUTO de sempre. É o que conserva verdadeiro quanto
+//   se affirmou antes da issue #132, e serve a quem não guarda estado algum.
+//   Com picos, RELATIVO ao pico recente da columna: noventa por cento D'ELLE, e
+//   não do tecto. É o que faz o agudo accender, que elle bate alto para si e
+//   baixo para a fita. O PISO corta o silencio e a passagem baixa, onde o pico
+//   já cahiu e todo sussurro chegaria aos noventa por cento.
+// O pico da columna toma-se pela MESMA repartição do valor: quem funde bandas
+// funde tambem os picos d'ellas, d'onde os dous fallam da mesma columna.
+bool columna_quente(const std::vector<float>& picos, float valor, std::size_t c,
+                    std::size_t largura) {
+  if (picos.empty()) return valor >= LIMIAR_QUENTE;
+  if (valor < PISO_DO_QUENTE) return false;
+  return valor >= LIMIAR_QUENTE * valor_da_columna(picos, c, largura);
+}
+
 }  // namespace
 
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
-                              Registro registro) {
-  const std::string_view cor = tinta_do_registro(registro);
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
+  // O VIOLETA CARDEAL, e não a côr do registro: desde a issue #132 a rampa é
+  // UMA em toda a fita, e a familia sómente se lê no instante da batida forte.
+  const std::string_view cor = tokens::v500;
   // Painel de uma célulla só: a rampa degenera, e vale a BASE. A §7.4.9 ancora
   // a rampa na base, e painel de uma célulla é todo base; o meio da rampa seria
   // côr que spec alguma nomeia. E o desvio por zero fica excluido antes de se
@@ -204,7 +239,7 @@ tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
 
   // A interpolação vae por tokens::mistura, e NÃO por arithmetica de côr nova.
   // Ella compõe a frente sobre o fundo com o peso dado, d'onde t = 1 dá a côr do
-  // registro EXACTA (peso cheio devolve a frente) e t = 0 dá a base EXACTA, sem
+  // v500 EXACTO (peso cheio devolve a frente) e t = 0 dá a base EXACTA, sem
   // arredondamento a explicar. Uma segunda conta de côr abriria um segundo
   // caminho para o mesmo resultado, e dous caminhos divergem sem avisar.
   return tokens::mistura(cor, tokens::panel_hi,
@@ -220,31 +255,33 @@ namespace {
 //   2. ZERO veste text_faint, que é o piso do silencio. Vem antes do quente por
 //      pura arrumação (zero nunca é quente), e junto do mudo porque é a MESMA
 //      côr que a §7.4.9 manda: mudo e silencio lêem-se egualmente apagados.
-//   3. QUENTE veste glow_hot, e veste a COLUMNA INTEIRA. É a lógica do
-//      bar_meter.lua, que faz `color = hot and glow_hot or FILL_COOL` e
+//   3. QUENTE veste a côr do REGISTRO d'esta columna, e veste-a INTEIRA. É a
+//      lógica do bar_meter.lua, que faz `color = hot and glow_hot or FILL_COOL` e
 //      substitue o enchimento todo, não sómente o cimo. Duas razões mais: só a
 //      célulla do topo em glow_hot seria quasi invisivel n'uma fita que salta a
 //      quarenta e seis quadros por segundo, que uma célulla a piscar não se lê;
 //      e o indicador de pico existe para SER VISTO.
-//   4. Não sendo nada d'isso, o GRADIENTE do painel, na côr do REGISTRO que
-//      veste esta columna. O registro é da columna e não da célulla, d'onde a
-//      columna inteira sahe da mesma familia, do pé ao topo.
+//   4. Não sendo nada d'isso, o GRADIENTE do painel, que é o violeta v500 em
+//      TODA columna. Era aqui que a côr do registro morava (issue #104), e a
+//      fita sahia arco-iris parado, que nada dizia da musica.
 // Note-se que sómente o ramo 4 consulta a linha, e sómente os ramos 1 a 3
 // consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
 // pode depender da magnitude nem por descuido.
-tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
-                               std::size_t altura, Registro registro) {
+tokens::Triade tinta_da_celula(float valor, bool mudo, bool quente,
+                               std::size_t desde_a_base, std::size_t altura,
+                               Registro registro) {
   if (mudo) return tokens::rgb(tokens::text_faint);
   if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
-  if (valor >= LIMIAR_QUENTE) return tokens::rgb(tokens::glow_hot);
-  return tinta_da_linha(desde_a_base, altura, registro);
+  if (quente) return tokens::rgb(tinta_do_registro(registro));
+  return tinta_da_linha(desde_a_base, altura);
 }
 
 }  // namespace
 
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
               std::size_t altura, bool mudo,
-              const std::vector<float>& centros_em_hertz) {
+              const std::vector<float>& centros_em_hertz,
+              const std::vector<float>& picos) {
   Quadro quadro;
   quadro.largura = largura;
   quadro.altura = altura;
@@ -263,6 +300,7 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
   for (std::size_t c = 0; c < largura; ++c) {
     quadro.registros[c] = registro_da_columna(centros, c, largura);
     const float valor = valor_da_columna(bandas, c, largura);
+    const bool quente = columna_quente(picos, valor, c, largura);
     const int degraus = oitavos(valor, altura);
     const std::size_t cheias =
         static_cast<std::size_t>(degraus / DEGRAUS_POR_CELULA);
@@ -282,8 +320,8 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
       celula.glifo = glifo_do_degrau(degrau);
-      celula.tinta =
-          tinta_da_celula(valor, mudo, i, altura, quadro.registros[c]);
+      celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura,
+                                     quadro.registros[c]);
       celula.pinta = true;
       // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
       // BASE para cima, que é como os blocos crescem; a linha do quadro conta do

@@ -576,6 +576,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // indice consultado a cada quadro seriam vinte perguntas por segundo ao
   // banco por uma cousa que sómente muda quando a faixa muda.
   tui::Ficha ficha;
+  // OS PICOS do espectro (issue #132): um por banda, e são o estado de que a
+  // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
+  // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou.
+  std::vector<float> picos;
+  std::chrono::steady_clock::time_point quadro_anterior =
+      std::chrono::steady_clock::now();
   // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
   // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
   // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
@@ -792,6 +798,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       livraria.acha_por_caminho(retracto.titulo, d_ella);
       ficha = tui::ficha_da_faixa(retracto.titulo, d_ella.titulo, d_ella.artista,
                                   d_ella.album);
+      // Os PICOS morrem com a faixa (issue #132): o pico da que sahiu accendia
+      // a primeira batida da que entra, e na côr da familia errada.
+      picos.clear();
     }
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
@@ -893,9 +902,21 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // nucleo assentou.
     static const std::vector<float> centros_em_hertz =
         tui::centros_da_escala(nucleo::QUANTAS_BANDAS);
-    const tui::Quadro quadro = tui::compor(tocador.bandas(), abaixo.largura,
+    // O TEMPO REAL do quadro (issue #132), e não os cincoenta milesimos do
+    // compasso: quadro que se atrasa derrubaria o pico de menos, e a meia-vida
+    // é conta de segundos. Calado, os picos zerão-se, que batida não ha no que
+    // se não ouve.
+    const std::chrono::steady_clock::time_point instante =
+        std::chrono::steady_clock::now();
+    const double lapso =
+        std::chrono::duration<double>(instante - quadro_anterior).count();
+    quadro_anterior = instante;
+    const std::vector<float> bandas = tocador.bandas();
+    if (retracto.mudo) picos.clear();
+    tui::avanca_picos(picos, bandas, lapso);
+    const tui::Quadro quadro = tui::compor(bandas, abaixo.largura,
                                            abaixo.altura, false,
-                                           centros_em_hertz);
+                                           centros_em_hertz, picos);
     // Tela estreita não pinta painel algum, e com elle vão-se a capa, o
     // espectro e a letra: roubar da pauta, que é onde se navega, para mostrar
     // arte seria trocar o que serve pelo que enfeita.
