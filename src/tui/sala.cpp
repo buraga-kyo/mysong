@@ -179,6 +179,36 @@ std::string nome_da_colleccao(Secao secao,
   return nome_do_catalogo.empty() ? "SPOTIFY" : nome_do_catalogo;
 }
 
+Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
+  Sala sala;
+  if (largura == 0 || altura == 0) return sala;
+  sala.cabecalho = {0, 0, largura, 1};
+  if (altura < 2) return sala;
+  sala.trilho = {0, 1, largura, 1};
+  std::size_t alto = 2;  // a primeira linha ainda por repartir
+  if (campo_aberto && altura > alto) {
+    sala.campo = {0, alto, largura, 1};
+    ++alto;
+  }
+  if (altura <= alto) return sala;
+  // O rodapé cede o logar quando não sobraria linha alguma ao corpo: dizer a
+  // tecla sem mostrar a lista é dar o caminho e fechar a porta.
+  std::size_t baixo = altura;
+  if (altura >= alto + 2) {
+    sala.rodape = {0, altura - 1, largura, 1};
+    baixo = altura - 1;
+  }
+  reparte_o_corpo(sala, largura, alto, baixo - alto);
+  return sala;
+}
+
+Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa) {
+  if (sala.painel.vazio()) return {};
+  const std::size_t tomadas = std::min(linhas_da_capa, sala.capa.altura);
+  return {sala.painel.x, sala.painel.y + tomadas, sala.painel.largura,
+          sala.painel.altura - tomadas};
+}
+
 Geometria geometria_da_sala(std::size_t largura, std::size_t altura,
                             std::size_t collunhas_da_barra) {
   Geometria geo;
