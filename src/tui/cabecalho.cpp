@@ -196,10 +196,14 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
       partes.push_back(vestir(pedaco.texto, pedaco.tinta, pedaco.fundo));
       continue;
     }
+    // O NEGRITO em todo segmento, e não sómente nas abas: a issue pede os
+    // rotulos «em caixa alta e em mono negrito», e o tempo, o volume, o
+    // EMBARALHAR e o REPETIR são rotulos como as abas o são. A junção não o
+    // leva, que ella é geometria e não palavra.
     ftxui::Element parte =
         qual < proprios.size() && proprios[qual] != nullptr
             ? proprios[qual]
-            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo);
+            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo) | ftxui::bold;
     if (qual < caixas.size() && caixas[qual] != nullptr)
       parte = parte | ftxui::reflect(*caixas[qual]);
     partes.push_back(std::move(parte));
