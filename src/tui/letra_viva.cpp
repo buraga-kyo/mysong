@@ -189,6 +189,52 @@ QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
   return quadro;
 }
 
+const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro) {
+  if (quadro.corrente < 0) return nullptr;
+  const std::size_t qual = static_cast<std::size_t>(quadro.corrente);
+  return qual < quadro.linhas.size() ? &quadro.linhas[qual] : nullptr;
+}
+
+Rectangulo caixa_da_corrente(const QuadroDaLetra& quadro) {
+  const LinhaViva* viva = linha_corrente_do_rio(quadro);
+  if (viva == nullptr) return {};
+  return {viva->collunha, viva->linha_da_tela,
+          glifos_da_linha(viva->texto).size(), 1};
+}
+
+std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
+                                       const QuadroDaLetra& letra) {
+  std::vector<CelulaDoRio> tapete(espectro.largura * espectro.altura);
+  // O ESPECTRO primeiro, inteiro: o rio não o apaga, cobre-o.
+  for (std::size_t l = 0; l < espectro.altura; ++l)
+    for (std::size_t c = 0; c < espectro.largura; ++c) {
+      const Celula& d_elle = espectro.em(l, c);
+      CelulaDoRio& n_ella = tapete[l * espectro.largura + c];
+      n_ella.glifo = d_elle.glifo;
+      n_ella.tinta = d_elle.tinta;
+      n_ella.pinta = d_elle.pinta;
+    }
+  // A LETRA por cima, e na ordem em que as linhas vêm: a de indice maior é a
+  // mais nova, e duas que cahiam na mesma linha da tela hão de deixar ver a que
+  // está a chegar, e não a que já se foi.
+  for (const LinhaViva& viva : letra.linhas) {
+    if (viva.linha_da_tela >= espectro.altura) continue;
+    std::size_t c = viva.collunha;
+    for (const std::string& glifo : glifos_da_linha(viva.texto)) {
+      if (c >= espectro.largura) break;
+      if (!e_branco(glifo)) {
+        CelulaDoRio& n_ella = tapete[viva.linha_da_tela * espectro.largura + c];
+        n_ella.glifo = glifo;
+        n_ella.tinta = tokens::rgb(viva.tinta);
+        n_ella.pinta = true;
+        n_ella.letra = true;
+      }
+      ++c;
+    }
+  }
+  return tapete;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
