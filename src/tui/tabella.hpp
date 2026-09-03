@@ -27,6 +27,7 @@
 #include "nucleo/capa.hpp"
 #include "nucleo/letra.hpp"
 #include "tui/navegador.hpp"
+#include "tui/rato.hpp"
 
 namespace mysong::tui {
 
@@ -136,11 +137,16 @@ std::string conselho_do_vazio(Secao secao, bool ha_termo);
 // se não pintou: a altura que sobra abaixo da lista não é alvo de clique algum,
 // e vista vazia limpa o vector. Quem lê o vector somma-lhe a `primeira` para ir
 // da linha visivel á linha da vista.
+// O ARRASTO (issue #153), quando ha faixa na mão: a linha d'ONDE ella sahiu
+// apaga-se, e a linha em que ella CAHIRIA veste o `raised`, que é o degrau de
+// repouso do chrome e se distingue do violeta da eleita. Punho nullo, que é o
+// padrão, pinta a tabella de sempre cella a cella.
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura,
                                    const std::string& tocando = {},
-                                   std::vector<ftxui::Box>* caixas = nullptr);
+                                   std::vector<ftxui::Box>* caixas = nullptr,
+                                   const Arrasto* arrasto = nullptr);
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
 // vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.

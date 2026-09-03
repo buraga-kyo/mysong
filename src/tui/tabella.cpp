@@ -294,7 +294,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura,
                                    const std::string& tocando,
-                                   std::vector<ftxui::Box>* caixas) {
+                                   std::vector<ftxui::Box>* caixas,
+                                   const Arrasto* arrasto) {
   // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
   // antecipada que deixasse as caixas do quadro anterior faria o clique
   // acertar linhas que já não estão na tela.
@@ -331,8 +332,22 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     // arquivo. Nas outras a chave é nome ou id, e ahi nada casa, que é o que se
     // quer: album algum «toca».
     const bool soa = !tocando.empty() && linha.chave == tocando;
+    // O ARRASTO (issue #153): a linha que está na MÃO apaga-se, que ella já não
+    // mora alli; a linha em que ella CAHIRIA veste o repouso do chrome, e é
+    // esse degrau que diz ao olho onde o dedo a larga.
+    const bool na_mao = arrasto != nullptr && arrasto->pegou && arrasto->andou &&
+                        i == arrasto->origem;
+    const bool sob_a_mao = arrasto != nullptr && arrasto->pegou &&
+                           arrasto->andou && i == arrasto->alvo;
     ftxui::Element pintada = elemento_da_linha(
-        pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura);
+        pedacos_da_linha(linha, medidas, maior, soa), eleita && !na_mao, soa,
+        largura);
+    if (na_mao) pintada = pintada | ftxui::dim;
+    if (sob_a_mao) {
+      const tokens::Triade cama = tokens::rgb(tokens::raised);
+      pintada = std::move(pintada) |
+                ftxui::bgcolor(ftxui::Color::RGB(cama.r, cama.g, cama.b));
+    }
     if (caixas != nullptr)
       pintada = pintada | ftxui::reflect((*caixas)[i - primeira]);
     linhas.push_back(std::move(pintada));
