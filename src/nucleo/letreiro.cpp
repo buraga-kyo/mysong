@@ -133,6 +133,38 @@ std::filesystem::path desfaz(const std::filesystem::path& meio) {
   return {};
 }
 
+// rasteriza — o pango-view DUAS vezes, e é aqui que a margem se cumpre: folga
+// não se adivinha sem medir, e a medida só apparece depois de a palavra estar
+// desenhada. As duas corridas dão-se UMA vez na vida do cache.
+//
+// Por TEMPORARIO e RENAME, pelo molde do arquivo da capa: o rename no mesmo
+// systema de arquivos é atomico, e resolve de graça a corrida entre duas
+// instancias do tocador sobre a mesma chapa.
+std::filesystem::path rasteriza(const Pedido& pedido) {
+  const std::filesystem::path onde = caminho_da_chapa_em_cache(pedido);
+  if (onde.empty()) return {};
+  std::error_code erro;
+  if (std::filesystem::is_regular_file(onde, erro) && !erro) return onde;
+  std::filesystem::create_directories(onde.parent_path(), erro);
+  if (erro) return {};
+  // O `.png` fica na PONTA do temporario: o pango-view escolhe o formato da
+  // sahida pela extensão, e nome acabado em `.parte` fal-o-hia recusar.
+  const std::filesystem::path meio =
+      onde.string() + "." + std::to_string(::getpid()) + ".parte.png";
+  if (corre(argumentos_do_letreiro(pedido, 0, meio), nullptr) != 0)
+    return desfaz(meio);
+  const std::size_t margem =
+      margem_da_chapa(medida_da_imagem(cabeca_do_arquivo(meio)),
+                      pedido.cellulas, CELLULA_DA_CASA);
+  // A segunda corrida sómente HAVENDO folga: chapa que já nasceu na proporção
+  // da caixa não tem o que corrigir, e tornar a correr seria gasto por nada.
+  if (margem > 0 &&
+      corre(argumentos_do_letreiro(pedido, margem, meio), nullptr) != 0)
+    return desfaz(meio);
+  std::filesystem::rename(meio, onde, erro);
+  return erro ? desfaz(meio) : onde;
+}
+
 }  // namespace
 
 }  // namespace mysong::nucleo
