@@ -560,6 +560,31 @@ TEST_CASE("a batida mede-se contra o pico da columna, com piso de meio") {
   CHECK(es::mesma_tinta(baixa.em(2, 0).tinta, rampa));
 }
 
+// Sem picos vale o TECTO, e é o que conserva verdadeiro quanto se affirmou
+// antes da issue #132: chamador que não guarda estado ha de ver o que sempre viu.
+TEST_CASE("sem picos a batida continua a medir-se pelo tecto absoluto") {
+  const std::vector<float> centros = centros_em(8000.0f);
+  // Seis decimos sem picos: FRIO, ainda que a banda esteja no proprio topo.
+  const es::Quadro sem = es::compor(bandas_uniformes(0.6f), 4, 3, false, centros);
+  CHECK(es::mesma_tinta(sem.em(2, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+  // E o tecto continua a accender, sem pico algum a governá-lo.
+  const es::Quadro tecto =
+      es::compor(bandas_uniformes(0.95f), 4, 3, false, centros);
+  CHECK(es::mesma_tinta(tecto.em(2, 0).tinta, tk::rgb(tk::data2)));
+}
+
+// O MUDO vence a batida, como vencia o quente: ordem do operador não se deixa
+// sobrepujar por leitura de sinal, e agora ha uma côr de familia a vencer.
+TEST_CASE("o mudo vence a côr da batida do registro") {
+  const std::vector<float> centros = centros_em(2000.0f);  // medios-agudos
+  const es::Quadro quadro = es::compor(bandas_uniformes(0.6f), 4, 3, true,
+                                       centros, bandas_uniformes(0.6f));
+  REQUIRE(quadro.em(2, 0).pinta);
+  CHECK(es::mesma_tinta(quadro.em(2, 0).tinta, tk::rgb(tk::text_faint)));
+  CHECK_FALSE(es::mesma_tinta(quadro.em(2, 0).tinta, tk::rgb(tk::data3)));
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
