@@ -998,44 +998,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;  // dentro do modo, tecla alguma sahe para fóra
     }
 
-    // O MENU DA BARRA (issue #80) trata DEPOIS do campo e ANTES da taboada
-    // geral, que é a ordem declarada no tractado d'elle. A tecla que a barra
-    // não conhece FECHA-A e segue ao fluxo de sempre, e é por isso que o ramo
-    // Alheio não retorna: o atalho vale na barra porque passa por aqui.
-    //
-    // E o Event::Custom NÃO passa por aqui. Elle é a batida do relogio, e não
-    // tecla de gente: cahindo no Alheio, FECHAVA o menu vinte vezes por
-    // segundo, donde com musica a tocar a barra não ficava aberta nem pelo Tab
-    // nem pela roda do rato. Medido n'um pty, e é o que descobre o rato: parado
-    // o tocador, a batida é rara e o defeito não apparecia.
-    if (menu.aberto() && tecla != ftxui::Event::Custom) {
-      switch (tui::gesto_da_barra(tecla)) {
-        case tui::GestoDaBarra::Fecha: menu.fecha(); return true;
-        case tui::GestoDaBarra::Sobe: menu.sobe(); return true;
-        case tui::GestoDaBarra::Desce: menu.desce(); return true;
-        case tui::GestoDaBarra::AoPrincipio: menu.ao_principio(); return true;
-        case tui::GestoDaBarra::AoFim: menu.ao_fim(); return true;
-        case tui::GestoDaBarra::Entra:
-          // O alvo pergunta-se á taboada com as listas na mão: a barra pinta-as
-          // e o degrau nomeia-as, e as duas hão de ler a MESMA conta.
-          entra_no_alvo(tui::alvo_do_degrau(menu.degrau(), navegador.rois()));
-          return true;  // sem chão avisa-se, e o foco FICA na barra
-        case tui::GestoDaBarra::Alheio:
-          menu.fecha();
-          break;  // e a tecla segue: faz o que sempre fez
-      }
-    }
-
-    // O Tab abre o menu com o degrau na secção corrente (issue #80). Trata-se
-    // aqui, e não na taboada geral: o foco não é ordem de tocador nem de
-    // navegador, e verbo de foco n'aquelle enum seria verbo que o cumprir()
-    // teria de fingir que não viu.
-    if (tui::tecla_abre_menu(tecla)) {
-      menu.abre(navegador.secao(), navegador.rois(),
-                navegador.rol_corrente());
-      return true;
-    }
-
     // A ordem vem do RATO quando o evento é do rato, e da tecla quando é da
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
