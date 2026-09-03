@@ -374,6 +374,23 @@ std::string cabeca_do_arquivo(const std::filesystem::path& caminho) {
   return cabeca;
 }
 
+// escreve_no_cache — a arte em arquivo UMA vez: o nome vem do CONTEUDO, d'onde
+// arquivo de mesmo nome já tem os octetos e não se torna a escrever.
+std::filesystem::path escreve_no_cache(std::string_view arte, bool* escreveu) {
+  const std::filesystem::path onde = caminho_da_capa_em_cache(arte);
+  if (onde.empty()) return {};
+  std::error_code erro;
+  if (std::filesystem::is_regular_file(onde, erro) && !erro) return onde;
+  std::filesystem::create_directories(onde.parent_path(), erro);
+  if (erro) return {};
+  std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
+  if (!sahida) return {};
+  sahida.write(arte.data(), static_cast<std::streamsize>(arte.size()));
+  if (!sahida.good()) return {};
+  *escreveu = true;
+  return onde;
+}
+
 }  // namespace
 
 const ArquivoDaCapa& Arquivario::de(const std::filesystem::path& faixa) {
@@ -384,6 +401,12 @@ const ArquivoDaCapa& Arquivario::de(const std::filesystem::path& faixa) {
   if (!faixa.empty()) achado.caminho = capa_ao_lado(faixa);
   if (!achado.caminho.empty()) {
     achado.medida = medida_da_imagem(cabeca_do_arquivo(achado.caminho));
+  } else if (!faixa.empty()) {
+    const std::string arte = arte_embutida(faixa);
+    bool escreveu = false;
+    achado.caminho = escreve_no_cache(arte, &escreveu);
+    if (escreveu) ++escriptos_;
+    if (!achado.caminho.empty()) achado.medida = medida_da_imagem(arte);
   }
   // A AUSENCIA guarda-se, pela regra da Galeria: sem ella, faixa sem capa
   // faria a Casa procurar no disco vinte vezes por segundo.
