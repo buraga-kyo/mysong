@@ -897,6 +897,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // nada ha que acordar, e noticia de foco tecla nenhuma dá.
     if (!vigilia.pede_batida() && tui::eh_tecla_de_gente(tecla))
       vigilia.ganha();
+    // O AVISO vale por UM gesto. Elle diz o DESFECHO do que se acabou de
+    // fazer, e a tecla seguinte apaga-o ANTES de correr, para que o ramo que
+    // ella tomar escreva o seu. Sem este prazo o aviso ficava pregado na chapa
+    // a sessão inteira, e comia o logar que a conta do recado reservaria ao
+    // andamento das baixas, que é obra em curso e não desfecho velho.
+    if (tui::eh_tecla_de_gente(tecla)) aviso_da_rede.clear();
     // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
     // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
     tui::Ordem ordem_do_rato;
