@@ -647,12 +647,16 @@ TEST_CASE("banda alguma se perde, em largura alguma") {
       bandas[b] = 1.0f;  // pico solitario: enche a columna que o contiver
       const es::Quadro quadro = es::compor(bandas, largura, 4);
 
-      // Alguma columna ha de subir ao TOPO (linha 0) com o bloco cheio. Se a
-      // repartição saltasse esta banda, columna alguma subiria, e a fita
-      // mostraria o pico de outra banda ou pico nenhum.
+      // Alguma columna ha de subir ao TOPO (linha 0) cheia. Se a repartição
+      // saltasse esta banda, columna alguma subiria, e a fita mostraria o pico
+      // de outra banda ou pico nenhum. O pico solitario é QUENTE, d'onde o
+      // glifo do topo é a PONTA d'elle (issue #139) e não o bloco; aceitam-se
+      // os dous, que o que se afere aqui é a repartição e não o remate.
       bool alguma_cheia = false;
       for (std::size_t c = 0; c < largura; ++c)
-        if (quadro.em(0, c).pinta && quadro.em(0, c).glifo == kCheio)
+        if (quadro.em(0, c).pinta &&
+            (quadro.em(0, c).glifo == kCheio ||
+             quadro.em(0, c).glifo == std::string(es::kPontaCheia)))
           alguma_cheia = true;
       CHECK(alguma_cheia);
     }
@@ -691,7 +695,10 @@ TEST_CASE("a columna que cobre pico e vale sahe pelo pico") {
   // columna 0 cobre as bandas 0 e 1, que são justamente o pico e o vale.
   const es::Quadro quadro = es::compor(bandas, 12, 4);
   CHECK(quadro.em(0, 0).pinta);
-  CHECK(quadro.em(0, 0).glifo == kCheio);
+  // O TOPO d'ella é ponta, e não bloco: a columna é quente (issue #139). Que
+  // ella subiu até ao alto lê-se na cella de baixo, que é bloco cheio.
+  CHECK(quadro.em(0, 0).glifo == std::string(es::kPontaCheia));
+  CHECK(quadro.em(1, 0).glifo == kCheio);
   // E a columna seguinte, que cobre as bandas 2 e 3, ambas em zero, fica no piso.
   CHECK(quadro.em(3, 1).glifo == kUm);
   CHECK(quadro.em(0, 1).pinta == false);
@@ -818,4 +825,56 @@ TEST_CASE("o piso do silencio sahe em text_faint com o bloco de um oitavo") {
   const es::Celula& piso = quadro.em(3, 0);
   REQUIRE(piso.pinta);
   CHECK(es::sequencia_da_celula(piso) == "\x1b[38;2;70;53;102m▁");
+}
+
+// A PONTA DA BATIDA (issue #139). A columna que accende na côr do registro
+// acaba n'uma ponta, e não em bloco chato; as frias, a muda e a de uma cella
+// ficam como estavam. A ponta SUBSTITUE o glifo do topo: a altura não muda.
+TEST_CASE("a columna quente acaba em ponta, e a fria acaba em bloco") {
+  std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
+  bandas[3] = 1.0f;   // teto cheio: quente, e o topo era bloco cheio
+  bandas[4] = 0.40f;  // fria
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                       false, centros_em(100.0f));
+  // A quente enche as cinco cellas: a do TOPO (linha zero) leva a ponta cheia,
+  // e as de baixo continuam blocos cheios.
+  CHECK(quadro.em(0, 3).glifo == std::string(es::kPontaCheia));
+  for (std::size_t l = 1; l < 5; ++l)
+    CHECK(quadro.em(l, 3).glifo == es::glifo_do_degrau(8));
+  // A ponta veste a MESMA côr da columna: ella é o topo da barra, e não peça
+  // á parte.
+  CHECK(es::mesma_tinta(quadro.em(0, 3).tinta, quadro.em(1, 3).tinta));
+  CHECK(es::mesma_tinta(quadro.em(0, 3).tinta,
+                        tk::rgb(es::tinta_do_registro(es::Registro::Graves))));
+  // A FRIA acaba em bloco, e a altura d'ella é a de sempre: duas cellas.
+  CHECK(quadro.em(3, 4).glifo == es::glifo_do_degrau(8));
+  CHECK(quadro.em(4, 4).glifo == es::glifo_do_degrau(8));
+  CHECK_FALSE(quadro.em(2, 4).pinta);
+}
+
+TEST_CASE("o topo parcial leva a ponta pequena, e a de uma cella não leva ponta") {
+  std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
+  // 0,95 de teto 40 dá 38 degraus: quatro cellas cheias e resto seis, d'onde a
+  // do topo é parcial e a ponta sae PEQUENA.
+  bandas[3] = 0.95f;
+  const es::Quadro alto = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                     false, centros_em(100.0f));
+  CHECK(alto.em(0, 3).glifo == std::string(es::kPontaRasa));
+  CHECK(alto.em(1, 3).glifo == es::glifo_do_degrau(8));
+  CHECK(es::glifo_da_ponta(8) == es::kPontaCheia);
+  CHECK(es::glifo_da_ponta(6) == es::kPontaRasa);
+  CHECK(es::glifo_da_ponta(1) == es::kPontaRasa);
+
+  // Painel de UMA linha: a columna tem uma cella só, e ponta sem corpo não é
+  // barra. Fica o bloco.
+  const es::Quadro raso = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 1,
+                                     false, centros_em(100.0f));
+  CHECK(raso.em(0, 3).glifo != std::string(es::kPontaCheia));
+  CHECK(raso.em(0, 3).glifo != std::string(es::kPontaRasa));
+
+  // E o MUDO vence a ponta, como vence a côr: fita calada não tem batida.
+  const es::Quadro calado = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                       true, centros_em(100.0f));
+  CHECK(calado.em(0, 3).glifo == es::glifo_do_degrau(6));
+  CHECK(es::mesma_tinta(calado.em(0, 3).tinta, tk::rgb(tk::text_faint)));
 }
