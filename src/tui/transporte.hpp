@@ -54,6 +54,10 @@ struct Retracto {
   // POSIÇÃO, e campo novo no meio faria cada uma d'ellas assentar n'outro logar.
   bool embaralhado = false;
   nucleo::Repeticao repeticao = nucleo::Repeticao::Nenhuma;
+  // O MUDO (issue #106), no FIM pela mesma razão que os dous modos. Anda ao
+  // lado do volume e não n'elle: volume zero por escolha do operador mostra o
+  // numero, e a Casa calada por ordem mostra a palavra.
+  bool mudo = false;
 };
 
 // mm_ss — segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não
