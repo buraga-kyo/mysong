@@ -299,19 +299,30 @@ TEST_CASE("o painel sem capa não abre fileira parasita") {
                  1)[0] == 'X');
 }
 
-TEST_CASE("nome comprido não empurra a barra nem o painel") {
-  // O `flex_shrink_x` do FTXUI nasce ZERO: pedindo o meio mais do que ha, o
-  // hbox cahe no encolhimento DURO e apara todos os irmãos por egual, ainda os
-  // que pedem largura EGUAL. Medido: sem o cinge, a barra cahia de nove a oito
-  // e o painel de trinta e nove a trinta e dous.
-  const int curto = collunha_de(sala_de("GEOGADDI"), 0, "T");
-  const int comprido = collunha_de(sala_de(std::string(120, 'N')), 0, "T");
-  CHECK(curto == 117);
-  CHECK(comprido == curto);
-  CHECK(linha_de(sala_de(std::string(120, 'N')), 0).substr(0, 11) ==
-        "BBBBBBBBB  ");
-  // E o nome comprido escreve-se até onde cabe, sem invadir o painel.
-  CHECK(linha_de(sala_de(std::string(120, 'N')), 1).substr(23, 4) == "NNNN");
+TEST_CASE("recado comprido não empurra a pauta nem o painel") {
+  // O `flex_shrink_x` do FTXUI nasce ZERO: pedindo a metade esquerda mais do
+  // que ha, o hbox cahe no encolhimento DURO e apara todos os irmãos por egual,
+  // ainda os que pedem largura EGUAL. Medido no cabeçalho da colleção velho:
+  // sem o cinge, a barra cahia de nove a oito e o painel de trinta e nove a
+  // trinta e dous. A chapa cinge-se com `size`, e é isto que o guarda.
+  tui::Chapa qual;
+  qual.onde = "MY SONG";
+  qual.quantas = 4;
+  qual.duracao = 840;
+  const auto sala_de = [&](const std::string& recado) {
+    tui::Chapa d_ella = qual;
+    d_ella.recado = recado;
+    return papel(ftxui::hbox({tui::elemento_da_chapa(d_ella, 60),
+                              tui::elemento_do_divisor(1),
+                              tui::elemento_do_painel(ftxui::text("P"),
+                                                      ftxui::emptyElement(),
+                                                      39)}),
+                 100, 1);
+  };
+  CHECK(collunha_de(sala_de(""), 0, "P") == 61);
+  CHECK(collunha_de(sala_de(std::string(120, 'R')), 0, "P") == 61);
+  CHECK(linha_de(sala_de(""), 0).substr(1, 7) == "MY SONG");
+  CHECK(linha_de(sala_de(std::string(120, 'R')), 0).substr(1, 7) == "MY SONG");
 }
 
 TEST_CASE("sómente tres secções trazem caminho de arquivo por chave") {
@@ -336,19 +347,6 @@ TEST_CASE("a ficha sem etiqueta cahe no nome do arquivo") {
   CHECK(posta.album == "Different");
   // Caminho vazio dá ficha vazia, que é o que diz «nada toca».
   CHECK(tui::ficha_da_faixa("", "Faded", "Alan Walker", "").titulo.empty());
-}
-
-TEST_CASE("a ficha vazia mede tres linhas e sahe apagada") {
-  const ftxui::Screen tela = papel(tui::elemento_da_ficha({}, 39), 39, 5);
-  CHECK(linha_de(tela, 0).substr(0, 11) == "(nada toca)");
-  CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::text_faint));
-  // Tres linhas, e não uma: sem ellas o espectro subiria e desceria a cada
-  // troca de faixa. A quarta fica intacta.
-  const ftxui::Screen painel = papel(
-      tui::elemento_do_painel({}, ftxui::emptyElement(), ftxui::text("BAIXO"),
-                              39),
-      39, 6);
-  CHECK(linha_de(painel, 4).substr(0, 5) == "BAIXO");
 }
 
 // O `l` troca o espectro pela letra, e a issue #92 promette o MESMO
