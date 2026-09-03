@@ -276,24 +276,44 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;  // acima do limiar: quente
   bandas[4] = 0.40f;  // abaixo: fria, e no gradiente
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
-                                       false, centros_em(100.0f));
+  // Setenta e uma collunhas: uma BARRA por banda (issue #144). Sem isto a barra
+  // fundiria a banda 3 com a 4, e as duas deixarião de se aferir uma contra a
+  // outra, que é justamente o que este caso quer.
+  const es::Quadro quadro =
+      es::compor(bandas, kUmaBarraPorBanda, 5, false, centros_em(100.0f));
 
-  // A columna 3: teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e resto 6,
-  // d'onde cinco célullas, todas em glow_hot, da base ao topo.
-  for (std::size_t l = 0; l < 5; ++l) {
-    REQUIRE(quadro.em(l, 3).pinta);
-    CHECK(es::mesma_tinta(quadro.em(l, 3).tinta, tk::rgb(tk::glow_hot)));
+  // A BARRA 3, que toma as collunhas 9 e 10 (trez por passo, e a primeira é
+  // trez vezes trez): teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e
+  // resto 6, d'onde cinco célullas, todas em glow_hot, da base ao topo, e nas
+  // DUAS collunhas d'ella.
+  const es::Barra quente = es::collunhas_da_barra(3, quadro.largura);
+  REQUIRE(quente.primeira == 9);
+  REQUIRE(quente.collunhas == 2);
+  for (std::size_t k = 0; k < quente.collunhas; ++k)
+    for (std::size_t l = 0; l < 5; ++l) {
+      REQUIRE(quadro.em(l, quente.primeira + k).pinta);
+      CHECK(es::mesma_tinta(quadro.em(l, quente.primeira + k).tinta,
+                            tk::rgb(tk::glow_hot)));
+    }
+
+  // O VÃO que segue a barra quente, a collunha 11, NÃO pinta em linha alguma: o
+  // quente veste a BARRA, e não o respiro que a aparta da visinha.
+  for (std::size_t l = 0; l < 5; ++l)
+    CHECK(quadro.em(l, quente.primeira + 2).pinta == false);
+
+  // A BARRA 4, nas collunhas 12 e 13: 0,40 vezes 40 = 16 degraus, dous cheios e
+  // resto zero, d'onde duas célullas, e no GRADIENTE. A base na rampa composta
+  // sobre o painel, e não em glow_hot.
+  const es::Barra fria = es::collunhas_da_barra(4, quadro.largura);
+  REQUIRE(fria.primeira == 12);
+  for (std::size_t k = 0; k < fria.collunhas; ++k) {
+    const std::size_t c = fria.primeira + k;
+    REQUIRE(quadro.em(4, c).pinta);
+    CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+    CHECK_FALSE(es::mesma_tinta(quadro.em(4, c).tinta, tk::rgb(tk::glow_hot)));
+    CHECK(quadro.em(2, c).pinta == false);
   }
-
-  // A columna 4: 0,40 vezes 40 = 16 degraus, dous cheios e resto zero, d'onde
-  // duas célullas, e no GRADIENTE. A base na côr do registro composta sobre o
-  // painel, e não em glow_hot.
-  REQUIRE(quadro.em(4, 4).pinta);
-  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta,
-                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
-  CHECK_FALSE(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::glow_hot)));
-  CHECK(quadro.em(2, 4).pinta == false);
 }
 
 // O limiar pertence ao quente: afere-se nos DOUS lados d'elle, que é onde o
