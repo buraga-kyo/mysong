@@ -407,6 +407,51 @@ std::vector<std::int64_t> ordens(const nu::Biblioteca& livraria) {
 }
 }  // namespace
 
+TEST_CASE("o banco de hontem migra e a ordem sahe como hontem se via") {
+  const Cova cova;
+  banco_de_hontem(cova.banco(),
+                  {faz("Bach", "Cravo Bem Temperado", "Fuga", 2),
+                   faz("Ada Lovelace", "Notas de Menabrea", "Traducção", 1),
+                   faz("Ada Lovelace", "Máquina Analítica", "Tear", 3),
+                   faz("Ada Lovelace", "Máquina Analítica", "Nota G", 7)});
+  const nu::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.aberta());
+  CHECK(livraria.versao() == nu::kVersaoDoEsquema);
+  // Artista, album, numero e titulo: a ordem que a tela mostrava hontem, e que
+  // o acervo de quem já nos usa não ha de ver baralhada ao abrir.
+  const std::vector<std::string> alvo = {
+      "/acervo/Ada Lovelace/Máquina Analítica/Tear.mp3",
+      "/acervo/Ada Lovelace/Máquina Analítica/Nota G.mp3",
+      "/acervo/Ada Lovelace/Notas de Menabrea/Traducção.mp3",
+      "/acervo/Bach/Cravo Bem Temperado/Fuga.mp3"};
+  CHECK(livraria.ordem_das_faixas() == alvo);
+  CHECK(ordens(livraria) == std::vector<std::int64_t>{0, 1, 2, 3});
+}
+
+TEST_CASE("mover ao principio, ao fim e ao meio deixa a ordem contigua") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  const std::vector<std::string> entrada = livraria.ordem_das_faixas();
+  REQUIRE(entrada.size() == 4u);
+  const std::vector<std::int64_t> contigua = {0, 1, 2, 3};
+  const std::string fuga = entrada[3], tear = entrada[0];
+  CHECK(livraria.move_faixa(fuga, 0));
+  CHECK(livraria.ordem_das_faixas()[0] == fuga);
+  CHECK(ordens(livraria) == contigua);
+  CHECK(livraria.move_faixa(fuga, 3));
+  CHECK(livraria.ordem_das_faixas()[3] == fuga);
+  CHECK(ordens(livraria) == contigua);
+  CHECK(livraria.move_faixa(tear, 2));
+  CHECK(livraria.ordem_das_faixas()[2] == tear);
+  CHECK(ordens(livraria) == contigua);
+  // Mover para o logar em que já está é verdadeiro, e não mexe em nada.
+  const std::vector<std::string> parada = livraria.ordem_das_faixas();
+  CHECK(livraria.move_faixa(tear, 2));
+  CHECK(livraria.ordem_das_faixas() == parada);
+  CHECK_FALSE(livraria.move_faixa("/acervo/nunca/entrou.mp3", 0));
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
