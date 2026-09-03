@@ -64,6 +64,17 @@ struct Parecer {
 // programa não é palpite nenhum, e nem o `Sim` a atravessa: o exec falharia.
 Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa);
 
+// ha_display e versao_da_lousa — as duas perguntas ao MUNDO, e por isso á parte
+// do parecer. A segunda corre `ueberzugpp --version` e devolve o que elle disse
+// («ueberzugpp 2.9.8» n'esta machina), ou vazio quando o programa não está: uma
+// chamada responde ás duas cousas que o diagnostico precisa de saber.
+bool ha_display();
+std::string versao_da_lousa();
+
+// texto_da_lousa — a linha do --sonda, e pura pelo precedente do
+// texto_dos_ajustes: escape algum sahe d'aqui.
+std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
