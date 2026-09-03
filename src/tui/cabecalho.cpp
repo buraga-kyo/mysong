@@ -48,6 +48,13 @@ inline constexpr std::string_view kMudo = "\U000f075f";
 // faixa vae.
 inline constexpr std::string_view kTraco = "\u2501";
 
+// Quantas cellas o rotulo põe ADEANTE da palavra e ATRAZ d'ella: o espaço, o
+// glifo e o espaço de um lado, o espaço do outro. Vivem ao pé do
+// `rotulo_da_aba`, que é quem as escreve, e a bateria prende as duas contra
+// uma linha do cabeçalho pintada em papel.
+inline constexpr int kFlancoDoRotulo = 3;
+inline constexpr int kCaudaDoRotulo = 1;
+
 Secao secao_da_aba(Aba aba) noexcept {
   switch (aba) {
     case Aba::Playlists: return Secao::Rois;
@@ -242,15 +249,34 @@ PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept {
   return {tokens::text_primary, tokens::raised};
 }
 
-std::string rotulo_da_aba(Aba aba) {
-  // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
-  // rotulo como se ha de mostrar, e não lh'a accrescenta ás escondidas.
+std::string palavra_da_aba(Aba aba) {
   switch (aba) {
-    case Aba::Playlists: return " " + std::string(kListas) + " PLAYLISTS ";
-    case Aba::Download: return " " + std::string(kBaixa) + " DOWNLOAD ";
+    case Aba::Playlists: return "PLAYLISTS";
+    case Aba::Download: return "DOWNLOAD";
     case Aba::MySong: break;
   }
-  return " " + std::string(kNota) + " MY SONG ";
+  return "MY SONG";
+}
+
+std::string rotulo_da_aba(Aba aba) {
+  // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
+  // rotulo como se ha de mostrar, e não lh'a accrescenta ás escondidas. E é
+  // CONSTANTE de proposito: tres cellas adeante e uma atraz em toda aba, que é
+  // o que faz a caixa da palavra sahir da do segmento por subtracção.
+  std::string_view glifo = kNota;
+  switch (aba) {
+    case Aba::Playlists: glifo = kListas; break;
+    case Aba::Download: glifo = kBaixa; break;
+    case Aba::MySong: break;
+  }
+  return " " + std::string(glifo) + " " + palavra_da_aba(aba) + " ";
+}
+
+ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept {
+  ftxui::Box palavra = segmento;
+  palavra.x_min += kFlancoDoRotulo;
+  palavra.x_max -= kCaudaDoRotulo;
+  return palavra.x_max >= palavra.x_min ? palavra : caixa_por_pintar();
 }
 
 ftxui::Element elemento_da_aba(Aba aba, bool corrente) {

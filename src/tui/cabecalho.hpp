@@ -84,6 +84,17 @@ struct PinturaDaAba {
 // pintura_da_aba — o par de côres de cada degrau, e o UNICO logar que o diz.
 PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept;
 
+// palavra_da_aba — a palavra de MARCA sósinha, sem o glifo e sem a guarnição.
+// É ella, e sómente ella, que sahe em XIROD: a chapa não cobre o icone nem as
+// setas da fita, que aquelle é glifo da fonte do terminal e estas são junção.
+std::string palavra_da_aba(Aba aba);
+
+// caixa_da_palavra — as cellas da PALAVRA dentro da caixa do segmento. Tira o
+// flanco que o `rotulo_da_aba` põe adeante (o espaço, o glifo, o espaço) e o
+// espaço que põe atraz; caixa por pintar, ou segmento sem palavra que sobre,
+// responde VAZIA, e ahi o pintor não tem chapa que pôr.
+ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept;
+
 // rotulo_da_aba — a palavra da aba com o seu glifo e a guarnição dos flancos.
 // UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a
 // pintura d'esta palavra, e rotulo espalhado por dous ramos dar-lhe-hia duas
