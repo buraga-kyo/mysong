@@ -181,8 +181,14 @@ bool Lousa::tira(std::string_view identidade) noexcept {
   const std::string chave(identidade);
   // O que não está posto não se tira: mandar `remove` de uma identidade que
   // nunca se poz seria uma linha por quadro na faixa sem capa alguma.
-  if (postas_.erase(chave) == 0) return true;
-  return escreve(ordem_de_tirar(identidade));
+  if (postas_.find(chave) == postas_.end()) return true;
+  // ESCREVE-SE primeiro, e apaga-se DEPOIS, pela assymetria que o `poe` já
+  // guardava. Apagando antes, a escripta que cahisse em cano cheio perdia o
+  // `remove` para sempre, que a taboa já não sabia haver cousa posta: a
+  // imagem ficava na tela e chamador algum tornava a pedil-a de volta.
+  if (!escreve(ordem_de_tirar(identidade))) return false;
+  postas_.erase(chave);
+  return true;
 }
 
 void Lousa::tira_tudo() noexcept {
