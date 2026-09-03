@@ -268,11 +268,14 @@ namespace {
 // consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
 // pode depender da magnitude nem por descuido.
 tokens::Triade tinta_da_celula(float valor, bool mudo, bool quente,
-                               std::size_t desde_a_base, std::size_t altura,
-                               Registro registro) {
+                               bool no_topo, std::size_t desde_a_base,
+                               std::size_t altura) {
   if (mudo) return tokens::rgb(tokens::text_faint);
   if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
-  if (quente) return tokens::rgb(tinta_do_registro(registro));
+  // A BATIDA accende o ROSA na ULTIMA cella, e sómente n'ella (issue #167): a
+  // columna inteira em côr era o que havia, e elle quiz de volta a fita
+  // violeta com a ponta accesa. As côres por familia sahiram com ellas.
+  if (quente && no_topo) return tokens::rgb(tokens::glow_hot);
   return tinta_da_linha(desde_a_base, altura);
 }
 
@@ -320,8 +323,11 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
       celula.glifo = glifo_do_degrau(degrau);
-      celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura,
-                                     quadro.registros[c]);
+      // A ULTIMA cella da columna (issue #167): é n'ella, e sómente n'ella, que
+      // a batida forte accende o rosa.
+      const bool no_topo = i + 1 == desenhadas;
+      celula.tinta =
+          tinta_da_celula(valor, mudo, quente, no_topo, i, altura);
       celula.pinta = true;
       // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
       // BASE para cima, que é como os blocos crescem; a linha do quadro conta do

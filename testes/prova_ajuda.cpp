@@ -143,18 +143,22 @@ TEST_CASE("o rotulo da tecla diz o nome de gente de cada uma") {
 
 TEST_CASE("a legenda do espectro tira as côres e os hertz do proprio espectro") {
   const std::vector<tui::AmostraDaAjuda> legenda = tui::legenda_do_espectro();
-  REQUIRE(legenda.size() == 6);  // a barra, os quatro registros e o mudo
+  REQUIRE(legenda.size() == 7);  // a barra, a batida, os quatro e o mudo
   CHECK(legenda[0].rotulo == "A BARRA");
-  CHECK(legenda[1].rotulo == std::string(tui::nome_do_registro(tui::Registro::Graves)));
-  CHECK(legenda[1].faixa == "40 Hz a 250 Hz");
-  CHECK(legenda[2].faixa == "250 Hz a 1 kHz");
-  CHECK(legenda[3].faixa == "1 kHz a 4 kHz");
-  CHECK(legenda[4].faixa == "4 kHz a 16 kHz");
-  CHECK(cor(legenda[2].tinta) ==
-        cor(tui::tinta_do_registro(tui::Registro::MediosGraves)));
-  CHECK(cor(legenda[4].tinta) == cor(tui::tinta_do_registro(tui::Registro::Agudos)));
-  CHECK(legenda[5].rotulo == "MUDO");
-  CHECK(cor(legenda[5].tinta) == cor(tk::text_faint));
+  // A BATIDA tem côr propria, e é UMA (issue #167): o rosa, em toda familia.
+  CHECK(legenda[1].rotulo == "A BATIDA");
+  CHECK(cor(legenda[1].tinta) == cor(tk::glow_hot));
+  // Os quatro registros entram a seguir, com os hertz d'elles e SEM côr
+  // propria (issue #167): o que elles dizem é onde cada columna sôa.
+  CHECK(legenda[2].rotulo == std::string(tui::nome_do_registro(tui::Registro::Graves)));
+  CHECK(legenda[2].faixa == "40 Hz a 250 Hz");
+  CHECK(legenda[3].faixa == "250 Hz a 1 kHz");
+  CHECK(legenda[4].faixa == "1 kHz a 4 kHz");
+  CHECK(legenda[5].faixa == "4 kHz a 16 kHz");
+  CHECK(cor(legenda[3].tinta) == cor(tk::text_body));
+  CHECK(cor(legenda[5].tinta) == cor(tk::text_body));
+  CHECK(legenda[6].rotulo == "MUDO");
+  CHECK(cor(legenda[6].tinta) == cor(tk::text_faint));
 }
 
 TEST_CASE("a medida reparte as collunhas pela largura, e cede na tela baixa") {
@@ -281,8 +285,10 @@ TEST_CASE("a janella pinta-se ao centro, com o titulo, a orla e a legenda") {
   CHECK(tela.PixelAt(caixa.x_min + 2, caixa.y_min + 2).foreground_color == cor(tk::glow_soft));
   CHECK(tela.PixelAt(caixa.x_min + 2 + 17, caixa.y_min + 2).foreground_color == cor(tk::text_body));
   // As amostras da legenda levam as côres do espectro, e o rodapé diz como fechar.
-  CHECK(ha_cella_com(tela, cor(tui::tinta_do_registro(tui::Registro::MediosGraves))));
-  CHECK(ha_cella_com(tela, cor(tui::tinta_do_registro(tui::Registro::Agudos))));
+  // A legenda mostra a barra violeta e a batida rosa, que são as duas côres
+  // que a fita tem (issue #167).
+  CHECK(ha_cella_com(tela, cor(tk::v500)));
+  CHECK(ha_cella_com(tela, cor(tk::glow_hot)));
   CHECK(pedaco(tela, 0, 167, caixa.y_max - 1).find("Esc ou ? fecha") != std::string::npos);
   // Fóra da janella a tela ficou por pintar: o dbox põe-na por cima do corpo.
   CHECK(tela.PixelAt(0, caixa.y_min).background_color != cor(tk::panel));

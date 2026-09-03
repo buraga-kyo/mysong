@@ -70,10 +70,11 @@ struct AmostraDaAjuda {
   std::string nota;
 };
 
-// legenda_do_espectro — a barra e os quatro registros com a côr da batida
-// forte de cada um, mais o mudo. As côres vêm de `tinta_do_registro` e os
-// hertz das fronteiras de tui/espectro.hpp: legenda escripta á mão divergiria
-// da tela no dia em que um token mudasse.
+// legenda_do_espectro — a barra violeta, o topo em rosa na batida forte, e os
+// quatro registros com os hertz d'elles, SEM côr propria (issue #167): a fita
+// tem UMA côr de batida, e é o rosa. Os hertz vêm das fronteiras de
+// tui/espectro.hpp: legenda escripta á mão divergiria da tela no dia em que uma
+// fronteira mudasse.
 std::vector<AmostraDaAjuda> legenda_do_espectro();
 
 // O ESTADO da ajuda: aberta ou não, e quanto se rolou. Valores, e não punho:
