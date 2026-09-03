@@ -7,6 +7,8 @@
 
 #include <utility>
 
+#include <ftxui/screen/string.hpp>
+
 #include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
 
@@ -19,43 +21,54 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// rabo — o FIM da cadeia, em `largura` collunhas, contando CODEPOINTS: é o
-// par do `apara` da tabella, que guarda o começo. Aqui guarda-se o fim, que é
-// o que o operador acabou de teclar; e contando bytes, termo acentuado sahiria
-// cortado ao meio de um codepoint.
+// collunhas — a conta de COLLUNHAS, e não de codepoints. O glifo largo (CJK,
+// emoji) vale DUAS, e contá-lo por uma punha o caret uma collunha ALÉM da
+// ultima: o FTXUI conta ahi `dimx - 1 - cursor_.x` e manda `ESC[-1D`, que é
+// escape mal formado a sahir ao terminal do operador. Até a issue #102 a folga
+// de quatro collunhas da orla o engolia; a tela nova não tem orla.
+std::size_t collunhas(const std::string& crua) {
+  const int medida = ftxui::string_width(crua);
+  return medida < 0 ? 0 : static_cast<std::size_t>(medida);
+}
+
+// larga_a_letra — as collunhas do codepoint que começa em `i` e acaba em `fim`.
+std::size_t larga_a_letra(const std::string& crua, std::size_t i,
+                          std::size_t fim) {
+  return collunhas(crua.substr(i, fim - i));
+}
+
+// rabo — o FIM da cadeia, em `largura` COLLUNHAS: é o par do `apara` da
+// tabella, que guarda o começo. Aqui guarda-se o fim, que é o que o operador
+// acabou de teclar.
 std::string rabo(const std::string& crua, std::size_t largura) {
-  std::size_t contadas = 0;
+  std::size_t gastas = 0, fim = crua.size();
   for (std::size_t i = crua.size(); i > 0;) {
     --i;
-    if ((static_cast<unsigned char>(crua[i]) & 0xC0) != 0x80) {
-      if (contadas == largura) return crua.substr(i + 1);
-      ++contadas;
-    }
+    if ((static_cast<unsigned char>(crua[i]) & 0xC0) == 0x80) continue;
+    const std::size_t vale = larga_a_letra(crua, i, fim);
+    if (gastas + vale > largura) return crua.substr(fim);
+    gastas += vale;
+    fim = i;
   }
   return crua;
 }
 
-// cabeca — o COMEÇO da cadeia, nas mesmas collunhas contadas por CODEPOINT: o
-// par do `rabo`, para o rotulo que se apara á direita quando nem elle cabe. Do
-// rotulo é o começo que diz o officio; do termo, o fim é o que se acabou de
-// teclar.
+// cabeca — o COMEÇO da cadeia, nas mesmas COLLUNHAS: o par do rabo, para o
+// rotulo que se apara á direita quando nem elle cabe. Do rotulo é o começo que
+// diz o officio; do termo, o fim é o que se acabou de teclar.
 std::string cabeca(const std::string& crua, std::size_t largura) {
-  std::size_t contadas = 0;
-  for (std::size_t i = 0; i < crua.size(); ++i)
-    if ((static_cast<unsigned char>(crua[i]) & 0xC0) != 0x80) {
-      if (contadas == largura) return crua.substr(0, i);
-      ++contadas;
-    }
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < crua.size();) {
+    std::size_t fim = i + 1;
+    while (fim < crua.size() &&
+           (static_cast<unsigned char>(crua[fim]) & 0xC0) == 0x80)
+      ++fim;
+    const std::size_t vale = larga_a_letra(crua, i, fim);
+    if (gastas + vale > largura) return crua.substr(0, i);
+    gastas += vale;
+    i = fim;
+  }
   return crua;
-}
-
-// codepoints — a conta de collunhas da cadeia, pela regra do rabo e da cabeca:
-// byte que não é continuação UTF-8 conta uma.
-std::size_t codepoints(const std::string& crua) {
-  std::size_t contadas = 0;
-  for (const char c : crua)
-    if ((static_cast<unsigned char>(c) & 0xC0) != 0x80) ++contadas;
-  return contadas;
 }
 
 // O CARET: a cella de UMA collunha onde o cursor do terminal pousa, na posição
@@ -129,7 +142,7 @@ ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
   if (modo == Modo::Nada) return ftxui::emptyElement();
   const std::string rotulo = rotulo_do_prompt(modo, contexto);
   const std::size_t cabe = largura > 3 ? largura - 3 : 1;
-  const std::size_t do_rotulo = codepoints(rotulo);
+  const std::size_t do_rotulo = collunhas(rotulo);
   const std::string mostra =
       aceita_letra(modo) && do_rotulo + 1 < cabe
           ? rotulo + " " + rabo(termo, cabe - do_rotulo - 1)
