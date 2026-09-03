@@ -134,6 +134,12 @@ std::size_t cellas_dos(const std::vector<tui::Pedaco>& pedacos) {
   return total;
 }
 
+std::string dito(const std::vector<tui::Pedaco>& pedacos) {
+  std::string feita;
+  for (const tui::Pedaco& pedaco : pedacos) feita += pedaco.texto;
+  return feita;
+}
+
 tui::Linha faixa_de(const std::string& texto, const std::string& autor,
                     int numero, int duracao) {
   tui::Linha feita;
@@ -161,6 +167,35 @@ TEST_CASE("a somma das columnas da linha É a largura da pauta") {
       CHECK(cellas_dos(tui::pedacos_da_linha(qual, nomes, 12, false)) == quanto);
     }
   }
+}
+
+TEST_CASE("a linha da pauta diz numero, titulo, artista, régua e tempo") {
+  const tui::Medidas medidas = tui::medidas_da_pauta(59, true, false);
+  const tui::Linha qual =
+      faixa_de("Montagem Lunar Celestia 1.0", "TOKYOPHILE", 4, 96);
+  const std::string linha = dito(tui::pedacos_da_linha(qual, medidas, 267, false));
+  CHECK(linha.substr(0, 5) == "    4");  // a cella do ▶ vazia, e o № á direita
+  // O titulo de vinte e sete cellas n'uma columna de vinte e quatro: corta-se,
+  // e a reticencia diz que se cortou.
+  CHECK(linha.find("Montagem Lunar Celestia\u2026") != std::string::npos);
+  CHECK(linha.find("TOKYOPHILE") != std::string::npos);
+  // Noventa e seis segundos de duzentos e sessenta e sete: duas cellas de seis.
+  CHECK(linha.find("\u25b0\u25b0\u25b1\u25b1\u25b1\u25b1") != std::string::npos);
+  CHECK(linha.find("01:36") != std::string::npos);
+  // A que SÔA leva o «▶» na cella d'elle, e NÃO perde o numero.
+  const std::vector<tui::Pedaco> soando =
+      tui::pedacos_da_linha(qual, medidas, 267, true);
+  CHECK(dito(soando).substr(0, 7) == " \u25b6  4");
+  namespace tk = mysong::tui::tokens;
+  for (const tui::Pedaco& pedaco : soando)
+    if (pedaco.negrito) CHECK(pedaco.tinta == tk::glow_soft);
+  // A vista que CONTA nomes: o nome, a conta de faixas, e a régua pela conta.
+  const tui::Medidas nomes = tui::medidas_da_pauta(40, false, true);
+  const std::string nome =
+      dito(tui::pedacos_da_linha(faixa_de("MXZI", "", 12, 0), nomes, 24, false));
+  CHECK(nome.find("MXZI") != std::string::npos);
+  CHECK(nome.find("  12") != std::string::npos);
+  CHECK(nome.find("\u25b0\u25b0\u25b0\u25b1\u25b1\u25b1") != std::string::npos);
 }
 
 TEST_CASE("as columnas da pauta cedem por ordem de serviço") {
