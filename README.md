@@ -414,7 +414,7 @@ d'esta Casa e uma fita de abas, a maneira da topbar do RADICAL-OS.
 ```
  MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃      a capa, e por baixo d'ella o espectro
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- 󰐊  󰒮  󰒭     Montagem Lunar Celestia     󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD     00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
+ 󰐊  󰒮  󰒭     Montagem Lunar Celestia     󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD     00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR  󰋗 HELP
                                                            (a segunda linha da fita, com o mesmo fundo)
 ```
 
@@ -425,10 +425,11 @@ botoes do transporte e o nome do que soa, cortado com «…» quando nao cabe. A
 CENTRO EXACTO o grupo das tres abas, a corrente em bloco solido e as outras
 em repouso: a collunha em que o grupo principia e a largura da fita menos a
 largura d'elle, a dividir por dous, donde elle NAO se move quando a faixa
-muda. A direita o tempo, o volume, o EMBARALHAR e o REPETIR.
+muda. A direita o tempo, o volume, o EMBARALHAR, o REPETIR e o HELP.
 
 Apertando a tela, quem cede sao as PONTAS, e por esta ordem: primeiro o nome
-corta, depois o REPETIR, depois o EMBARALHAR, depois o tempo; sómente quando
+corta, depois o HELP (o `?` continua a abri-lo), o REPETIR, o EMBARALHAR e o
+tempo; sómente quando
 nem assim cabe e que o grupo deixa o centro e se encosta. As abas ficam
 sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz,
 e clicar em qualquer cella do segmento vale o mesmo; clicar no trilho busca a
@@ -443,9 +444,9 @@ Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
 «▸» (`PLAYLISTS ▸ Funk lento`). A direita d'ella vao os recados: a lista alvo,
 o filtro posto, a varredura em curso, o andamento das baixas.
 
-No pé, uma linha de dicas com as teclas mais usadas, e a palavra README a
-dizer que o resto esta aqui: a linha cabe em cento e vinte collunhas, e a
-taboada inteira nao cabe em linha alguma.
+No pé, uma linha de dicas com as teclas mais usadas, e `? HELP` a dizer que a
+taboada inteira esta a uma tecla de distancia: a linha cabe em cento e vinte
+collunhas, e a taboada inteira nao cabe em linha alguma.
 
 Abaixo de CEM collunhas o painel some e a pauta toma a tela toda. A capa nunca
 passa de quarenta e cinco por cento da altura do painel, e o espectro toma o
@@ -500,6 +501,7 @@ d'aquelle logar em vez de mandar varrer.
 | F6 / F7 / F8 | faixa anterior, pausa e retoma, faixa seguinte |
 | F9 | cala o som e devolve-o com o volume que havia |
 | F10 / F11 | volume, por degrau de cinco |
+| `?` ou F1 | abre e fecha o HELP: a janella com todos os atalhos e a legenda do espectro |
 | `z` | liga e desliga o embaralhar |
 | `x` | cicla o repetir: nenhuma, uma, todas |
 | `↑` `↓` `←` `→` | anda pelo LAYOUT: leva o foco de peça em peça |
@@ -529,6 +531,26 @@ d'aquelle logar em vez de mandar varrer.
 | `m` | abre o menu de contexto sobre a faixa eleita |
 | `q` | sahe |
 
+### O HELP
+
+O ultimo segmento da fita, a direita do REPETIR, diz HELP. Clicar n'elle,
+levar-lhe o foco e carregar Enter, ou carregar `?` (ou F1) em qualquer logar,
+abre ao centro da tela uma janella com TODOS os atalhos, em grupos: TOCADOR,
+NAVEGAÇÃO, FAIXA, PLAYLISTS, DOWNLOAD e RATO. Ao lado, a legenda do ESPECTRO:
+a barra violeta, e as quatro cores da batida forte por registro, pintadas nas
+cores de verdade, com os hertz de cada um e o que costuma morar ali.
+
+A janella flutua por cima do corpo e nao lhe toca no estado: fechada, a lista
+esta como estava. Fecham-na Escape, `?`, F1, Enter, Backspace, `q` e o clique
+fora d'ella. Emquanto esta aberta, tecla alguma passa ao tocador nem a lista.
+Em tela larga a taboada sae em tres collunhas; em tela estreita em duas ou
+n'uma, e quando a altura nao chega a janella rola pelas setas, pelo `j` e `k`,
+pelo PgUp e PgDn e pela roda do rato.
+
+A taboada do HELP nasce de uma funcçao pura, e a bateria confere que toda
+tecla que as taboadas conhecem esta dita n'ella: atalho novo que nao entre no
+HELP falha a bateria em vez de ficar escondido.
+
 ### As setas andam pelo layout
 
 As quatro setas servem a UMA cousa: levar o foco de peça em peça. Ellas nao
@@ -536,7 +558,7 @@ voltam degrau nem entram em degrau algum; voltar e Escape ou Backspace, entrar
 e Enter.
 
 Sao peças focaveis as tres abas, os tres botoes do transporte, o volume, o
-EMBARALHAR, o REPETIR, o trilho do progresso, a pauta e a capa. A peça com foco
+EMBARALHAR, o REPETIR, o HELP, o trilho do progresso, a pauta e a capa. A peça com foco
 accende: no cabecalho, o segmento veste glow_core com o texto em panel, que e
 par distincto do violeta da aba em que se ESTA; a capa ganha um quadro da mesma
 cor; o trilho accende o que ja andou. Estando a lousa de pe, a chapa em XIROD
@@ -586,7 +608,8 @@ faixa elege-a, e clicar
 na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
 no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
 clique no volume cala a Casa e devolve-lhe o volume inteiro, o clique na capa
-pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
+pausa e retoma, o clique no HELP abre a ajuda, e a roda anda tres linhas na
+pauta. Sobre o
 cabecalho a roda fica muda: n'uma fita de tres abas ella trocaria de seccao por
 acaso, com o dedo a caminho de outra peca. O botao direito n'uma faixa abre o
 menu de contexto d'ella, que a seccao abaixo descreve. Dentro do tmux, isto pede

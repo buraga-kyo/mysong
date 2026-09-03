@@ -58,6 +58,7 @@ tui::CaixasDaTela tela_de_mentira() {
   alto.volume = {76, 84, 0, 0};
   alto.embaralhar = {85, 97, 0, 0};
   alto.repetir = {98, 107, 0, 0};
+  alto.ajuda = {108, 115, 0, 0};
   alto.trilho = {11, 30, 1, 1};
   for (int i = 0; i < 5; ++i) caixas.linhas.push_back({11, 60, 3 + i, 3 + i});
   caixas.primeira_linha = 20;
@@ -85,6 +86,7 @@ TEST_CASE("cada peça da tela responde pelo seu ponto") {
   CHECK(tui::alvo_do_ponto(caixas, 40, 0).peca == tui::Peca::Proxima);
   CHECK(tui::alvo_do_ponto(caixas, 90, 0).peca == tui::Peca::Embaralhar);
   CHECK(tui::alvo_do_ponto(caixas, 100, 0).peca == tui::Peca::Repetir);
+  CHECK(tui::alvo_do_ponto(caixas, 110, 0).peca == tui::Peca::Ajuda);
   // O nome e o tempo não respondem: elles dizem, e não fazem.
   CHECK(tui::alvo_do_ponto(caixas, 50, 0).peca == tui::Peca::Nada);
   CHECK(tui::alvo_do_ponto(caixas, 65, 0).peca == tui::Peca::Nada);

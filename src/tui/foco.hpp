@@ -36,6 +36,10 @@ enum class Focavel {
   AbaMySong, AbaPlaylists, AbaDownload,
   Tocar, Anterior, Seguinte,
   Volume, Embaralhar, Repetir,
+  // O HELP (issue #133): o segmento da ponta direita da fita, que abre a
+  // janella da ajuda. Entra depois do REPETIR, que é o logar em que a fita o
+  // põe, e é d'ahi que a ordem de leitura o desempata.
+  Ajuda,
   Trilho,
   Capa,
 };
