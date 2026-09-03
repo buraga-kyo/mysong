@@ -123,6 +123,46 @@ TEST_CASE("o corte da pauta conta CELLAS, e o glypho largo vale duas") {
   CHECK(tui::apara_collunhas("Fuga", 0).empty());
 }
 
+namespace {
+
+// cellas_dos — a somma das larguras dos pedaços. É o invariante da pauta: os
+// vãos e as margens tambem são pedaços, d'onde a somma HA DE dar a largura.
+std::size_t cellas_dos(const std::vector<tui::Pedaco>& pedacos) {
+  std::size_t total = 0;
+  for (const tui::Pedaco& pedaco : pedacos)
+    total += static_cast<std::size_t>(ftxui::string_width(pedaco.texto));
+  return total;
+}
+
+tui::Linha faixa_de(const std::string& texto, const std::string& autor,
+                    int numero, int duracao) {
+  tui::Linha feita;
+  feita.texto = texto;
+  feita.autor = autor;
+  feita.numero = numero;
+  feita.duracao = duracao;
+  return feita;
+}
+
+}  // namespace
+
+TEST_CASE("a somma das columnas da linha É a largura da pauta") {
+  const tui::Linha curta = faixa_de("Fuga", "A", 4, 96);
+  // Titulo de cento e vinte caracteres, e titulo em CJK: os dous casos que
+  // empurravam as columnas. A somma ha de dar a largura em todos.
+  const tui::Linha comprida = faixa_de(std::string(120, 'x'), "Canal", 12, 542);
+  const tui::Linha larga =
+      faixa_de("\u6771\u4eac\u97f3\u697d\u796d", "\u4e2d\u6587", 7, 200);
+  for (const std::size_t quanto : {10u, 12u, 20u, 30u, 40u, 59u, 83u, 167u}) {
+    for (const tui::Linha& qual : {curta, comprida, larga}) {
+      const tui::Medidas faixas = tui::medidas_da_pauta(quanto, true, false);
+      CHECK(cellas_dos(tui::pedacos_da_linha(qual, faixas, 542, true)) == quanto);
+      const tui::Medidas nomes = tui::medidas_da_pauta(quanto, true, true);
+      CHECK(cellas_dos(tui::pedacos_da_linha(qual, nomes, 12, false)) == quanto);
+    }
+  }
+}
+
 TEST_CASE("as columnas da pauta cedem por ordem de serviço") {
   // A metade esquerda de uma tela de 167 collunhas: abrem-se todas.
   const tui::Medidas larga = tui::medidas_da_pauta(83, true, false);
