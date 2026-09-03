@@ -8,6 +8,8 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
 #include <string>
 
 #include "nucleo/capa.hpp"
@@ -118,6 +120,36 @@ TEST_CASE("octetos que não são imagem medem zero e não lançam") {
   CHECK(nu::medida_da_imagem("nao e imagem alguma").largura == 0);
   CHECK(nu::medida_da_imagem("").altura == 0);
   CHECK(nu::medida_da_imagem("\xFF\xD8truncado").largura == 0);
+}
+
+TEST_CASE("a chave do arquivo de capa sahe do conteudo") {
+  CHECK(nu::somma_dos_octetos("a").size() == 16);
+  CHECK(nu::somma_dos_octetos("a") == nu::somma_dos_octetos("a"));
+  CHECK(nu::somma_dos_octetos("a") != nu::somma_dos_octetos("b"));
+}
+
+TEST_CASE("a extensão da capa sahe do formato e não do nome") {
+  CHECK(nu::extensao_da_capa(jpeg_de_cabecalho()) == "jpg");
+  CHECK(nu::extensao_da_capa(png_de_cabecalho()) == "png");
+  CHECK(nu::extensao_da_capa("nao e imagem alguma").empty());
+}
+
+TEST_CASE("o arquivo da capa mora debaixo do cache do operador") {
+  // A variavel repõe-se ao sahir: a bateria corre n'um processo só, e deixar
+  // ambiente mudado por traz seria prova a governar prova.
+  const char* const antes = std::getenv("XDG_CACHE_HOME");
+  const std::string guardado = antes == nullptr ? std::string() : antes;
+  ::setenv("XDG_CACHE_HOME", "/tmp/pa-cache-da-prova", 1);
+  const std::filesystem::path onde =
+      nu::caminho_da_capa_em_cache(jpeg_de_cabecalho());
+  CHECK(onde.parent_path() ==
+        std::filesystem::path("/tmp/pa-cache-da-prova/mysong/capas"));
+  CHECK(onde.extension() == ".jpg");
+  CHECK(nu::caminho_da_capa_em_cache("nao e imagem alguma").empty());
+  if (antes == nullptr)
+    ::unsetenv("XDG_CACHE_HOME");
+  else
+    ::setenv("XDG_CACHE_HOME", guardado.c_str(), 1);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
