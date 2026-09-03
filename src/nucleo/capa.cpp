@@ -19,6 +19,9 @@
 #include <taglib/mpegfile.h>
 
 #include <algorithm>
+#include <unistd.h>
+
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <cctype>
@@ -57,6 +60,89 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
   // render novo e não o de antes esticado.
   return faixa.parent_path().string() + "\x1f" + std::to_string(collunas) +
          "x" + std::to_string(linhas);
+}
+
+namespace {
+
+// de_dous e de_quatro — inteiros GRANDES-PRIMEIRO, que é a ordem do JPEG e a do
+// PNG. Sem guarda de tamanho: os dous chamadores conferem-no antes.
+std::size_t de_dous(std::string_view octetos, std::size_t onde) {
+  return (static_cast<std::size_t>(static_cast<unsigned char>(octetos[onde]))
+          << 8) |
+         static_cast<unsigned char>(octetos[onde + 1]);
+}
+
+std::size_t de_quatro(std::string_view octetos, std::size_t onde) {
+  return (de_dous(octetos, onde) << 16) | de_dous(octetos, onde + 2);
+}
+
+
+// medida_do_jpeg — anda pelos segmentos até o SOF, que é o unico que traz o
+// quadro. SOF são as marcas C0 a CF menos a C4, a C8 e a CC, que carregam
+// taboas de Huffman, extensão e taboas arithmeticas: corpo d'outra especie.
+// Andar é preciso porque o APIC do yt-dlp traz o JFIF, e ás vezes o EXIF,
+// ANTES do quadro: quem lesse a posição fixa leria a miniatura da camera.
+Medida medida_do_jpeg(std::string_view octetos) {
+  std::size_t i = 2;  // a guarda FFD8 já se conferiu
+  while (i + 9 < octetos.size()) {
+    if (static_cast<unsigned char>(octetos[i]) != 0xFF) return {};
+    const auto marca = static_cast<unsigned char>(octetos[i + 1]);
+    // Enchimento, e as marcas sem corpo algum: andam de dous em dous.
+    if (marca == 0xFF || marca == 0x01 || (marca >= 0xD0 && marca <= 0xD9)) {
+      ++i;
+      if (marca != 0xFF) ++i;
+      continue;
+    }
+    if (marca >= 0xC0 && marca <= 0xCF && marca != 0xC4 && marca != 0xC8 &&
+        marca != 0xCC)
+      return {de_dous(octetos, i + 7), de_dous(octetos, i + 5)};
+    const std::size_t tamanho = de_dous(octetos, i + 2);
+    if (tamanho < 2) return {};
+    i += 2 + tamanho;
+  }
+  return {};
+}
+
+}  // namespace
+
+Medida medida_da_imagem(std::string_view octetos) {
+  if (octetos.size() > 3 && static_cast<unsigned char>(octetos[0]) == 0xFF &&
+      static_cast<unsigned char>(octetos[1]) == 0xD8)
+    return medida_do_jpeg(octetos);
+  // O PNG diz o quadro no IHDR, que a norma manda ser o PRIMEIRO pedaço: a
+  // largura no octeto dezaseis e a altura no vinte, contando da guarda.
+  if (octetos.size() >= 24 && octetos.compare(0, 8, "\x89PNG\r\n\x1a\n") == 0 &&
+      octetos.compare(12, 4, "IHDR") == 0)
+    return {de_quatro(octetos, 16), de_quatro(octetos, 20)};
+  return {};  // WebP e o mais: quem chama toma isto por «não sei»
+}
+
+Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
+                             std::size_t tecto_linhas, Medida cellula) {
+  if (tecto_collunas == 0 || tecto_linhas == 0) return {};
+  if (imagem.largura == 0 || imagem.altura == 0 || cellula.largura == 0 ||
+      cellula.altura == 0)
+    return {tecto_collunas, tecto_linhas};
+  // Em inteiro GRANDE, e arredondando para cima: capa de mil e oitenta por mil
+  // e oitenta em cento e vinte collunhas passa dos dous milhões, e o
+  // rectangulo curto de uma linha deixaria a imagem a pingar sobre o espectro.
+  using Conta = unsigned long long;
+  const Conta por_alto = Conta(imagem.largura) * cellula.altura;
+  const Conta linhas =
+      (Conta(tecto_collunas) * imagem.altura * cellula.largura + por_alto - 1) /
+      por_alto;
+  // Zero não sae d'estas duas contas: o numerador não é nulo (os quatro zeros
+  // da entrada já se recusaram acima) e o arredondamento é para cima. A guarda
+  // de verdade é a de lá; posta aqui, esconderia isso.
+  if (linhas <= tecto_linhas)
+    return {tecto_collunas, static_cast<std::size_t>(linhas)};
+  const Conta por_largo = Conta(imagem.altura) * cellula.largura;
+  const Conta collunas =
+      (Conta(tecto_linhas) * imagem.largura * cellula.altura + por_largo - 1) /
+      por_largo;
+  return {static_cast<std::size_t>(
+              collunas > tecto_collunas ? tecto_collunas : collunas),
+          tecto_linhas};
 }
 
 // O SEXTANTE, e a classe de fonte que o desenha. Medido n'esta machina:
@@ -122,6 +208,54 @@ std::vector<std::string> argumentos_do_chafa(
           "--colors=full",
           "--",
           imagem.string()};
+}
+
+std::string somma_dos_octetos(std::string_view octetos) {
+  // A semente e o primo são os da norma do FNV-1a de 64 bits. E o que succede
+  // na COLLISÃO fica dito, que promettel-a impossivel seria mentira: duas
+  // capas differentes com a mesma somma fazem o segundo album mostrar a arte
+  // do primeiro. Capa trocada, e não arquivo corrompido; e em acervo de gente
+  // a probabilidade é despresivel. Colisão FEITA de proposito o FNV-1a não
+  // resiste, e aqui ninguem a faz: o conteudo é do proprio operador.
+  std::uint64_t somma = 14695981039346656037ULL;
+  for (const char letra : octetos) {
+    somma ^= static_cast<unsigned char>(letra);
+    somma *= 1099511628211ULL;
+  }
+  std::string hexadecimal(16, '0');
+  for (std::size_t i = 16; i > 0; --i) {
+    hexadecimal[i - 1] = "0123456789abcdef"[somma & 0xF];
+    somma >>= 4;
+  }
+  return hexadecimal;
+}
+
+std::string_view extensao_da_capa(std::string_view octetos) {
+  if (octetos.size() > 3 && static_cast<unsigned char>(octetos[0]) == 0xFF &&
+      static_cast<unsigned char>(octetos[1]) == 0xD8)
+    return "jpg";
+  if (octetos.size() > 8 && octetos.compare(0, 8, "\x89PNG\r\n\x1a\n") == 0)
+    return "png";
+  return {};
+}
+
+std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos) {
+  const std::string_view extensao = extensao_da_capa(octetos);
+  if (extensao.empty()) return {};
+  // O CACHE, e não o directorio de corrida em que o chafa recebia a arte:
+  // aquelle morre no fim da sessão, e a lousa quer o arquivo enquanto a janella
+  // estiver de pé. E cache é o logar certo, que isto se apaga sem perda.
+  const char* const posto = std::getenv("XDG_CACHE_HOME");
+  std::filesystem::path raiz;
+  if (posto != nullptr && posto[0] != '\0') {
+    raiz = std::filesystem::path(posto);
+  } else {
+    const char* const casa = std::getenv("HOME");
+    if (casa == nullptr) return {};
+    raiz = std::filesystem::path(casa) / ".cache";
+  }
+  return raiz / "mysong" / "capas" /
+         (somma_dos_octetos(octetos) + "." + std::string(extensao));
 }
 
 std::string arte_embutida(const std::filesystem::path& faixa) {
@@ -235,6 +369,76 @@ const CapaPintada& Galeria::capa(const std::filesystem::path& faixa,
 }
 
 std::size_t Galeria::quantos_renders() const noexcept { return renders_; }
+
+namespace {
+
+// cabeca_do_arquivo — o que a medida pede: sessenta e quatro mil octetos, que
+// chegam para o SOF do JPEG, que vem depois do JFIF e ás vezes do EXIF.
+std::string cabeca_do_arquivo(const std::filesystem::path& caminho) {
+  std::ifstream entrada(caminho, std::ios::binary);
+  if (!entrada) return {};
+  std::string cabeca(64 * 1024, '\0');
+  entrada.read(cabeca.data(), static_cast<std::streamsize>(cabeca.size()));
+  cabeca.resize(static_cast<std::size_t>(entrada.gcount()));
+  return cabeca;
+}
+
+// escreve_no_cache — a arte em arquivo UMA vez: o nome vem do CONTEUDO, d'onde
+// arquivo de mesmo nome já tem os octetos e não se torna a escrever.
+//
+// Por TEMPORARIO e RENAME, e não direito ao nome final: quem acha o arquivo
+// toma-o por bom sem lhe conferir octeto, d'onde um arquivo cortado ao meio
+// (queda a meio da escripta, disco cheio, duas instancias sobre a mesma capa)
+// envenenaria esse endereço de conteudo para SEMPRE, e a capa d'aquelle album
+// nunca mais voltaria. O rename no mesmo systema de arquivos é atomico, e
+// resolve de graça a corrida entre duas instancias.
+std::filesystem::path escreve_no_cache(std::string_view arte, bool* escreveu) {
+  const std::filesystem::path onde = caminho_da_capa_em_cache(arte);
+  if (onde.empty()) return {};
+  std::error_code erro;
+  if (std::filesystem::is_regular_file(onde, erro) && !erro) return onde;
+  std::filesystem::create_directories(onde.parent_path(), erro);
+  if (erro) return {};
+  const std::filesystem::path meio =
+      onde.string() + "." + std::to_string(::getpid()) + ".parte";
+  std::ofstream sahida(meio, std::ios::binary | std::ios::trunc);
+  if (!sahida) return {};
+  sahida.write(arte.data(), static_cast<std::streamsize>(arte.size()));
+  // O `close` ANTES do `good`: o ultimo despejo corre no fecho, e afervel
+  // antes d'elle daria por bom o erro que mora justamente na cauda.
+  sahida.close();
+  if (sahida.good()) std::filesystem::rename(meio, onde, erro);
+  if (!sahida.good() || erro) {
+    std::filesystem::remove(meio, erro);
+    return {};
+  }
+  *escreveu = true;
+  return onde;
+}
+
+}  // namespace
+
+const ArquivoDaCapa& Arquivario::de(const std::filesystem::path& faixa) {
+  const auto assento = guardados_.find(faixa);
+  if (assento != guardados_.end()) return assento->second;
+  ArquivoDaCapa achado;
+  // A capa AO LADO ganha da embutida, pela ordem declarada da Galeria.
+  if (!faixa.empty()) achado.caminho = capa_ao_lado(faixa);
+  if (!achado.caminho.empty()) {
+    achado.medida = medida_da_imagem(cabeca_do_arquivo(achado.caminho));
+  } else if (!faixa.empty()) {
+    const std::string arte = arte_embutida(faixa);
+    bool escreveu = false;
+    achado.caminho = escreve_no_cache(arte, &escreveu);
+    if (escreveu) ++escriptos_;
+    if (!achado.caminho.empty()) achado.medida = medida_da_imagem(arte);
+  }
+  // A AUSENCIA guarda-se, pela regra da Galeria: sem ella, faixa sem capa
+  // faria a Casa procurar no disco vinte vezes por segundo.
+  return guardados_.emplace(faixa, std::move(achado)).first->second;
+}
+
+std::size_t Arquivario::quantos_escriptos() const noexcept { return escriptos_; }
 
 namespace {
 
