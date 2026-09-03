@@ -570,6 +570,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // O ARRASTO (issue #153): a faixa que está na mão do rato. Mora aqui, ao
   // lado do foco, que é estado da SESSÃO e não do quadro.
   tui::Arrasto arrasto;
+  // A CHAPA DO VERSO que está na tela (issue #163), e se ha alguma: é por ellas
+  // que se sabe quando a janella da lousa precisa de se limpar.
+  tui::AssignaturaDaChapa assignatura_posta;
+  bool chapa_posta = false;
   ftxui::Box caixa_da_ajuda = tui::caixa_por_pintar();
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
@@ -1050,7 +1054,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           tui::pedido_da_chapa_da_letra(da_letra.verso, da_letra.cellulas));
     if (cristal == nullptr || cristal->empty()) {
       lousa.tira(tui::IDENTIDADE_DA_LETRA);
+      chapa_posta = false;
     } else {
+      // LIMPAR ANTES DE PÔR (issue #163): a janella do Überzug++ conserva o que
+      // a imagem anterior pintou FÓRA da nova, e o verso que sae é quasi sempre
+      // mais largo que o que entra: ficavam as duas pontas d'elle na tela, uma
+      // de cada lado. Tira-se sómente quando a chapa é OUTRA, que tirar a mesma
+      // a cada quadro faria a lettra piscar.
+      const tui::AssignaturaDaChapa agora = tui::assignatura_da(da_letra);
+      if (tui::limpa_antes_de_por(assignatura_posta, agora, chapa_posta))
+        lousa.tira(tui::IDENTIDADE_DA_LETRA);
+      assignatura_posta = agora;
+      chapa_posta = true;
       // TRES fileiras (issue #157), que é o corpo GRANDE que elle pediu: a
       // chapa cobre as cellas que a sala reservou ao verso.
       lousa.poe(tui::IDENTIDADE_DA_LETRA, *cristal, da_letra.collunha,
