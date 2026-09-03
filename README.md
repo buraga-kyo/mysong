@@ -743,46 +743,31 @@ dela por baixo de cada grupo:
 ./build/fita_espectro 72 12
 ```
 
-### A letra: o rio sobre o espectro
+### A letra, parada debaixo da capa
 
-A letra nao se alterna mais com o espectro. Ella mora POR CIMA delle e esta
-sempre a vista, subindo como um rio:
+A letra nao sobe nem se embaralha: ela fica QUIETA, num bloco proprio logo
+abaixo da capa, com UM verso de cada vez. Canta-se aquele; quando a musica
+passa, entra o seguinte no mesmo lugar. Nada mais aparece: nem o verso anterior,
+nem o proximo, nem efeito algum.
 
-- Cada linha nasce na BASE do painel quatro segundos antes do instante della, ou
-  no intervalo desde a linha anterior quando esse intervalo e menor. Nasce sem
-  forma: os glifos sao embaralhados a partir das PROPRIAS letras da linha, em
-  tom apagado, e os espacos entre as palavras ficam onde estao.
-- Subindo, a linha ganha forma DO MEIO PARA AS PONTAS e ganha luz, e chega a
-  LINHA DE LEITURA (um terco do alto do painel) inteira e em brilho cheio no
-  instante exacto em que a voz a canta.
-- Ali ella fica ate a proxima chegar. Dai sobe uma linha por segundo, apagando,
-  e some na linha zero.
+O verso sai em XIROD, LARANJA e em corpo grande: a chapa toma tres celulas de
+altura, e e da altura da caixa que vem o tamanho da letra. Sem a lousa ou sem o
+letreiro, o mesmo verso aparece em mono, na mesma cor, e por isso nada falta.
 
-Com a lousa e o letreiro de pe, a linha que esta na linha de leitura CRISTALIZA:
-por cima das celulas della assenta uma chapa da mesma linha em XIROD, em brilho
-cheio sobre o fundo do painel, e a chapa da proxima ja se rasteriza quando ella
-nasce na base, para estar pronta no instante. A chapa sai quando a linha deixa a
-leitura, quando o foco sai da janela, quando o `l` esconde o rio e quando a
-faixa muda; sem lousa ou sem letreiro nada muda, que a linha em mono continua
-pintada por baixo della.
-
-A celula que tem letra pinta a letra com o fundo do painel, escondendo SO a
-celula da barra debaixo della. O espaco entre as palavras deixa passar a barra,
-e por isso o verso parece sair do espectro em vez de assentar numa tarja.
+O bloco tem quatro linhas fixas: tres do verso e uma de respiro antes do
+espectro. Painel que nao tenha altura para ele e para o espectro minimo larga o
+bloco INTEIRO, que meio verso nao se le. Verso mais comprido que o painel corta
+com «…», e nao quebra em duas linhas.
 
 Faixa sem `.lrc` nao mostra letra nenhuma, e nem um aviso: letra alguma se
-inventa. A busca da letra continua a acontecer uma vez so, no download.
+inventa. A busca da letra continua a acontecer uma vez so, no download. O `l`
+esconde e mostra o bloco, e o espectro toma o lugar dele quando ele se esconde.
 
-O `l` passou a esconder e a mostrar o rio, e nasce MOSTRANDO. O espectro nunca
-some por causa desta tecla.
-
-Para ver o rio sem abrir o tocador, com um espectro armado da propria posicao:
+Para ver o bloco sem abrir o tocador:
 
 ```sh
-./build/fita_letra 72 14 6      # a linha nasce na base, embaralhada
-./build/fita_letra 72 14 10     # subiu, quase resolvida
-./build/fita_letra 72 14 12     # chegou a linha de leitura, e a anterior apaga
-./build/fita_letra 72 14 11 /caminho/da/faixa.lrc   # com a letra de verdade
+./build/fita_letra 60 12 13                      # o verso que canta aos 13 s
+./build/fita_letra 60 12 5 /caminho/da/faixa.lrc # com a letra de verdade
 ```
 
 ### O video

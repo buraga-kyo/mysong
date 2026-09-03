@@ -26,6 +26,9 @@
 #include <string>
 #include <vector>
 
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
+
 #include "nucleo/analisador.hpp"
 #include "nucleo/letra.hpp"
 #include "tui/espectro.hpp"
@@ -42,10 +45,11 @@ namespace {
 // A LETRA de dentro, quando não se dá `.lrc`. Quatro versos de quatro em quatro
 // segundos, que é o passo em que o nascimento e a subida se vêem inteiros.
 std::vector<nu::LinhaDaLetra> letra_de_dentro() {
-  return {{4.0, "e u   v o u   e m b o r a"},
-          {8.0, "e   n ã o   v o l t o   m a i s"},
-          {12.0, "esta é a linha que canta"},
-          {16.0, "dreams never die"}};
+  return {{4.0, "primeiro verso d'esta prova"},
+          {8.0, "segundo verso d'esta prova"},
+          {12.0, "terceiro verso, que é o que canta"},
+          {16.0, "quarto verso d'esta prova"},
+          {20.0, "quinto verso d'esta prova"}};
 }
 
 // bandas_da_posição — a fita do espectro por baixo, armada da POSIÇÃO e não do
@@ -95,27 +99,30 @@ int main(int argc, char** argv) {
       es::compor(bandas_da_posicao(posicao), static_cast<std::size_t>(largura),
                  static_cast<std::size_t>(altura), false,
                  es::centros_da_escala(nu::QUANTAS_BANDAS));
-  const es::QuadroDaLetra rio =
-      es::quadro_da_letra(linhas, posicao, static_cast<std::size_t>(largura),
-                          static_cast<std::size_t>(altura));
-  const std::vector<es::CelulaDoRio> tapete = es::tapete_do_rio(espectro, rio);
-
-  std::string tela;
-  for (std::size_t l = 0; l < espectro.altura; ++l) {
-    for (std::size_t c = 0; c < espectro.largura; ++c)
-      tela += es::sequencia_do_rio(tapete[l * espectro.largura + c]);
-    tela += tk::repouso;
-    tela += '\n';
-  }
+  // O BLOCO PARADO (issue #157) por cima, e o espectro por baixo: é a ordem em
+  // que a janella os compõe, e o exemplo não inventa outra.
+  const int corrente = nu::linha_corrente(linhas, posicao);
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(largura),
+      ftxui::Dimension::Fixed(altura + static_cast<int>(es::FILEIRAS_DA_LETRA)));
+  ftxui::Render(
+      ecran,
+      ftxui::vbox({es::elemento_da_letra_parada(
+                       linhas, corrente, static_cast<std::size_t>(largura),
+                       es::FILEIRAS_DA_LETRA),
+                   es::elemento_do_espectro(espectro)}));
+  std::string tela = ecran.ToString();
+  tela += '\n';
   // A LINHA DA CONTA, por baixo, para se conferir o que o olho vê com o que a
   // funcção diz. Sem ella, quem lê o dump não sabe se a linha que assentou no
   // terço do alto é de facto a que o quadro tem por corrente.
-  const es::LinhaViva* canta = es::linha_corrente_do_rio(rio);
   tela += "posição " + std::string(argv[3]) + ", " +
-          std::to_string(rio.linhas.size()) + " linhas á vista, canta: " +
-          (canta == nullptr ? std::string("nenhuma")
-                            : "«" + canta->texto + "» na linha " +
-                                  std::to_string(canta->linha_da_tela)) +
+          std::to_string(linhas.size()) + " versos, canta: " +
+          (corrente < 0 ? std::string("nenhum")
+                        : "«" + es::verso_do_bloco(
+                                    linhas, corrente,
+                                    static_cast<std::size_t>(largura)) +
+                              "»") +
           '\n';
   std::fputs(tela.c_str(), stdout);
   return 0;
