@@ -40,13 +40,14 @@ struct CaixasDoCabecalho {
   ftxui::Box botao_tocar = caixa_por_pintar();
   ftxui::Box botao_anterior = caixa_por_pintar();
   ftxui::Box botao_seguinte = caixa_por_pintar();
-  ftxui::Box nome = caixa_por_pintar();
   ftxui::Box tempo = caixa_por_pintar();
   ftxui::Box volume = caixa_por_pintar();
   ftxui::Box embaralhar = caixa_por_pintar();
   ftxui::Box repetir = caixa_por_pintar();
   // O HELP (issue #133), na ponta direita, depois do REPETIR.
   ftxui::Box ajuda = caixa_por_pintar();
+  // O MEIO da fita (issue #134): a onda da faixa, que é o trilho de sempre,
+  // agora dentro da fita. O clique n'ella busca pela collunha.
   ftxui::Box trilho = caixa_por_pintar();
 };
 

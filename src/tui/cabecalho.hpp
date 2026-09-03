@@ -1,15 +1,16 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DO CABEÇALHO — src/tui/cabecalho.hpp
 // ══════════════════════════════════════════════════════════════════════════
-// A linha do alto: as tres abas, os tres botões do transporte, o nome do que
-// sôa, e á direita o tempo, o volume e os dous modos, em segmentos powerline.
-// Toma o logar da barra lateral: o menu d'esta Casa é fita de abas.
+// A fita do pé, na ordem d'elle (issue #134): as tres abas, os tres botões do
+// transporte, a ONDA da faixa ao meio, e á direita o tempo, o volume, os dous
+// modos e o HELP, em segmentos powerline. Toma o logar da barra lateral: o menu
+// d'esta Casa é fita de abas. O nome do que sôa deixou-a e mora no painel.
 //
 // DOMÍNIO ......... o Retracto do instante, a aba corrente e a largura.
 // CONTRA-DOMÍNIO .. `ftxui::Element`, e as taboadas puras das teclas.
 // INVARIANTE ...... peça alguma se apara ao meio: a que não cabe sahe INTEIRA,
-//                   e sómente o nome se corta, com «…». E cada peça enche a
-//                   sua caixa, para que o dedo ache o que o olho vê.
+//                   e sómente o MEIO encolhe, que é elastico. E cada peça enche
+//                   a sua caixa, para que o dedo ache o que o olho vê.
 // Q.E.D. .......... sendo a linha funcção de valores, a bateria pinta-a em
 //                   écran de papel e afere-a cella a cella, sem terminal.
 // ══════════════════════════════════════════════════════════════════════════
@@ -123,42 +124,41 @@ std::string rotulo_da_aba(Aba aba);
 ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
                                std::size_t altura = 1);
 
-// A REPARTIÇÃO da fita em TRES blocos (issue #125): á esquerda os botões do
-// transporte e o nome do que sôa; ao CENTRO EXACTO o grupo das tres abas; á
-// direita o tempo, o volume e os dous modos.
+// A REPARTIÇÃO da fita em TRES blocos (issue #134): á esquerda, FIXAS, as tres
+// abas e os tres botões; ao meio a ONDA, que toma o que sobra; á direita o
+// tempo, o volume, os dous modos e o HELP.
 struct ContaDaFita {
-  std::size_t nome = 0;     // collunhas do nome, entre os botões e o grupo
-  std::size_t comeca = 0;   // a collunha em que o grupo das abas principia
-  std::size_t depois = 0;   // o enchimento entre o grupo e a ponta direita
+  std::size_t meio = 0;     // collunhas do meio, entre os botões e a direita
   std::size_t quantas = 0;  // quantos segmentos da ponta direita ficaram
-  bool ao_centro = false;   // o grupo ficou no centro EXACTO da fita
 };
 
-// conta_da_fita — o centro EXACTO, e quem cede quando elle não cabe. A collunha
-// do grupo é a largura menos a d'elle, a dividir por dous, e NÃO um `filler`:
-// aquelle centra no que SOBRA, e o grupo saltaria de logar a cada nome de
-// faixa. Não cabendo, cedem as pontas por esta ordem: o nome corta com «…»,
-// depois o REPETIR, o EMBARALHAR e o tempo; sómente quando nem assim cabe é
-// que o grupo deixa o centro e se encosta ao nome cingido ao minimo d'elle.
-// `direita` traz a largura da ponta direita com zero, um, dous, tres, quatro
-// e cinco segmentos (o quinto é o HELP da issue #133), n'essa ordem: a conta não conhece rotulo algum, e assim a bateria
-// arma-a á mão.
-ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
-                          std::size_t grupo,
+// O que se guarda ao meio quando a tela aperta: doze collunhas, que é o menos
+// em que uma onda ainda se lê como onda. Menos que isso a direita cede antes.
+inline constexpr std::size_t MEIO_MINIMO = 12;
+
+// conta_da_fita — o meio toma o que as FIXAS (abas e botões) e a ponta direita
+// deixam; não sobrando ao meio as MEIO_MINIMO collunhas, a direita cede do FIM
+// para o principio, INTEIRA: o HELP, o REPETIR, o EMBARALHAR, o volume e o
+// tempo. As fixas ficam sempre: fita que nem para ellas chega apara-se no
+// `hbox`, e é o degenerado. `direita` traz a largura da ponta direita com
+// zero, um, dous, tres, quatro e cinco segmentos, n'essa ordem: a conta não
+// conhece rotulo algum, e assim a bateria arma-a á mão.
+ContaDaFita conta_da_fita(std::size_t largura, std::size_t fixas,
                           const std::vector<std::size_t>& direita);
 
 // elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
 // dizer «esta chamada não quer saber», e a linha sahe a mesma, cella a cella.
-// O `nome` é o que se MOSTRA, e não o caminho que o Retracto carrega: o titulo
-// vem da etiqueta do indice, e caminho de arquivo na linha do alto diria a
-// pasta do operador em vez de dizer a musica.
+// A `onda` são os pontos da envolvente da faixa (issue #131), que o meio
+// desenha; vazia, o meio mostra a barra chata do progresso, nas mesmas côres.
+// A caixa do meio é a `trilho` das caixas: ella É o trilho, agora dentro da
+// fita, e o clique n'ella busca pela collunha como sempre buscou.
 // O `foco` diz que PEÇA d'esta linha tem o foco (issue #107): ella veste-se de
 // glow_core com texto panel, que é par distincto do da aba corrente (v600 com
 // v50) sem sahir da familia. `Focavel::Pauta`, que é o padrão, quer dizer que o
 // foco está fóra do cabeçalho, e ahi a linha sahe a mesma, cella a cella.
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
-                                     const std::string& nome,
+                                     const std::vector<float>& onda,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas = nullptr,
                                      Focavel foco = Focavel::Pauta,
@@ -197,17 +197,6 @@ std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
 // e a CAIXA em cellas, larga e alta. Aqui se casam a tinta da chapa e a da
 // cella, e aqui se casam tambem a altura da caixa e o corpo da palavra.
 nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem);
-
-// elemento_do_trilho — a linha do progresso, de largura inteira, logo abaixo
-// do cabeçalho: v600 no andado e line_dim no que falta. A caixa d'elle é a do
-// clique que busca, e a barra do pé morre porque os botões subiram.
-// `com_foco` accende o andado em glow_core no logar do v600 (issue #107): o
-// trilho é peça focavel como as outras, e o que elle tem para accender é o que
-// já anda pintado.
-ftxui::Element elemento_do_trilho(const Retracto& retracto,
-                                  std::size_t largura,
-                                  ftxui::Box* caixa = nullptr,
-                                  bool com_foco = false);
 
 }  // namespace mysong::tui
 
