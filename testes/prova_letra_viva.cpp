@@ -335,8 +335,19 @@ TEST_CASE("o rio escondido devolve o espectro tal qual") {
   const tk::Triade tom = tk::rgb(tk::panel);
   const ftxui::Color cama = ftxui::Color::RGB(tom.r, tom.g, tom.b);
   // A linha de leitura é barra como as outras: o `l` esconde o rio, e o
-  // espectro NÃO some por causa d'elle.
+  // espectro NÃO some por causa d'elle. Varre-se collunha a collunha, saltando
+  // as do VÃO: desde a issue #144 a fita pinta BARRAS de duas collunhas
+  // apartadas por uma, d'onde nas vinte collunhas d'este painel a terceira de
+  // cada passo (a 2, a 5, a 8, a 11, a 14 e a 17) fica em branco de propósito.
   for (int x = 0; x < static_cast<int>(kLargura); ++x) {
+    if (x % 3 == 2) {
+      // O vão não é barra, e no terminal isso lê-se por espaço; e tambem elle
+      // fica sem a cama do painel, que o rio escondido não põe cama alguma.
+      CHECK(ecran.PixelAt(x, static_cast<int>(kLeitura)).character == " ");
+      CHECK_FALSE(
+          ecran.PixelAt(x, static_cast<int>(kLeitura)).background_color == cama);
+      continue;
+    }
     CHECK(ecran.PixelAt(x, static_cast<int>(kLeitura)).character == "█");
     CHECK_FALSE(ecran.PixelAt(x, static_cast<int>(kLeitura)).background_color ==
                 cama);

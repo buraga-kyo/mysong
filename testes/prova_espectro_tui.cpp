@@ -1013,11 +1013,15 @@ TEST_CASE("a taboada da ponta dá flanco, bloco, e nada na banda de uma collunha
 
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;
-  // Banda de UMA collunha: a fita tem tantas collunhas quantas bandas, e ahi a
-  // barra fica com o topo de BLOCO, que meia diagonal sósinha é degrau.
-  const es::Quadro justo = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
-                                      false, centros_em(100.0f));
-  CHECK(justo.em(0, 3).glifo == es::glifo_do_degrau(6));
+  // BARRA de uma collunha: desde a issue #144 a barra toma sempre duas, e a de
+  // uma sómente acontece na BEIRA DA TELA, quando a largura a corta. A tela de
+  // UMA collunha é o caso limite d'isso: ha uma barra só, ella funde as vinte e
+  // quatro bandas e toma o máximo, que é o 0,95 da banda 3. Ahi a barra fica com
+  // o topo de BLOCO, que meia diagonal sósinha é degrau e não seta. Teto 40,
+  // 0,95 vezes 40 dá 38 degraus, quatro cheios e resto SEIS.
+  const es::Quadro justo =
+      es::compor(bandas, 1, 5, false, centros_em(100.0f));
+  CHECK(justo.em(0, 0).glifo == es::glifo_do_degrau(6));
 
   // Painel de UMA linha: a columna tem uma cella só, e ponta sem corpo não é
   // barra. Fica o bloco, mesmo com tres collunhas por banda.
