@@ -56,6 +56,7 @@
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
+#include "nucleo/lousa.hpp"
 #include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
@@ -1455,6 +1456,14 @@ int main(int argc, char** argv) {
     std::cout << tui::texto_do_relatorio(relatorio);
     std::cout << api::texto_do_socket();
     std::cout << nucleo::texto_dos_ajustes(ajustes);
+    // A LOUSA (issue #103) diz-se DEPOIS dos ajustes, e não na taboa dos
+    // requisitos: o `ueberzugpp` não é requisito d'esta obra, e pol-o lá faria
+    // o operador sem X11 ler «falta» de uma cousa que não lhe falta.
+    const std::string versao_da_lousa = nucleo::versao_da_lousa();
+    std::cout << nucleo::texto_da_lousa(
+        nucleo::parecer_da_lousa(ajustes.lousa.valor, nucleo::ha_display(),
+                                 !versao_da_lousa.empty()),
+        versao_da_lousa);
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
