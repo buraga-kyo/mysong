@@ -450,3 +450,37 @@ TEST_CASE("o seno de 1 kHz accende a sua banda em qualquer numero de bandas") {
     }
   }
 }
+
+TEST_CASE("pedir o mesmo numero não zera o estado, e pedir outro zera") {
+  nu::Espectro espectro(48000.0f, 2);
+  const auto bloco = seno(1000.0f, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT);
+  espectro.alimenta(bloco.data(), bloco.size());
+  const auto antes = espectro.bandas();
+  REQUIRE(antes[12] > 0.5f);  // do oraculo: 1000 Hz a 48000 cahe na banda 12
+
+  // O desenho pede a cada quadro, porque a largura pode mudar a qualquer um.
+  // Pedir o que já ha ha de ser mudo: zerar aqui apagaria a suavização quarenta
+  // e seis vezes por segundo, e a fita ficaria a tremer sem musica que o peça.
+  espectro.quer_bandas(nu::QUANTAS_BANDAS);
+  CHECK(espectro.bandas() == antes);
+
+  // Mudando o numero, zera: as bandas velhas eram de outras bordas, e mantê-las
+  // pintaria por um quadro uma musica que não é a que toca.
+  espectro.quer_bandas(48);
+  const auto depois = espectro.bandas();
+  REQUIRE(depois.size() == 48);
+  for (const float valor : depois) CHECK(valor == 0.0f);
+
+  // E volta a accender no logar certo, que é o que faz d'isto zeragem e não
+  // avaria: a banda de 1000 Hz nas bordas novas.
+  espectro.alimenta(bloco.data(), bloco.size());
+  CHECK(espectro.bandas()[espectro.banda_de(1000.0f)] > 0.5f);
+}
+
+TEST_CASE("o dublê da bateria recebe o pedido sem ter que o implementar") {
+  // A omissão vazia é o que deixa esta lavra intacta: a fonte fingida não sabe
+  // de bordas nem de transformada, e ainda assim serve o contracto novo.
+  FonteFingida fonte;
+  fonte.quer_bandas(64);
+  CHECK(fonte.bandas().size() == nu::QUANTAS_BANDAS);
+}
