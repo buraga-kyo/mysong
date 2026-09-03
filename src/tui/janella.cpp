@@ -1003,12 +1003,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
     // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
     tui::Ordem ordem_do_rato;
-    if (tecla.is_mouse()) {
+    // O ALVO vem do RATO quando o evento é do rato, e do FOCO quando é o Enter
+    // ou o Espaço n'uma peça que não é a pauta (issue #107). A taboada do gesto
+    // é a MESMA, e é isso que faz a tecla apertar o botão exactamente como o
+    // dedo o aperta: caminho proprio daria duas verdades sobre o que cada peça
+    // faz, e ellas desencontrar-se-hiam na primeira issue que mexesse n'uma.
+    //
+    // A guarda do `digita` é o que deixa o campo e a pergunta ficarem com o
+    // Enter d'elles: com modo modal aberto, este ramo não corre.
+    const bool pelo_foco = !tecla.is_mouse() && digita == Digita::Nada &&
+                           foco != tui::Focavel::Pauta &&
+                           (tecla == ftxui::Event::Return ||
+                            tecla == ftxui::Event::Character(' '));
+    if (tecla.is_mouse() || pelo_foco) {
       ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
-      const ftxui::Mouse rato = copia.mouse();
+      const ftxui::Mouse rato = pelo_foco ? ftxui::Mouse{} : copia.mouse();
       const tui::Retracto agora = retracto_do(tocador, projector);
       const tui::GestoDoRato gesto = tui::gesto_do_alvo(
-          tui::alvo_do_ponto(caixas, rato.x, rato.y), rato.button, rato.motion,
+          pelo_foco ? tui::alvo_do_foco(foco)
+                    : tui::alvo_do_ponto(caixas, rato.x, rato.y),
+          pelo_foco ? ftxui::Mouse::Left : rato.button,
+          pelo_foco ? ftxui::Mouse::Pressed : rato.motion,
           {digita != Digita::Nada, navegador.eleito(),
            navegador.vista().size(),
            // A duração vae ZERO com a janella do video de pé, e a guarda do
@@ -1221,7 +1236,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
     const tui::Ordem ordem =
-        tecla.is_mouse()
+        tecla.is_mouse() || pelo_foco
             ? ordem_do_rato
             : tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
