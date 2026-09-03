@@ -54,6 +54,18 @@ std::string ordem_de_tirar(std::string_view identidade) {
          escapado_em_json(identidade) + "\"}\n";
 }
 
+Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa) {
+  if (modo == ModoDaLousa::Nao)
+    return {false, "desligada pelo ajuste: lousa = nao"};
+  // A falta do PROGRAMA vem antes da do DISPLAY, e não é ordem gratuita: quem
+  // não o installou ha de ler o remedio, e não «sem DISPLAY», que o mandaria
+  // caçar defeito no servidor graphico por causa de um apt que falta.
+  if (!ha_programa) return {false, "falta o ueberzugpp; ficam os symbolos"};
+  if (!ha_display && modo != ModoDaLousa::Sim)
+    return {false, "sem DISPLAY; a janella d'ella é de X11"};
+  return {true, "X11"};
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒

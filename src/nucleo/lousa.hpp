@@ -24,6 +24,8 @@
 #include <string_view>
 #include <vector>
 
+#include "nucleo/ajustes.hpp"  // ModoDaLousa: a alavanca do operador
+
 namespace mysong::nucleo {
 
 // argumentos_da_lousa — o que se corre, pelo precedente do argumentos_do_chafa.
@@ -45,6 +47,22 @@ std::string ordem_de_por(std::string_view identidade,
                          const std::filesystem::path& imagem, int collunha,
                          int linha, std::size_t largura, std::size_t altura);
 std::string ordem_de_tirar(std::string_view identidade);
+
+// O PARECER sobre a lousa: se ella se ergue, e a razão em UMA linha. A razão
+// vae sempre, ainda de pé, que é d'ella que a linha do --sonda vive.
+struct Parecer {
+  bool de_pe = false;
+  std::string razao;
+};
+
+// parecer_da_lousa — a decisão, e é PURA: o mundo entra por dous bools, pela
+// razão do Inquerito da sonda. Sem elles, o caminho da recusa não se observaria
+// n'esta machina, que tem DISPLAY e tem o programa.
+//
+// `Sim` salta a pergunta do DISPLAY, e sómente ella: a variavel é um PALPITE
+// sobre haver X11 ao alcance, e o operador pode saber melhor. A falta do
+// programa não é palpite nenhum, e nem o `Sim` a atravessa: o exec falharia.
+Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa);
 
 }  // namespace mysong::nucleo
 
