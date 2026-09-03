@@ -33,6 +33,19 @@ namespace mysong::nucleo {
 // que o yazi escolhe. A de wayland existe, e fica para quando houver Wayland.
 std::vector<std::string> argumentos_da_lousa();
 
+// escapado_em_json — as aspas, a barra invertida e os de controle. Á parte, e
+// pura: aspa no nome do album partiria a linha ao meio, e o filho calava-se.
+std::string escapado_em_json(std::string_view texto);
+
+// ordem_de_por e ordem_de_tirar — as DUAS ordens do protocolo, cada uma n'UMA
+// linha, que é como o filho as lê. O canto é o do TERMINAL, e não o do painel:
+// dentro do tmux o Überzug++ somma o deslocamento (elle lê o TMUX_PANE).
+// MEDIDO em 03/09: contam de ZERO, e a imagem cabe guardando a proporção.
+std::string ordem_de_por(std::string_view identidade,
+                         const std::filesystem::path& imagem, int collunha,
+                         int linha, std::size_t largura, std::size_t altura);
+std::string ordem_de_tirar(std::string_view identidade);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
