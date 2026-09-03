@@ -943,7 +943,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     } else {
       lousa.poe(tui::IDENTIDADE_DA_LETRA, *cristal, da_letra.collunha,
                 da_letra.linha, da_letra.cellulas, 1);
-      ultima_chapa = *cristal;
+      // E a chapa do VERSO não fica de empurrão, o que é MEDIÇÃO d'esta prova,
+      // e não escrupulo: o empurrão encolhe a imagem a UMA cella, e a do verso
+      // é dez vezes mais larga que alta; a altura arredonda a ZERO, e o
+      // Überzug++ aborta na redimensão (a asserção `inv_scale_x > 0` do OpenCV)
+      // levando comsigo a capa e as tres abas. A das abas é quasi quadrada, e
+      // é ella que o `ultima_chapa` guarda.
     }
     // A PROXIMA rasteriza-se ao NASCER d'ella, e não no instante em que se
     // canta: o pango-view corre duas vezes na primeira chamada, e esperá-lo com
