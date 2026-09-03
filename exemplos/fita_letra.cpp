@@ -65,5 +65,36 @@ std::vector<float> bandas_da_posicao(double posicao) {
 
 }  // namespace
 
+int main(int argc, char** argv) {
+  if (argc < 4) {
+    std::fprintf(stderr,
+                 "uso: fita_letra <largura> <altura> <posição> [arquivo.lrc]\n"
+                 "  sem o `.lrc`, arma-se uma letra propria de quatro versos.\n");
+    return 2;
+  }
+  const int largura = std::atoi(argv[1]);
+  const int altura = std::atoi(argv[2]);
+  const double posicao = std::atof(argv[3]);
+  if (largura < 0 || altura < 0) return 2;
+
+  std::vector<nu::LinhaDaLetra> linhas;
+  if (argc > 4) {
+    std::ifstream arquivo(argv[4]);
+    if (!arquivo) {
+      std::fprintf(stderr, "fita_letra: não se abriu «%s»\n", argv[4]);
+      return 1;
+    }
+    std::ostringstream corpo;
+    corpo << arquivo.rdbuf();
+    linhas = nu::analysa_lrc(corpo.str());
+  } else {
+    linhas = letra_de_dentro();
+  }
+  // Por emquanto diz sómente o que leu. O rio por cima do espectro vae no
+  // commit seguinte, para que a leitura do `.lrc` se leia por si.
+  std::printf("%zu versos lidos\n", linhas.size());
+  return 0;
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
