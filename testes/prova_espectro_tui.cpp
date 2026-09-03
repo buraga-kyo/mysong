@@ -203,10 +203,16 @@ TEST_CASE("a rampa vae da base composta ao topo do registro") {
 }
 
 TEST_CASE("painel de uma célulla veste a base da rampa") {
+  // Oito collunhas dão TREZ barras (issue #144), nas collunhas 0 e 1, 3 e 4, 6
+  // e 7; as collunhas 2 e 5 são os vãos, e por ellas não passa rampa alguma.
   const es::Quadro quadro =
       es::compor(bandas_uniformes(0.5f), 8, 1, false, centros_em(100.0f));
   REQUIRE(quadro.altura == 1);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
+    if (no_vao(c)) {
+      CHECK(quadro.em(0, c).pinta == false);
+      continue;
+    }
     REQUIRE(quadro.em(0, c).pinta);
     CHECK(es::mesma_tinta(quadro.em(0, c).tinta,
                           tk::mistura(tk::v500, tk::panel_hi, 0.55)));
@@ -224,7 +230,9 @@ TEST_CASE("painel de uma célulla veste a base da rampa") {
 // pinta tres, a saber teto 40, 0,5 vezes 40 = 20 degraus, dous blocos cheios e
 // resto quatro. Ambas alcançam a linha 2, e é o que as torna comparaveis.
 TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
-  const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
+  // Uma BARRA por banda (issue #144): as duas composições hão de repartir a
+  // fita do mesmo modo, senão a linha 2 de uma não seria a linha 2 da outra.
+  const std::size_t largura = kUmaBarraPorBanda;
   const std::vector<float> centros = centros_em(100.0f);
   const es::Quadro alta =
       es::compor(bandas_uniformes(0.899f), largura, 5, false, centros);
@@ -232,6 +240,13 @@ TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
       es::compor(bandas_uniformes(0.5f), largura, 5, false, centros);
 
   for (std::size_t c = 0; c < largura; ++c) {
+    // O VÃO não pinta em nenhuma das duas, e é o que assenta que o respiro não
+    // depende da magnitude, tal como a tinta não depende.
+    if (no_vao(c)) {
+      CHECK(alta.em(2, c).pinta == false);
+      CHECK(baixa.em(4, c).pinta == false);
+      continue;
+    }
     // As duas pintam a linha 2 e a linha 4, e é premissa do caso.
     REQUIRE(alta.em(2, c).pinta);
     REQUIRE(baixa.em(2, c).pinta);
