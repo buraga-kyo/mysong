@@ -291,6 +291,35 @@ Sem a ordem, nada se busca: e o operador quem manda na rede d'elle.
 A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
 acervo da corrida anterior, e o `r` manda varrer outra vez.
 
+### A tela
+
+Uma linha de CABECALHO no alto, o TRILHO do progresso logo abaixo, e o resto
+partido em duas metades: a pauta das musicas a esquerda, e o painel (capa e
+espectro) a direita. Barra lateral alguma: o menu d'esta Casa e uma fita de
+abas, a maneira da topbar do RADICAL-OS.
+
+```
+ 󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD  󰐊  󰒮  󰒭  Montagem Lunar Celestia  00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃      a capa, e por baixo d'ella o espectro
+```
+
+No cabecalho: a aba corrente em bloco solido, as outras em repouso; os tres
+botoes do transporte; o nome do que soa, cortado com «…» quando nao cabe; e a
+direita o tempo, o volume, o EMBARALHAR e o REPETIR. Apertando a tela, essas
+quatro cedem o logar INTEIRAS, da direita para a esquerda, e as abas ficam
+sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz;
+clicar no trilho busca a posicao.
+
+Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
+(`MY SONG, 42 FAIXAS, 1h29, FAIXAS`), com os degraus de dentro apartados por
+«▸» (`PLAYLISTS ▸ Funk lento`). A direita d'ella vao os recados: a lista alvo,
+o filtro posto, a varredura em curso, o andamento das baixas.
+
+Abaixo de CEM collunhas o painel some e a pauta toma a tela toda. A capa nunca
+passa de quarenta e cinco por cento da altura do painel, e o espectro toma o
+que ella deixar.
+
 ### As teclas
 
 | tecla | o que faz |
