@@ -95,6 +95,13 @@ std::vector<float> bandas_uniformes(float valor) {
   return std::vector<float>(mysong::nucleo::QUANTAS_BANDAS, valor);
 }
 
+// centros_em — as QUANTAS_BANDAS todas no mesmo hertz, para PRENDER o registro
+// da fita a um só. Os casos da rampa afirmam a RAMPA, e não a fronteira, que tem
+// caso proprio: sem isto, cada columna cahiria n'uma familia differente.
+std::vector<float> centros_em(float hertz) {
+  return std::vector<float>(mysong::nucleo::QUANTAS_BANDAS, hertz);
+}
+
 // Os glifos ESCRIPTOS Á MÃO, por ponto de codigo. Escrevem-se por \u e não pelo
 // glifo cru para que a prova não dependa da codificação com que o editor gravou
 // este arquivo, e para que o assento de cada degrau se leia como numero.
@@ -132,36 +139,41 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
 // á mão: teto 5 vezes 8 = 40 degraus, 0,899 vezes 40 = 35,96, floor 35, que dá
 // quatro blocos cheios (32) e resto tres. Cinco célullas desenhadas, e é o que
 // permitte aferir a rampa INTEIRA, da base ao topo, n'uma composição só.
-TEST_CASE("a rampa vae de v700 na base a v400 no topo") {
+TEST_CASE("a rampa vae da base composta ao topo do registro") {
   const std::vector<float> bandas = bandas_uniformes(0.899f);
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5);
+  // Cem hertz prende a fita inteira nos GRAVES, e o caso afere a RAMPA.
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                       false, centros_em(100.0f));
 
   REQUIRE(quadro.altura == 5);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
     REQUIRE(quadro.em(4, c).pinta);
     REQUIRE(quadro.em(0, c).pinta);
 
-    // A BASE (linha 4) veste v700 EXACTO, conferido contra o TOKEN e não contra
-    // outra chamada da obra: é asserção de fóra, e não pergunta ao oraculo.
-    CHECK(es::mesma_tinta(quadro.em(4, c).tinta, tk::rgb(tk::v700)));
-    // O TOPO (linha 0) veste v400 EXACTO, pelo mesmo modo.
-    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v400)));
+    // A BASE (linha 4) veste o v500 composto sobre o painel com peso 0,55,
+    // conferido contra os TOKENS e não contra outra chamada da obra.
+    CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+    // O TOPO (linha 0) veste v500 EXACTO, pelo mesmo modo.
+    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v500)));
 
     // O MEIO (linha 2) fica a meia rampa. O peso recalcula-se AQUI: a linha 2 é
-    // a terceira desde a base d'um painel de cinco, d'onde o alto vale 2 e o
-    // peso 2/4, que é 0,5. Compõe-se por tokens::mistura, que é a mesma
-    // interpolação que a issue #2 já prova, e não pela funcção sob exame.
+    // a terceira desde a base d'um painel de cinco, d'onde o alto vale 2 e a
+    // fracção 2/4, que é 0,5; e o peso vae de 0,55 a 1, d'onde 0,775. Compõe-se
+    // por tokens::mistura, e não pela funcção sob exame.
     CHECK(es::mesma_tinta(quadro.em(2, c).tinta,
-                          tk::mistura(tk::v400, tk::v700, 0.5)));
+                          tk::mistura(tk::v500, tk::panel_hi, 0.775)));
   }
 }
 
 TEST_CASE("painel de uma célulla veste a base da rampa") {
-  const es::Quadro quadro = es::compor(bandas_uniformes(0.5f), 8, 1);
+  const es::Quadro quadro =
+      es::compor(bandas_uniformes(0.5f), 8, 1, false, centros_em(100.0f));
   REQUIRE(quadro.altura == 1);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
     REQUIRE(quadro.em(0, c).pinta);
-    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v700)));
+    CHECK(es::mesma_tinta(quadro.em(0, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   }
 }
 
@@ -177,8 +189,11 @@ TEST_CASE("painel de uma célulla veste a base da rampa") {
 // resto quatro. Ambas alcançam a linha 2, e é o que as torna comparaveis.
 TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
   const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
-  const es::Quadro alta = es::compor(bandas_uniformes(0.899f), largura, 5);
-  const es::Quadro baixa = es::compor(bandas_uniformes(0.5f), largura, 5);
+  const std::vector<float> centros = centros_em(100.0f);
+  const es::Quadro alta =
+      es::compor(bandas_uniformes(0.899f), largura, 5, false, centros);
+  const es::Quadro baixa =
+      es::compor(bandas_uniformes(0.5f), largura, 5, false, centros);
 
   for (std::size_t c = 0; c < largura; ++c) {
     // As duas pintam a linha 2 e a linha 4, e é premissa do caso.
@@ -189,9 +204,10 @@ TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
     // A linha 2 veste a MESMA tinta nas duas, e a linha 4 tambem. Confere-se
     // contra o alvo escripto de fóra, e ainda uma contra a outra.
     CHECK(es::mesma_tinta(baixa.em(2, c).tinta,
-                          tk::mistura(tk::v400, tk::v700, 0.5)));
+                          tk::mistura(tk::v500, tk::panel_hi, 0.775)));
     CHECK(es::mesma_tinta(alta.em(2, c).tinta, baixa.em(2, c).tinta));
-    CHECK(es::mesma_tinta(baixa.em(4, c).tinta, tk::rgb(tk::v700)));
+    CHECK(es::mesma_tinta(baixa.em(4, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
     CHECK(es::mesma_tinta(alta.em(4, c).tinta, baixa.em(4, c).tinta));
 
     // E a barra BAIXA de facto pára antes do topo: não é que ella seja egual
