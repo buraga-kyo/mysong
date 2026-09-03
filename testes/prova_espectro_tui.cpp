@@ -112,6 +112,19 @@ constexpr const char* kCinco = "\u2585";  // cinco oitavos
 constexpr const char* kUm = "\u2581";     // um oitavo, o piso do silencio
 constexpr const char* kVazio = " ";
 
+// A LARGURA QUE DÁ UMA BARRA POR BANDA (issue #144). A fita deixou de pintar
+// uma collunha por cella: ella pinta BARRAS de duas collunhas apartadas por um
+// vão de uma, d'onde o passo é de TREZ. Vinte e quatro bandas pedem pois
+// setenta e duas collunhas, menos o vão da ultima, que depois d'ella não ha o
+// que apartar: setenta e uma. Escripto á mão, e não colhido da obra sob exame.
+constexpr std::size_t kUmaBarraPorBanda = 3 * mysong::nucleo::QUANTAS_BANDAS - 1;
+
+// no_vao — a collunha é a do VÃO, que a issue #144 deixa POR PINTAR: ella é a
+// terceira de cada passo, d'onde o resto da divisão por trez vale dous. A conta
+// faz-se aqui, á mão, e vale nas larguras que estes casos escolhem, que todas
+// fecham em barra inteira.
+bool no_vao(std::size_t c) { return c % 3 == 2; }
+
 // cor — a tríade em côr do FTXUI, que é como a tela a guarda. Recebe TRÍADE e
 // não token porque os degraus do meio da rampa nascem de tokens::mistura, e
 // nome na paleta não têm.
@@ -125,10 +138,19 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
   // que dá 21 degraus: DOUS cheios (16) e resto CINCO. A conta faz-se aqui, á
   // mão, e não se pergunta a oitavos() qual seria.
   const std::vector<float> bandas = bandas_uniformes(21.0f / 32.0f);
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 4);
+  // A largura vae em setenta e uma, e não nas vinte e quatro de dantes: com uma
+  // BARRA por banda (issue #144) o empilhamento afere-se collunha a collunha
+  // sem que barra alguma funda duas bandas.
+  const es::Quadro quadro = es::compor(bandas, kUmaBarraPorBanda, 4);
 
   REQUIRE(quadro.altura == 4);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
+    // O VÃO fica POR PINTAR, e em linha alguma: é a promessa nova da issue
+    // #144, e a prova cobra-a antes de aferir a barra que vem ao lado.
+    if (no_vao(c)) {
+      for (std::size_t l = 0; l < 4; ++l) CHECK(quadro.em(l, c).pinta == false);
+      continue;
+    }
     // A BASE é a linha 3, e é lá que mora o primeiro cheio.
     CHECK(quadro.em(3, c).glifo == kCheio);
     CHECK(quadro.em(2, c).glifo == kCheio);
@@ -149,11 +171,18 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
 TEST_CASE("a rampa vae da base composta ao topo do registro") {
   const std::vector<float> bandas = bandas_uniformes(0.899f);
   // Cem hertz prende a fita inteira nos GRAVES, e o caso afere a RAMPA.
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
-                                       false, centros_em(100.0f));
+  // Setenta e uma collunhas: uma BARRA por banda (issue #144), que a rampa se
+  // afere na collunha da barra, e a do vão não pinta.
+  const es::Quadro quadro =
+      es::compor(bandas, kUmaBarraPorBanda, 5, false, centros_em(100.0f));
 
   REQUIRE(quadro.altura == 5);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
+    // A rampa é da BARRA: o vão fica por pintar, e rampa não tem.
+    if (no_vao(c)) {
+      for (std::size_t l = 0; l < 5; ++l) CHECK(quadro.em(l, c).pinta == false);
+      continue;
+    }
     REQUIRE(quadro.em(4, c).pinta);
     REQUIRE(quadro.em(0, c).pinta);
 
