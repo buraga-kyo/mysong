@@ -8,6 +8,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdlib>
 
 #include <ftxui/dom/node.hpp>
@@ -192,4 +193,27 @@ TEST_CASE("as tres ordens de chapa sahem do quadro do cabeçalho") {
   CHECK(tui::ordens_das_chapas(caixas, tui::Aba::Playlists, true, true,
                                &focada)[1]
             .estado == tui::EstadoDaAba::ComFoco);
+}
+
+TEST_CASE("cada aba tem tres chapas, e as tres pedem imagens differentes") {
+  tui::CaixasDoCabecalho caixas;
+  papel(&caixas, tui::Aba::MySong);
+  tui::ChapaDaAba ordem =
+      tui::ordens_das_chapas(caixas, tui::Aba::MySong, true, true)[0];
+  std::vector<std::string> chaves;
+  for (const tui::EstadoDaAba degrau :
+       {tui::EstadoDaAba::Apagada, tui::EstadoDaAba::Corrente,
+        tui::EstadoDaAba::ComFoco}) {
+    ordem.estado = degrau;
+    const nu::PedidoDaChapa pedido = tui::pedido_da_chapa(ordem);
+    CHECK(pedido.texto == "MY SONG");
+    CHECK(pedido.cellulas == 7);
+    // A tinta e o fundo da chapa são os MESMOS com que a cella se pinta: é
+    // esta egualdade que faz a imagem assentar sobre a fita sem se ver emenda.
+    CHECK(pedido.fundo == std::string(tui::pintura_da_aba(degrau).fundo));
+    CHECK(pedido.tinta == std::string(tui::pintura_da_aba(degrau).tinta));
+    chaves.push_back(nu::chave_do_letreiro(pedido));
+  }
+  std::sort(chaves.begin(), chaves.end());
+  CHECK(std::unique(chaves.begin(), chaves.end()) == chaves.end());
 }
