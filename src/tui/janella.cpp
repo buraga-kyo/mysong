@@ -975,12 +975,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     std::vector<ftxui::Element> metades = {ftxui::vbox(
         {tui::elemento_da_chapa(chapa, sala.chapa.largura),
          // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
-         // da tabella: é a caixa que o FOCO lê para saltar ás visinhas, e com a
-         // vista vazia ella ha de existir na mesma, que alli não ha linha
-         // alguma e o foco não teria a que voltar.
+         // da tabella: é a caixa que o FOCO lê para saltar ás visinhas.
+         //
+         // O cinge da ALTURA vem antes d'ella, e é o que a faz existir sempre:
+         // a pauta vazia da issue #111 devolve `emptyElement`, que não pede
+         // linha alguma, e caixa de altura zero não é candidata a salto. Sem o
+         // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
          tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                   sala.pauta.largura, retracto.titulo,
                                   &caixas.linhas) |
+             ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                         static_cast<int>(sala.pauta.altura)) |
              ftxui::reflect(caixas.pauta)})};
     if (!sala.painel.vazio()) {
       metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
