@@ -260,6 +260,39 @@ Fita fita_da_esquerda(Aba corrente, bool tocando) {
   return fita;
 }
 
+// fita_da_direita — o tempo, o volume e os dous modos, em setas para a
+// ESQUERDA, e sómente as `quantas` primeiras. Quem não cabe sahe INTEIRO, e da
+// direita para a esquerda: o REPETIR cede primeiro, e o tempo por ultimo, que
+// é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
+// fundo, que é a emenda visivel que o aceite proscreve.
+Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
+  const bool repete = retracto.repeticao != nucleo::Repeticao::Nenhuma;
+  const bool mudo = retracto.volume == 0;
+  const std::string tempo =
+      " " + mm_ss(retracto.posicao) + " / " + mm_ss(retracto.duracao) + " ";
+  const std::string som = " " + std::string(mudo ? kMudo : kSom) + " " +
+                          std::to_string(retracto.volume) + "% ";
+  const std::string baralha = " " + std::string(kEmbaralhar) + " EMBARALHAR ";
+  const std::string torna =
+      " " +
+      std::string(retracto.repeticao == nucleo::Repeticao::Uma
+                      ? kRepetirUma
+                      : kRepetirTodas) +
+      " REPETIR ";
+  // Aceso é glow_core, apagado é text_muted, e o segmento fica PRESENTE nos
+  // dous casos: modo que sommisse mudaria a largura da linha a cada tecla, e o
+  // nome da faixa saltaria de logar debaixo do olho.
+  const Segmento todos[4] = {
+      {tempo, tokens::raised, tokens::text_bright},
+      {som, tokens::raised, mudo ? tokens::text_muted : tokens::text_primary},
+      {baralha, tokens::raised,
+       retracto.embaralhado ? tokens::glow_core : tokens::text_muted},
+      {torna, tokens::raised, repete ? tokens::glow_core : tokens::text_muted}};
+  Fita fita(Sentido::Esquerda);
+  for (std::size_t i = 0; i < quantas && i < 4; ++i) fita.junta(todos[i]);
+  return fita;
+}
+
 }  // namespace
 
 }  // namespace mysong::tui
