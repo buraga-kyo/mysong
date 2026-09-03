@@ -158,8 +158,8 @@ TEST_CASE("as tres teclas de algarismo vão á aba que dizem") {
   const tui::Aba alvos[3] = {tui::Aba::MySong, tui::Aba::Playlists,
                              tui::Aba::Download};
   for (int i = 0; i < 3; ++i) {
-    const tui::OrdemDaAba d_ella =
-        tui::ordem_da_aba(ftxui::Event::Character('1' + i));
+    const tui::OrdemDaAba d_ella = tui::ordem_da_aba(
+        ftxui::Event::Character(static_cast<char>('1' + i)));
     CHECK(d_ella.gesto == tui::GestoDaAba::Vai);
     CHECK(d_ella.aba == alvos[i]);
   }
@@ -171,10 +171,11 @@ TEST_CASE("as tres teclas de algarismo vão á aba que dizem") {
         tui::GestoDaAba::CyclaVista);
   // Tecla alheia é ALHEIA, e é isso que faz o atalho de sempre valer: o `q`, o
   // espaço e as setas seguem á taboada do commando e fazem o que sempre fizeram.
-  for (const ftxui::Event qual :
-       {ftxui::Event::Character('4'), ftxui::Event::Character('q'),
-        ftxui::Event::Character(' '), ftxui::Event::ArrowLeft,
-        ftxui::Event::Return, ftxui::Event::Custom})
+  const ftxui::Event alheias[6] = {
+      ftxui::Event::Character('4'), ftxui::Event::Character('q'),
+      ftxui::Event::Character(' '), ftxui::Event::ArrowLeft,
+      ftxui::Event::Return,         ftxui::Event::Custom};
+  for (const ftxui::Event& qual : alheias)
     CHECK(tui::ordem_da_aba(qual).gesto == tui::GestoDaAba::Alheio);
 }
 
