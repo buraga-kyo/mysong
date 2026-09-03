@@ -57,13 +57,33 @@ bool chave_e_caminho(Secao secao);
 // especie_da_secao — o que se conta em cada secção da barra lateral.
 Especie especie_da_secao(Secao secao);
 
-// nome_da_colleccao — o titulo do cabeçalho. O vocabulario FIXO vae em caixa
-// alta; o nome vindo do acervo (artista, album, lista, catalogo) sahe VERBATIM,
+// onde_da_chapa — ONDE se está, na palavra da aba e nos degraus de dentro,
+// apartados por «▸»: `MY SONG`, `PLAYLISTS ▸ Funk`, `ARTISTAS ▸ MXZI`. O
+// vocabulario FIXO vae em caixa alta; o nome vindo do acervo sahe VERBATIM,
 // que caixa alta byte a byte estragaria o UTF-8 acentuado do portuguez
 // («Canção» sahiria «CANçãO»), e taboa de caixa Unicode esta Casa não carrega.
-std::string nome_da_colleccao(Secao secao,
-                              const std::vector<std::string>& trilha,
-                              const std::string& nome_do_catalogo);
+std::string onde_da_chapa(Secao secao, const std::vector<std::string>& trilha,
+                          const std::string& nome_do_catalogo);
+
+// A CHAPA de uma linha por cima da pauta (issue #102): onde se está, a conta, e
+// a vista. Toma o logar do cabeçalho da colleção, que gastava seis linhas para
+// dizer o que a aba já diz, e o da trilha do topo.
+struct Chapa {
+  std::string onde;
+  std::size_t quantas = 0;
+  Especie especie = Especie::Faixas;
+  int duracao = 0;
+  std::string vista;   // FAIXAS, ARTISTAS, ÁLBUNS; vazia onde não se cycla
+  std::string recado;  // o aviso da rede, o andamento das baixas, a varredura
+};
+
+// texto_da_chapa — «MY SONG, 42 FAIXAS, 1h29, FAIXAS». O recado NÃO entra: elle
+// vae á direita da linha, e n'outra tinta.
+std::string texto_da_chapa(const Chapa& chapa);
+
+// elemento_da_chapa — a linha inteira: o texto á esquerda, o recado á direita
+// quando ha, e o fundo do painel por baixo dos dous.
+ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura);
 
 // Um RECTANGULO da sala: onde começa e quanto mede. O canto conta-se da tela
 // INTEIRA, e não de dentro de peça alguma: a tela nova não leva orla, e canto
