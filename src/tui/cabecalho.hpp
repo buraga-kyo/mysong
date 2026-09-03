@@ -118,7 +118,8 @@ std::string rotulo_da_aba(Aba aba);
 // elemento_da_aba — a palavra JÁ PINTADA, corrente ou não. Vive apartada da
 // fita pela mesma razão: quem puzer imagem por cima da cella troca aqui, e a
 // composição da linha não muda uma linha.
-ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado);
+ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
+                               std::size_t altura = 1);
 
 // elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer

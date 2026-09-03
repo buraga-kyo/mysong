@@ -144,13 +144,18 @@ OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept {
 
 namespace {
 
-// vestir — o texto com o par de côres do token. Côr crua não entra n'esta obra.
+// vestir — o texto com o par de côres do token, na ALTURA que a fita pedir.
+// Côr crua não entra n'esta obra. O fundo cobre as DUAS linhas e o texto fica
+// na de CIMA sem que se pinte fileira de espaços: medido no FTXUI v7.0.3, o
+// `bgcolor` assenta a côr na caixa INTEIRA antes de descer ao filho, e o `text`
+// escreve sómente na fileira do alto d'ella.
 ftxui::Element vestir(const std::string& texto, std::string_view tinta,
-                      std::string_view fundo) {
+                      std::string_view fundo, std::size_t altura = 1) {
   const tokens::Triade f = tokens::rgb(tinta);
   const tokens::Triade t = tokens::rgb(fundo);
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(f.r, f.g, f.b)) |
-         ftxui::bgcolor(ftxui::Color::RGB(t.r, t.g, t.b));
+         ftxui::bgcolor(ftxui::Color::RGB(t.r, t.g, t.b)) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura));
 }
 
 // aparar_nome — o nome do que sôa, na largura que sobrou. Mede-se em COLLUNHAS
@@ -196,13 +201,17 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
 // sua propria pintura sem que a fita deixe de resolver as junções.
 ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
                            const std::vector<ftxui::Box*>& caixas,
-                           const std::vector<ftxui::Element>& proprios) {
+                           const std::vector<ftxui::Element>& proprios,
+                           std::size_t altura = 1) {
   std::vector<ftxui::Element> partes;
   partes.reserve(pedacos.size());
   std::size_t qual = 0;  // o indice do SEGMENTO, que a junção não adianta
   for (const Pedaco& pedaco : pedacos) {
     if (pedaco.juncao) {
-      partes.push_back(vestir(pedaco.texto, pedaco.tinta, pedaco.fundo));
+      // A junção repete-se nas DUAS linhas, que a emenda entre segmentos é
+      // diagonal em toda a altura d'elles: junção n'uma só deixaria a de baixo
+      // com o fundo do visinho a entrar em quadrado.
+      partes.push_back(vestir(pedaco.texto, pedaco.tinta, pedaco.fundo, altura));
       continue;
     }
     // O NEGRITO em todo segmento, e não sómente nas abas: a issue pede os
@@ -212,7 +221,8 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
     ftxui::Element parte =
         qual < proprios.size() && proprios[qual] != nullptr
             ? proprios[qual]
-            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo) | ftxui::bold;
+            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo, altura) |
+                  ftxui::bold;
     if (qual < caixas.size() && caixas[qual] != nullptr)
       parte = parte | ftxui::reflect(*caixas[qual]);
     partes.push_back(std::move(parte));
@@ -381,9 +391,10 @@ std::optional<Aba> aba_com_foco(Focavel foco) noexcept {
   return std::nullopt;
 }
 
-ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado) {
-  return vestir(rotulo_da_aba(aba), tinta_da_aba(estado),
-                fundo_da_aba(estado)) |
+ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
+                               std::size_t altura) {
+  return vestir(rotulo_da_aba(aba), tinta_da_aba(estado), fundo_da_aba(estado),
+                altura) |
          ftxui::bold;
 }
 
