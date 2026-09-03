@@ -109,6 +109,14 @@ std::vector<Pedaco> pedacos_da_linha(const Linha& linha, const Medidas& medidas,
 ftxui::Element elemento_da_linha(const std::vector<Pedaco>& pedacos, bool eleita,
                                  bool soa, std::size_t largura);
 
+// conselho_do_vazio — o que se diz quando a pauta não tem linha alguma, e a
+// TECLA que o desfaz. É POR SECÇÃO: um conselho só dizia «varra o acervo»
+// dentro de uma lista escolhida á mão, que é mandar o operador ao logar errado.
+//
+// Sobe á CHAPA (issue #111), e não fica no meio da folha: conselho pintado onde
+// as linhas se lêem toma-se por linha da lista.
+std::string conselho_do_vazio(Secao secao, bool ha_termo);
+
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
