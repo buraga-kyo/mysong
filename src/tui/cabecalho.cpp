@@ -303,6 +303,37 @@ const ftxui::Box& caixa_do_segmento(const CaixasDoCabecalho& caixas, Aba aba) {
 
 }  // namespace
 
+std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
+                                          Aba corrente, bool letreiro_de_pe,
+                                          bool foco_dentro,
+                                          const Aba* com_foco) {
+  std::vector<ChapaDaAba> ordens;
+  ordens.reserve(3);
+  for (const Aba aba : {Aba::MySong, Aba::Playlists, Aba::Download}) {
+    ChapaDaAba ordem;
+    ordem.aba = aba;
+    // O FOCO ganha da corrente: elle diz onde o dedo está, e a corrente diz
+    // onde se estêve. Aba que seja as duas cousas accende como focada.
+    ordem.estado = com_foco != nullptr && *com_foco == aba
+                       ? EstadoDaAba::ComFoco
+                   : aba == corrente ? EstadoDaAba::Corrente
+                                     : EstadoDaAba::Apagada;
+    const ftxui::Box palavra = caixa_da_palavra(caixa_do_segmento(caixas, aba));
+    // As tres condições são de CONJUNCÇÃO, e nenhuma sobra: sem letreiro não
+    // ha chapa, o foco fóra manda tirar, e caixa por pintar não tem canto.
+    ordem.poe =
+        letreiro_de_pe && foco_dentro && palavra.x_max >= palavra.x_min;
+    if (ordem.poe) {
+      ordem.collunha = palavra.x_min;
+      ordem.linha = palavra.y_min;
+      ordem.largura =
+          static_cast<std::size_t>(palavra.x_max - palavra.x_min + 1);
+    }
+    ordens.push_back(ordem);
+  }
+  return ordens;
+}
+
 nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem) {
   const PinturaDaAba pintura = pintura_da_aba(ordem.estado);
   nucleo::PedidoDaChapa pedido;
