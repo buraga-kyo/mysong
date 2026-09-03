@@ -167,63 +167,6 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
   return linha;
 }
 
-ftxui::Element elemento_do_transporte(const Retracto& retracto,
-                                      std::size_t largura,
-                                      CaixasDoTransporte* caixas) {
-  // Esvazia-se á entrada, e antes de toda sahida antecipada: linha que se não
-  // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
-  if (caixas != nullptr) *caixas = CaixasDoTransporte();
-  if (largura == 0) return ftxui::text("");
-
-  const std::string relogio =
-      " " + mm_ss(retracto.posicao) + " / " + mm_ss(retracto.duracao) + " ";
-  const std::string som = "vol " + std::to_string(retracto.volume) + "% ";
-
-  // A barra toma o que sobra, e nunca menos que uma collunha. A subtracção é
-  // GUARDADA: em std::size_t, tirar mais do que ha dá numero enorme, e a barra
-  // tentaria pintar bilhões de collunhas em vez de encolher.
-  // A largura da fita PERGUNTA-SE Á FITA. Estava chumbada em quatorze, e a fita
-  // pede vinte e uma: a linha transbordava, o FTXUI aparava o fim, e o que se
-  // perdia era o espaço entre o relogio e o volume. Numero chumbado alli é o
-  // defeito, e não a sua magnitude; quem sabe a largura é quem a compõe.
-  // Os dous modos CEDEM O LOGAR quando a linha não cabe, e sahem inteiros. Foi
-  // medido: o FTXUI não apara sómente a barra, encolhe todo elemento da linha, e
-  // a trinta collunhas a fita sahia «Toc emb r». «emb r» diz menos que nada, e o
-  // que fica sem elle é a fita que o operador já conhece.
-  Fita fita = fita_dos_botoes(retracto, true);
-  std::size_t reservado =
-      fita.largura_exigida() + 1 + relogio.size() + som.size();
-  if (largura <= reservado) {
-    fita = fita_dos_botoes(retracto, false);
-    reservado = fita.largura_exigida() + 1 + relogio.size() + som.size();
-  }
-  const std::size_t larg_barra = largura > reservado ? largura - reservado : 1;
-  const std::size_t cheias =
-      enchimento(retracto.posicao, retracto.duracao, larg_barra);
-
-  // As duas metades da barra reflectem-se á parte, e a união d'ellas é que dá a
-  // barra inteira: n'um hbox aninhado o FTXUI reparte a sobra por outro grupo, e
-  // o que se ganharia em uma linha pagar-se-hia em desenho torto na tela
-  // apertada. A união sabe tratar a metade de largura zero, que é o principio e
-  // o fim de toda faixa.
-  ftxui::Element cheia = pinta(repete(kBarraCheia, cheias), tokens::v500);
-  ftxui::Element vazia =
-      pinta(repete(kBarraVazia, larg_barra - cheias), tokens::inset);
-  if (caixas != nullptr) {
-    cheia = cheia | ftxui::reflect(caixas->barra_cheia);
-    vazia = vazia | ftxui::reflect(caixas->barra_vazia);
-  }
-
-  return ftxui::hbox({
-      fita_em_elemento(fita.compor(), caixas),
-      ftxui::text(" "),
-      std::move(cheia),
-      std::move(vazia),
-      pinta(relogio, tokens::text_bright),
-      pinta(som, tokens::text_muted),
-  });
-}
-
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
