@@ -196,6 +196,45 @@ TEST_CASE("o campo aberto empurra o corpo uma linha para baixo") {
   CHECK(com.rodape.y == 66);
 }
 
+// A INVARIANTE de altura, corrida de DOZE a SETENTA linhas, que é o arco que a
+// issue #102 nomeia. Não se afere numero por numero: afere-se que as peças se
+// fecham sem se sobreporem e sem deixarem fileira por pintar.
+TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposição") {
+  for (std::size_t alta = 12; alta <= 70; ++alta) {
+    for (const bool campo : {false, true}) {
+      const tui::Sala sala = tui::sala_da_tela(167, alta, campo);
+      CHECK(sala.cabecalho.altura == 1);
+      CHECK(sala.trilho.altura == 1);
+      // A pauta começa onde o campo e a chapa acabam, e o rodapé é a ultima.
+      const std::size_t alto = 2 + (campo ? 1u : 0u);
+      CHECK(sala.chapa.y == alto);
+      CHECK(sala.pauta.y == alto + 1);
+      CHECK(sala.rodape.y == alta - 1);
+      CHECK(sala.pauta.y + sala.pauta.altura == alta - 1);
+      if (sala.painel.vazio()) continue;
+      CHECK(sala.painel.y == alto);
+      CHECK(sala.painel.altura == sala.divisor.altura);
+      CHECK(sala.capa.altura + sala.espectro.altura == sala.painel.altura);
+      CHECK(sala.espectro.altura >= 6);  // o espectro não desce de seis
+      CHECK(sala.espectro.y == sala.capa.y + sala.capa.altura);
+    }
+  }
+}
+
+// A SOBRA do espectro depois de se saber quanto a capa tomou DE FACTO. O
+// rectangulo da capa é TECTO, e a de 16 por 9 sahe mais baixa que elle.
+TEST_CASE("o espectro toma o que a capa não gastou") {
+  const tui::Sala sala = tui::sala_da_tela(167, 67, false);
+  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 36);
+  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 53);
+  CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.painel.y + 11);
+  CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura);
+  // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em
+  // std::size_t daria numero enorme, e a peça pintaria bilhões de linhas.
+  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 36);
+  CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).vazio());
+}
+
 // A ARTE não tem altura reservada: a de 16 por 9 sahe mais baixa que o tecto.
 TEST_CASE("a ficha vem na linha seguinte á ultima da capa") {
   const tui::Ficha ficha{"Dawn Chorus", "Boards of Canada", "Geogaddi"};
