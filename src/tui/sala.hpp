@@ -59,8 +59,19 @@ struct Chapa {
   Especie especie = Especie::Faixas;
   int duracao = 0;
   std::string vista;   // FAIXAS, ARTISTAS, ÁLBUNS; vazia onde não se cycla
-  std::string recado;  // o aviso da rede, o andamento das baixas, a varredura
+  // As ENCOMMENDAS (colhidas, falhadas, duvidosas). Campo PROPRIO, e não mais
+  // um pedaço do recado: a issue pede-as «por cima da lista» na DOWNLOAD, e no
+  // fim da cadeia o primeiro aviso comprido comia-lhes o logar. Pintam-se logo
+  // á direita do texto, e recado algum as empurra.
+  std::string encommendas;
+  std::string recado;  // o aviso da rede, o filtro posto, a varredura
 };
+
+// espaco_do_recado — quantas collunhas sobram á direita depois do texto e das
+// encommendas. Quem monta o recado precisa d'esta conta ANTES de o montar:
+// juntar sem ella dá cadeia que a chapa corta a meio da palavra, e foi o que
+// se mediu nos dumps («busca prime», e o «(s)» perdido).
+std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura);
 
 // texto_da_chapa — «MY SONG, 42 FAIXAS, 1h29, FAIXAS». O recado NÃO entra: elle
 // vae á direita da linha, e n'outra tinta.
