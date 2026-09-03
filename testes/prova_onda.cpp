@@ -389,3 +389,37 @@ TEST_CASE("sem pontos, a onda mostra a barra chata do trilho") {
   CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::v600));
   CHECK(tela.PixelAt(7, 0).foreground_color == cor(tk::line_dim));
 }
+
+// Largura zero dá elemento VAZIO, e não `text("")`: o `text` do FTXUI pede
+// sempre UMA linha, e a fita que pedisse meio de largura zero ganharia uma
+// fileira do nada, que empurraria a lista uma linha para baixo.
+TEST_CASE("largura zero dá elemento vazio, de altura zero") {
+  ftxui::Element vazio = tui::elemento_da_onda(escada(), 3.0, 8.0, 0, false);
+  vazio->ComputeRequirement();
+  CHECK(vazio->requirement().min_x == 0);
+  CHECK(vazio->requirement().min_y == 0);
+}
+
+// A caixa por pintar nasce VAZIA, e não contendo o canto (0,0): a caixa de
+// fabrica do FTXUI contém-o, e clique no canto da tela cahiria na onda que
+// ainda se não pintou.
+TEST_CASE("a caixa da onda nasce vazia, e recebe o reflect ao pintar") {
+  ftxui::Box caixa = {0, 0, 0, 0};
+  ftxui::Element nada = tui::elemento_da_onda(escada(), 0.0, 8.0, 0, false, &caixa);
+  CHECK(caixa.x_max < caixa.x_min);
+  (void)nada;
+  papel(tui::elemento_da_onda(escada(), 3.0, 8.0, 8, false, &caixa), 8);
+  CHECK(caixa.x_min == 0);
+  CHECK(caixa.x_max == 7);
+  CHECK(caixa.y_min == 0);
+  CHECK(caixa.y_max == 0);
+}
+
+// Duração que não é tempo não enche cousa alguma: o andado cinge-se em zero e
+// a onda sahe toda apagada, sem divisão por zero pelo caminho.
+TEST_CASE("sem duração, a onda sahe toda por andar") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_da_onda(escada(), 0.0, 0.0, 8, false), 8);
+  for (int c = 0; c < 8; ++c)
+    CHECK(tela.PixelAt(c, 0).foreground_color == cor(tk::line_dim));
+}
