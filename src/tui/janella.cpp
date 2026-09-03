@@ -990,11 +990,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     //
     // Resolve-se ANTES das chapas (issue #110) por ser d'elle que sae a caixa da
     // chapa da linha corrente, que vae pela mesma lousa d'ellas.
-    const tui::QuadroDaLetra rio =
-        mostra_letra.load()
-            ? tui::quadro_da_letra(letra, retracto.posicao, abaixo.largura,
-                                   abaixo.altura)
-            : tui::QuadroDaLetra{};
+    // O VERSO CORRENTE (issue #157): elle é funcção da posição, e de mais nada.
+    // O rio que subia morreu; o bloco fica QUIETO debaixo da capa.
+    const int verso_corrente =
+        mostra_letra.load() ? nucleo::linha_corrente(letra, retracto.posicao)
+                            : -1;
     // AS CHAPAS DAS ABAS (issue #108), pela MESMA lousa e com a mesma
     // disciplina: a ordem sae do QUADRO, e as caixas são as do quadro
     // anterior, que são as unicas que o `reflect` já encheu.
@@ -1027,9 +1027,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A CHAPA DA LINHA CORRENTE (issue #110), ao lado das das abas e pela mesma
     // lousa: o verso que se canta cristaliza em XIROD sobre as cellas d'elle. O
     // mono continua pintado por baixo, e por isso sem lousa nada falta.
-    const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_da_letra(
-        rio, abaixo, lousa.disponivel() && letreiro.disponivel(),
-        vigilia.pede_batida(), mostra_letra.load());
+    const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_parada(
+        letra, verso_corrente, sala.letra,
+        lousa.disponivel() && letreiro.disponivel(), vigilia.pede_batida(),
+        mostra_letra.load());
     const std::filesystem::path* cristal = nullptr;
     if (da_letra.poe)
       cristal = &letreiro.chapa(
@@ -1037,8 +1038,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     if (cristal == nullptr || cristal->empty()) {
       lousa.tira(tui::IDENTIDADE_DA_LETRA);
     } else {
+      // TRES fileiras (issue #157), que é o corpo GRANDE que elle pediu: a
+      // chapa cobre as cellas que a sala reservou ao verso.
       lousa.poe(tui::IDENTIDADE_DA_LETRA, *cristal, da_letra.collunha,
-                da_letra.linha, da_letra.cellulas, 1);
+                da_letra.linha, da_letra.cellulas, tui::FILEIRAS_DO_VERSO);
       // E a chapa do VERSO não fica de empurrão, o que é MEDIÇÃO d'esta prova,
       // e não escrupulo: o empurrão encolhe a imagem a UMA cella, e a do verso
       // é dez vezes mais larga que alta; a altura arredonda a ZERO, e o
@@ -1049,9 +1052,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A PROXIMA rasteriza-se ao NASCER d'ella, e não no instante em que se
     // canta: o pango-view corre duas vezes na primeira chamada, e esperá-lo com
     // a voz já a cantar deixaria em mono o quadro em que a linha cristaliza.
-    if (!da_letra.adiantado.empty())
-      letreiro.chapa(tui::pedido_da_chapa_da_letra(
-          da_letra.adiantado, da_letra.cellulas_adiantadas));
+    // O VERSO SEGUINTE rasteriza-se adeantado, para que a troca não apanhe o
+    // pango-view a frio: elle corre duas vezes na primeira chamada.
+    if (verso_corrente >= 0 &&
+        static_cast<std::size_t>(verso_corrente) + 1 < letra.size() &&
+        !sala.letra.vazio()) {
+      const std::string proximo = tui::verso_do_bloco(
+          letra, verso_corrente + 1, sala.letra.largura);
+      if (!proximo.empty())
+        letreiro.chapa(tui::pedido_da_chapa_da_letra(
+            proximo, static_cast<std::size_t>(ftxui::string_width(proximo))));
+    }
     // O EMPURRÃO, e sómente havendo ordem nova: a chapa do VERSO tem uma
     // linha, e a janella de uma linha do Überzug++ fica preta até que outra
     // ordem chegue. As das abas passaram a duas (issue #126) e desenham-se
@@ -1087,9 +1098,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             ? ftxui::emptyElement()
             : ftxui::vbox(
                   {tui::elemento_da_ficha(ficha, sala.ficha.largura),
-                   tui::elemento_do_painel(std::move(quadro_com_caixa),
-                                           tui::elemento_do_rio(quadro, rio),
-                                           sala.painel.largura)});
+                   tui::elemento_do_painel(
+                       std::move(quadro_com_caixa),
+                       ftxui::vbox({tui::elemento_da_letra_parada(
+                                        mostra_letra.load()
+                                            ? letra
+                                            : std::vector<nucleo::LinhaDaLetra>(),
+                                        verso_corrente, sala.letra.largura,
+                                        sala.letra.altura),
+                                    tui::elemento_do_espectro(quadro)}),
+                       sala.painel.largura)});
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
     // pela razão que a composição velha ensinou: por menos, o pé da tela fica
     // em branco; por mais, o rodapé sahe d'ella.
