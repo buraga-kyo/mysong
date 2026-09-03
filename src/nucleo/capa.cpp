@@ -19,6 +19,8 @@
 #include <taglib/mpegfile.h>
 
 #include <algorithm>
+#include <unistd.h>
+
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
@@ -376,6 +378,13 @@ std::string cabeca_do_arquivo(const std::filesystem::path& caminho) {
 
 // escreve_no_cache — a arte em arquivo UMA vez: o nome vem do CONTEUDO, d'onde
 // arquivo de mesmo nome já tem os octetos e não se torna a escrever.
+//
+// Por TEMPORARIO e RENAME, e não direito ao nome final: quem acha o arquivo
+// toma-o por bom sem lhe conferir octeto, d'onde um arquivo cortado ao meio
+// (queda a meio da escripta, disco cheio, duas instancias sobre a mesma capa)
+// envenenaria esse endereço de conteudo para SEMPRE, e a capa d'aquelle album
+// nunca mais voltaria. O rename no mesmo systema de arquivos é atomico, e
+// resolve de graça a corrida entre duas instancias.
 std::filesystem::path escreve_no_cache(std::string_view arte, bool* escreveu) {
   const std::filesystem::path onde = caminho_da_capa_em_cache(arte);
   if (onde.empty()) return {};
@@ -383,10 +392,19 @@ std::filesystem::path escreve_no_cache(std::string_view arte, bool* escreveu) {
   if (std::filesystem::is_regular_file(onde, erro) && !erro) return onde;
   std::filesystem::create_directories(onde.parent_path(), erro);
   if (erro) return {};
-  std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
+  const std::filesystem::path meio =
+      onde.string() + "." + std::to_string(::getpid()) + ".parte";
+  std::ofstream sahida(meio, std::ios::binary | std::ios::trunc);
   if (!sahida) return {};
   sahida.write(arte.data(), static_cast<std::streamsize>(arte.size()));
-  if (!sahida.good()) return {};
+  // O `close` ANTES do `good`: o ultimo despejo corre no fecho, e afervel
+  // antes d'elle daria por bom o erro que mora justamente na cauda.
+  sahida.close();
+  if (sahida.good()) std::filesystem::rename(meio, onde, erro);
+  if (!sahida.good() || erro) {
+    std::filesystem::remove(meio, erro);
+    return {};
+  }
   *escreveu = true;
   return onde;
 }
