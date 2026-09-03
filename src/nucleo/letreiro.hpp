@@ -38,6 +38,7 @@ inline constexpr int CORPO_DA_MARCA = 22;
 // querer assim, e vêm SEMPRE de `tui::tokens`: côr crua não entra n'esta obra.
 struct Pedido {
   std::string texto;
+  std::string familia{FAMILIA_DA_MARCA};
   std::string tinta;
   std::string fundo;
   std::size_t cellulas = 0;
