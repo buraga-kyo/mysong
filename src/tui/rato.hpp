@@ -138,7 +138,7 @@ struct Arrasto {
   bool pegou = false;       // ha faixa na mão
   std::size_t origem = 0;   // o indice ABSOLUTO da vista de onde ella sahiu
   std::size_t alvo = 0;     // o indice ABSOLUTO em que ella cahiria
-  bool andou = false;       // já sahiu da linha d'onde veio
+  bool andou = false;       // já sahiu MAIS de uma linha d'onde veio
 };
 
 // O que a máquina do arrasto responde a cada evento do rato.
@@ -161,6 +161,10 @@ struct RespostaDoArrasto {
 // lista sim; artistas, albuns e achados da rede não, que alli a ordem não é do
 // operador). O botão que desce fóra de linha alguma não pega; o que sobe na
 // MESMA linha desiste, e é assim que o clique simples continua a ser clique.
+//
+// E o arrasto sómente se dá por ANDADO passada MAIS de uma linha (issue #169):
+// o tremor de uma linha é o que todo duplo clique tem, e tomá-lo por arrasto
+// fazia a faixa mudar de logar em vez de tocar.
 RespostaDoArrasto gesto_do_arrasto(Arrasto& arrasto, const Alvo& alvo,
                                    ftxui::Mouse::Button botao,
                                    ftxui::Mouse::Motion movimento,
