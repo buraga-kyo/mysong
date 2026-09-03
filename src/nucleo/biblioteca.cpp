@@ -101,6 +101,47 @@ void assenta_versao_e_limite(sqlite3* punho, long limite) {
 }
 
 
+// A MIGRAÇÃO do banco velho, que corre em toda abertura. O acervo de quem já
+// nos usa não ha de baralhar-se ao abrir: a collunha nova enche-se com a ordem
+// que elle HOJE vê, a de artista, album, numero e titulo. Banco que não se
+// deixe escrever fica como está, e lê-se á mesma: índice velho legivel vale
+// mais que índice recusado.
+void migra_esquema(const std::filesystem::path& banco) {
+  std::error_code erro;
+  if (!std::filesystem::exists(banco, erro)) return;
+  sqlite3* punho = nullptr;
+  if (sqlite3_open_v2(banco.c_str(), &punho, SQLITE_OPEN_READWRITE, nullptr) !=
+      SQLITE_OK) {
+    sqlite3_close(punho);
+    return;
+  }
+  int achada = 0;
+  sqlite3_stmt* passo = nullptr;
+  if (sqlite3_prepare_v2(punho, "SELECT versao FROM esquema LIMIT 1;", -1,
+                         &passo, nullptr) == SQLITE_OK) {
+    if (sqlite3_step(passo) == SQLITE_ROW) achada = sqlite3_column_int(passo, 0);
+    sqlite3_finalize(passo);
+  }
+  if (achada == 1) {
+    char sql[80] = {0};
+    std::snprintf(sql, sizeof(sql), "UPDATE esquema SET versao = %d;",
+                  kVersaoDoEsquema);
+    sqlite3_exec(punho, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
+    sqlite3_exec(punho,
+                 "ALTER TABLE faixas ADD COLUMN ordem INTEGER NOT NULL"
+                 " DEFAULT -1;"
+                 "WITH posta AS (SELECT caminho, ROW_NUMBER() OVER (ORDER BY"
+                 " artista, album, numero, titulo) - 1 AS logar FROM faixas)"
+                 " UPDATE faixas SET ordem = (SELECT logar FROM posta WHERE"
+                 " posta.caminho = faixas.caminho);"
+                 "CREATE INDEX IF NOT EXISTS faixas_ordem ON faixas(ordem);",
+                 nullptr, nullptr, nullptr);
+    sqlite3_exec(punho, sql, nullptr, nullptr, nullptr);
+    sqlite3_exec(punho, "COMMIT;", nullptr, nullptr, nullptr);
+  }
+  sqlite3_close(punho);
+}
+
 // O LOGAR PROVISORIO da faixa que entra sem ordem. Alto de proposito: assim
 // ella fica DEPOIS de toda faixa que já tinha logar, e o renumerar do conclui()
 // a traz ao fim da fila contigua. Um bilhão cabe folgado n'um inteiro de oito
@@ -172,7 +213,10 @@ std::string saneia_utf8(std::string_view crua) {
 }
 
 Biblioteca::Biblioteca(std::filesystem::path banco)
-    : banco_(std::move(banco)), punho_(abre_para_ler(banco_)) {}
+    : banco_(std::move(banco)) {
+  migra_esquema(banco_);
+  punho_ = abre_para_ler(banco_);
+}
 
 Biblioteca::~Biblioteca() { sqlite3_close(punho_); }
 
@@ -182,6 +226,7 @@ Biblioteca::~Biblioteca() { sqlite3_close(punho_); }
 void Biblioteca::reabre() {
   const std::lock_guard<std::mutex> chave(tranca_);
   sqlite3_close(punho_);
+  migra_esquema(banco_);
   punho_ = abre_para_ler(banco_);
 }
 
