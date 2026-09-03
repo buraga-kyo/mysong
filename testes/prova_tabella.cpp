@@ -12,6 +12,7 @@
 
 #include <ftxui/dom/node.hpp>
 #include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/string.hpp>
 
 #include <filesystem>
 #include <string>
@@ -99,6 +100,28 @@ class Cova {
 };
 
 }  // namespace
+
+TEST_CASE("o corte da pauta conta CELLAS, e o glypho largo vale duas") {
+  // Cabendo, sahe INTEIRO e enchido: a columna promette largura fixa.
+  CHECK(tui::apara_collunhas("Fuga", 8) == "Fuga    ");
+  CHECK(ftxui::string_width(tui::apara_collunhas("Fuga", 8)) == 8);
+  // Não cabendo, a ultima cella leva a reticencia, e a conta bate na cella.
+  CHECK(tui::apara_collunhas("Toccata e Fuga", 8) == "Toccata\u2026");
+  CHECK(ftxui::string_width(tui::apara_collunhas("Toccata e Fuga", 8)) == 8);
+  // O CJK toma DUAS cellas por glypho: cinco glyphos pedem dez, e em oito
+  // cabem tres (seis cellas) mais a reticencia. Contando por codepoint, sete
+  // d'elles «cabiam» em oito e a linha sahia com seis cellas a mais.
+  const std::string cjk = "\u6771\u4eac\u97f3\u697d\u796d";  // 5 glyphos, 10 cellas
+  CHECK(ftxui::string_width(cjk) == 10);
+  const std::string cortado = tui::apara_collunhas(cjk, 8);
+  CHECK(ftxui::string_width(cortado) == 8);
+  CHECK(cortado == "\u6771\u4eac\u97f3\u2026 ");
+  // Largura IMPAR deixa uma cella orphã antes do «…»: enche-se de espaço, e a
+  // conta continua exacta. Sem o enchimento a columna encolhia uma cella.
+  CHECK(ftxui::string_width(tui::apara_collunhas(cjk, 7)) == 7);
+  CHECK(ftxui::string_width(tui::apara_collunhas(cjk, 3)) == 3);
+  CHECK(tui::apara_collunhas("Fuga", 0).empty());
+}
 
 TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita") {
   Cova cova;
