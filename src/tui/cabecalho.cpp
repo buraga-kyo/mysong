@@ -279,6 +279,40 @@ ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept {
   return palavra.x_max >= palavra.x_min ? palavra : caixa_por_pintar();
 }
 
+std::string_view identidade_da_chapa(Aba aba) noexcept {
+  switch (aba) {
+    case Aba::Playlists: return "aba_playlists";
+    case Aba::Download: return "aba_download";
+    case Aba::MySong: break;
+  }
+  return "aba_mysong";
+}
+
+namespace {
+
+// caixa_do_segmento — a caixa nomeada de cada aba. Por nome e não por indice,
+// que peça nova nas caixas deslocaria o indice em silencio.
+const ftxui::Box& caixa_do_segmento(const CaixasDoCabecalho& caixas, Aba aba) {
+  switch (aba) {
+    case Aba::Playlists: return caixas.aba_playlists;
+    case Aba::Download: return caixas.aba_download;
+    case Aba::MySong: break;
+  }
+  return caixas.aba_mysong;
+}
+
+}  // namespace
+
+nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem) {
+  const PinturaDaAba pintura = pintura_da_aba(ordem.estado);
+  nucleo::PedidoDaChapa pedido;
+  pedido.texto = palavra_da_aba(ordem.aba);
+  pedido.tinta = std::string(pintura.tinta);
+  pedido.fundo = std::string(pintura.fundo);
+  pedido.cellulas = ordem.largura;
+  return pedido;
+}
+
 ftxui::Element elemento_da_aba(Aba aba, bool corrente) {
   return vestir(rotulo_da_aba(aba), tinta_da_aba(corrente),
                 fundo_da_aba(corrente)) |
