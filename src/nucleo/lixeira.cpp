@@ -13,6 +13,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/lixeira.hpp"
 
+#include "nucleo/letra.hpp"
+
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
@@ -126,6 +128,18 @@ DaLixeira manda_a_lixeira(const std::filesystem::path& caminho,
   desfecho.feita = poe_o_par(lixeira / "files", lixeira / "info", qual,
                              &desfecho.nome, &desfecho.copiada);
   if (!desfecho.feita) desfecho.razao = "não se pôde mudar para a lixeira";
+  // O `.lrc` ao lado vae JUNTO, e por par proprio, que a lixeira não guarda
+  // dous arquivos n'uma entrada. A letra é d'aquella faixa e de mais nenhuma:
+  // deixá-la no acervo seria deixar orphão que a varredura não apanha e que o
+  // operador não sabe apagar. O caminho d'ella pergunta-se á letra, que é quem
+  // o sabe: escripto aqui outra vez, seriam duas verdades.
+  const std::filesystem::path lrc = caminho_do_lrc(qual);
+  if (desfecho.feita && std::filesystem::exists(lrc, erro)) {
+    std::string nome_da_letra;
+    bool copiou = false;
+    desfecho.levou_a_letra = poe_o_par(lixeira / "files", lixeira / "info", lrc,
+                                       &nome_da_letra, &copiou);
+  }
   return desfecho;
 }
 
