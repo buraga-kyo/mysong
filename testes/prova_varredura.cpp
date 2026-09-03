@@ -572,5 +572,39 @@ TEST_CASE("hora egual e tamanho diverso faz reler a etiqueta") {
   CHECK(depois.duracao == 9);
 }
 
+TEST_CASE("renomear grava o titulo na etiqueta, e a etiqueta devolve-o") {
+  Cova cova;
+  const std::filesystem::path onde = cova.acervo() / "Ada" / "Tear.wav";
+  faz_wav(onde, 1);
+  poe_etiqueta(onde, "Ada", "Machina", "Tear", 1);
+  const nu::DoTitulo feito = nu::renomeia_titulo(onde, "  Tear de Jacquard  ");
+  CHECK(feito.feito);
+  CHECK(feito.razao.empty());
+  // Aparado nas pontas: o dedo que digita deixa branco, e o branco não é titulo.
+  CHECK(feito.titulo == "Tear de Jacquard");
+  // Lê-se pelo MESMO punho por onde a varredura lê, que é o que a issue pede:
+  // gravar por uma porta e ler por outra provaria a porta e não o arquivo.
+  TagLib::FileRef relido(onde.c_str());
+  REQUIRE_FALSE(relido.isNull());
+  CHECK(relido.tag()->title().to8Bit(true) == "Tear de Jacquard");
+}
+
+TEST_CASE("renomear recusa titulo vazio, e a etiqueta fica como estava") {
+  Cova cova;
+  const std::filesystem::path onde = cova.acervo() / "Ada" / "Tear.wav";
+  faz_wav(onde, 1);
+  poe_etiqueta(onde, "Ada", "Machina", "Tear", 1);
+  const nu::DoTitulo vazio = nu::renomeia_titulo(onde, "   \t ");
+  CHECK_FALSE(vazio.feito);
+  CHECK_FALSE(vazio.razao.empty());
+  TagLib::FileRef relido(onde.c_str());
+  CHECK(relido.tag()->title().to8Bit(true) == "Tear");
+  // Arquivo que a taglib não abre recusa-se pela mesma porta, e com razão.
+  const nu::DoTitulo alheio =
+      nu::renomeia_titulo(cova.acervo() / "nunca houve.mp3", "Tear");
+  CHECK_FALSE(alheio.feito);
+  CHECK_FALSE(alheio.razao.empty());
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

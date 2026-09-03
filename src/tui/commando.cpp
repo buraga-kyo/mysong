@@ -140,6 +140,13 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   if (tecla == ftxui::Event::Character('z')) return {Verbo::Embaralhar, 0.0};
   if (tecla == ftxui::Event::Character('x')) return {Verbo::Repetir, 0.0};
 
+  // ── As duas da faixa (issue #105) ───────────────────────────────────────
+  // Lettra alguma sobra que não esteja debaixo do dedo de quem anda na pauta, e
+  // estas duas estragam cousa gravada. O F2 e o Delete vêm do gerenciador de
+  // arquivos, que é onde a mão d'elle já aprendeu a renomear e a apagar.
+  if (tecla == ftxui::Event::F2) return {Verbo::RenomeiaFaixa, 0.0};
+  if (tecla == ftxui::Event::Delete) return {Verbo::ApagaFaixa, 0.0};
+
   return {Verbo::Nada, 0.0};
 }
 

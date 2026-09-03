@@ -11,7 +11,8 @@
 //
 // DOMÍNIO ......... largura e altura em célullas, e as bandas em [0,1]. Sem
 //                   bandas, arma-se uma rampa determinística.
-// CONTRA-DOMÍNIO .. `altura` linhas na sahida padrão, e o status zero.
+// CONTRA-DOMÍNIO .. `altura` linhas de fita, mais a linha da legenda com os
+//                   nomes dos quatro registros, na sahida padrão; status zero.
 // INVARIANTE ...... a tinta sahe IMMEDIATAMENTE antes do glifo que veste, sem
 //                   repouso pelo meio, e cada linha remata em repouso.
 // Q.E.D. .......... redigida a sahida a um arquivo, os bytes dizem quaes glifos
@@ -19,6 +20,7 @@
 //                   resolva sem filete é materia que sómente o olho decide.
 // ══════════════════════════════════════════════════════════════════════════
 #include <cstdio>
+#include <string_view>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -29,6 +31,48 @@
 
 namespace es = mysong::tui;
 namespace tk = mysong::tui::tokens;
+
+// glifos — a cadeia partida em pontos de codigo, um por CÉLULLA. MÉDIOS-GRAVES
+// leva acento: contado em octetos, o nome sahiria mais largo do que occupa.
+std::vector<std::string> glifos(std::string_view texto) {
+  std::vector<std::string> saida;
+  for (std::size_t i = 0; i < texto.size();) {
+    const unsigned char oct = static_cast<unsigned char>(texto[i]);
+    std::size_t quantos =
+        oct < 0x80 ? 1u : (oct < 0xe0 ? 2u : (oct < 0xf0 ? 3u : 4u));
+    if (i + quantos > texto.size()) quantos = 1;
+    saida.emplace_back(texto.substr(i, quantos));
+    i += quantos;
+  }
+  return saida;
+}
+
+// legenda — os nomes dos quatro registros por baixo, cada um na sua côr e sob as
+// columnas que o vestem. Sem ella o olho vê côres e não sabe o que dizem, e a
+// issue #104 quer justamente que se possa comparar nome com côr.
+std::string legenda(const es::Quadro& quadro) {
+  std::vector<std::string> celulas(quadro.largura, " ");
+  std::size_t c = 0;
+  while (c < quadro.largura) {
+    std::size_t fim = c;
+    while (fim < quadro.largura && quadro.registros[fim] == quadro.registros[c])
+      ++fim;
+    const std::vector<std::string> nome =
+        glifos(es::nome_do_registro(quadro.registros[c]));
+    // Centrado no bloco, e CORTADO quando o bloco é mais estreito que o nome:
+    // fita estreita mostra o principio do nome, e não nome nenhum.
+    const std::size_t largo = fim - c;
+    const std::size_t posto =
+        nome.size() < largo ? c + (largo - nome.size()) / 2 : c;
+    for (std::size_t k = 0; k < nome.size() && posto + k < fim; ++k)
+      celulas[posto + k] = nome[k];
+    c = fim;
+  }
+  std::string linha;
+  for (std::size_t i = 0; i < quadro.largura; ++i)
+    linha += tk::tinta(es::tinta_do_registro(quadro.registros[i])) + celulas[i];
+  return linha + std::string(tk::repouso) + '\n';
+}
 
 int main(int argc, char** argv) {
   if (argc < 3) {
@@ -66,6 +110,9 @@ int main(int argc, char** argv) {
     tela += tk::repouso;
     tela += '\n';
   }
+  // A legenda por BAIXO da fita, e não por cima: o nome fica ao pé do pé das
+  // columnas que nomeia, que é onde o olho o vae buscar.
+  tela += legenda(quadro);
   std::fputs(tela.c_str(), stdout);
   return 0;
 }

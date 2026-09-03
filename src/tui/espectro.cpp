@@ -7,6 +7,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/espectro.hpp"
 
+#include "nucleo/espectro.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -29,6 +31,42 @@ float cingido(float magnitude) {
 
 }  // namespace
 
+Registro registro_da_banda(float centro_em_hertz) {
+  // A guarda da finitude vem PRIMEIRO, e pelo mesmo motivo que o cingido: toda
+  // comparação com NaN é falsa, d'onde um NaN atravessaria os tres ramos e
+  // sahiria AGUDOS, que é a familia que ninguem pediu. Sahe GRAVES, que é o
+  // principio da escala e a côr que a obra já vestia.
+  if (!std::isfinite(centro_em_hertz)) return Registro::Graves;
+  if (centro_em_hertz <= FRONTEIRA_DOS_GRAVES) return Registro::Graves;
+  if (centro_em_hertz <= FRONTEIRA_DOS_MEDIOS_GRAVES) return Registro::MediosGraves;
+  if (centro_em_hertz <= FRONTEIRA_DOS_MEDIOS_AGUDOS) return Registro::MediosAgudos;
+  return Registro::Agudos;
+}
+
+// O switch sem `default`, de proposito: registro novo accende aviso do
+// compilador aqui e no nome, e o gate da issue #64 o converte em recusa. Com
+// `default` o registro novo sahiria violeta e sem nome, calado. O return de
+// baixo existe só porque a linguagem não sabe que o switch é exhaustivo.
+std::string_view tinta_do_registro(Registro registro) {
+  switch (registro) {
+    case Registro::Graves: return tokens::v500;
+    case Registro::MediosGraves: return tokens::data5;
+    case Registro::MediosAgudos: return tokens::data3;
+    case Registro::Agudos: return tokens::data2;
+  }
+  return tokens::v500;
+}
+
+std::string_view nome_do_registro(Registro registro) {
+  switch (registro) {
+    case Registro::Graves: return "GRAVES";
+    case Registro::MediosGraves: return "MÉDIOS-GRAVES";
+    case Registro::MediosAgudos: return "MÉDIOS-AGUDOS";
+    case Registro::Agudos: return "AGUDOS";
+  }
+  return "GRAVES";
+}
+
 int oitavos(float magnitude, std::size_t altura) {
   const int teto = static_cast<int>(altura) * DEGRAUS_POR_CELULA;
   if (teto <= 0) return 0;
@@ -50,6 +88,36 @@ std::string glifo_do_degrau(int degrau) {
   // terceiro octeto de U+2580 é 0x80, d'onde o de U+2580 + k é 0x80 + k, e k
   // vae de 1 a 8, que é U+2581 (um oitavo) a U+2588 (o bloco cheio).
   return std::string{'\xe2', '\x96', static_cast<char>('\x80' + k)};
+}
+
+std::vector<float> centros_das_bandas(
+    const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia) {
+  std::vector<float> centros;
+  if (bordas_em_raias.size() < 2) return centros;
+  centros.reserve(bordas_em_raias.size() - 1);
+  for (std::size_t b = 0; b + 1 < bordas_em_raias.size(); ++b) {
+    const float baixa = static_cast<float>(bordas_em_raias[b]) * hertz_por_raia;
+    const float alta = static_cast<float>(bordas_em_raias[b + 1]) * hertz_por_raia;
+    centros.push_back(baixa > 0.0f ? std::sqrt(baixa * alta) : 0.5f * alta);
+  }
+  return centros;
+}
+
+std::vector<float> centros_da_escala(std::size_t quantas) {
+  std::vector<float> centros;
+  if (quantas == 0) return centros;
+  centros.reserve(quantas);
+  const double razao = static_cast<double>(nucleo::HERTZ_MAXIMO) /
+                       static_cast<double>(nucleo::HERTZ_MINIMO);
+  for (std::size_t b = 0; b < quantas; ++b) {
+    // A fracção do CENTRO é b mais meio sobre quantas, e não b sobre quantas,
+    // que d'aquelle modo sahiria a borda de baixo em vez do meio da banda.
+    const double parte =
+        (static_cast<double>(b) + 0.5) / static_cast<double>(quantas);
+    centros.push_back(
+        static_cast<float>(nucleo::HERTZ_MINIMO * std::pow(razao, parte)));
+  }
+  return centros;
 }
 
 const Celula& Quadro::em(std::size_t linha, std::size_t collunha) const {
@@ -76,42 +144,71 @@ namespace {
 //
 // D'aqui sahe de graça o invariante que o aceite cobra: os intervallos partem
 // [0, n) sem sobra e sem vão, d'onde banda alguma se perde em largura alguma.
+//
+// O INTERVALLO aparta-se em punho proprio porque DOUS leitores o querem: o valor
+// da columna, que lhe toma o máximo, e o registro da columna, que lhe toma o
+// meio. Escripta a conta duas vezes, um dia a côr apontaria para bandas que não
+// são as que a barra mostra, e nada n'esta Casa o accusaria.
+struct Intervallo {
+  std::size_t principio = 0;
+  std::size_t fim = 0;
+};
+
+Intervallo intervallo_da_columna(std::size_t quantas, std::size_t c,
+                                 std::size_t largura) {
+  Intervallo faixa;
+  if (quantas == 0 || largura == 0) return faixa;
+  faixa.principio = (c * quantas) / largura;
+  if (faixa.principio >= quantas) faixa.principio = quantas - 1;
+  faixa.fim = ((c + 1) * quantas) / largura;
+  if (faixa.fim <= faixa.principio) faixa.fim = faixa.principio + 1;
+  if (faixa.fim > quantas) faixa.fim = quantas;
+  return faixa;
+}
+
 float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
                        std::size_t largura) {
-  const std::size_t n = bandas.size();
-  if (n == 0 || largura == 0) return 0.0f;
-
-  std::size_t principio = (c * n) / largura;
-  if (principio >= n) principio = n - 1;
-  std::size_t fim = ((c + 1) * n) / largura;
-  if (fim <= principio) fim = principio + 1;  // o intervallo nunca é vazio
-  if (fim > n) fim = n;
-
+  const Intervallo faixa = intervallo_da_columna(bandas.size(), c, largura);
   float pico = 0.0f;
-  for (std::size_t b = principio; b < fim; ++b)
+  for (std::size_t b = faixa.principio; b < faixa.fim; ++b)
     pico = std::max(pico, cingido(bandas[b]));
   return pico;
 }
 
+// registro_da_columna — o registro que veste a columna INTEIRA. Toma o centro da
+// banda do MEIO do intervallo, e não o da banda que deu o pico: a côr é do
+// LOGAR, e não do nivel, pelo mesmo motivo por que o invariante (iii) ancora o
+// gradiente ao painel. Fosse do pico, a columna trocaria de côr a cada batida, e
+// a legenda por baixo deixaria de dizer verdade.
+Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
+                             std::size_t largura) {
+  const Intervallo faixa = intervallo_da_columna(centros.size(), c, largura);
+  if (faixa.fim <= faixa.principio) return Registro::Graves;
+  return registro_da_banda(
+      centros[faixa.principio + (faixa.fim - faixa.principio - 1) / 2]);
+}
+
 }  // namespace
 
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
+                              Registro registro) {
+  const std::string_view cor = tinta_do_registro(registro);
   // Painel de uma célulla só: a rampa degenera, e vale a BASE. A §7.4.9 ancora
-  // a rampa na base («v700 na base»), e painel de uma célulla é todo base; o
-  // meio da rampa seria côr que a spec não nomeia em logar algum. E o desvio
-  // por zero fica excluido antes de se chegar á divisão.
-  if (altura <= 1) return tokens::rgb(tokens::v700);
+  // a rampa na base, e painel de uma célulla é todo base; o meio da rampa seria
+  // côr que spec alguma nomeia. E o desvio por zero fica excluido antes de se
+  // chegar á divisão.
+  if (altura <= 1) return tokens::mistura(cor, tokens::panel_hi, ALFA_DA_BASE);
 
   const std::size_t alto = desde_a_base >= altura ? altura - 1 : desde_a_base;
   const double t = static_cast<double>(alto) / static_cast<double>(altura - 1);
 
   // A interpolação vae por tokens::mistura, e NÃO por arithmetica de côr nova.
-  // Ella compõe a frente sobre o fundo com o peso dado, que é exactamente a
-  // interpolação linear que se quer, e a bateria da issue #2 já a prova. D'onde
-  // t = 0 dá v700 EXACTO e t = 1 dá v400 EXACTO, sem arredondamento a explicar.
-  // Escrever aqui uma segunda conta de côr seria abrir um segundo caminho para o
-  // mesmo resultado, e dous caminhos divergem sem avisar.
-  return tokens::mistura(tokens::v400, tokens::v700, t);
+  // Ella compõe a frente sobre o fundo com o peso dado, d'onde t = 1 dá a côr do
+  // registro EXACTA (peso cheio devolve a frente) e t = 0 dá a base EXACTA, sem
+  // arredondamento a explicar. Uma segunda conta de côr abriria um segundo
+  // caminho para o mesmo resultado, e dous caminhos divergem sem avisar.
+  return tokens::mistura(cor, tokens::panel_hi,
+                         ALFA_DA_BASE + (1.0 - ALFA_DA_BASE) * t);
 }
 
 namespace {
@@ -129,29 +226,42 @@ namespace {
 //      célulla do topo em glow_hot seria quasi invisivel n'uma fita que salta a
 //      quarenta e seis quadros por segundo, que uma célulla a piscar não se lê;
 //      e o indicador de pico existe para SER VISTO.
-//   4. Não sendo nada d'isso, o GRADIENTE do painel.
+//   4. Não sendo nada d'isso, o GRADIENTE do painel, na côr do REGISTRO que
+//      veste esta columna. O registro é da columna e não da célulla, d'onde a
+//      columna inteira sahe da mesma familia, do pé ao topo.
 // Note-se que sómente o ramo 4 consulta a linha, e sómente os ramos 1 a 3
 // consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
 // pode depender da magnitude nem por descuido.
 tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
-                               std::size_t altura) {
+                               std::size_t altura, Registro registro) {
   if (mudo) return tokens::rgb(tokens::text_faint);
   if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
   if (valor >= LIMIAR_QUENTE) return tokens::rgb(tokens::glow_hot);
-  return tinta_da_linha(desde_a_base, altura);
+  return tinta_da_linha(desde_a_base, altura, registro);
 }
 
 }  // namespace
 
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
-              std::size_t altura, bool mudo) {
+              std::size_t altura, bool mudo,
+              const std::vector<float>& centros_em_hertz) {
   Quadro quadro;
   quadro.largura = largura;
   quadro.altura = altura;
   if (largura == 0 || altura == 0) return quadro;  // painel sem célulla
   quadro.celulas.assign(largura * altura, Celula{});
 
+  // Os deduzidos ficam n'um vector á parte, e a referencia elege qual vale: quem
+  // passa os centros não paga copia alguma por quadro, e são quarenta e seis
+  // quadros por segundo.
+  std::vector<float> deduzidos;
+  if (centros_em_hertz.empty()) deduzidos = centros_da_escala(bandas.size());
+  const std::vector<float>& centros =
+      centros_em_hertz.empty() ? deduzidos : centros_em_hertz;
+  quadro.registros.assign(largura, Registro::Graves);
+
   for (std::size_t c = 0; c < largura; ++c) {
+    quadro.registros[c] = registro_da_columna(centros, c, largura);
     const float valor = valor_da_columna(bandas, c, largura);
     const int degraus = oitavos(valor, altura);
     const std::size_t cheias =
@@ -172,7 +282,8 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
       celula.glifo = glifo_do_degrau(degrau);
-      celula.tinta = tinta_da_celula(valor, mudo, i, altura);
+      celula.tinta =
+          tinta_da_celula(valor, mudo, i, altura, quadro.registros[c]);
       celula.pinta = true;
       // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
       // BASE para cima, que é como os blocos crescem; a linha do quadro conta do

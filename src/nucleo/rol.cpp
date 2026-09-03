@@ -231,6 +231,31 @@ bool Roleiro::retira(int id, int ordem) {
   return havia;
 }
 
+int Roleiro::retira_de_todos(std::string_view caminho) {
+  if (punho_ == nullptr || caminho.empty()) return 0;
+  // Colhe-se PRIMEIRO, e retira-se depois. Retirar dentro da propria consulta
+  // seria mutar a taboa que se está a percorrer, e o SQLite não promette o que
+  // a linha seguinte passa a ser.
+  //
+  // A ordem DESCENDENTE não é enfeite. Retirar FECHA o buraco, donde as ordens
+  // acima da retirada baixam uma; colhendo de cima para baixo, a ordem de cada
+  // occorrencia seguinte ainda vale quando lhe chega a vez. Ao contrario, a
+  // mesma lista com a faixa duas vezes retiraria a segunda no logar errado.
+  std::vector<std::pair<int, int>> onde;
+  const std::string qual(caminho);
+  corre(punho_,
+        "SELECT rol, ordem FROM item WHERE caminho = ?"
+        " ORDER BY rol, ordem DESC;",
+        {}, {qual}, [&onde](sqlite3_stmt* passo) {
+          onde.emplace_back(sqlite3_column_int(passo, 0),
+                            sqlite3_column_int(passo, 1));
+        });
+  int quantas = 0;
+  for (const std::pair<int, int>& item : onde)
+    if (retira(item.first, item.second)) ++quantas;
+  return quantas;
+}
+
 bool Roleiro::troca(int id, int uma, int outra) {
   if (punho_ == nullptr || uma == outra) return false;
   // Tres UPDATE, e não dous: a chave é (rol, ordem), e dous crús collidiriam a

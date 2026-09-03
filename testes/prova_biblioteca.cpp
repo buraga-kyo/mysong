@@ -324,6 +324,42 @@ TEST_CASE("ler a bibliotheca emquanto outro fio a reabre não a parte") {
   CHECK(livraria.total() == 4);
 }
 
+TEST_CASE("mudar o titulo troca a linha, e a busca acha-a pelo nome novo") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  const std::string qual = "/acervo/Bach/Cravo Bem Temperado/Fuga.mp3";
+  CHECK(livraria.muda_o_titulo(qual, "Fuga em ré menor"));
+  nu::Faixa depois;
+  REQUIRE(livraria.acha_por_caminho(qual, depois));
+  CHECK(depois.titulo == "Fuga em ré menor");
+  // A busca lê a mesma columna, e é ella que a pauta mostra.
+  REQUIRE(livraria.busca_faixa("ré menor").size() == 1u);
+  CHECK(livraria.busca_faixa("Fuga em").front().caminho == qual);
+  // Titulo vazio e caminho que não existe recusam-se, e nada se perde. Aparar
+  // o branco não é d'aqui: quem apara é o renomeia_titulo, que é o unico logar
+  // onde mora a regra do que é titulo.
+  CHECK_FALSE(livraria.muda_o_titulo(qual, ""));
+  CHECK_FALSE(livraria.muda_o_titulo("/acervo/nunca houve.mp3", "Fuga"));
+  CHECK(livraria.total() == 4);
+}
+
+TEST_CASE("esquecer tira a faixa do índice, e sómente aquella") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  const std::string qual = "/acervo/Ada Lovelace/Máquina Analítica/Tear.mp3";
+  CHECK(livraria.esquece(qual));
+  CHECK(livraria.total() == 3);
+  nu::Faixa nenhuma;
+  CHECK_FALSE(livraria.acha_por_caminho(qual, nenhuma));
+  // O album fica, com a outra faixa d'elle: apagar uma não apaga a visinha.
+  CHECK(livraria.faixas_do_album("Ada Lovelace", "Máquina Analítica").size() == 1u);
+  // Esquecer o que já se esqueceu é falso, e não segunda baixa na conta.
+  CHECK_FALSE(livraria.esquece(qual));
+  CHECK(livraria.total() == 3);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
