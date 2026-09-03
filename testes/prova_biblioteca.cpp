@@ -16,9 +16,11 @@
 //                   obra devia responder não prova cousa alguma.
 #include <doctest/doctest.h>
 
+#include <sqlite3.h>
 #include <unistd.h>
 
 #include <atomic>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -143,7 +145,7 @@ TEST_CASE("o escriba grava e a bibliotheca conta o que se gravou") {
   CHECK(std::filesystem::exists(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   REQUIRE(livraria.aberta());
-  CHECK(livraria.versao() == 1);
+  CHECK(livraria.versao() == nu::kVersaoDoEsquema);
   CHECK(livraria.total() == 4);
 }
 
@@ -359,6 +361,51 @@ TEST_CASE("esquecer tira a faixa do índice, e sómente aquella") {
   CHECK_FALSE(livraria.esquece(qual));
   CHECK(livraria.total() == 3);
 }
+
+// ─── A ORDEM PROPRIA DO ACERVO (issue #152) ─────────────────────────────────
+
+namespace {
+// Lavra á mão um índice do ESQUEMA VELHO, o da versão um, que não tem collunha
+// de ordem. É o unico modo honesto de provar a migração: pedi-lo á obra de hoje
+// daria o esquema de hoje, e a migração não teria o que migrar.
+void banco_de_hontem(const std::filesystem::path& banco,
+                     const std::vector<nu::Faixa>& faixas) {
+  sqlite3* punho = nullptr;
+  REQUIRE(sqlite3_open_v2(banco.c_str(), &punho,
+                          SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+                          nullptr) == SQLITE_OK);
+  REQUIRE(sqlite3_exec(punho,
+                       "CREATE TABLE esquema (versao INTEGER NOT NULL);"
+                       "INSERT INTO esquema VALUES (1);"
+                       "CREATE TABLE faixas (caminho TEXT PRIMARY KEY,"
+                       " raiz TEXT NOT NULL, artista TEXT NOT NULL,"
+                       " album TEXT NOT NULL, titulo TEXT NOT NULL,"
+                       " numero INTEGER NOT NULL, anno INTEGER NOT NULL,"
+                       " duracao INTEGER NOT NULL, modificado INTEGER NOT NULL,"
+                       " tamanho INTEGER NOT NULL, deduzido INTEGER NOT NULL);",
+                       nullptr, nullptr, nullptr) == SQLITE_OK);
+  for (const nu::Faixa& faixa : faixas) {
+    const std::string sql =
+        "INSERT INTO faixas VALUES ('" + faixa.caminho + "','/acervo','" +
+        faixa.artista + "','" + faixa.album + "','" + faixa.titulo + "'," +
+        std::to_string(faixa.numero) + ",0,0,0,0,0);";
+    REQUIRE(sqlite3_exec(punho, sql.c_str(), nullptr, nullptr, nullptr) ==
+            SQLITE_OK);
+  }
+  sqlite3_close(punho);
+}
+
+// As ordens gravadas, na sequencia em que a obra as devolve. Contigua quer dizer
+// que isto sahe 0, 1, 2, ... e o caso escreve o alvo á mão.
+std::vector<std::int64_t> ordens(const nu::Biblioteca& livraria) {
+  std::vector<std::int64_t> quaes;
+  for (const std::string& caminho : livraria.ordem_das_faixas()) {
+    nu::Faixa faixa;
+    if (livraria.acha_por_caminho(caminho, faixa)) quaes.push_back(faixa.ordem);
+  }
+  return quaes;
+}
+}  // namespace
 
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
