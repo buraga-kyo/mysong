@@ -175,6 +175,21 @@ inline constexpr double ALFA_DA_BASE = 0.55;
 tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
                               Registro registro = Registro::Graves);
 
+// centros_das_bandas — os CENTROS em hertz, colhidos das bordas em RAIAS que o
+// nucleo::Espectro abre. A borda b vale `b * hertz_por_raia`, e o centro da
+// banda é a media GEOMETRICA das duas bordas d'ella, que é o meio da banda na
+// escala logarithmica em que ellas foram assentadas. Media arithmetica poria o
+// centro alto de mais no grave, onde a banda é estreita em hertz e larga em
+// octavas. Borda em zero cae na arithmetica, que geometrica com zero é zero.
+std::vector<float> centros_das_bandas(
+    const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia);
+
+// centros_da_escala — os centros de `quantas` bandas pela MESMA escala
+// logarithmica que o nucleo assenta, de HERTZ_MINIMO a HERTZ_MAXIMO. Serve a
+// quem tem as bandas e não alcança as bordas: o punho do analisador não as
+// abre, e a escala é do CONTRACTO, e não da transformada que ha por baixo.
+std::vector<float> centros_da_escala(std::size_t quantas);
+
 // compor — o QUADRO. Não guarda estado: as mesmas bandas na mesma largura dão o
 // mesmo quadro, hoje e depois de dez redimensionamentos. Não presume que as
 // bandas sejam QUANTAS_BANDAS: conta o tamanho REAL do vector, que presumir o

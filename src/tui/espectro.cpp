@@ -7,6 +7,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/espectro.hpp"
 
+#include "nucleo/espectro.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -86,6 +88,36 @@ std::string glifo_do_degrau(int degrau) {
   // terceiro octeto de U+2580 é 0x80, d'onde o de U+2580 + k é 0x80 + k, e k
   // vae de 1 a 8, que é U+2581 (um oitavo) a U+2588 (o bloco cheio).
   return std::string{'\xe2', '\x96', static_cast<char>('\x80' + k)};
+}
+
+std::vector<float> centros_das_bandas(
+    const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia) {
+  std::vector<float> centros;
+  if (bordas_em_raias.size() < 2) return centros;
+  centros.reserve(bordas_em_raias.size() - 1);
+  for (std::size_t b = 0; b + 1 < bordas_em_raias.size(); ++b) {
+    const float baixa = static_cast<float>(bordas_em_raias[b]) * hertz_por_raia;
+    const float alta = static_cast<float>(bordas_em_raias[b + 1]) * hertz_por_raia;
+    centros.push_back(baixa > 0.0f ? std::sqrt(baixa * alta) : 0.5f * alta);
+  }
+  return centros;
+}
+
+std::vector<float> centros_da_escala(std::size_t quantas) {
+  std::vector<float> centros;
+  if (quantas == 0) return centros;
+  centros.reserve(quantas);
+  const double razao = static_cast<double>(nucleo::HERTZ_MAXIMO) /
+                       static_cast<double>(nucleo::HERTZ_MINIMO);
+  for (std::size_t b = 0; b < quantas; ++b) {
+    // A fracção do CENTRO é b mais meio sobre quantas, e não b sobre quantas,
+    // que d'aquelle modo sahiria a borda de baixo em vez do meio da banda.
+    const double parte =
+        (static_cast<double>(b) + 0.5) / static_cast<double>(quantas);
+    centros.push_back(
+        static_cast<float>(nucleo::HERTZ_MINIMO * std::pow(razao, parte)));
+  }
+  return centros;
 }
 
 const Celula& Quadro::em(std::size_t linha, std::size_t collunha) const {
