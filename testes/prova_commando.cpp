@@ -291,5 +291,46 @@ TEST_CASE("o F2 e o Delete são as duas ordens da faixa") {
         tui::Verbo::Nada);
 }
 
+// ── AS SEIS DE FUNCÇÃO (issue #106) ─────────────────────────────────────────
+// Cada uma na ordem de SEMPRE. O alvo do volume vae escripto Á MÃO, cincoenta
+// mais cinco e cincoenta menos cinco, e não «o que a obra disser que é o
+// degrau»: perguntar o degrau á obra para depois conferir que ella o usou é
+// consultar o oraculo sob prova.
+TEST_CASE("as seis teclas de funcção desaguam nas ordens de sempre") {
+  tui::Retracto retracto = tocando();  // a tocar, e o volume em cincoenta
+  const auto d_ella = [&retracto](const ftxui::Event& t) {
+    return tui::ordem_da_tecla(t, retracto);
+  };
+  CHECK(d_ella(ftxui::Event::F6).verbo == tui::Verbo::Anterior);
+  CHECK(d_ella(ftxui::Event::F7).verbo == tui::Verbo::Pausar);
+  CHECK(d_ella(ftxui::Event::F8).verbo == tui::Verbo::Proxima);
+  CHECK(d_ella(ftxui::Event::F9).verbo == tui::Verbo::Mudo);
+  CHECK(d_ella(ftxui::Event::F9).alvo == 0.0);
+  CHECK(d_ella(ftxui::Event::F10).verbo == tui::Verbo::Volume);
+  CHECK(d_ella(ftxui::Event::F10).alvo == doctest::Approx(45.0));
+  CHECK(d_ella(ftxui::Event::F11).verbo == tui::Verbo::Volume);
+  CHECK(d_ella(ftxui::Event::F11).alvo == doctest::Approx(55.0));
+  // O F7 é o ESPAÇO, e não um ramo seu: pausado retoma, e parado nada faz.
+  retracto.estado = nu::Estado::Pausado;
+  CHECK(d_ella(ftxui::Event::F7).verbo == tui::Verbo::Retomar);
+  retracto.estado = nu::Estado::Parado;
+  CHECK(d_ella(ftxui::Event::F7).verbo == tui::Verbo::Nada);
+}
+
+TEST_CASE("o volume das teclas de funcção cinge-se a zero e a cem") {
+  tui::Retracto retracto = tocando(30.0, 100.0, 2);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F10, retracto).alvo ==
+        doctest::Approx(0.0));
+  retracto.volume = 98;
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F11, retracto).alvo ==
+        doctest::Approx(100.0));
+  // E com o campo de digitar aberto, nenhuma das seis vale: o F9 no meio de um
+  // nome não ha de calar a Casa.
+  for (const ftxui::Event& tecla :
+       {ftxui::Event::F6, ftxui::Event::F7, ftxui::Event::F8,
+        ftxui::Event::F9, ftxui::Event::F10, ftxui::Event::F11})
+    CHECK(tui::ordem_da_tecla(tecla, retracto, true).verbo == tui::Verbo::Nada);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
