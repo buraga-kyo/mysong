@@ -134,6 +134,14 @@ class Biblioteca {
   // Por titulo, e por pedaço de titulo. Ordem de artista, album e numero.
   std::vector<Faixa> busca_faixa(std::string_view termo) const;
 
+  // As duas MUTAÇÕES de UMA linha. Não vão pelo Escriba, e de proposito: elle
+  // reconstroe o índice inteiro, que é o que a varredura pede e o que renomear
+  // ou apagar UMA faixa não justifica. Abrem punho PROPRIO de escripta, que o
+  // d'esta classe é de sómente-leitura e ha de continuar a ser. Falso quando o
+  // caminho não está no índice, ou quando o banco não se deixa escrever.
+  bool muda_o_titulo(std::string_view caminho, std::string_view titulo);
+  bool esquece(std::string_view caminho);
+
   // O que a varredura pergunta para saber se ha de reler a etiqueta. Falso
   // quando o caminho não está no índice.
   bool acha_por_caminho(std::string_view caminho, Faixa& sahida) const;

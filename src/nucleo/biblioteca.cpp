@@ -289,6 +289,48 @@ bool Biblioteca::acha_por_caminho(std::string_view caminho,
   return achou;
 }
 
+namespace {
+
+// Uma escripta de UMA linha, por punho proprio aberto e fechado na chamada.
+// Abrir o da classe para escrever daria licença de escripta a toda consulta.
+bool muda_uma_linha(const std::filesystem::path& banco, const char* sql,
+                    const std::vector<std::string_view>& amarras) {
+  sqlite3* punho = nullptr;
+  if (sqlite3_open_v2(banco.c_str(), &punho, SQLITE_OPEN_READWRITE, nullptr) !=
+      SQLITE_OK) {
+    sqlite3_close(punho);
+    return false;
+  }
+  sqlite3_stmt* passo = nullptr;
+  bool mudou = false;
+  if (sqlite3_prepare_v2(punho, sql, -1, &passo, nullptr) == SQLITE_OK) {
+    for (std::size_t i = 0; i < amarras.size(); ++i)
+      sqlite3_bind_text(passo, static_cast<int>(i + 1), amarras[i].data(),
+                        static_cast<int>(amarras[i].size()), SQLITE_TRANSIENT);
+    mudou = sqlite3_step(passo) == SQLITE_DONE && sqlite3_changes(punho) > 0;
+    sqlite3_finalize(passo);
+  }
+  sqlite3_close(punho);
+  return mudou;
+}
+}  // namespace
+
+bool Biblioteca::muda_o_titulo(std::string_view caminho,
+                               std::string_view titulo) {
+  const std::lock_guard<std::mutex> chave(tranca_);
+  const std::string limpo = saneia_utf8(titulo);
+  if (limpo.empty()) return false;
+  return muda_uma_linha(banco_,
+                        "UPDATE faixas SET titulo = ?2 WHERE caminho = ?1;",
+                        {caminho, limpo});
+}
+
+bool Biblioteca::esquece(std::string_view caminho) {
+  const std::lock_guard<std::mutex> chave(tranca_);
+  return muda_uma_linha(banco_, "DELETE FROM faixas WHERE caminho = ?1;",
+                        {caminho});
+}
+
 Escriba::Escriba(std::filesystem::path banco, long limite_de_paginas)
     : banco_(std::move(banco)), temporario_(banco_.string() + ".tmp") {
   std::error_code erro;
