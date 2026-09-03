@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -74,6 +75,51 @@ std::string versao_da_lousa();
 // texto_da_lousa — a linha do --sonda, e pura pelo precedente do
 // texto_dos_ajustes: escape algum sahe d'aqui.
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
+
+// ── E AGORA O QUE TOCA O MUNDO.
+
+// A LOUSA: o filho vivo, e o cano por onde se lhe fala. Ergue-se no
+// constructor, ou não se ergue, e a razão fica guardada para o diagnostico.
+//
+// Funcção alguma d'ella bloqueia: o pintor corre vinte vezes por segundo, e
+// cano cheio descarta a ordem e conta-a em vez de segurar o quadro. E funcção
+// alguma lança: sahida de imagem não é caminho por onde o tocador caia.
+class Lousa {
+ public:
+  explicit Lousa(ModoDaLousa modo) noexcept;
+  ~Lousa() noexcept;
+  Lousa(const Lousa&) = delete;
+  Lousa& operator=(const Lousa&) = delete;
+
+  bool disponivel() const noexcept;
+
+  // poe — a imagem no rectangulo, em célullas do canto do TERMINAL. Repetida
+  // com os MESMOS numeros não manda ordem alguma: o Überzug++ redimensiona a
+  // cada `add`, e o pintor pediria vinte por segundo de uma capa parada.
+  bool poe(std::string_view identidade, const std::filesystem::path& imagem,
+           int collunha, int linha, std::size_t largura,
+           std::size_t altura) noexcept;
+
+  // tira e tira_tudo — o `remove`. O segundo serve ao foco que se perde e á
+  // sahida, e é elle que promette não deixar fantasma na tela.
+  bool tira(std::string_view identidade) noexcept;
+  void tira_tudo() noexcept;
+
+  const Parecer& parecer() const noexcept { return parecer_; }
+  std::size_t descartadas() const noexcept { return descartadas_; }
+
+ private:
+  bool escreve(const std::string& ordem) noexcept;
+
+  Parecer parecer_;
+  bool vivo_ = false;
+  int cano_ = -1;
+  int filho_ = -1;
+  std::size_t descartadas_ = 0;
+  // O que está POSTO, e a ordem que o poz: é a comparação com ella que cala o
+  // pintor quando nada mudou, e a lista das chaves que o tira_tudo percorre.
+  std::map<std::string, std::string> postas_;
+};
 
 }  // namespace mysong::nucleo
 
