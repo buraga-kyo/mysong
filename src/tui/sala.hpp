@@ -101,23 +101,6 @@ Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
 // se resolve em janella.cpp, que é o que não se prova.
 Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa);
 
-// A GEOMETRIA da sala: quanto toma cada painel, dada a largura UTIL (a que o
-// pintor tem depois da orla) e a altura da faixa do corpo. As collunhas da
-// barra entram por PARAMETRO: quem sabe a largura d'ella é quem a pinta, e
-// essa lavra é de outra tarefa d'esta mesma onda.
-struct Geometria {
-  std::size_t meio = 0;       // collunhas do meio: cabeçalho e tabella
-  std::size_t painel = 0;     // collunhas do painel da direita; zero esconde-o
-  std::size_t capa = 0;       // TECTO de linhas que se pede á Galeria
-  std::size_t livre = 0;      // linhas do painel abaixo do titulo e da ficha
-  std::size_t cabecalho = 0;  // linhas do cabeçalho do meio, separador incluso
-  std::size_t tabella = 0;    // linhas que sobram para a tabella
-};
-
-// geometria_da_sala — todos os numeros da composição, n'uma conta só.
-Geometria geometria_da_sala(std::size_t largura, std::size_t altura,
-                            std::size_t collunhas_da_barra);
-
 // A FICHA da faixa que toca. Valores, e não punho para o tocador nem para o
 // indice: assim a bateria arma-a á mão, sem motor e sem banco.
 struct Ficha {

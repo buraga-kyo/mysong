@@ -22,17 +22,6 @@
 
 namespace mysong::tui {
 namespace {
-// Os numeros da sala. LIMIAR: 96 collunhas UTEIS, que são as cem da tela do
-// operador menos as quatro da orla; abaixo d'ellas o painel roubaria da
-// tabella, que é onde se navega, para mostrar arte, que é o que enfeita.
-constexpr std::size_t kLimiarDoPainel = 96, kPainelMinimo = 24;
-// O painel tem quatro linhas fixas (o titulo e as tres da ficha) e o espectro
-// não desce de oito: d'onde abaixo de doze linhas de corpo elle não se pinta.
-constexpr std::size_t kFixoDoPainel = 4, kEspectroMinimo = 8, kCapaMinima = 4;
-// O meio não desce de quarenta collunhas, e o cabeçalho (capa pequena e o
-// separador) cede o logar á tabella quando ella ficaria com menos de tres.
-constexpr std::size_t kMeioMinimo = 40, kCabecalho = 6, kTabellaMinima = 3;
-
 // kMarcadorLinhas — a área do marcador. Seis, e não o tecto: a capa de 16 por
 // 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
 // diria «não ha capa» mais alto do que o painel diz a musica.
@@ -207,26 +196,6 @@ Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa) {
   const std::size_t tomadas = std::min(linhas_da_capa, sala.capa.altura);
   return {sala.painel.x, sala.painel.y + tomadas, sala.painel.largura,
           sala.painel.altura - tomadas};
-}
-
-Geometria geometria_da_sala(std::size_t largura, std::size_t altura,
-                            std::size_t collunhas_da_barra) {
-  Geometria geo;
-  const std::size_t util =
-      largura > collunhas_da_barra ? largura - collunhas_da_barra : 1;
-  if (largura >= kLimiarDoPainel && altura >= kFixoDoPainel + kEspectroMinimo &&
-      util > kMeioMinimo + kPainelMinimo) {
-    geo.painel = std::max<std::size_t>(kPainelMinimo, largura / 4);
-    geo.painel = std::min(geo.painel, util - kMeioMinimo - 1);
-    geo.livre = altura > kFixoDoPainel ? altura - kFixoDoPainel : 0;
-    // Tecto: o que se PINTA é o que o chafa devolver, guardando a proporção.
-    if (geo.livre >= kEspectroMinimo + kCapaMinima)
-      geo.capa = std::min(geo.painel / 2 + 1, geo.livre - kEspectroMinimo);
-  }
-  geo.meio = geo.painel == 0 ? util : util - geo.painel - 1;
-  geo.cabecalho = altura >= kCabecalho + kTabellaMinima ? kCabecalho : 0;
-  geo.tabella = altura > geo.cabecalho ? altura - geo.cabecalho : 1;
-  return geo;
 }
 
 Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
