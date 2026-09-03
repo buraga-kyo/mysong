@@ -119,6 +119,44 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
   return {};
 }
 
+RespostaDoArrasto gesto_do_arrasto(Arrasto& arrasto, const Alvo& alvo,
+                                   ftxui::Mouse::Button botao,
+                                   ftxui::Mouse::Motion movimento,
+                                   bool pode) noexcept {
+  // Sómente o botão ESQUERDO arrasta: o direito abre o menu, e a roda rola.
+  if (botao != ftxui::Mouse::Left) return {};
+  const bool na_linha = alvo.peca == Peca::Linha;
+  switch (movimento) {
+    case ftxui::Mouse::Pressed:
+      if (!pode || !na_linha) {
+        arrasto = Arrasto();
+        return {};
+      }
+      arrasto = Arrasto{true, alvo.indice, alvo.indice, false};
+      return {GestoDoArrasto::Pega, alvo.indice, alvo.indice};
+    case ftxui::Mouse::Moved: {
+      // A mão anda: o alvo segue o dedo emquanto elle correr a pauta. Sahindo
+      // d'ella, o alvo FICA onde estava: assim quem passa por cima da capa e
+      // torna não perde a faixa que trazia na mão.
+      if (!arrasto.pegou || !na_linha || alvo.indice == arrasto.alvo) return {};
+      arrasto.alvo = alvo.indice;
+      arrasto.andou = arrasto.alvo != arrasto.origem;
+      return {GestoDoArrasto::Arrasta, arrasto.origem, arrasto.alvo};
+    }
+    case ftxui::Mouse::Released: {
+      if (!arrasto.pegou) return {};
+      const Arrasto tinha = arrasto;
+      arrasto = Arrasto();
+      // Largar onde se pegou não é movimento: é o clique de sempre, e quem o
+      // cumpre é a taboada d'elle.
+      if (!tinha.andou || tinha.alvo == tinha.origem)
+        return {GestoDoArrasto::Desiste, tinha.origem, tinha.origem};
+      return {GestoDoArrasto::Larga, tinha.origem, tinha.alvo};
+    }
+  }
+  return {};
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒

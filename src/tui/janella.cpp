@@ -567,6 +567,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // O HELP (issue #133): o estado da janella da ajuda e a caixa d'ella, que o
   // clique de fóra consulta para a fechar. Mora aqui pela razão do menu.
   tui::Ajuda ajuda;
+  // O ARRASTO (issue #153): a faixa que está na mão do rato. Mora aqui, ao
+  // lado do foco, que é estado da SESSÃO e não do quadro.
+  tui::Arrasto arrasto;
   ftxui::Box caixa_da_ajuda = tui::caixa_por_pintar();
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
@@ -1101,7 +1104,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
          // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
          tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                   sala.pauta.largura, retracto.titulo,
-                                  &caixas.linhas) |
+                                  &caixas.linhas, &arrasto) |
              ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                          static_cast<int>(sala.pauta.altura)) |
              ftxui::reflect(caixas.pauta)})};
@@ -1178,6 +1181,44 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // o botão direito, e é o que deixa o menu chamar as ordens que já existem:
   // ellas trabalham todas sobre a ELEITA, e menu que abrisse n'outra faixa
   // pediria um segundo caminho para cada uma d'ellas.
+  // elege_a_linha — leva a eleição ao indice pedido pelo sobe e pelo desce, que
+  // SATURAM. É o mesmo caminho que o clique já anda, e não punho novo.
+  const auto elege_a_linha = [&](std::size_t qual) {
+    while (navegador.eleito() != qual) {
+      const std::size_t antes = navegador.eleito();
+      antes < qual ? navegador.desce() : navegador.sobe();
+      if (navegador.eleito() == antes) break;  // saturou: acabou a lista
+    }
+  };
+
+  // arruma_a_faixa — cumpre o que o arrasto pediu (issue #153). No ACERVO pela
+  // ordem propria da bibliotheca (issue #152); dentro de uma LISTA pelos passos
+  // que o `K` e o `J` já dão, um de cada vez, que é o punho que o roleiro tem.
+  // Fóra d'essas duas vistas nada se move, e o arrasto nem chega aqui.
+  const auto arruma_a_faixa = [&](std::size_t de, std::size_t para) {
+    if (de == para) return;
+    const std::vector<tui::Linha>& vista = navegador.vista();
+    if (de >= vista.size() || para >= vista.size()) return;
+    if (navegador.secao() == tui::Secao::Busca) {
+      const std::string qual = vista[de].chave;
+      if (!livraria.move_faixa(qual, para)) {
+        aviso_da_rede = "não se pôde arrumar essa faixa";
+        return;
+      }
+      navegador.recarrega();
+      elege_a_linha(para);
+      return;
+    }
+    if (navegador.secao() != tui::Secao::NoRol) return;
+    elege_a_linha(de);
+    const std::size_t passos = de < para ? para - de : de - para;
+    for (std::size_t passo = 0; passo < passos; ++passo)
+      if (!(de < para ? navegador.desce_no_rol() : navegador.sobe_no_rol())) {
+        aviso_da_rede = "não se pôde arrumar essa faixa";
+        return;
+      }
+  };
+
   const auto abre_o_menu_na = [&](std::size_t qual) {
     while (navegador.eleito() != qual) {
       const std::size_t antes = navegador.eleito();
@@ -1318,6 +1359,31 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                            foco != tui::Focavel::Pauta &&
                            (tecla == ftxui::Event::Return ||
                             tecla == ftxui::Event::Character(' '));
+    // O ARRASTO (issue #153) trata-se ANTES da taboada do clique: elle governa
+    // o botão a descer, a mão a andar e o botão a subir, e sómente deixa seguir
+    // o caminho de sempre quando não ha movimento a cumprir. A vista diz se se
+    // deixa arrumar: o acervo e o dentro de uma lista sim; os artistas, os
+    // albuns e os achados da rede não, que alli a ordem não é do operador.
+    if (tecla.is_mouse() && digita == Digita::Nada) {
+      ftxui::Event d_agora = tecla;
+      const ftxui::Mouse mao = d_agora.mouse();
+      const bool pode_arrumar = navegador.secao() == tui::Secao::Busca ||
+                                navegador.secao() == tui::Secao::NoRol;
+      const tui::RespostaDoArrasto d_elle = tui::gesto_do_arrasto(
+          arrasto, tui::alvo_do_ponto(caixas, mao.x, mao.y), mao.button,
+          mao.motion, pode_arrumar);
+      switch (d_elle.gesto) {
+        case tui::GestoDoArrasto::Arrasta: return true;  // sómente o pintor muda
+        case tui::GestoDoArrasto::Larga:
+          arruma_a_faixa(d_elle.de, d_elle.para);
+          return true;
+        // O PEGA e o DESISTE seguem á taboada do clique: pegar é eleger, e
+        // desistir é o clique simples, que toca a faixa já eleita.
+        case tui::GestoDoArrasto::Pega:
+        case tui::GestoDoArrasto::Desiste:
+        case tui::GestoDoArrasto::Nada: break;
+      }
+    }
     if (tecla.is_mouse() || pelo_foco) {
       ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
       const ftxui::Mouse rato = pelo_foco ? ftxui::Mouse{} : copia.mouse();
@@ -1737,11 +1803,24 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         if (!navegador.retira_do_rol())
           aviso_da_rede = "isso sómente dentro de uma lista";
         return true;
+      // O `K` e o `J` (issue #153) valem tambem no ACERVO, pela ordem propria
+      // d'elle: era arbitrario moverem item de lista e não moverem faixa, que
+      // o operador arruma as duas pelo mesmo gesto.
       case tui::Verbo::SobeNoRol:
-        navegador.sobe_no_rol();
+        if (navegador.secao() == tui::Secao::Busca) {
+          if (navegador.eleito() > 0)
+            arruma_a_faixa(navegador.eleito(), navegador.eleito() - 1);
+        } else {
+          navegador.sobe_no_rol();
+        }
         return true;
       case tui::Verbo::DesceNoRol:
-        navegador.desce_no_rol();
+        if (navegador.secao() == tui::Secao::Busca) {
+          if (navegador.eleito() + 1 < navegador.vista().size())
+            arruma_a_faixa(navegador.eleito(), navegador.eleito() + 1);
+        } else {
+          navegador.desce_no_rol();
+        }
         return true;
       case tui::Verbo::Varre:
         // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
@@ -1850,9 +1929,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   //
   // E PEDE-SE O RATO com elle (issue #95): o 1000 dá o botão a descer e a subir,
   // e o 1006 dá-os em SGR. O 1003 fica de fóra, e é esse o ponto da issue.
-  std::cout << "\x1b[?1004h\x1b[?1000h\x1b[?1006h" << std::flush;
+  std::cout << "\x1b[?1004h\x1b[?1000h\x1b[?1002h\x1b[?1006h" << std::flush;
   tela.Loop(janella);
-  std::cout << "\x1b[?1006l\x1b[?1000l\x1b[?1004l" << std::flush;
+  std::cout << "\x1b[?1006l\x1b[?1002l\x1b[?1000l\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o

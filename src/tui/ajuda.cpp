@@ -66,7 +66,8 @@ std::vector<GrupoDaAjuda> taboada_da_ajuda() {
        {{"clique", "aba, faixa, botões: o que dizem"},
         {"clique", "na onda busca; na capa pausa"},
         {"direito", "menu de contexto da faixa"},
-        {"roda", "anda três linhas na pauta"}}},
+        {"roda", "anda três linhas na pauta"},
+        {"arrastar", "pega a faixa e larga onde ela vai"}}},
   };
 }
 
