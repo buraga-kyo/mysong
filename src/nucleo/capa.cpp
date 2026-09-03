@@ -73,9 +73,39 @@ std::size_t de_quatro(std::string_view octetos, std::size_t onde) {
   return (de_dous(octetos, onde) << 16) | de_dous(octetos, onde + 2);
 }
 
+
+// medida_do_jpeg — anda pelos segmentos até o SOF, que é o unico que traz o
+// quadro. SOF são as marcas C0 a CF menos a C4, a C8 e a CC, que carregam
+// taboas de Huffman, extensão e taboas arithmeticas: corpo d'outra especie.
+// Andar é preciso porque o APIC do yt-dlp traz o JFIF, e ás vezes o EXIF,
+// ANTES do quadro: quem lesse a posição fixa leria a miniatura da camera.
+Medida medida_do_jpeg(std::string_view octetos) {
+  std::size_t i = 2;  // a guarda FFD8 já se conferiu
+  while (i + 9 < octetos.size()) {
+    if (static_cast<unsigned char>(octetos[i]) != 0xFF) return {};
+    const auto marca = static_cast<unsigned char>(octetos[i + 1]);
+    // Enchimento, e as marcas sem corpo algum: andam de dous em dous.
+    if (marca == 0xFF || marca == 0x01 || (marca >= 0xD0 && marca <= 0xD9)) {
+      ++i;
+      if (marca != 0xFF) ++i;
+      continue;
+    }
+    if (marca >= 0xC0 && marca <= 0xCF && marca != 0xC4 && marca != 0xC8 &&
+        marca != 0xCC)
+      return {de_dous(octetos, i + 7), de_dous(octetos, i + 5)};
+    const std::size_t tamanho = de_dous(octetos, i + 2);
+    if (tamanho < 2) return {};
+    i += 2 + tamanho;
+  }
+  return {};
+}
+
 }  // namespace
 
 Medida medida_da_imagem(std::string_view octetos) {
+  if (octetos.size() > 3 && static_cast<unsigned char>(octetos[0]) == 0xFF &&
+      static_cast<unsigned char>(octetos[1]) == 0xD8)
+    return medida_do_jpeg(octetos);
   // O PNG diz o quadro no IHDR, que a norma manda ser o PRIMEIRO pedaço: a
   // largura no octeto dezaseis e a altura no vinte, contando da guarda.
   if (octetos.size() >= 24 && octetos.compare(0, 8, "\x89PNG\r\n\x1a\n") == 0 &&
