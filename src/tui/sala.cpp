@@ -65,7 +65,8 @@ void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
                      std::size_t corpo) {
   if (corpo == 0) return;
   std::size_t do_painel = 0;
-  if (largura >= kLimiarDoPainel && corpo >= kEspectroMinimo) {
+  // O painel pede a FICHA (uma fileira) e o espectro minimo por baixo d'ella.
+  if (largura >= kLimiarDoPainel && corpo >= kEspectroMinimo + 1) {
     // METADE e METADE, que é o que elle pediu. A collunha do divisor sahe da
     // esquerda, donde em largura PAR a pauta fica uma mais estreita (a 120
     // dá 59 e 60) e em largura IMPAR as duas ficam eguaes (a 167 dão 83).
@@ -87,12 +88,17 @@ void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
   if (do_painel == 0) return;
   sala.divisor = {da_pauta, alto, 1, corpo};
   sala.painel = {da_pauta + 1, alto, do_painel, corpo};
+  // A FICHA (issue #134) toma a primeira fileira do painel: o titulo e o
+  // artista do que sôa, que deixaram a fita. A arte e o espectro repartem o
+  // que sobra, pela mesma conta de antes sobre uma fileira a menos.
+  sala.ficha = {sala.painel.x, alto, do_painel, 1};
+  const std::size_t resto = corpo - 1;
   // O TECTO da capa: quarenta e cinco por cento do painel, e nunca tanto que
   // deixe o espectro abaixo do minimo d'elle.
   const std::size_t tecto =
-      std::min(corpo * kCapaPorCento / 100, corpo - kEspectroMinimo);
-  sala.capa = {sala.painel.x, alto, do_painel, tecto};
-  sala.espectro = {sala.painel.x, alto + tecto, do_painel, corpo - tecto};
+      std::min(resto * kCapaPorCento / 100, resto - kEspectroMinimo);
+  sala.capa = {sala.painel.x, alto + 1, do_painel, tecto};
+  sala.espectro = {sala.painel.x, alto + 1 + tecto, do_painel, resto - tecto};
 }
 
 }  // namespace
@@ -160,21 +166,21 @@ std::string onde_da_chapa(Secao secao, const std::vector<std::string>& trilha,
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
   Sala sala;
   if (largura == 0 || altura == 0) return sala;
-  // A ESCADA DO PÉ (issue #125, aparada pela #129), do mais dispensavel ao mais
-  // essencial: cede primeiro o rodapé, depois o trilho. As duas cedem ANTES do
-  // corpo: tocador sem lista alguma é dar o caminho e fechar a porta.
+  // A ESCADA DO PÉ (issue #125, aparada pela #129 e pela #134), do mais
+  // dispensavel ao mais essencial: cede primeiro o rodapé, depois o campo. Os
+  // dous cedem ANTES do corpo: tocador sem lista alguma é dar o caminho e
+  // fechar a porta. O TRILHO já não existe (issue #134): a onda da faixa, no
+  // meio da fita, é o progresso e é o clique que busca, e a linha que elle
+  // tomava tornou ao corpo.
   //
   // A FITA É RASA, de UMA fileira. Teve duas por uma leva, e o operador quis
   // de volta a rasa: a fileira de baixo ficava vazia debaixo do rotulo, e o
   // que elle queria era o CENTRO, que fica (o grupo das abas no meio da
   // largura, e o texto centrado em cada segmento). Da altura sahe tambem a
   // chapa em XIROD, que por isso torna a uma fileira sem se lhe tocar.
-  std::size_t campo = campo_aberto ? 1u : 0u, trilho = 1, fita = 1, rodape = 1;
-  const auto pe = [&] { return campo + trilho + fita + rodape; };
+  std::size_t campo = campo_aberto ? 1u : 0u, fita = 1, rodape = 1;
+  const auto pe = [&] { return campo + fita + rodape; };
   if (altura < pe() + 1) rodape = 0;
-  // O TRILHO fecha a escada, e cede tambem elle antes do corpo: com o campo
-  // aberto n'uma tela de tres linhas, o pé pedia as tres e a lista sommia.
-  if (altura < pe() + 1) trilho = 0;
   // O CAMPO fecha a escada: cede quando, ficando, deixaria o corpo sem fileira
   // alguma. Duas linhas com o campo aberto pediam as duas para o pé, e a lista
   // sommia, contra a promessa do aceite.
@@ -183,7 +189,6 @@ Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
   if (rodape != 0) sala.rodape = {0, --y, largura, 1};
   y -= fita;
   sala.cabecalho = {0, y, largura, fita};
-  if (trilho != 0) sala.trilho = {0, --y, largura, 1};
   if (campo != 0) sala.campo = {0, --y, largura, 1};
   reparte_o_corpo(sala, largura, 0, y);
   return sala;
@@ -192,8 +197,11 @@ Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
 Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa) {
   if (sala.painel.vazio()) return {};
   const std::size_t tomadas = std::min(linhas_da_capa, sala.capa.altura);
-  return {sala.painel.x, sala.painel.y + tomadas, sala.painel.largura,
-          sala.painel.altura - tomadas};
+  // Do pé da arte ao pé do painel: a fileira da ficha fica de fóra por conta
+  // propria, que ella mora ACIMA da capa e não abaixo.
+  const std::size_t fim = sala.painel.y + sala.painel.altura;
+  const std::size_t y = sala.capa.y + tomadas;
+  return {sala.painel.x, y, sala.painel.largura, fim > y ? fim - y : 0};
 }
 
 Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
@@ -325,6 +333,81 @@ ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
   return ftxui::vbox({std::move(arte) | ftxui::hcenter, std::move(baixo)}) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
+}
+
+
+namespace {
+
+// aparada — o texto cortado a `largura` collunhas do terminal, com «…» a
+// fechar. Conta collunhas pelo `string_width`, e não pontos de codigo: ha
+// titulo com kanji e com emoji, que valem duas.
+std::string aparada(const std::string& texto, std::size_t largura) {
+  if (largura == 0) return {};
+  if (static_cast<std::size_t>(ftxui::string_width(texto)) <= largura)
+    return texto;
+  std::string feito;
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < texto.size();) {
+    std::size_t fim = i + 1;
+    while (fim < texto.size() &&
+           (static_cast<unsigned char>(texto[fim]) & 0xC0) == 0x80)
+      ++fim;
+    const std::string letra = texto.substr(i, fim - i);
+    const std::size_t vale =
+        static_cast<std::size_t>(ftxui::string_width(letra));
+    if (gastas + vale > largura - 1) break;
+    feito += letra;
+    gastas += vale;
+    i = fim;
+  }
+  return feito + "\u2026";
+}
+
+// O que aparta o titulo do artista: dous espaços, o ponto do meio, dous
+// espaços. Cinco collunhas, e a conta de baixo sabe-o por este nome.
+constexpr std::string_view kEntreTituloEArtista = "  \u00b7  ";
+constexpr std::size_t kCollunhasDoEntre = 5;
+
+}  // namespace
+
+ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
+  if (largura == 0) return ftxui::emptyElement();
+  const auto collunhas = [](const std::string& s) {
+    return static_cast<std::size_t>(ftxui::string_width(s));
+  };
+  const bool ha = !ficha.titulo.empty();
+  std::string titulo = ha ? ficha.titulo : "(nada toca)";
+  std::string artista = ha ? ficha.artista : std::string();
+  // O ARTISTA cede primeiro: cortado ao que sobra, e inteiro quando nem tres
+  // collunhas lhe sobram. O titulo é o que se veio ver, e corta por ultimo.
+  if (!artista.empty() &&
+      collunhas(titulo) + kCollunhasDoEntre + collunhas(artista) > largura) {
+    const std::size_t sobra =
+        largura > collunhas(titulo) + kCollunhasDoEntre
+            ? largura - collunhas(titulo) - kCollunhasDoEntre
+            : 0;
+    if (sobra >= 3) artista = aparada(artista, sobra);
+    else artista.clear();
+  }
+  if (collunhas(titulo) > largura) titulo = aparada(titulo, largura);
+  const std::size_t usado =
+      collunhas(titulo) +
+      (artista.empty() ? 0 : kCollunhasDoEntre + collunhas(artista));
+  const std::size_t antes = usado < largura ? (largura - usado) / 2 : 0;
+  const std::size_t depois = usado + antes < largura ? largura - usado - antes : 0;
+  std::vector<ftxui::Element> partes;
+  partes.push_back(ftxui::text(std::string(antes, ' ')));
+  partes.push_back(
+      pinta(titulo, ha ? tokens::text_bright : tokens::text_muted) | ftxui::bold);
+  if (!artista.empty())
+    partes.push_back(
+        pinta(std::string(kEntreTituloEArtista) + artista, tokens::text_muted));
+  partes.push_back(ftxui::text(std::string(depois, ' ')));
+  const tokens::Triade fundo = tokens::rgb(tokens::panel);
+  return ftxui::hbox(std::move(partes)) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura)) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 1);
 }
 
 }  // namespace mysong::tui

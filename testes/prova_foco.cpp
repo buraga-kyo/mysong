@@ -37,19 +37,20 @@ namespace {
 tui::CaixasDaTela tela_d_elle() {
   tui::CaixasDaTela caixas;
   tui::CaixasDoCabecalho& pe = caixas.cabecalho;
-  pe.botao_tocar = {0, 2, 64, 65};
-  pe.botao_anterior = {4, 6, 64, 65};
-  pe.botao_seguinte = {8, 10, 64, 65};
-  pe.nome = {12, 63, 64, 65};
-  pe.aba_mysong = {64, 74, 64, 65};
-  pe.aba_playlists = {76, 88, 64, 65};
-  pe.aba_download = {90, 101, 64, 65};
+  // A ordem d'elle (issue #134): as abas, os botões, o meio (a onda, que é o
+  // trilho), e a ponta direita. As collunhas são as da fita pintada em 167.
+  pe.aba_mysong = {0, 10, 64, 65};
+  pe.aba_playlists = {12, 24, 64, 65};
+  pe.aba_download = {26, 37, 64, 65};
+  pe.botao_tocar = {39, 41, 64, 65};
+  pe.botao_anterior = {43, 45, 64, 65};
+  pe.botao_seguinte = {47, 49, 64, 65};
+  pe.trilho = {51, 105, 64, 65};
   pe.tempo = {107, 121, 64, 65};
   pe.volume = {123, 130, 64, 65};
   pe.embaralhar = {132, 145, 64, 65};
   pe.repetir = {147, 157, 64, 65};
   pe.ajuda = {159, 166, 64, 65};
-  pe.trilho = {0, 166, 63, 63};
   caixas.pauta = {0, 82, 1, 62};
   for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 1 + i, 1 + i});
   caixas.capa = {84, 166, 0, 27};
@@ -98,9 +99,10 @@ TEST_CASE("as quatro setas dizem o rumo, e as outras teclas ficam alheias") {
 }
 
 TEST_CASE("o `↓` da pauta desce á fita, e o `←` d'ella não sahe") {
-  // Desce ao segmento que está POR BAIXO d'ella: a pauta toma as 83 primeiras
-  // collunhas, e o grupo das abas principia na 64, dentro d'ellas.
-  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::AbaMySong);
+  // Desce ao segmento que está POR BAIXO do CENTRO d'ella: a pauta toma as 83
+  // primeiras collunhas, e o centro cae na 41, que é o botão de tocar (issue
+  // #134). As abas ficam á esquerda d'elle, a um `←` de distancia.
+  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::Tocar);
   // Á esquerda da pauta não ha visinha alguma. É esta linha que diz que a seta
   // esquerda já não volta degrau algum: ella nem sequer move o foco.
   CHECK(salto_de(Focavel::Pauta, Direcao::Esquerda) == Focavel::Pauta);
@@ -112,36 +114,32 @@ TEST_CASE("o `↓` da pauta desce á fita, e o `←` d'ella não sahe") {
 }
 
 TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
-  const Focavel fita[10] = {
-      Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
+  const Focavel fita[11] = {
       Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
-      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir,
-      Focavel::Ajuda};
-  for (int i = 0; i + 1 < 10; ++i) {
+      Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
+      Focavel::Trilho,    Focavel::Volume,       Focavel::Embaralhar,
+      Focavel::Repetir,   Focavel::Ajuda};
+  for (int i = 0; i + 1 < 11; ++i) {
     CHECK(salto_de(fita[i], Direcao::Dextra) == fita[i + 1]);
     CHECK(salto_de(fita[i + 1], Direcao::Esquerda) == fita[i]);
   }
   // As duas PONTAS não dão a volta: sem candidata, o foco fica. Dar a volta
   // levaria o olho ao canto opposto d'onde elle olhava.
-  CHECK(salto_de(Focavel::Tocar, Direcao::Esquerda) == Focavel::Tocar);
+  CHECK(salto_de(Focavel::AbaMySong, Direcao::Esquerda) == Focavel::AbaMySong);
   CHECK(salto_de(Focavel::Ajuda, Direcao::Dextra) == Focavel::Ajuda);
   // E abaixo da fita não ha nada, que o rodapé das dicas não recebe foco: as
-  // dez ficam onde estão.
+  // onze ficam onde estão.
   for (const Focavel qual : fita)
     CHECK(salto_de(qual, Direcao::Baixo) == qual);
 }
 
 TEST_CASE("o `↑` da fita torna ao corpo que cada segmento tem por cima") {
-  // Os tres botões têm a PAUTA por cima, e é a ella que sobem.
+  // As abas, os botões e o meio têm a PAUTA por cima, e é a ella que sobem:
+  // o meio cruza tambem a capa, mas a pauta está mais perto d'elle.
   for (const Focavel qual :
-       {Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte})
+       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
+        Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte, Focavel::Trilho})
     CHECK(salto_de(qual, Direcao::Cima) == Focavel::Pauta);
-  // As tres ABAS têm o TRILHO: elle corre a largura toda, mora na linha logo
-  // acima d'ellas, e o centro d'elle cae mesmo sobre o grupo. Um segundo `↑`
-  // leva d'elle á pauta, que é onde a lista está.
-  for (const Focavel qual :
-       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload})
-    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Trilho);
   // Os tres da direita têm a CAPA, que mora no painel por cima d'elles. Não é
   // capricho: a capa está mesmo alli, e mandá-los á pauta faria a seta saltar
   // meia tela por cima do que ella tem em frente.
@@ -155,14 +153,11 @@ TEST_CASE("o `↑` da fita torna ao corpo que cada segmento tem por cima") {
   CHECK(salto_de(Focavel::Capa, Direcao::Cima) == Focavel::Capa);
 }
 
-TEST_CASE("o trilho anda entre a pauta e a fita, e não da tela fóra") {
+TEST_CASE("o meio da fita anda entre os botões e o volume, e sobe á pauta") {
   CHECK(salto_de(Focavel::Trilho, Direcao::Cima) == Focavel::Pauta);
-  // Para baixo cae na aba do meio, que é a que tem o centro mais perto do
-  // d'elle: o trilho corre a largura toda, e o meio d'ella é o meio do grupo.
-  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::AbaPlaylists);
-  // Elle toma a largura INTEIRA: peça alguma lhe fica ao lado.
-  CHECK(salto_de(Focavel::Trilho, Direcao::Esquerda) == Focavel::Trilho);
-  CHECK(salto_de(Focavel::Trilho, Direcao::Dextra) == Focavel::Trilho);
+  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::Trilho);
+  CHECK(salto_de(Focavel::Trilho, Direcao::Esquerda) == Focavel::Seguinte);
+  CHECK(salto_de(Focavel::Trilho, Direcao::Dextra) == Focavel::Volume);
 }
 
 TEST_CASE("peça por pintar não recebe foco nem o dá") {
@@ -243,14 +238,14 @@ TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
   const struct {
     Focavel peca;
     int collunha;
-  } onde[10] = {{Focavel::Tocar, 1},        {Focavel::Anterior, 5},
-                {Focavel::Seguinte, 9},     {Focavel::AbaMySong, 66},
-                {Focavel::AbaPlaylists, 78}, {Focavel::AbaDownload, 92},
+  } onde[10] = {{Focavel::AbaMySong, 2},    {Focavel::AbaPlaylists, 14},
+                {Focavel::AbaDownload, 28}, {Focavel::Tocar, 40},
+                {Focavel::Anterior, 44},    {Focavel::Seguinte, 48},
                 {Focavel::Volume, 125},     {Focavel::Embaralhar, 134},
                 {Focavel::Repetir, 149},    {Focavel::Ajuda, 162}};
   for (const auto& qual : onde) {
     const ftxui::Screen tela =
-        papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "x", 167,
+        papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, {}, 167,
                                          nullptr, qual.peca),
               167);
     const ftxui::Pixel& cella = tela.PixelAt(qual.collunha, 0);
@@ -261,16 +256,16 @@ TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
 
 TEST_CASE("o foco na aba corrente ganha da corrente, e as visinhas não mudam") {
   const ftxui::Screen tela =
-      papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "x", 167,
+      papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, {}, 167,
                                        nullptr, Focavel::AbaMySong),
             167);
   // A aba é a corrente E tem o foco: pinta-se de FOCO. Quem anda com as setas
   // ha de ver onde a mão está, e onde se ESTÁ di-lo tambem a chapa da pauta.
-  CHECK(tela.PixelAt(66, 0).background_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(2, 0).background_color == cor(tk::glow_core));
   // As outras duas ficam no repouso do chrome, e os botões no panel_hi: o foco
   // accende UMA peça, e nunca a linha toda.
-  CHECK(tela.PixelAt(78, 0).background_color == cor(tk::raised));
-  CHECK(tela.PixelAt(1, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
   // E o estado da aba di-lo sem se pintar cousa alguma: é por este enum que a
   // irmã do letreiro (issue #108) escolhe a chapa em XIROD.
   CHECK(tui::estado_da_aba(tui::Aba::MySong, tui::Aba::MySong,
@@ -308,18 +303,20 @@ TEST_CASE("a aba com foco governa tambem a chapa em XIROD que a cobre") {
   CHECK(tui::pedido_da_chapa(sem[0]).fundo == std::string(tk::v600));
 }
 
-TEST_CASE("o trilho com foco accende o andado, e o que falta fica quieto") {
+TEST_CASE("o meio da fita com foco accende o andado, e o que falta fica quieto") {
   tui::Retracto meio = tocando();
-  meio.posicao = 94.5;  // metade de 189: dez collunhas de vinte
+  meio.posicao = 94.5;  // metade de 189: metade das 55 collunhas do meio
   const ftxui::Screen quieto =
-      papel(tui::elemento_do_trilho(meio, 20, nullptr, false), 20);
+      papel(tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167), 167);
   const ftxui::Screen aceso =
-      papel(tui::elemento_do_trilho(meio, 20, nullptr, true), 20);
-  CHECK(quieto.PixelAt(0, 0).foreground_color == cor(tk::v600));
-  CHECK(aceso.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
+      papel(tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167, nullptr,
+                                       Focavel::Trilho),
+            167);
+  CHECK(quieto.PixelAt(51, 0).foreground_color == cor(tk::v600));
+  CHECK(aceso.PixelAt(51, 0).foreground_color == cor(tk::glow_core));
   // O que FALTA não accende: linha inteira em glow deixaria de dizer por onde
   // a faixa vae, que é o officio do trilho.
-  CHECK(aceso.PixelAt(19, 0).foreground_color == cor(tk::line_dim));
+  CHECK(aceso.PixelAt(105, 0).foreground_color == cor(tk::line_dim));
 }
 
 TEST_CASE("a capa com foco ganha orla de glow_core") {

@@ -97,14 +97,14 @@ struct Rectangulo {
 // composição sahe d'aqui, e em campo NOMEADO: as issues irmãs pendem d'estes
 // rectangulos, e indice n'um vector desloca-se á primeira peça nova.
 struct Sala {
-  Rectangulo cabecalho;  // a FITA, no pé: DUAS linhas, ou UMA em tela baixa
-  Rectangulo trilho;     // UMA linha, logo por CIMA d'ella
-  Rectangulo campo;      // o prompt, por cima do trilho; vazio se fechado
+  Rectangulo cabecalho;  // a FITA, no pé, de UMA linha; a onda mora n'ella
+  Rectangulo campo;      // o prompt, por cima da fita; vazio se fechado
   Rectangulo chapa;      // UMA linha por cima da pauta
   Rectangulo pauta;      // a lista das musicas, á esquerda
   Rectangulo divisor;    // a collunha que aparta as duas metades
   Rectangulo painel;     // a metade direita; vazia abaixo de cem collunhas
-  Rectangulo capa;       // no alto do painel, ATÉ quarenta e cinco por cento
+  Rectangulo ficha;      // UMA linha no alto do painel: o que sôa (issue #134)
+  Rectangulo capa;       // por baixo da ficha, ATÉ quarenta e cinco por cento
   Rectangulo espectro;   // o que sobra do painel, abaixo da capa
   Rectangulo rodape;     // UMA linha de dicas, no pé
 };
@@ -115,7 +115,8 @@ struct Sala {
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
 
 // espectro_abaixo_da — o rectangulo do espectro depois de se saber quantas
-// linhas a capa tomou DE FACTO. O `capa` da sala é TECTO: a capa de 16 por 9
+// linhas a capa tomou DE FACTO. Conta a partir da CAPA, e não do painel: a
+// fileira da ficha (issue #134) é do painel e não é da arte. O `capa` da sala é TECTO: a capa de 16 por 9
 // sahe mais baixa que elle, e o que ella deixa pertence ao espectro. A conta
 // mora aqui, e não no pintor, pela regra da sala: numero algum da composição
 // se resolve em janella.cpp, que é o que não se prova.
@@ -155,10 +156,18 @@ ftxui::Element elemento_do_divisor(std::size_t altura);
 // e o que o chamador
 // quizer por baixo (o espectro, ou a letra quando o `l` a pede). Os dous entram
 // já compostos, para que esta peça não conheça nem um nem outra e a bateria
-// lh'os arme á mão. O titulo e a ficha sahiram: o nome do que sôa vive agora na
-// linha do alto, e repeti-lo aqui gastaria quatro linhas da arte.
+// lh'os arme á mão. A FICHA não entra aqui: é fileira propria, por cima, que
+// quem chama compõe pelo `elemento_da_ficha`.
 ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
                                   std::size_t largura);
+
+// elemento_da_ficha — a fileira do alto do painel (issue #134): o titulo em
+// text_bright negrito e o artista em text_muted a seguir, ao CENTRO da largura,
+// e ambos medidos em COLLUNHAS do terminal. Não cabendo, cede primeiro o
+// artista (cortado, e depois inteiro) e só então o titulo corta com «…». Ficha
+// vazia diz «(nada toca)» em text_muted: o nome do que sôa deixou a fita, que a
+// ordem d'elle não lhe deixou logar, e é aqui que elle mora agora.
+ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura);
 
 }  // namespace mysong::tui
 
