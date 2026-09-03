@@ -116,7 +116,10 @@ Lousa::Lousa(ModoDaLousa modo) noexcept
     return;
   }
   vivo_ = true;
-  o_filho.store(filho_);
+  // O PRIMEIRO fica: `store` deixaria uma segunda lousa roubar a rede do
+  // atexit da primeira. A regra é uma por processo, e o punho não a impõe.
+  int nenhum = -1;
+  o_filho.compare_exchange_strong(nenhum, filho_);
   // UMA vez por processo: o atexit não desregista, e registar por objecto
   // encheria a taboa d'elle na bateria que erguesse muitas lousas.
   static const bool registado = std::atexit(mata_o_filho) == 0;

@@ -38,6 +38,12 @@ std::vector<std::string> argumentos_da_lousa();
 
 // escapado_em_json — as aspas, a barra invertida e os de controle. Á parte, e
 // pura: aspa no nome do album partiria a linha ao meio, e o filho calava-se.
+//
+// O LIMITE fica dito, pelo molde do `#` no mysong.conf: nome de arquivo em
+// Linux é sequencia de octetos qualquer, e octeto alto que não seja UTF-8
+// valido (album rasgado em Windows com CP-1252) passa cru, e o analysador do
+// Überzug++ recusa a linha. Effeito: a capa d'esse album não apparece, e é
+// tudo; o protocolo não se corrompe, que a linha continua a ser UMA.
 std::string escapado_em_json(std::string_view texto);
 
 // ordem_de_por e ordem_de_tirar — as DUAS ordens do protocolo, cada uma n'UMA
