@@ -108,6 +108,22 @@ void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
   }
 }
 
+std::size_t quantas_barras(std::size_t largura) {
+  if (largura == 0) return 0;
+  const std::size_t cabem = (largura + VAO_ENTRE_BARRAS) / PASSO_DA_BARRA;
+  return cabem == 0 ? 1u : cabem;
+}
+
+Barra collunhas_da_barra(std::size_t b, std::size_t largura) {
+  Barra barra;
+  if (b >= quantas_barras(largura)) return barra;
+  barra.primeira = b * PASSO_DA_BARRA;
+  if (barra.primeira >= largura) return Barra{};
+  barra.collunhas =
+      std::min(LARGURA_DA_BARRA, largura - barra.primeira);
+  return barra;
+}
+
 std::string_view glifo_da_ponta(bool primeira, bool ultima) {
   if (primeira && ultima) return {};  // banda de uma collunha: sem ponta
   if (primeira) return kFlancoQueSobe;
@@ -155,15 +171,15 @@ const Celula& Quadro::em(std::size_t linha, std::size_t collunha) const {
 
 namespace {
 
-// valor_da_columna — A REPARTIÇÃO, e é UMA funcção para os DOUS regimes.
+// valor_da_barra — A REPARTIÇÃO, e é UMA funcção para os DOUS regimes.
 //
-// A collunha `c` de `largura` cobre o intervallo SEMI-ABERTO de bandas
-// [c * n / largura, (c + 1) * n / largura), e toma o MÁXIMO d'ellas.
+// A barra `b` de `barras` cobre o intervallo SEMI-ABERTO de bandas
+// [b * n / barras, (b + 1) * n / barras), e toma o MÁXIMO d'ellas.
 //
-// Sendo a largura MENOR que n, o intervallo tem duas bandas ou mais, e o máximo
+// Sendo as barras MENOS que n, o intervallo tem duas bandas ou mais, e o máximo
 // FUNDE. Funde e não amostra, de propósito: amostrar faria um pico desapparecer
 // só porque o operador estreitou a janella, e barra que apaga ao redimensionar
-// lê-se como defeito. Sendo a largura MAIOR que n, o intervallo teria comprimento
+// lê-se como defeito. Sendo as barras MAIS que n, o intervallo teria comprimento
 // menor que um e sahiria VAZIO por truncamento; alarga-se ao minimo de uma banda,
 // e então o máximo degenera em copia, que é o esticar.
 //
@@ -171,74 +187,62 @@ namespace {
 // [0, n) sem sobra e sem vão, d'onde banda alguma se perde em largura alguma.
 //
 // O INTERVALLO aparta-se em punho proprio porque DOUS leitores o querem: o valor
-// da columna, que lhe toma o máximo, e o registro da columna, que lhe toma o
-// meio. Escripta a conta duas vezes, um dia a côr apontaria para bandas que não
-// são as que a barra mostra, e nada n'esta Casa o accusaria.
+// da barra, que lhe toma o máximo, e o registro d'ella, que lhe toma o meio.
+// Escripta a conta duas vezes, um dia a côr apontaria para bandas que não são as
+// que a barra mostra, e nada n'esta Casa o accusaria.
 struct Intervallo {
   std::size_t principio = 0;
   std::size_t fim = 0;
 };
 
-Intervallo intervallo_da_columna(std::size_t quantas, std::size_t c,
-                                 std::size_t largura) {
+Intervallo intervallo_da_barra(std::size_t quantas, std::size_t b,
+                               std::size_t barras) {
   Intervallo faixa;
-  if (quantas == 0 || largura == 0) return faixa;
-  faixa.principio = (c * quantas) / largura;
+  if (quantas == 0 || barras == 0) return faixa;
+  faixa.principio = (b * quantas) / barras;
   if (faixa.principio >= quantas) faixa.principio = quantas - 1;
-  faixa.fim = ((c + 1) * quantas) / largura;
+  faixa.fim = ((b + 1) * quantas) / barras;
   if (faixa.fim <= faixa.principio) faixa.fim = faixa.principio + 1;
   if (faixa.fim > quantas) faixa.fim = quantas;
   return faixa;
 }
 
-// mesma_banda — se duas collunhas cobrem o MESMO intervallo de bandas. A
-// segunda vem como `std::size_t` que pode ter transbordado (o `c - 1` da
-// primeira collunha dá o maximo), e o transbordo responde falso pelo caminho
-// natural: o intervallo d'essa collunha imaginaria não é o d'esta.
-bool mesma_banda(std::size_t quantas, std::size_t a, std::size_t b,
-                 std::size_t largura) {
-  if (a >= largura || b >= largura) return false;
-  const Intervallo d_a = intervallo_da_columna(quantas, a, largura);
-  const Intervallo d_b = intervallo_da_columna(quantas, b, largura);
-  return d_a.principio == d_b.principio && d_a.fim == d_b.fim;
-}
-
-float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
-                       std::size_t largura) {
-  const Intervallo faixa = intervallo_da_columna(bandas.size(), c, largura);
+float valor_da_barra(const std::vector<float>& bandas, std::size_t b,
+                     std::size_t barras) {
+  const Intervallo faixa = intervallo_da_barra(bandas.size(), b, barras);
   float pico = 0.0f;
-  for (std::size_t b = faixa.principio; b < faixa.fim; ++b)
-    pico = std::max(pico, cingido(bandas[b]));
+  for (std::size_t i = faixa.principio; i < faixa.fim; ++i)
+    pico = std::max(pico, cingido(bandas[i]));
   return pico;
 }
 
-// registro_da_columna — o registro que veste a columna INTEIRA. Toma o centro da
+// registro_da_barra — o registro que veste a barra INTEIRA. Toma o centro da
 // banda do MEIO do intervallo, e não o da banda que deu o pico: a côr é do
 // LOGAR, e não do nivel, pelo mesmo motivo por que o invariante (iii) ancora o
-// gradiente ao painel. Fosse do pico, a columna trocaria de côr a cada batida, e
+// gradiente ao painel. Fosse do pico, a barra trocaria de côr a cada batida, e
 // a legenda por baixo deixaria de dizer verdade.
-Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
-                             std::size_t largura) {
-  const Intervallo faixa = intervallo_da_columna(centros.size(), c, largura);
+Registro registro_da_barra(const std::vector<float>& centros, std::size_t b,
+                           std::size_t barras) {
+  const Intervallo faixa = intervallo_da_barra(centros.size(), b, barras);
   if (faixa.fim <= faixa.principio) return Registro::Graves;
   return registro_da_banda(
       centros[faixa.principio + (faixa.fim - faixa.principio - 1) / 2]);
 }
 
-// columna_quente — A BATIDA d'esta columna, e são DOUS regimes.
+// barra_quente — A BATIDA d'esta barra, e são DOUS regimes.
 //   Sem picos, o tecto ABSOLUTO de sempre. É o que conserva verdadeiro quanto
 //   se affirmou antes da issue #132, e serve a quem não guarda estado algum.
-//   Com picos, RELATIVO ao pico recente da columna: noventa por cento D'ELLE, e
+//   Com picos, RELATIVO ao pico recente da barra: noventa por cento D'ELLE, e
 //   não do tecto. É o que faz o agudo accender, que elle bate alto para si e
 //   baixo para a fita. O PISO corta o silencio e a passagem baixa, onde o pico
 //   já cahiu e todo sussurro chegaria aos noventa por cento.
-// O pico da columna toma-se pela MESMA repartição do valor: quem funde bandas
-// funde tambem os picos d'ellas, d'onde os dous fallam da mesma columna.
-bool columna_quente(const std::vector<float>& picos, float valor, std::size_t c,
-                    std::size_t largura) {
+// O pico da barra toma-se pela MESMA repartição do valor: quem funde bandas
+// funde tambem os picos d'ellas, d'onde os dous fallam da mesma barra.
+bool barra_quente(const std::vector<float>& picos, float valor, std::size_t b,
+                  std::size_t barras) {
   if (picos.empty()) return valor >= LIMIAR_QUENTE;
   if (valor < PISO_DO_QUENTE) return false;
-  return valor >= LIMIAR_QUENTE * valor_da_columna(picos, c, largura);
+  return valor >= LIMIAR_QUENTE * valor_da_barra(picos, b, barras);
 }
 
 }  // namespace
@@ -316,17 +320,17 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
       centros_em_hertz.empty() ? deduzidos : centros_em_hertz;
   quadro.registros.assign(largura, Registro::Graves);
 
-  for (std::size_t c = 0; c < largura; ++c) {
-    quadro.registros[c] = registro_da_columna(centros, c, largura);
-    const float valor = valor_da_columna(bandas, c, largura);
-    // ONDE a collunha cae DENTRO da banda d'ella (issue #141). A banda pode
-    // tomar varias collunhas (na tela d'elle, tres), e é d'ellas que a ponta
-    // se compõe: o flanco que sobe na primeira, o que desce na ultima. Sahe da
-    // MESMA repartição que dá o valor, e não de conta feita á parte: duas
-    // contas divergiriam, e a seta abriria ao meio.
-    const bool primeira_da_banda = !mesma_banda(bandas.size(), c, c - 1, largura);
-    const bool ultima_da_banda = !mesma_banda(bandas.size(), c, c + 1, largura);
-    const bool quente = columna_quente(picos, valor, c, largura);
+  // A fita anda por BARRA (issue #144), e não por collunha: cada barra toma as
+  // suas duas collunhas e deixa a do vão por pintar, que é o respiro entre
+  // ellas. Assim a barra é a unidade do desenho e da conta, e a seta da batida
+  // assenta exactamente n'ella.
+  const std::size_t barras = quantas_barras(largura);
+  for (std::size_t b = 0; b < barras; ++b) {
+    const Barra sua = collunhas_da_barra(b, largura);
+    if (sua.collunhas == 0) continue;
+    const Registro registro = registro_da_barra(centros, b, barras);
+    const float valor = valor_da_barra(bandas, b, barras);
+    const bool quente = barra_quente(picos, valor, b, barras);
     const int degraus = oitavos(valor, altura);
     const std::size_t cheias =
         static_cast<std::size_t>(degraus / DEGRAUS_POR_CELULA);
@@ -340,33 +344,45 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
     const std::size_t desenhadas =
         degraus == 0 ? 1u : cheias + (resto > 0 ? 1u : 0u);
 
-    for (std::size_t i = 0; i < desenhadas && i < altura; ++i) {
-      const int degrau = degraus == 0
-                             ? 1
-                             : (i < cheias ? DEGRAUS_POR_CELULA : resto);
-      Celula celula;
-      // A PONTA (issue #139, refeita pela #141) sómente no TOPO da columna
-      // QUENTE, e sómente tendo ella corpo: columna de uma cella é o piso do
-      // silencio, e ponta sem corpo não é barra, é ruido. As frias e a muda
-      // ficam de topo chato. O glifo sahe da posição da collunha DENTRO da
-      // banda, que é o que faz as tres cellas do topo desenharem UMA seta.
-      const bool no_topo = i + 1 == desenhadas;
-      const std::string_view ponta =
-          quente && !mudo && no_topo && desenhadas >= 2
-              ? glifo_da_ponta(primeira_da_banda, ultima_da_banda)
-              : std::string_view();
-      celula.glifo =
-          ponta.empty() ? glifo_do_degrau(degrau) : std::string(ponta);
-      celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura,
-                                     quadro.registros[c]);
-      celula.pinta = true;
-      // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
-      // BASE para cima, que é como os blocos crescem; a linha do quadro conta do
-      // TOPO para baixo, que é como o FTXUI pinta. D'onde a base é `altura - 1`.
-      // Trocar isto por `i` desenha a fita de cabeça para baixo, e o defeito
-      // passa em TODA prova de contagem, visto que o numero de célullas
-      // desenhadas não muda. Por isso a prova o afirma por INDICE de linha.
-      quadro.celulas[(altura - 1 - i) * largura + c] = std::move(celula);
+    // O REGISTRO veste tambem a collunha do VÃO que segue a barra: elle
+    // pertence a ella, e é d'esta continuidade que a legenda por baixo tira os
+    // grupos. Deixado no padrão, o vão partiria cada familia em pedacinhos.
+    for (std::size_t c = sua.primeira;
+         c < largura && c < (b + 1) * PASSO_DA_BARRA; ++c)
+      quadro.registros[c] = registro;
+
+    for (std::size_t k = 0; k < sua.collunhas; ++k) {
+      const std::size_t c = sua.primeira + k;
+      for (std::size_t i = 0; i < desenhadas && i < altura; ++i) {
+        const int degrau = degraus == 0
+                               ? 1
+                               : (i < cheias ? DEGRAUS_POR_CELULA : resto);
+        Celula celula;
+        // A PONTA (issue #139, refeita pela #141 e assentada na barra pela
+        // #144) sómente no TOPO da barra QUENTE, e sómente tendo ella corpo:
+        // barra de uma cella é o piso do silencio, e ponta sem corpo não é
+        // barra, é ruido. As frias e a muda ficam de topo chato. O glifo sahe
+        // da posição da collunha DENTRO da barra: o flanco que sobe na
+        // primeira e o que desce na ultima, e é isso que faz as duas cellas do
+        // alto desenharem UMA seta.
+        const bool no_topo = i + 1 == desenhadas;
+        const std::string_view ponta =
+            quente && !mudo && no_topo && desenhadas >= 2
+                ? glifo_da_ponta(k == 0, k + 1 == sua.collunhas)
+                : std::string_view();
+        celula.glifo =
+            ponta.empty() ? glifo_do_degrau(degrau) : std::string(ponta);
+        celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura, registro);
+        celula.pinta = true;
+        // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
+        // BASE para cima, que é como os blocos crescem; a linha do quadro conta
+        // do TOPO para baixo, que é como o FTXUI pinta. D'onde a base é
+        // `altura - 1`. Trocar isto por `i` desenha a fita de cabeça para
+        // baixo, e o defeito passa em TODA prova de contagem, visto que o
+        // numero de célullas desenhadas não muda. Por isso a prova o afirma por
+        // INDICE de linha.
+        quadro.celulas[(altura - 1 - i) * largura + c] = std::move(celula);
+      }
     }
   }
   return quadro;
