@@ -341,5 +341,22 @@ TEST_CASE("o rio escondido devolve o espectro tal qual") {
   CHECK(tui::tapete_do_rio(tui::Quadro{}, tui::QuadroDaLetra{}).empty());
 }
 
+TEST_CASE("a sequencia crua veste o fundo sómente na célulla da letra") {
+  const tui::Quadro espectro = barras();
+  const tui::QuadroDaLetra rio =
+      tui::quadro_da_letra(kComVao, 10.0, kLargura, kAltura);
+  const std::vector<tui::CelulaDoRio> tapete = tui::tapete_do_rio(espectro, rio);
+  const std::size_t x = rio.linhas[0].collunha;
+  const std::string da_letra = tui::sequencia_do_rio(tapete[kLeitura * kLargura + x]);
+  // O fundo do painel escreve-se por SGR de papel 48, e antes da tinta.
+  const tk::Triade tom = tk::rgb(tk::panel);
+  CHECK(da_letra.find(tk::sgr(48, tom)) == 0);
+  CHECK(da_letra.find(tk::tinta(tk::text_bright)) != std::string::npos);
+  CHECK(da_letra.substr(da_letra.size() - 1) == "a");
+  // A célulla da barra não escreve fundo algum.
+  const std::string da_barra = tui::sequencia_do_rio(tapete[kLeitura * kLargura]);
+  CHECK(da_barra.find(tk::sgr(48, tom)) == std::string::npos);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
