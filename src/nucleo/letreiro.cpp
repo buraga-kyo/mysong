@@ -13,7 +13,11 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/letreiro.hpp"
 
+#include <fstream>
 #include <string>
+#include <system_error>
+
+#include <unistd.h>
 
 #include "nucleo/aquisicao.hpp"  // corre(): o exec sem shell
 #include "nucleo/sonda.hpp"      // familia_installada: o fontconfig
@@ -107,6 +111,29 @@ bool ha_familia_da_marca() { return familia_installada(FAMILIA_DA_MARCA); }
 std::string texto_do_letreiro(const Parecer& parecer) {
   return "\n  letreiro: " + parecer.razao + "\n";
 }
+
+namespace {
+
+// cabeca_do_arquivo — os primeiros octetos, que é quanto o `medida_da_imagem`
+// da capa precisa para dizer a largura e a altura sem decodificar imagem.
+std::string cabeca_do_arquivo(const std::filesystem::path& onde) {
+  std::ifstream entrada(onde, std::ios::binary);
+  if (!entrada) return {};
+  std::string cabeca(64, '\0');
+  entrada.read(cabeca.data(), static_cast<std::streamsize>(cabeca.size()));
+  cabeca.resize(static_cast<std::size_t>(entrada.gcount()));
+  return cabeca;
+}
+
+// desfaz — apaga o temporario e responde vazio, que é o que toda queda d'aqui
+// tem a fazer: chapa a meio no cache seria chapa rota para sempre.
+std::filesystem::path desfaz(const std::filesystem::path& meio) {
+  std::error_code erro;
+  std::filesystem::remove(meio, erro);
+  return {};
+}
+
+}  // namespace
 
 }  // namespace mysong::nucleo
 
