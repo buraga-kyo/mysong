@@ -115,6 +115,17 @@ Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
   return medidas;
 }
 
+std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas) {
+  if (quanto <= 0 || maior <= 0 || cellas == 0) return 0;
+  const std::size_t medida = static_cast<std::size_t>(quanto);
+  const std::size_t tecto = static_cast<std::size_t>(maior);
+  if (medida >= tecto) return cellas;
+  // O dobro no numerador e no denominador é o arredondamento ao mais proximo
+  // feito em inteiros: sommar meia cella antes de dividir.
+  const std::size_t cheias = (medida * cellas * 2 + tecto) / (tecto * 2);
+  return cheias == 0 ? 1 : cheias;
+}
+
 std::string apara_collunhas(const std::string& crua, std::size_t collunhas) {
   if (collunhas == 0) return {};
   if (static_cast<std::size_t>(ftxui::string_width(crua)) <= collunhas) {

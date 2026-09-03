@@ -62,6 +62,15 @@ struct Medidas {
 // columnas de baixo desalinhavam das de cima e a pauta parecia quebrada.
 Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta);
 
+// cheias_da_regua — quantas cellas da régua se pintam cheias, dado o que a
+// linha mede e o que mede a MAIOR da fatia á vista. É textura de HUD: o olho
+// compara as linhas entre si, e não com relogio algum.
+//
+// Arredonda ao MAIS PROXIMO, e nunca a zero: faixa que existe ha de mostrar ao
+// menos uma cella, que régua toda vazia lê-se como faixa sem duração. Sem
+// medida (zero ou negativo), porém, ella sahe vazia de proposito.
+std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas);
+
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
