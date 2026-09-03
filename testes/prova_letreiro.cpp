@@ -47,7 +47,7 @@ ftxui::Screen papel(tui::CaixasDoCabecalho* caixas, tui::Aba corrente,
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(167),
                                               ftxui::Dimension::Fixed(altura));
   ftxui::Element linha = tui::elemento_do_cabecalho(
-      retracto, corrente, "uma faixa qualquer", 167, caixas,
+      retracto, corrente, {}, 167, caixas,
       tui::Focavel::Pauta, static_cast<std::size_t>(altura));
   ftxui::Render(ecran, linha);
   return ecran;
@@ -187,10 +187,10 @@ TEST_CASE("a caixa da palavra cae exactamente sobre a palavra") {
       dita += ecran.PixelAt(x, 0).character;
     CHECK(dita == tui::palavra_da_aba(aba));
   }
-  // O grupo das abas principia no centro exacto da fita (issue #125), que em
-  // 167 é a collunha 64; a palavra da primeira começa tres cellas adeante, que
-  // são o espaço, o glifo e o espaço da guarnição.
-  CHECK(tui::caixa_da_palavra(caixas.aba_mysong).x_min == 67);
+  // As abas principiam na primeira collunha da fita (issue #134); a palavra da
+  // primeira começa tres cellas adeante, que são o espaço, o glifo e o espaço
+  // da guarnição.
+  CHECK(tui::caixa_da_palavra(caixas.aba_mysong).x_min == 3);
   // Caixa por pintar não dá palavra alguma, e é o que guarda o primeiro quadro
   // de mandar chapa para um canto que ainda não existe.
   const ftxui::Box nenhuma = tui::caixa_da_palavra(tui::caixa_por_pintar());
@@ -207,7 +207,7 @@ TEST_CASE("as tres ordens de chapa sahem do quadro do cabeçalho") {
   CHECK(ordens[0].estado == tui::EstadoDaAba::Apagada);
   CHECK(ordens[1].estado == tui::EstadoDaAba::Corrente);
   CHECK(ordens[2].estado == tui::EstadoDaAba::Apagada);
-  CHECK(ordens[0].collunha == 67);
+  CHECK(ordens[0].collunha == 3);
   for (const tui::ChapaDaAba& ordem : ordens) {
     CHECK(ordem.poe);
     CHECK(ordem.linha == 0);

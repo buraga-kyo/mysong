@@ -53,7 +53,6 @@ tui::CaixasDaTela tela_de_mentira() {
   alto.botao_tocar = {33, 35, 0, 0};
   alto.botao_anterior = {36, 38, 0, 0};
   alto.botao_seguinte = {39, 41, 0, 0};
-  alto.nome = {42, 60, 0, 0};
   alto.tempo = {61, 75, 0, 0};
   alto.volume = {76, 84, 0, 0};
   alto.embaralhar = {85, 97, 0, 0};
@@ -234,7 +233,7 @@ std::string papel(ftxui::Element quadro, int largura, int altura) {
 
 }  // namespace
 
-TEST_CASE("a caixa não muda um pixel do cabeçalho nem do trilho") {
+TEST_CASE("a caixa não muda um pixel do cabeçalho") {
   tui::Retracto retracto;
   retracto.estado = mysong::nucleo::Estado::Tocando;
   retracto.posicao = 30.0;
@@ -242,23 +241,20 @@ TEST_CASE("a caixa não muda um pixel do cabeçalho nem do trilho") {
   for (const int largura : {60, 120, 167}) {
     const std::size_t larg = static_cast<std::size_t>(largura);
     tui::CaixasDoCabecalho caixas;
-    CHECK(papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, "Faded",
+    CHECK(papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, {},
                                            larg),
                 largura, 1) ==
-          papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, "Faded",
+          papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, {},
                                            larg, &caixas),
                 largura, 1));
     // E as caixas encheram-se: sem isto, a egualdade valeria tambem para quem
     // se esquecesse de as pôr, e a prova não provaria cousa alguma.
     CHECK_FALSE(caixas.aba_mysong.IsEmpty());
     CHECK_FALSE(caixas.botao_tocar.IsEmpty());
-    // O NOME sómente onde ha collunha para elle: em 60 o grupo das abas já
-    // encosta aos botões (issue #125), e caixa de largura zero nasce vazia.
-    if (largura > 60) CHECK_FALSE(caixas.nome.IsEmpty());
-    ftxui::Box trilho;
-    CHECK(papel(tui::elemento_do_trilho(retracto, larg), largura, 1) ==
-          papel(tui::elemento_do_trilho(retracto, larg, &trilho), largura, 1));
-    CHECK_FALSE(trilho.IsEmpty());
+    // O MEIO (a onda, que é o trilho) sómente onde ha collunha para elle: as
+    // fixas pedem 51, e caixa de largura zero nasce vazia (issue #134).
+    if (largura > 51) CHECK_FALSE(caixas.trilho.IsEmpty());
+    else CHECK(caixas.trilho.IsEmpty());
   }
 }
 
@@ -271,18 +267,18 @@ TEST_CASE("o clique em qualquer das duas linhas do segmento faz o mesmo") {
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(167),
                                               ftxui::Dimension::Fixed(2));
   ftxui::Render(ecran, tui::elemento_do_cabecalho(
-                           retracto, tui::Aba::MySong, "Faded", 167,
+                           retracto, tui::Aba::MySong, {}, 167,
                            &tela.cabecalho, tui::Focavel::Pauta, 2));
   REQUIRE(tela.cabecalho.aba_playlists.y_max -
               tela.cabecalho.aba_playlists.y_min == 1);
   for (const int linha : {0, 1}) {
-    const tui::Alvo aba = tui::alvo_do_ponto(tela, 78, linha);
+    const tui::Alvo aba = tui::alvo_do_ponto(tela, 14, linha);
     CHECK(aba.peca == tui::Peca::Aba);
     CHECK(aba.indice == 1);
     CHECK(tui::gesto_do_alvo(aba, Mouse::Left, Mouse::Pressed, {}).gesto ==
           tui::Gesto::VaiParaAba);
     // E o botão de tocar responde pelas duas fileiras d'elle tambem.
-    CHECK(tui::alvo_do_ponto(tela, 1, linha).peca == tui::Peca::Pausa);
+    CHECK(tui::alvo_do_ponto(tela, 40, linha).peca == tui::Peca::Pausa);
     // A roda fica MUDA sobre a fita, nas duas linhas: a caixa é de duas, e a
     // regra da roda não olha a fileira.
     CHECK(tui::gesto_do_alvo(aba, Mouse::WheelUp, Mouse::Pressed, {}).gesto ==
