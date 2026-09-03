@@ -34,6 +34,7 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <ftxui/screen/screen.hpp>
@@ -324,6 +325,36 @@ TEST_CASE("a fronteira do registro decide-se pelo centro em hertz") {
   CHECK(es::registro_da_banda(std::numeric_limits<float>::quiet_NaN()) ==
         es::Registro::Graves);
   CHECK(es::registro_da_banda(-1.0f) == es::Registro::Graves);
+}
+
+// ── C12 · as quatro côres, no topo e na base ────────────────────────────────
+// Um caso por familia, com o centro posto no MEIO da faixa d'ella e não junto da
+// fronteira: aqui afere-se a CÔR, e a fronteira tem caso proprio.
+TEST_CASE("cada registro veste a sua côr no topo e a sua base no pé") {
+  struct Caso {
+    float hertz;
+    std::string_view cor;
+  };
+  // Os hertz e os tokens escriptos Á MÃO, que é a taboada da issue #104:
+  // violeta v500 nos graves, cyan data5 nos medios-graves, laranja data3 nos
+  // medios-agudos e amarello data2 nos agudos.
+  const Caso casos[] = {{100.0f, tk::v500},
+                        {500.0f, tk::data5},
+                        {2000.0f, tk::data3},
+                        {8000.0f, tk::data2}};
+  for (const Caso& caso : casos) {
+    CHECK(es::tinta_do_registro(es::registro_da_banda(caso.hertz)) == caso.cor);
+    // 0,899 pinta as CINCO célullas d'um painel de cinco, pela conta do caso da
+    // rampa: teto 40, floor de 35,96 dá 35, quatro cheios e resto tres.
+    const es::Quadro quadro =
+        es::compor(bandas_uniformes(0.899f), 6, 5, false, centros_em(caso.hertz));
+    for (std::size_t c = 0; c < quadro.largura; ++c) {
+      REQUIRE(quadro.em(0, c).pinta);
+      CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(caso.cor)));
+      CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
+                            tk::mistura(caso.cor, tk::panel_hi, 0.55)));
+    }
+  }
 }
 
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
