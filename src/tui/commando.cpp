@@ -92,10 +92,12 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
     return {Verbo::AoPrincipio, 0.0};
   if (tecla == ftxui::Event::End || tecla == ftxui::Event::Character('G'))
     return {Verbo::AoFim, 0.0};
-  if (tecla == ftxui::Event::Return || tecla == ftxui::Event::ArrowRight)
-    return {Verbo::Entra, 0.0};
-  if (tecla == ftxui::Event::Escape || tecla == ftxui::Event::Backspace ||
-      tecla == ftxui::Event::ArrowLeft)
+  // AS SETAS DE LADO SAHIRAM D'AQUI (issue #107). Ellas voltavam um degrau e
+  // entravam n'um; agora andam pelo LAYOUT, e quem as trata é o foco, na
+  // janella, que é quem sabe que peça tem a mão. Deixá-las aqui daria taboada
+  // a responder por tecla que ella já não vê, e a bateria juraria por ella.
+  if (tecla == ftxui::Event::Return) return {Verbo::Entra, 0.0};
+  if (tecla == ftxui::Event::Escape || tecla == ftxui::Event::Backspace)
     return {Verbo::Volta, 0.0};
   if (tecla == ftxui::Event::Character('/')) return {Verbo::AbreBusca, 0.0};
   if (tecla == ftxui::Event::Character('r')) return {Verbo::Varre, 0.0};
