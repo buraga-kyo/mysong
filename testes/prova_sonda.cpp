@@ -70,9 +70,9 @@ TEST_CASE("com tudo presente, nada falta e nada impede") {
   for (const nu::Veredicto& estado : relatorio.estados) CHECK(estado.presente);
 }
 
-TEST_CASE("a taboa traz os quatro requisitos, de chave unica e remedio dado") {
+TEST_CASE("a taboa traz os cinco requisitos, de chave unica e remedio dado") {
   const std::vector<nu::Requisito>& taboa = nu::requisitos();
-  REQUIRE(taboa.size() == 4);
+  REQUIRE(taboa.size() == 5);
   for (std::size_t aqui = 0; aqui < taboa.size(); ++aqui) {
     CHECK_FALSE(taboa[aqui].chave.empty());
     CHECK_FALSE(taboa[aqui].nome.empty());
@@ -139,16 +139,29 @@ TEST_CASE("faltando o chafa, ha aviso, e a porta não se tranca") {
 // Faltando tudo, a tela ha de mostrar tudo, e na ordem em que se lê: primeiro
 // o que impede, depois o que sómente avisa. Quem está impedido de abrir ha de
 // ler primeiro aquillo que o impede.
-TEST_CASE("faltando os quatro, os impedimentos vêm adeante dos avisos") {
-  const nu::Relatorio relatorio =
-      nu::sondar(inquerito_faltando({"chafa", "libmpv", "fonte", "yt-dlp"}));
+TEST_CASE("faltando os cinco, os impedimentos vêm adeante dos avisos") {
+  const nu::Relatorio relatorio = nu::sondar(
+      inquerito_faltando({"chafa", "libmpv", "fonte", "yt-dlp", "ffmpeg"}));
   const std::vector<nu::Veredicto> faltas = relatorio.faltas();
-  REQUIRE(faltas.size() == 4);
+  REQUIRE(faltas.size() == 5);
   CHECK(faltas[0].requisito.gravidade == nu::Gravidade::Impedimento);
   CHECK(faltas[1].requisito.gravidade == nu::Gravidade::Impedimento);
   CHECK(faltas[2].requisito.gravidade == nu::Gravidade::Aviso);
   CHECK(faltas[3].requisito.gravidade == nu::Gravidade::Aviso);
+  CHECK(faltas[4].requisito.gravidade == nu::Gravidade::Aviso);
   CHECK(relatorio.ha_impedimento());
+}
+
+// O ffmpeg é AVISO, e nunca impedimento: sem elle a fita mostra a barra chata
+// no logar da onda, e o tocador toca egual. Promovel-o a impedimento seria
+// negar musica a quem sómente ficaria sem ver a fórma da faixa.
+TEST_CASE("faltando o ffmpeg, ha aviso, e a porta não se tranca") {
+  const nu::Relatorio relatorio = nu::sondar(inquerito_faltando({"ffmpeg"}));
+  const std::vector<nu::Veredicto> faltas = relatorio.faltas();
+  REQUIRE(faltas.size() == 1);
+  CHECK(faltas.front().requisito.chave == "ffmpeg");
+  CHECK(faltas.front().requisito.gravidade == nu::Gravidade::Aviso);
+  CHECK_FALSE(relatorio.ha_impedimento());
 }
 
 // A ordem é ESTAVEL, e não mera consequencia do dia: duas colheitas do mesmo
