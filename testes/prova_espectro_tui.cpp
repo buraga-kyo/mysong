@@ -352,8 +352,16 @@ TEST_CASE("o mudo veste text_faint e vence o quente") {
         CHECK_FALSE(es::mesma_tinta(quadro.em(l, c).tinta, tk::rgb(tk::glow_hot)));
       }
   // As ALTURAS conservam-se: o mudo esmaece, e não derruba a fita. Cinco linhas
-  // por columna, pela conta do caso do quente (0,95 pinta as cinco).
-  CHECK(pintadas == 5 * largura);
+  // por collunha PINTADA, pela conta do caso do quente (0,95 pinta as cinco);
+  // e as pintadas são as das BARRAS, que desde a issue #144 não são todas: em
+  // vinte e quatro collunhas cabem oito barras de duas, que são dezeseis, e os
+  // outros oito são vãos. Dezeseis vezes cinco dá oitenta, e não cento e vinte.
+  CHECK(pintadas == 5 * 16);
+
+  // E o VÃO fica por pintar em toda linha, que é o respiro entre as barras.
+  for (std::size_t l = 0; l < quadro.altura; ++l)
+    for (std::size_t c = 0; c < quadro.largura; ++c)
+      if (no_vao(c)) CHECK(quadro.em(l, c).pinta == false);
 }
 
 // O piso: as barras cahem a zero e FICAM VISIVEIS, que é o que faz o aceite
@@ -363,6 +371,12 @@ TEST_CASE("o silencio deixa um piso de um oitavo em text_faint") {
   const es::Quadro quadro = es::compor(bandas_uniformes(0.0f), largura, 6);
 
   for (std::size_t c = 0; c < largura; ++c) {
+    // O piso é da BARRA, e não da fita: doze collunhas dão quatro barras, e as
+    // collunhas 2, 5, 8 e 11 são os vãos, que nem no silencio pintam.
+    if (no_vao(c)) {
+      for (std::size_t l = 0; l < 6; ++l) CHECK(quadro.em(l, c).pinta == false);
+      continue;
+    }
     // UMA célulla, na BASE (linha 5), de um oitavo, em text_faint.
     REQUIRE(quadro.em(5, c).pinta);
     CHECK(quadro.em(5, c).glifo == kUm);
@@ -422,6 +436,12 @@ TEST_CASE("cada registro tem a sua côr de batida, e a rampa é a mesma") {
     const es::Quadro quadro =
         es::compor(bandas_uniformes(0.899f), 6, 5, false, centros_em(caso.hertz));
     for (std::size_t c = 0; c < quadro.largura; ++c) {
+      // Seis collunhas dão DUAS barras (issue #144): as collunhas 2 e 5 são os
+      // vãos, e a rampa afere-se sómente nas quatro que pintam.
+      if (no_vao(c)) {
+        CHECK(quadro.em(0, c).pinta == false);
+        continue;
+      }
       REQUIRE(quadro.em(0, c).pinta);
       CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v500)));
       CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
