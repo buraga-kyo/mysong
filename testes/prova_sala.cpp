@@ -16,10 +16,8 @@
 #include "tui/espectro.hpp"
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
-#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
-namespace tk = mysong::tui::tokens;
 namespace tui = mysong::tui;
 
 namespace {
@@ -60,32 +58,6 @@ int collunha_de(const ftxui::Screen& ecran, int y, const std::string& glifo) {
   for (int x = 0; x < ecran.dimx(); ++x)
     if (ecran.PixelAt(x, y).character == glifo) return x;
   return -1;
-}
-
-// cor — a côr do FTXUI que o token nomeia, para se comparar cella a cella.
-ftxui::Color cor(std::string_view token) {
-  const tk::Triade c = tk::rgb(token);
-  return ftxui::Color::RGB(c.r, c.g, c.b);
-}
-
-// sala_de — as TRES collunnas montadas como o pintor as monta, para se aferir
-// que peça alguma empurra as visinhas. A barra vae por um texto de nove
-// collunhas: o que importa aqui é a largura d'ella, e não o conteudo.
-ftxui::Screen sala_de(const std::string& nome) {
-  tui::Colleccao qual;
-  qual.nome = nome;
-  qual.quantas = 4;
-  qual.duracao = 840;
-  return papel(
-      ftxui::hbox(
-          {ftxui::text(std::string(9, 'B')), ftxui::text("  "),
-           ftxui::vbox({tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105),
-                        ftxui::text("T")}),
-           ftxui::text(" "),
-           tui::elemento_do_painel({"a", "b", "c"},
-                                   tui::elemento_da_arte(capa_de(5, 39), 39, 5),
-                                   ftxui::text("E"), 39)}),
-      156, 2);
 }
 
 }  // namespace
@@ -349,35 +321,34 @@ TEST_CASE("a ficha sem etiqueta cahe no nome do arquivo") {
   CHECK(tui::ficha_da_faixa("", "Faded", "Alan Walker", "").titulo.empty());
 }
 
-// O `l` troca o espectro pela letra, e a issue #92 promette o MESMO
-// rectangulo: mesma largura, mesma altura, mesmo canto. Aqui prova-se com a
-// letra CHEIA; letra curta occupa menos linhas e deixa o resto em branco, que
-// é o que a peça da letra sempre fez, e não desloca cousa alguma por ser o
-// ultimo filho do painel.
+// O `l` troca o espectro pela letra, e a issue #92 promette o MESMO rectangulo:
+// mesma largura, mesma altura, mesmo canto. Aqui prova-se com a letra CHEIA;
+// letra curta occupa menos linhas e deixa o resto em branco, que é o que a peça
+// da letra sempre fez, e não desloca cousa alguma por ser o ultimo do painel.
 TEST_CASE("a letra e o espectro tomam o mesmo rectangulo do painel") {
-  const tui::Ficha ficha{"Faded", "Alan Walker", "Faded"};
   const nu::CapaPintada capa = capa_de(11, 39);
   std::vector<mysong::nucleo::LinhaDaLetra> versos;
   for (int i = 0; i < 12; ++i)
     versos.push_back({static_cast<double>(i), "verso " + std::to_string(i)});
   const ftxui::Screen com_letra =
-      papel(tui::elemento_do_painel(ficha, tui::elemento_da_arte(capa, 39, 20),
+      papel(tui::elemento_do_painel(tui::elemento_da_arte(capa, 39, 20),
                                     tui::elemento_da_letra(versos, 4, 8, 39),
                                     39),
             39, 26);
   const ftxui::Screen com_bandas = papel(
       tui::elemento_do_painel(
-          ficha, tui::elemento_da_arte(capa, 39, 20),
-          tui::elemento_do_espectro(tui::compor(std::vector<float>(24, 1.0f),
-                                                39, 8)),
+          tui::elemento_da_arte(capa, 39, 20),
+          tui::elemento_do_espectro(
+              tui::compor(std::vector<float>(24, 1.0f), 39, 8)),
           39),
       39, 26);
   const std::string vazia(39, ' ');
-  for (const ftxui::Screen& qual : {std::cref(com_letra), std::cref(com_bandas)}) {
-    CHECK(linha_de(qual, 14).substr(0, 5) == "Faded");  // a ficha acaba na 14
-    CHECK(linha_de(qual, 15) != vazia);                 // o de baixo abre na 15
-    CHECK(linha_de(qual, 22) != vazia);                 // e fecha na 22
-    CHECK(linha_de(qual, 23) == vazia);                 // e não passa d'ahi
+  for (const ftxui::Screen& qual :
+       {std::cref(com_letra), std::cref(com_bandas)}) {
+    CHECK(linha_de(qual, 10) == std::string(39, '#'));  // a capa acaba na 10
+    CHECK(linha_de(qual, 11) != vazia);                 // o de baixo abre na 11
+    CHECK(linha_de(qual, 18) != vazia);                 // e fecha na 18
+    CHECK(linha_de(qual, 19) == vazia);                 // e não passa d'ahi
   }
 }
 
