@@ -149,23 +149,41 @@ QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
     const double instante = linhas[i].tempo;
     const double nasce = nascimento_da_linha(linhas, i);
     if (posicao < instante - nasce) continue;  // ainda não assomou
-    if (posicao >= instante) continue;  // a leitura e o apagar vêm depois
+    const bool ha_proxima = i + 1 < linhas.size();
+    const double proximo = ha_proxima ? linhas[i + 1].tempo : 0.0;
 
     LinhaViva viva;
     viva.qual = i;
-    // A SUBIDA, linear da base á leitura. Chega ao topo do vão no instante
-    // exacto: é o que faz a linha assentar quando a voz a canta.
-    const double sobe =
-        cingido((posicao - (instante - nasce)) / nasce, 0.0, 1.0);
-    const std::size_t vao = base - leitura;
-    viva.linha_da_tela =
-        base - static_cast<std::size_t>(
-                   std::llround(sobe * static_cast<double>(vao)));
-    viva.resolvida = sobe;
-    viva.tinta = tinta_da_subida(sobe);
+    if (posicao < instante) {
+      // A SUBIDA, linear da base á leitura. Chega ao topo do vão no instante
+      // exacto: é o que faz a linha assentar quando a voz a canta.
+      const double sobe =
+          cingido((posicao - (instante - nasce)) / nasce, 0.0, 1.0);
+      const std::size_t vao = base - leitura;
+      viva.linha_da_tela =
+          base - static_cast<std::size_t>(
+                     std::llround(sobe * static_cast<double>(vao)));
+      viva.resolvida = sobe;
+      viva.tinta = tinta_da_subida(sobe);
+    } else if (!ha_proxima || posicao < proximo) {
+      viva.linha_da_tela = leitura;
+      viva.resolvida = 1.0;
+      viva.tinta = tokens::text_bright;
+      viva.corrente = true;
+    } else {
+      // O APAGAR. Uma linha por segundo, a contar do instante da SEGUINTE: é
+      // ella que toma a linha de leitura, e duas na mesma linha não cabem.
+      const double subidas = std::floor(posicao - proximo) + 1.0;
+      if (subidas > static_cast<double>(leitura)) continue;  // morreu no alto
+      const std::size_t degraus = static_cast<std::size_t>(subidas);
+      viva.linha_da_tela = leitura - degraus;
+      viva.resolvida = 1.0;
+      viva.tinta = degraus == 1 ? tokens::text_muted : tokens::text_faint;
+    }
 
     if (linhas[i].texto.empty()) continue;  // o silencio marcado não pinta
     posta_na_tela(linhas[i].texto, largura, i, conta, &viva);
+    if (viva.corrente) quadro.corrente = static_cast<int>(quadro.linhas.size());
     quadro.linhas.push_back(std::move(viva));
   }
   return quadro;
