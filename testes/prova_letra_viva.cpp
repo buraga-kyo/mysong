@@ -301,5 +301,45 @@ TEST_CASE("a célulla com letra esconde a barra e o vão deixa-a passar") {
   CHECK(em(kLeitura - 1, x).glifo == "█");
 }
 
+TEST_CASE("o fundo do painel sae sómente debaixo da letra") {
+  const tui::Quadro espectro = barras();
+  const tui::QuadroDaLetra rio =
+      tui::quadro_da_letra(kComVao, 10.0, kLargura, kAltura);
+  const ftxui::Screen ecran = papel(tui::elemento_do_rio(espectro, rio));
+  const int x = static_cast<int>(rio.linhas[0].collunha);
+  const int y = static_cast<int>(kLeitura);
+  const tk::Triade tom = tk::rgb(tk::panel);
+  const ftxui::Color cama = ftxui::Color::RGB(tom.r, tom.g, tom.b);
+  const tk::Triade brilho = tk::rgb(tk::text_bright);
+
+  CHECK(ecran.PixelAt(x, y).character == "a");
+  CHECK(ecran.PixelAt(x, y).background_color == cama);
+  CHECK(ecran.PixelAt(x, y).foreground_color ==
+        ftxui::Color::RGB(brilho.r, brilho.g, brilho.b));
+  // A barra ao lado conserva-se, e SEM a cama do painel.
+  CHECK(ecran.PixelAt(0, y).character == "█");
+  CHECK_FALSE(ecran.PixelAt(0, y).background_color == cama);
+  // O vão entre as palavras tambem fica com a barra e sem cama.
+  CHECK(ecran.PixelAt(x + 2, y).character == "█");
+  CHECK_FALSE(ecran.PixelAt(x + 2, y).background_color == cama);
+}
+
+TEST_CASE("o rio escondido devolve o espectro tal qual") {
+  const tui::Quadro espectro = barras();
+  const ftxui::Screen ecran =
+      papel(tui::elemento_do_rio(espectro, tui::QuadroDaLetra{}));
+  const tk::Triade tom = tk::rgb(tk::panel);
+  const ftxui::Color cama = ftxui::Color::RGB(tom.r, tom.g, tom.b);
+  // A linha de leitura é barra como as outras: o `l` esconde o rio, e o
+  // espectro NÃO some por causa d'elle.
+  for (int x = 0; x < static_cast<int>(kLargura); ++x) {
+    CHECK(ecran.PixelAt(x, static_cast<int>(kLeitura)).character == "█");
+    CHECK_FALSE(ecran.PixelAt(x, static_cast<int>(kLeitura)).background_color ==
+                cama);
+  }
+  // E o tapete de um espectro sem medida não estoura nem lê fóra.
+  CHECK(tui::tapete_do_rio(tui::Quadro{}, tui::QuadroDaLetra{}).empty());
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
