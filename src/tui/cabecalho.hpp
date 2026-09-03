@@ -68,6 +68,31 @@ struct OrdemDaAba {
 // Tab abria a barra que esta issue apaga.
 OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept;
 
+// rotulo_da_aba — a palavra da aba com o seu glifo e a guarnição dos flancos.
+// UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a
+// pintura d'esta palavra, e rotulo espalhado por dous ramos dar-lhe-hia duas
+// verdades sobre o que a aba diz.
+std::string rotulo_da_aba(Aba aba);
+
+// elemento_da_aba — a palavra JÁ PINTADA, corrente ou não. Vive apartada da
+// fita pela mesma razão: quem puzer imagem por cima da cella troca aqui, e a
+// composição da linha não muda uma linha.
+ftxui::Element elemento_da_aba(Aba aba, bool corrente);
+
+// elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
+// zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
+// dizer «esta chamada não quer saber», e a linha sahe a mesma, cella a cella.
+ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
+                                     std::size_t largura,
+                                     CaixasDoCabecalho* caixas = nullptr);
+
+// elemento_do_trilho — a linha do progresso, de largura inteira, logo abaixo
+// do cabeçalho: v600 no andado e line_dim no que falta. A caixa d'elle é a do
+// clique que busca, e a barra do pé morre porque os botões subiram.
+ftxui::Element elemento_do_trilho(const Retracto& retracto,
+                                  std::size_t largura,
+                                  ftxui::Box* caixa = nullptr);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
