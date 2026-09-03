@@ -35,6 +35,16 @@ namespace mysong::nucleo {
 inline constexpr std::string_view FAMILIA_DA_MARCA = "Xirod";
 inline constexpr int CORPO_DA_MARCA = 22;
 
+// corpo_da_altura — o corpo que a caixa de `linhas` fileiras pede. O corpo da
+// marca mediu-se contra UMA cella de vinte pixeis; a caixa da fita do pé tem
+// duas, que são quarenta, e pedir alli a mesma palavra no mesmo corpo daria ao
+// Überzug++ o dobro do AUMENTO, com o traço da XIROD a esfarelar. A razão
+// entre o corpo e a altura da caixa é a que se mediu, e é ella que se guarda,
+// d'onde a multiplicação e não conta de pontos.
+constexpr int corpo_da_altura(std::size_t linhas) noexcept {
+  return CORPO_DA_MARCA * static_cast<int>(linhas == 0 ? 1 : linhas);
+}
+
 // Um PEDIDO de chapa. As tintas vão em hexadecimal por o `pango-view` as
 // querer assim, e vêm SEMPRE de `tui::tokens`: côr crua não entra n'esta obra.
 struct PedidoDaChapa {
