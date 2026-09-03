@@ -381,6 +381,29 @@ TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
                         tk::mistura(tk::data5, tk::panel_hi, 0.55)));
 }
 
+// A PRECEDENCIA da côr não se mexe com o registro. Arma-se n'uma familia que NÃO
+// é a violeta, de propósito: uma obra que esquecesse o ramo do quente e cahisse
+// na rampa denuncia-se pelo amarello, ao passo que armada nos graves a mesma
+// falha daria côr parecida de mais com a de antes.
+TEST_CASE("o pico veste glow_hot e o mudo text_faint em qualquer registro") {
+  const std::vector<float> centros = centros_em(8000.0f);  // agudos, o amarello
+  const es::Quadro quente =
+      es::compor(bandas_uniformes(0.95f), 6, 4, false, centros);
+  const es::Quadro calado =
+      es::compor(bandas_uniformes(0.95f), 6, 4, true, centros);
+  const es::Quadro silencio =
+      es::compor(bandas_uniformes(0.0f), 6, 4, false, centros);
+
+  for (std::size_t c = 0; c < 6; ++c) {
+    // A base (linha 3) em todos os tres, que é a célulla que toda barra tem.
+    REQUIRE(quente.em(3, c).pinta);
+    CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::glow_hot)));
+    CHECK_FALSE(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
+    CHECK(es::mesma_tinta(calado.em(3, c).tinta, tk::rgb(tk::text_faint)));
+    CHECK(es::mesma_tinta(silencio.em(3, c).tinta, tk::rgb(tk::text_faint)));
+  }
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
