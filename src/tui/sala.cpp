@@ -167,10 +167,12 @@ Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
   const auto pe = [&] { return campo + trilho + fita + rodape; };
   if (altura < pe() + 1) rodape = 0;
   if (altura < pe() + 1) fita = 1;
-  // O degenerado, que a issue não governa: tela que nem para o pé chega. Cedem
-  // o campo e o trilho, e o corpo fica sem linha alguma.
+  // O TRILHO fecha a escada, e cede tambem elle antes do corpo: com o campo
+  // aberto n'uma tela de tres linhas, o pé pedia as tres e a lista sommia.
+  if (altura < pe() + 1) trilho = 0;
+  // O degenerado, que a issue não governa: tela que nem para o pé chega, e
+  // ahi cede o campo, que o corpo já não tem o que ceder.
   if (altura < pe()) campo = 0;
-  if (altura < pe()) trilho = 0;
   std::size_t y = altura;  // a primeira linha ainda por repartir, contada do pé
   if (rodape != 0) sala.rodape = {0, --y, largura, 1};
   y -= fita;

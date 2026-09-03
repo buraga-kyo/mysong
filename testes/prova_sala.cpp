@@ -283,6 +283,30 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
   }
 }
 
+// A ESCADA de quem cede em tela baixa (issue #125). Afere-se altura a altura,
+// que o que a issue promette é a ORDEM por que se cede.
+TEST_CASE("em tela baixa cede o rodapé, e sómente depois a segunda da fita") {
+  const tui::Sala cinco = tui::sala_da_tela(167, 5, false);
+  CHECK(cinco.cabecalho.altura == 2);
+  CHECK(cinco.rodape.y == 4);
+  CHECK(cinco.pauta.altura == 1);
+  // Quatro linhas: o rodapé sae, e a fita guarda as duas d'ella.
+  const tui::Sala quatro = tui::sala_da_tela(167, 4, false);
+  CHECK(quatro.rodape.vazio());
+  CHECK(quatro.cabecalho.altura == 2);
+  CHECK(quatro.pauta.altura == 1);
+  // Tres: a fita volta a UMA linha, e o corpo continua a ter a d'elle.
+  const tui::Sala tres = tui::sala_da_tela(167, 3, false);
+  CHECK(tres.cabecalho.altura == 1);
+  CHECK(tres.trilho.y == 1);
+  CHECK(tres.pauta.altura == 1);
+  // E de tres a onze linhas a lista NUNCA somme, com campo ou sem elle: é a
+  // promessa do aceite, e é ella que faz o trilho ceder tambem.
+  for (std::size_t alta = 3; alta <= 11; ++alta)
+    for (const bool campo : {false, true})
+      CHECK(tui::sala_da_tela(167, alta, campo).pauta.altura >= 1);
+}
+
 // A SOBRA do espectro depois de se saber quanto a capa tomou DE FACTO. O
 // rectangulo da capa é TECTO, e a de 16 por 9 sahe mais baixa que elle.
 TEST_CASE("o espectro toma o que a capa não gastou") {
