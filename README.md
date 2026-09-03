@@ -361,6 +361,36 @@ que se reposiciona e o que o olho le por piscar. Morrendo o mysong por sinal
 brutal (o `kill -9`), o terminal fica sem cursor, e `tput cnorm` o traz de
 volta.
 
+### O espectro por registros
+
+As barras do espectro deixaram de ser um violeta so. A cor de cada barra diz em
+que REGISTRO ella soa, isto e, em que faixa de frequencia, e vae da esquerda
+para a direita como o ouvido sobe:
+
+| registro | faixa | cor | o que costuma morar ali |
+|---|---|---|---|
+| GRAVES | 40 a 250 Hz | violeta | bumbo, baixo |
+| MEDIOS-GRAVES | 250 Hz a 1 kHz | cyan | caixa, guitarra, o corpo da voz |
+| MEDIOS-AGUDOS | 1 a 4 kHz | laranja | voz, presenca, teclados |
+| AGUDOS | 4 a 16 kHz | amarelo | pratos, chimbal, o ar |
+
+Cada coluna tem o seu degrade, escuro no pe e vivo no topo. O degrade e do
+PAINEL e nao da barra: a altura da coluna diz o nivel, e a cor nunca o repete
+nem o contradiz. A batida forte continua a acender rosa na coluna inteira, e o
+mudo continua apagado, como sempre foi.
+
+Diga-se com honestidade o que esta cor e: ella vem da FAIXA DE HERTZ, e nao de
+instrumento reconhecido. O que sae em violeta e o grave que toca naquele
+instante, seja bumbo, baixo ou a mao esquerda do piano. Separar instrumentos de
+verdade pede modelo de separacao de fontes, que nao roda em tempo real dentro de
+um tocador de terminal, e vender o que nao ha seria mentir na tela.
+
+Para ver os quatro grupos lado a lado, com os nomes por baixo de cada um:
+
+```sh
+./build/fita_espectro 72 12
+```
+
 ### O video
 
 Faixa de video abre em janella PROPRIA do systema, e não dentro do terminal: a

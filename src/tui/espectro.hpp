@@ -13,6 +13,13 @@
 // Tres linhas, e d'ellas sahe todo o resto por decisão registrada no ledger.
 // Mudando-se a fonte lá, esta cópia não sabe: é o preço de arquivo não
 // versionado, e escreve-se aqui para que a divergencia se leia no codigo.
+// A ISSUE #104 SUBSTITUE as duas ancoras d'essa segunda linha, e vae dito para
+// que a divergencia não fique por descobrir: o v700 da base e o v400 do topo
+// vestião as vinte e quatro bandas de um violeta só, e a côr nada dizia da
+// musica, que subia e descia egual no bumbo e no chimbal. Ficam a côr do
+// REGISTRO no topo e ella mesma composta sobre o painel na base. O que a §7.4.9
+// manda de facto, e que se conserva inteiro, é a rampa VERTICAL ancorada ao
+// painel e o mudo em text_faint.
 // ADVERTENCIA DE ORIENTAÇÃO, que se leia antes de tudo: os oito blocos U+2581 a
 // U+2588 crescem de BAIXO para cima, e o Quadro (como o FTXUI) lê-se de CIMA
 // para baixo. Os dous sentidos são OPPOSTOS, e a barra desenhada de cabeça para
@@ -35,7 +42,7 @@
 //                   (iii) o gradiente é ancorado ao PAINEL, e não á barra: a
 //                   tinta da célulla sahe da posição d'ella na collunha, e
 //                   JAMAIS da magnitude da banda. Ancorado na barra, uma barra
-//                   de uma célulla sahiria em v400, o topo brilhante, no
+//                   de uma célulla sahiria no topo brilhante da rampa, no
 //                   instante em que a banda está quasi morta, e a côr passaria
 //                   a MENTIR sobre o nivel. É tambem o que o bar_meter.lua faz,
 //                   que fixa o gradiente á extensão nominal do trilho «pois
@@ -64,6 +71,41 @@ namespace mysong::tui {
 // RADICAL-OS, que trata quente do pct_hot em diante. Maior ou IGUAL: o limiar
 // pertence ao quente, e a prova afere os dous lados d'elle.
 inline constexpr float LIMIAR_QUENTE = 0.90f;
+
+// ── OS REGISTROS. Quatro familias, e a côr diz QUAL d'ellas sôa. Diga-se com
+// honestidade o que é: a côr vem do REGISTRO, que é a faixa de hertz onde a
+// familia mora, e NÃO de instrumento reconhecido. Separar instrumentos de
+// verdade pede modelo de separação de fontes, que não corre em tempo real
+// dentro d'um tocador de terminal, e vender o que não ha seria mentir na tela.
+enum class Registro { Graves, MediosGraves, MediosAgudos, Agudos };
+
+// As tres fronteiras, em HERTZ e não em indice de banda: mudando-se
+// QUANTAS_BANDAS, a familia continua onde estava, que a physica não se mexe com
+// o numero de columnas. São as da mesa de som: o bumbo e o baixo até 250, a
+// caixa, a guitarra e o corpo da voz até 1 k, a voz, a presença e os teclados
+// até 4 k, e os pratos, o chimbal e o ar d'ahi para cima. Fronteira FECHADA em
+// cima: 250 Hz ainda é grave, e 250,1 já não.
+inline constexpr float FRONTEIRA_DOS_GRAVES = 250.0f;
+inline constexpr float FRONTEIRA_DOS_MEDIOS_GRAVES = 1000.0f;
+inline constexpr float FRONTEIRA_DOS_MEDIOS_AGUDOS = 4000.0f;
+
+// registro_da_banda — o registro em que cae o CENTRO da banda. Funcção pura, e é
+// a UNICA regra de pertença d'esta obra: quem quiser saber a familia de uma
+// banda pergunta aqui, e jamais conta indices por fóra.
+Registro registro_da_banda(float centro_em_hertz);
+
+// tinta_do_registro — a côr do registro, e devolve o TOKEN e não a tríade
+// porque o gradiente compõe por tokens::mistura, que pede o hexadecimal do
+// design system. Violeta v500 nos graves, cyan data5 nos medios-graves, laranja
+// data3 nos medios-agudos e amarello data2 nos agudos: é o Postulado do Poente
+// Contido, que reserva o amarello, o laranja e o cyan á série de dados, e o
+// espectro É uma série de dados.
+std::string_view tinta_do_registro(Registro registro);
+
+// nome_do_registro — o rótulo em caixa alta, para a legenda que o olho lê. Mora
+// aqui, ao pé da côr, para que nome e tinta tenham UMA verdade só: legenda que
+// se escrevesse no exemplo divergiria da tela no dia em que a côr mudasse.
+std::string_view nome_do_registro(Registro registro);
 
 // Quantos degraus cabem n'uma célulla. Oito, que são os blocos U+2581 a U+2588,
 // e não é numero de gosto: é quanto o terminal sabe subdividir uma célulla na
@@ -103,6 +145,11 @@ struct Quadro {
   std::size_t altura = 0;
   std::vector<Celula> celulas;
 
+  // O REGISTRO de cada collunha, `largura` d'elles. Mora no quadro, e não se
+  // recalcula por fóra: a legenda que o exemplo escreve e a prova que afere a
+  // fronteira lêem assim a MESMA verdade que a tinta leu.
+  std::vector<Registro> registros;
+
   // em — a célulla da linha e da collunha. Fóra de limite devolve célulla vazia,
   // e não estoura: assim a prova pode varrer largura + 1 sem armar guarda.
   const Celula& em(std::size_t linha, std::size_t collunha) const;
@@ -119,19 +166,47 @@ int oitavos(float magnitude, std::size_t altura);
 // vazia; acima de oito cinge-se a oito, que é o bloco cheio.
 std::string glifo_do_degrau(int degrau);
 
+// O ALFA DA BASE. O pé da columna não se apaga por arithmetica de côr propria:
+// compõe-se a côr do registro sobre o tokens::panel_hi com este peso, que é o
+// modo com que o design system resolve opacidade. Cinco decimos e meio assentam
+// o pé no painel sem o deixar competir com o topo, que é o que canta.
+inline constexpr double ALFA_DA_BASE = 0.55;
+
 // tinta_da_linha — o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
-// base para cima, de sorte que zero dá v700 EXACTO e `altura - 1` dá v400
-// EXACTO. Painel de uma célulla só dá v700, a base, que é d'onde a §7.4.9
+// base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá a côr do
+// REGISTRO exacta. Painel de uma célulla só dá a base, que é d'onde a §7.4.9
 // ancora a rampa. Não recebe magnitude alguma, e é n'isto que o invariante
 // (iii) se torna estructural em vez de boa intenção.
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
+                              Registro registro = Registro::Graves);
+
+// centros_das_bandas — os CENTROS em hertz, colhidos das bordas em RAIAS que o
+// nucleo::Espectro abre. A borda b vale `b * hertz_por_raia`, e o centro da
+// banda é a media GEOMETRICA das duas bordas d'ella, que é o meio da banda na
+// escala logarithmica em que ellas foram assentadas. Media arithmetica poria o
+// centro alto de mais no grave, onde a banda é estreita em hertz e larga em
+// octavas. Borda em zero cae na arithmetica, que geometrica com zero é zero.
+std::vector<float> centros_das_bandas(
+    const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia);
+
+// centros_da_escala — os centros de `quantas` bandas pela MESMA escala
+// logarithmica que o nucleo assenta, de HERTZ_MINIMO a HERTZ_MAXIMO. Serve a
+// quem tem as bandas e não alcança as bordas: o punho do analisador não as
+// abre, e a escala é do CONTRACTO, e não da transformada que ha por baixo.
+std::vector<float> centros_da_escala(std::size_t quantas);
 
 // compor — o QUADRO. Não guarda estado: as mesmas bandas na mesma largura dão o
 // mesmo quadro, hoje e depois de dez redimensionamentos. Não presume que as
 // bandas sejam QUANTAS_BANDAS: conta o tamanho REAL do vector, que presumir o
 // vinte e quatro seria ler fóra de limite no dia em que o contracto mudasse.
+//
+// Os `centros_em_hertz` dizem onde cada banda mora, e d'elles sahe o registro que
+// veste a columna. VAZIOS, deduzem-se da posição relativa da banda pela escala
+// nominal do analisador: é approximação declarada, e não silencio. Quem passa os
+// centros do proprio nucleo::Espectro resolve a fronteira pelas bordas REAES.
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
-              std::size_t altura, bool mudo = false);
+              std::size_t altura, bool mudo = false,
+              const std::vector<float>& centros_em_hertz = {});
 
 // sequencia_da_celula — os BYTES da célulla: a tinta imediatamente antes do
 // glifo, sem repouso pelo meio, ou a ordem de repouso quando não se pinta. Mora

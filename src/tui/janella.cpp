@@ -782,8 +782,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
     const std::size_t alt_baixo =
         geo.livre > alt_arte ? geo.livre - alt_arte : 1;
-    const tui::Quadro quadro =
-        tui::compor(tocador.bandas(), geo.painel, alt_baixo);
+    // Os centros em hertz, colhidos UMA vez: a escala é do contracto do
+    // analisador, e o punho d'elle não abre as bordas que o nucleo assentou.
+    static const std::vector<float> centros_em_hertz =
+        tui::centros_da_escala(nucleo::QUANTAS_BANDAS);
+    const tui::Quadro quadro = tui::compor(tocador.bandas(), geo.painel,
+                                           alt_baixo, false, centros_em_hertz);
     // Tela estreita ou baixa não pinta painel algum, e com elle vão-se o
     // espectro e a letra: roubar da tabella, que é onde se navega, para mostrar
     // arte seria trocar o que serve pelo que enfeita. É o que a capa já fazia.
