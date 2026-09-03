@@ -82,6 +82,15 @@ std::string versao_da_lousa();
 // texto_dos_ajustes: escape algum sahe d'aqui.
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 
+// COLLUNHA_DO_EMPURRAO — onde nasce a janella que nada mostra. Negativa para
+// cahir fóra de todo terminal, e não MAIS negativa por uma razão medida: a
+// coordenada de uma janella do X11 é inteiro de dezasseis bits com signal, e o
+// producto d'esta collunha pela largura da cella tem de caber n'elle. Com
+// quatro mil o producto dava menos trinta e seis mil, transbordava, e a janella
+// nascia a trinta mil pixeis á DIREITA; n'esta tela ficou invisivel por acaso,
+// e em tela mais larga apparecia. Mil e quinhentas cabem de sobra.
+inline constexpr int COLLUNHA_DO_EMPURRAO = -1500;
+
 // A ORDEM que o pintor da a lousa quanto á capa, e as duas unicas que ha.
 enum class OrdemDaCapa { Tira, Poe };
 
@@ -129,9 +138,9 @@ class Lousa {
   // faça redesenhar a tela toda. A de duas linhas desenha-se sósinha; a de uma
   // não, e a chapa do letreiro (issue #108) tem uma linha.
   //
-  // Empurra-se com um `add` MUITO fóra da tela, que o X11 recorta inteiro seja
-  // qual for o canto em que o terminal esteja, e que troca de logar a cada
-  // empurrão para o deduplicador do `poe` o deixar passar.
+  // Empurra-se com um `add` fóra da tela (a COLLUNHA_DO_EMPURRAO), que o X11
+  // recorta inteiro seja qual for o canto em que o terminal esteja, e que troca
+  // de logar a cada empurrão para o deduplicador do `poe` o deixar passar.
   void empurra(const std::filesystem::path& imagem) noexcept;
 
   // escritas — quantas ordens sahiram pelo cano. É por ella que quem chama
