@@ -442,6 +442,11 @@ target_sources(mysong_core PRIVATE src/tui/rato.cpp)
 # de correr, que a capa cae nos symbolos do chafa.
 target_sources(mysong_core PRIVATE src/nucleo/lousa.cpp)
 
+# ─── O LETREIRO EM XIROD (issue #108) ───────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Vae ao
+# lado da lousa por d'ella depender: a chapa que este rasteriza é ella quem põe.
+target_sources(mysong_core PRIVATE src/nucleo/letreiro.cpp)
+
 # A FITA da lousa: a prova do OLHO sem se abrir o tocador. Alvo proprio, pelo
 # molde do fita_capa; não corre em machina de integração, que ella não tem X11.
 add_executable(fita_lousa exemplos/fita_lousa.cpp)

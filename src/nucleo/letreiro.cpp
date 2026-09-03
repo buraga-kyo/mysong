@@ -167,6 +167,26 @@ std::filesystem::path rasteriza(const PedidoDaChapa& pedido) {
 
 }  // namespace
 
+Letreiro::Letreiro(ModoDaLousa modo) {
+  // O mundo só se interroga quando a resposta ainda pode mudar o parecer: com
+  // a lousa desligada, passear pelas fontes todas e erguer um processo para
+  // dizer o que o ajuste já disse é gasto no arranque, e é alli que elle pesa.
+  const bool pango = modo != ModoDaLousa::Nao && ha_pango_view();
+  parecer_ = parecer_do_letreiro(modo, pango, pango && ha_familia_da_marca());
+}
+
+const std::filesystem::path& Letreiro::chapa(const PedidoDaChapa& pedido) {
+  // O vazio de sempre, e estatico, para que esta assignatura possa devolver
+  // REFERENCIA: o pintor pede a chapa em todo quadro, e devolver por valor
+  // seria copiar caminho vinte vezes por segundo por nada.
+  static const std::filesystem::path kNenhuma;
+  if (!disponivel()) return kNenhuma;
+  const std::string chave = chave_do_letreiro(pedido);
+  const auto assento = feitas_.find(chave);
+  if (assento != feitas_.end()) return assento->second;
+  return feitas_.emplace(chave, rasteriza(pedido)).first->second;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
