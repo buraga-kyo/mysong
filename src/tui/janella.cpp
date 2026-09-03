@@ -68,7 +68,6 @@
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/navegador.hpp"
-#include "tui/menu.hpp"
 #include "tui/prompt.hpp"
 #include "tui/rato.hpp"
 #include "tui/sala.hpp"
@@ -480,11 +479,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // despacho de teclas continuar a dizer `Digita::Busca` sem mudar uma linha.
   using Digita = tui::Modo;
   Digita digita = Digita::Nada;
-  // O MENU da barra (issue #80). Vive aqui como o `digita`: é estado do fio da
-  // tela, que só o tratador de teclas muta e só o pintor lê. E note-se que
-  // prompt aberto com menu aberto NÃO existe: toda tecla que abre prompt é
-  // alheia á barra, e o ramo Alheio fecha-a antes de a tecla seguir.
-  tui::Menu menu;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -1037,12 +1031,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::Verbo::AoPrincipio: navegador.ao_principio(); return true;
       case tui::Verbo::AoFim: navegador.ao_fim(); return true;
       case tui::Verbo::Volta:
-        // No alto, a SETA esquerda abre o menu (issue #80): quem quer mais á
-        // esquerda só tem a barra. O Escape e o Backspace ficam inertes como
-        // sempre: cancelar não é gesto que abra cousa alguma.
-        if (!navegador.volta() && tecla == ftxui::Event::ArrowLeft)
-          menu.abre(navegador.secao(), navegador.rois(),
-                    navegador.rol_corrente());
+        // No alto, a seta esquerda fica INERTE. Até a issue #102 ella abria a
+        // barra, que era o unico logar mais á esquerda que havia; a aba está
+        // agora ACIMA, e quem quer trocar de secção tem os algarismos e o Tab.
+        navegador.volta();
         return true;
       case tui::Verbo::AbreBusca:
         digita = Digita::Busca;
