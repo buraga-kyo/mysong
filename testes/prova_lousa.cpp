@@ -10,7 +10,10 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <string>
+
+#include <unistd.h>
 
 #include "nucleo/ajustes.hpp"
 #include "nucleo/capa.hpp"
@@ -19,6 +22,32 @@
 namespace nu = mysong::nucleo;
 
 namespace {
+
+// A COVA: directorio temporario proprio, apagado ao sahir. Repete o molde do
+// prova_capa em logar de o partilhar: cabeçalho de prova não ha n'esta Casa, e
+// duas provas a dependerem de um terceiro arquivo collidiriam entre lavras.
+class Cova {
+ public:
+  Cova() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-lousa-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++semente_));
+    std::filesystem::create_directories(caminho_);
+  }
+  ~Cova() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+  const std::filesystem::path& raiz() const { return caminho_; }
+
+ private:
+  std::filesystem::path caminho_;
+  static int semente_;
+};
+
+int Cova::semente_ = 0;
 
 // Um JPEG de cabeçalho só, octeto a octeto: a guarda, um JFIF pelo meio, e o
 // SOF0 com setecentos e vinte por mil duzentos e oitenta. Chamar o ffmpeg aqui
@@ -228,6 +257,21 @@ TEST_CASE("lousa deitada, faixa sem capa e caixa por pintar tambem tiram") {
   CHECK(nu::ordem_da_capa(false, true, true, true) == nu::OrdemDaCapa::Tira);
   CHECK(nu::ordem_da_capa(true, true, false, true) == nu::OrdemDaCapa::Tira);
   CHECK(nu::ordem_da_capa(true, true, true, false) == nu::OrdemDaCapa::Tira);
+}
+
+TEST_CASE("o arquivario acha a capa ao lado e mede-a sem escrever nada") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  { std::ofstream(cova.raiz() / "cover.png", std::ios::binary)
+        << png_de_cabecalho(); }
+  nu::Arquivario arquivario;
+  const nu::ArquivoDaCapa& achado = arquivario.de(faixa);
+  CHECK(achado.caminho == cova.raiz() / "cover.png");
+  CHECK(achado.medida.largura == 500);
+  CHECK(achado.medida.altura == 400);
+  // Capa AO LADO não vae ao cache: o arquivo já existe onde o operador o poz.
+  CHECK(arquivario.quantos_escriptos() == 0);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
