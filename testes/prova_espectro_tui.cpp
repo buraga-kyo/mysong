@@ -818,17 +818,25 @@ TEST_CASE("a columna que cobre pico e vale sahe pelo pico") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[0] = 1.0f;   // pico na primeira banda
   bandas[1] = 0.0f;   // vale imediatamente ao lado
-  // Largura 12 sobre 24 bandas: cada columna cobre DUAS bandas, d'onde a
-  // columna 0 cobre as bandas 0 e 1, que são justamente o pico e o vale.
-  const es::Quadro quadro = es::compor(bandas, 12, 4);
+  // Trinta e cinco collunhas dão DOZE barras (trez por passo, menos o vão da
+  // ultima), e doze barras sobre vinte e quatro bandas dão DUAS bandas por
+  // barra: a barra 0, nas collunhas 0 e 1, cobre as bandas 0 e 1, que são
+  // justamente o pico e o vale. Em doze collunhas, como dantes, sahirião
+  // quatro barras de SEIS bandas cada, e o vale ficaria sepultado no monte.
+  const es::Quadro quadro = es::compor(bandas, 3 * 12 - 1, 4);
   CHECK(quadro.em(0, 0).pinta);
-  // Largura 12 sobre 24 bandas: cada banda cae DENTRO de uma collunha só, e
-  // ahi não ha ponta (issue #141), que meia diagonal sósinha é degrau e não
-  // seta. O topo fica bloco.
-  CHECK(quadro.em(0, 0).glifo == kCheio);
-  // E a columna seguinte, que cobre as bandas 2 e 3, ambas em zero, fica no piso.
-  CHECK(quadro.em(3, 1).glifo == kUm);
-  CHECK(quadro.em(0, 1).pinta == false);
+  // O pico cheio é quente, e a barra remata em SETA (issue #141, assentada na
+  // barra pela #144): o flanco que sobe na collunha 0 e o que desce na 1. Por
+  // baixo da ponta o bloco cheio, que a seta é o remate e não a barra.
+  CHECK(quadro.em(0, 0).glifo == std::string(es::kFlancoQueSobe));
+  CHECK(quadro.em(0, 1).glifo == std::string(es::kFlancoQueDesce));
+  CHECK(quadro.em(1, 0).glifo == kCheio);
+  // O VÃO (a collunha 2) aparta as duas barras, e não pinta.
+  CHECK(quadro.em(3, 2).pinta == false);
+  // E a barra seguinte, que cobre as bandas 2 e 3, ambas em zero, fica no piso:
+  // ella mora nas collunhas 3 e 4.
+  CHECK(quadro.em(3, 3).glifo == kUm);
+  CHECK(quadro.em(0, 3).pinta == false);
 }
 
 // ── C8 · redimensionar recompõe sem quebrar ─────────────────────────────────
