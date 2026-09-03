@@ -228,16 +228,46 @@ disco e nao memoria. O nome sahe do conteudo, donde duas faixas com a mesma arte
 partilham um arquivo so. Apagar essa pasta nao perde nada: a proxima corrida
 torna a escrever.
 
+### As palavras de marca em XIROD, pelo letreiro
+
+Havendo lousa, havendo o `pango-view` e havendo a fonte XIROD installada, as
+tres palavras do cabecalho (MY SONG, PLAYLISTS, DOWNLOAD) deixam o mono e sahem
+na XIROD, que e a fonte de exhibicao do RADICAL-OS. Terminal algum troca de
+fonte por celula: a palavra rasteriza-se em imagem e vae por cima da celula pela
+mesma lousa que poe a capa. Os DADOS (o nome da faixa, o tempo, o volume) ficam
+em mono, que e o que o design d'esta Casa manda.
+
+A XIROD nao vem do apt: mora no repositorio do RADICAL-OS, em
+`src/assets/fonts/Xirod.otf`.
+
+```sh
+cp <RADICAL-OS>/src/assets/fonts/Xirod.otf ~/.local/share/fonts/
+fc-cache -f
+sudo apt install pango1.0-tools   # o pango-view, que desenha a palavra
+mysong --sonda | tail -2          # diz «letreiro: Xirod, pango-view»
+```
+
+Cada aba tem tres chapas (a corrente, a apagada e a que tem o foco). Cada uma
+rasteriza-se UMA vez e fica em `$XDG_CACHE_HOME/mysong/letreiro/<somma>.png`,
+donde a segunda corrida do tocador nao chama o pango-view uma vez sequer.
+Apagar essa pasta nao perde nada.
+
+Faltando qualquer das tres cousas, o cabecalho fica exactamente como estava, com
+as palavras em mono negrito, e aviso algum apparece na tela: quem quiser saber
+porque pergunta ao `--sonda`. A alavanca e a MESMA da lousa, e nao ha outra:
+`lousa = nao` (ou `MYSONG_LOUSA=nao`) desliga a capa nitida e o letreiro juntos,
+que a chapa sem lousa nao tem onde se pôr.
+
 ### Tudo o que vem do apt, n'uma linha
 
 ```sh
 sudo apt install build-essential cmake git libmpv-dev libtag1-dev \
   libsqlite3-dev libpipewire-0.3-dev libfftw3-dev libdbus-1-dev \
-  libcurl4-openssl-dev libfontconfig-dev mpv chafa
+  libcurl4-openssl-dev libfontconfig-dev mpv chafa pango1.0-tools
 ```
 
-Ficam de fora d'esta linha, de proposito: a fonte (que vem do release das Nerd
-Fonts, secao acima), o yt-dlp (que do apt sahe velho), e o FTXUI com o doctest
+Ficam de fora d'esta linha, de proposito: as fontes (a Nerd Font, que vem do
+release d'ellas, e a XIROD, que vem do RADICAL-OS; as duas secoes acima), o yt-dlp (que do apt sahe velho), e o FTXUI com o doctest
 (que o CMake busca por FetchContent).
 
 ## Como se compila
