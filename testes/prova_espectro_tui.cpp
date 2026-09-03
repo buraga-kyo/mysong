@@ -357,6 +357,30 @@ TEST_CASE("cada registro veste a sua côr no topo e a sua base no pé") {
   }
 }
 
+// A FRONTEIRA dentro do QUADRO, e não sómente no punho puro: duas bandas, uma de
+// centro em 249 hertz e a outra em 251, e a fita mostra as duas familias lado a
+// lado. É o caso que apanha um quadro que resolvesse o registro pela POSIÇÃO da
+// columna em vez do centro em hertz da banda que ella cobre.
+TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
+  const std::vector<float> bandas = {0.5f, 0.5f};
+  const std::vector<float> centros = {249.0f, 251.0f};
+  const es::Quadro quadro = es::compor(bandas, 2, 4, false, centros);
+
+  REQUIRE(quadro.registros.size() == 2);
+  CHECK(quadro.registros[0] == es::Registro::Graves);
+  CHECK(quadro.registros[1] == es::Registro::MediosGraves);
+
+  // E a TINTA segue o registro, que é o que o olho vê: teto 32, 0,5 vezes 32 dá
+  // 16 degraus, dous blocos cheios e resto zero, d'onde duas célullas, e a base
+  // é a linha 3. Violeta n'uma columna, cyan na outra, no mesmo quadro.
+  REQUIRE(quadro.em(3, 0).pinta);
+  REQUIRE(quadro.em(3, 1).pinta);
+  CHECK(es::mesma_tinta(quadro.em(3, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+  CHECK(es::mesma_tinta(quadro.em(3, 1).tinta,
+                        tk::mistura(tk::data5, tk::panel_hi, 0.55)));
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
