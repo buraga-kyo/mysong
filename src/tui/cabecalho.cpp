@@ -497,6 +497,31 @@ std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
 
 }  // namespace
 
+ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
+                          std::size_t grupo,
+                          const std::vector<std::size_t>& direita) {
+  ContaDaFita conta;
+  conta.comeca = esquerda;
+  // Fita que nem para os botões e as abas chega: o grupo encosta-se, e o `hbox`
+  // apara o que transbordar. É o degenerado, e não o caso que a issue governa.
+  if (direita.empty() || largura < esquerda + grupo) return conta;
+  const std::size_t centro = (largura - grupo) / 2;
+  // A ponta direita cede do FIM para o principio, que é a ordem do menos util
+  // ao mais: o REPETIR primeiro, e o tempo por ultimo.
+  conta.quantas = direita.size() - 1;
+  while (conta.quantas > 0 && centro + grupo + direita[conta.quantas] > largura)
+    --conta.quantas;
+  const std::size_t dir = direita[conta.quantas];
+  // O TECTO é o que a ponta direita consente; o PISO, o que o nome pede.
+  const std::size_t tecto = largura > grupo + dir ? largura - grupo - dir : 0;
+  conta.ao_centro = centro <= tecto && centro >= esquerda + kNomeMinimo;
+  conta.comeca = std::max(esquerda, std::min(centro, tecto));
+  conta.nome = conta.comeca - esquerda;
+  const std::size_t resto = largura - conta.comeca - grupo;
+  conta.depois = resto > dir ? resto - dir : 0;
+  return conta;
+}
+
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,

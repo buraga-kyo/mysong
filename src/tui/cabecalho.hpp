@@ -121,6 +121,30 @@ std::string rotulo_da_aba(Aba aba);
 ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
                                std::size_t altura = 1);
 
+// A REPARTIÇÃO da fita em TRES blocos (issue #125): á esquerda os botões do
+// transporte e o nome do que sôa; ao CENTRO EXACTO o grupo das tres abas; á
+// direita o tempo, o volume e os dous modos.
+struct ContaDaFita {
+  std::size_t nome = 0;     // collunhas do nome, entre os botões e o grupo
+  std::size_t comeca = 0;   // a collunha em que o grupo das abas principia
+  std::size_t depois = 0;   // o enchimento entre o grupo e a ponta direita
+  std::size_t quantas = 0;  // quantos segmentos da ponta direita ficaram
+  bool ao_centro = false;   // o grupo ficou no centro EXACTO da fita
+};
+
+// conta_da_fita — o centro EXACTO, e quem cede quando elle não cabe. A collunha
+// do grupo é a largura menos a d'elle, a dividir por dous, e NÃO um `filler`:
+// aquelle centra no que SOBRA, e o grupo saltaria de logar a cada nome de
+// faixa. Não cabendo, cedem as pontas por esta ordem: o nome corta com «…»,
+// depois o REPETIR, o EMBARALHAR e o tempo; sómente quando nem assim cabe é
+// que o grupo deixa o centro e se encosta ao nome cingido ao minimo d'elle.
+// `direita` traz a largura da ponta direita com zero, um, dous, tres e quatro
+// segmentos, n'essa ordem: a conta não conhece rotulo algum, e assim a bateria
+// arma-a á mão.
+ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
+                          std::size_t grupo,
+                          const std::vector<std::size_t>& direita);
+
 // elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
 // dizer «esta chamada não quer saber», e a linha sahe a mesma, cella a cella.
