@@ -71,9 +71,10 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
 
   // A conta, feita á mão (issue #125): os botões pedem 12 collunhas (3 cada e
   // as 3 setas), o grupo das abas pede 39 (11, 13 e 12 das palavras e as 3
-  // setas) e a ponta direita pede 52. O grupo principia no CENTRO EXACTO, que
-  // é 167 menos 39 a dividir por dous: a collunha 64. Ao nome ficam as 52 que
-  // vão dos botões ao grupo, e ao vão da outra banda as 12 que sobram.
+  // setas) e a ponta direita pede 61 com o HELP (issue #133). O grupo principia
+  // no CENTRO EXACTO, que é 167 menos 39 a dividir por dous: a collunha 64. Ao
+  // nome ficam as 52 que vão dos botões ao grupo, e ao vão da outra banda as 3
+  // que sobram.
   CHECK(pedaco(tela, 0, 3) == " \U000f03e4 ");    // toca: o botão diz PAUSAR
   CHECK(pedaco(tela, 4, 3) == " \U000f04ae ");    // anterior
   CHECK(pedaco(tela, 8, 3) == " \U000f04ad ");    // seguinte
@@ -85,10 +86,10 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
   CHECK(pedaco(tela, 75, 1) == "\ue0b0");
   CHECK(pedaco(tela, 76, 13) == " \U000f0cb8 PLAYLISTS ");
   CHECK(pedaco(tela, 90, 12) == " \U000f01da DOWNLOAD ");
-  CHECK(pedaco(tela, 103, 12) == "            ");
-  CHECK(pedaco(tela, 115, 1) == "\ue0b2");        // a seta de entrada da direita
-  CHECK(pedaco(tela, 116, 15) == " 00:19 / 03:09 ");
-  CHECK(pedaco(tela, 132, 8) == " \U000f057e 100% ");
+  CHECK(pedaco(tela, 103, 3) == "   ");
+  CHECK(pedaco(tela, 106, 1) == "\ue0b2");        // a seta de entrada da direita
+  CHECK(pedaco(tela, 107, 15) == " 00:19 / 03:09 ");
+  CHECK(pedaco(tela, 123, 8) == " \U000f057e 100% ");
   // O volume a TRES algarismos, enchido á esquerda: sem elle, cada `-` movia
   // as quatro peças da direita uma collunha, e o nome da faixa com ellas.
   tui::Retracto baixo = tocando();
@@ -96,9 +97,12 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
   CHECK(pedaco(papel(tui::elemento_do_cabecalho(baixo, tui::Aba::MySong, "x",
                                                 167),
                      167),
-               132, 8) == " \U000f057e  95% ");
-  CHECK(pedaco(tela, 141, 14) == " \U000f049d EMBARALHAR ");
-  CHECK(pedaco(tela, 156, 11) == " \U000f0456 REPETIR ");
+               123, 8) == " \U000f057e  95% ");
+  CHECK(pedaco(tela, 132, 14) == " \U000f049d EMBARALHAR ");
+  CHECK(pedaco(tela, 147, 11) == " \U000f0456 REPETIR ");
+  // O HELP (issue #133) é a ponta: oito collunhas, com o glifo da fonte d'elle.
+  CHECK(pedaco(tela, 158, 1) == "\ue0b2");
+  CHECK(pedaco(tela, 159, 8) == " \U000f02d7 HELP ");
   // E a linha FECHA a largura: nada sobra, e nada transborda.
   CHECK(pedaco(tela, 0, 167) == pedaco(tela, 0, 200));
 }
@@ -203,7 +207,7 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
   CHECK(pedaco(tela, 76, 13, 1) == "             ");
   // O FUNDO é o mesmo nas duas fileiras, peça por peça: aba corrente, aba
   // apagada, botão, nome, vão do outro lado e ponta direita.
-  for (const int x : {78, 66, 1, 30, 110, 145})
+  for (const int x : {78, 66, 1, 30, 104, 145})
     CHECK(tela.PixelAt(x, 1).background_color ==
           tela.PixelAt(x, 0).background_color);
   CHECK(tela.PixelAt(78, 1).background_color == cor(tk::v600));
@@ -212,7 +216,7 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
   // em quadrado e a emenda via-se.
   CHECK(pedaco(tela, 75, 1, 1) == "\ue0b0");
   CHECK(pedaco(tela, 11, 1, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 115, 1, 1) == "\ue0b2");
+  CHECK(pedaco(tela, 106, 1, 1) == "\ue0b2");
 }
 
 // AS TINTAS. A aba corrente é BLOCO SOLIDO, v600 com texto v50, que é o gesto do
@@ -234,7 +238,7 @@ TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
   // O nome veste `panel`, que é o degrau de fundo, e não o da fita; e o vão
   // da outra banda do grupo veste o mesmo, que a fita ha de ser continua.
   CHECK(tela.PixelAt(30, 0).background_color == cor(tk::panel));
-  CHECK(tela.PixelAt(110, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(104, 0).background_color == cor(tk::panel));
 }
 
 
@@ -242,19 +246,19 @@ TEST_CASE("o modo aceso accende, e o apagado guarda o logar sem sommir") {
   tui::Retracto posto = tocando();
   const ftxui::Screen quieto =
       papel(tui::elemento_do_cabecalho(posto, tui::Aba::MySong, "x", 167), 167);
-  CHECK(quieto.PixelAt(143, 0).foreground_color == cor(tk::text_muted));
-  CHECK(quieto.PixelAt(158, 0).foreground_color == cor(tk::text_muted));
+  CHECK(quieto.PixelAt(134, 0).foreground_color == cor(tk::text_muted));
+  CHECK(quieto.PixelAt(149, 0).foreground_color == cor(tk::text_muted));
   posto.embaralhado = true;
   posto.repeticao = nu::Repeticao::Uma;
   const ftxui::Screen aceso =
       papel(tui::elemento_do_cabecalho(posto, tui::Aba::MySong, "x", 167), 167);
-  CHECK(aceso.PixelAt(143, 0).foreground_color == cor(tk::glow_core));
-  CHECK(aceso.PixelAt(158, 0).foreground_color == cor(tk::glow_core));
+  CHECK(aceso.PixelAt(134, 0).foreground_color == cor(tk::glow_core));
+  CHECK(aceso.PixelAt(149, 0).foreground_color == cor(tk::glow_core));
   // A collunha é a MESMA: o segmento apagado guarda o logar do aceso, e o nome
   // da faixa não salta de sitio quando o operador tecla `z`.
-  CHECK(pedaco(aceso, 141, 14) == " \U000f049d EMBARALHAR ");
+  CHECK(pedaco(aceso, 132, 14) == " \U000f049d EMBARALHAR ");
   // E a repetição de UMA troca o glifo, sem mudar a palavra nem a largura.
-  CHECK(pedaco(aceso, 156, 11) == " \U000f0458 REPETIR ");
+  CHECK(pedaco(aceso, 147, 11) == " \U000f0458 REPETIR ");
 }
 
 TEST_CASE("as tres teclas de algarismo vão á aba que dizem") {
@@ -381,6 +385,9 @@ TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
                         static_cast<int>(larga)),
                   0, static_cast<int>(larga));
   };
+  // O HELP (issue #133) é o primeiro a ceder: cabe do 160 para cima.
+  CHECK(linha_em(160).find("HELP") != std::string::npos);
+  CHECK(linha_em(159).find("HELP") == std::string::npos);
   CHECK(linha_em(142).find("REPETIR") != std::string::npos);
   CHECK(linha_em(141).find("REPETIR") == std::string::npos);
   CHECK(linha_em(118).find("EMBARALHAR") != std::string::npos);
@@ -404,11 +411,11 @@ TEST_CASE("o segmento do volume diz MUDO, e nas mesmas oito collunhas") {
   calado.mudo = true;
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(calado, tui::Aba::MySong, "x", 167), 167);
-  CHECK(pedaco(tela, 132, 8) == " \U000f075f MUDO ");
-  CHECK(tela.PixelAt(134, 0).foreground_color == cor(tk::glow_hot));
+  CHECK(pedaco(tela, 123, 8) == " \U000f075f MUDO ");
+  CHECK(tela.PixelAt(125, 0).foreground_color == cor(tk::glow_hot));
   // A conta da fita NÃO anda: o EMBARALHAR fica na collunha em que ficava com o
   // numero, e o nome da faixa com elle.
-  CHECK(pedaco(tela, 141, 14) == " \U000f049d EMBARALHAR ");
+  CHECK(pedaco(tela, 132, 14) == " \U000f049d EMBARALHAR ");
 
   // E o volume ZERO por escolha do operador segue a mostrar o numero: sómente a
   // ordem de calar diz a palavra, que são duas cousas differentes e a fita não
@@ -417,8 +424,8 @@ TEST_CASE("o segmento do volume diz MUDO, e nas mesmas oito collunhas") {
   no_zero.volume = 0;
   const ftxui::Screen quieto = papel(
       tui::elemento_do_cabecalho(no_zero, tui::Aba::MySong, "x", 167), 167);
-  CHECK(pedaco(quieto, 132, 8) == " \U000f075f   0% ");
-  CHECK(quieto.PixelAt(134, 0).foreground_color == cor(tk::text_muted));
+  CHECK(pedaco(quieto, 123, 8) == " \U000f075f   0% ");
+  CHECK(quieto.PixelAt(125, 0).foreground_color == cor(tk::text_muted));
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
