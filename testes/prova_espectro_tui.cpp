@@ -457,24 +457,34 @@ TEST_CASE("cada registro tem a sua côr de batida, e a rampa é a mesma") {
 TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
   const std::vector<float> bandas = {0.5f, 0.5f};
   const std::vector<float> centros = {249.0f, 251.0f};
-  const es::Quadro quadro = es::compor(bandas, 2, 4, false, centros);
+  // CINCO collunhas, e não duas: desde a issue #144 cada banda quer uma BARRA
+  // de duas collunhas, e duas barras pedem cinco (trez por passo, menos o vão
+  // da ultima). Em duas collunhas as duas bandas cahirião na MESMA barra, e o
+  // caso deixaria de ter duas familias que aferir.
+  const es::Quadro quadro = es::compor(bandas, 5, 4, false, centros);
 
-  REQUIRE(quadro.registros.size() == 2);
+  REQUIRE(quadro.registros.size() == 5);
+  // A barra 0 mora nas collunhas 0 e 1, e a barra 1 nas collunhas 3 e 4.
   CHECK(quadro.registros[0] == es::Registro::Graves);
-  CHECK(quadro.registros[1] == es::Registro::MediosGraves);
+  CHECK(quadro.registros[3] == es::Registro::MediosGraves);
+  // O VÃO (a collunha 2) HERDA o registro da barra á esquerda, de propósito:
+  // é d'essa continuidade que a legenda do exemplo tira os grupos.
+  CHECK(quadro.registros[2] == es::Registro::Graves);
+  // E elle não pinta, em linha alguma.
+  for (std::size_t l = 0; l < 4; ++l) CHECK(quadro.em(l, 2).pinta == false);
 
   // E a RAMPA não segue o registro: teto 32, 0,5 vezes 32 dá 16 degraus, dous
   // blocos cheios e resto zero, d'onde duas célullas, e a base é a linha 3. As
   // duas familias vestem a MESMA base composta, que é o que a issue #132 quer;
   // o que as aparta é a côr da BATIDA, e essa só apparece na batida.
   REQUIRE(quadro.em(3, 0).pinta);
-  REQUIRE(quadro.em(3, 1).pinta);
+  REQUIRE(quadro.em(3, 3).pinta);
   CHECK(es::mesma_tinta(quadro.em(3, 0).tinta,
                         tk::mistura(tk::v500, tk::panel_hi, 0.55)));
-  CHECK(es::mesma_tinta(quadro.em(3, 1).tinta,
+  CHECK(es::mesma_tinta(quadro.em(3, 3).tinta,
                         tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   CHECK(es::tinta_do_registro(quadro.registros[0]) == tk::glow_hot);
-  CHECK(es::tinta_do_registro(quadro.registros[1]) == tk::data5);
+  CHECK(es::tinta_do_registro(quadro.registros[3]) == tk::data5);
 }
 
 // A PRECEDENCIA da côr não se mexe com o registro. Arma-se nos AGUDOS de
