@@ -43,9 +43,15 @@ void mata_o_filho() {
 // quando não vae. SOCKETPAR, e não `pipe`: escrevendo-se n'um cano cujo leitor
 // morreu, o systema manda SIGPIPE e o padrão d'elle mata o processo; com o
 // socket, o MSG_NOSIGNAL desliga isso SEM tocar no tratador global.
+//
+// E CLOEXEC, pelo precedente dos tres soquetes do `api/socket.cpp`: sem elle o
+// cano escapava para todo filho que a obra erguesse depois (o `yt-dlp` da
+// baixa, o mpv do video), e morrendo o tocador durante uma baixa o Überzug++
+// não via o fim do cano, que o outro filho ainda o segurava. O pedido de sahir
+// em ORDEM deixava de valer, e sobrava sómente o PR_SET_PDEATHSIG.
 int ergue(int* cano) noexcept {
   int par[2] = {-1, -1};
-  if (::socketpair(AF_UNIX, SOCK_STREAM, 0, par) != 0) return -1;
+  if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, par) != 0) return -1;
   const ::pid_t filho = ::fork();
   if (filho < 0) { ::close(par[0]); ::close(par[1]); return -1; }
   if (filho == 0) {
@@ -58,10 +64,16 @@ int ergue(int* cano) noexcept {
       ::dup2(buraco, STDERR_FILENO);
       ::close(buraco);
     }
-    ::close(par[1]);
+    // O CLOEXEC do par não estorva o filho: o `dup2` limpa-o no descriptor
+    // novo. E o fecho guarda-se contra `par[1]` valer zero, que ahi elle
+    // fecharia a entrada que se acabou de armar.
+    if (par[1] != STDIN_FILENO) ::close(par[1]);
     // A MORTE PROMETTIDA: cahindo o tocador por signal, o systema manda SIGTERM
     // a este filho. E pergunta-se pelo pae, que elle pode ter morrido no meio.
     ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    // O limite d'esta guarda fica dito: em sessão com sub-reaper (o gestor do
+    // utilizador é um), o orphão vae parar a elle e não ao pid um, d'onde ella
+    // cala-se. Falha ABERTA, e a corrida que cobre é de microsegundos.
     if (::getppid() == 1) ::_exit(0);
     const std::vector<std::string> ordem = argumentos_da_lousa();
     std::vector<char*> argv;
