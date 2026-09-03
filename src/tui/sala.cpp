@@ -225,23 +225,39 @@ std::string texto_da_chapa(const Chapa& chapa) {
   return dito;
 }
 
+// esquerda_da_chapa — o que se pinta á ESQUERDA: o texto, e as encommendas
+// logo depois d'elle quando as ha. Serve á pintura e á conta do espaço, para
+// que as duas leiam a MESMA cadeia e não divirjam de uma collunha.
+static std::string esquerda_da_chapa(const Chapa& chapa) {
+  std::string dita = " " + texto_da_chapa(chapa);
+  if (!chapa.encommendas.empty()) dita += "  " + chapa.encommendas;
+  return dita;
+}
+
+std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura) {
+  const std::size_t gasto =
+      static_cast<std::size_t>(ftxui::string_width(esquerda_da_chapa(chapa)));
+  // Duas collunhas de folga: uma de vão entre o texto e o recado, e a do
+  // espaço que o recado leva no fim para não encostar na borda.
+  return largura > gasto + 2 ? largura - gasto - 2 : 0;
+}
+
 ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
-  const std::string dito = " " + texto_da_chapa(chapa);
   std::vector<ftxui::Element> partes = {
-      pinta(dito, tokens::text_heading) | ftxui::bold};
-  // O recado vae á DIREITA, empurrado por um `filler`, e CINGE-SE ao que sobra
-  // depois do texto. Sem o cinge, os dous juntos pediam mais do que ha, o
-  // `flex_shrink_x` nascia zero, e o hbox aparava por egual os DOUS: media-se
-  // n'um pty de cento e sessenta e sete que a chapa perdia o «S» de FAIXAS.
-  const std::size_t gasto =
-      static_cast<std::size_t>(ftxui::string_width(dito));
-  if (!chapa.recado.empty() && largura > gasto + 2) {
+      pinta(" " + texto_da_chapa(chapa), tokens::text_heading) | ftxui::bold};
+  // As ENCOMMENDAS em data2, que é o amarello do Poente Contido: ellas são
+  // ESTADO em curso, e estado é acento. Vão logo á direita do texto, e nunca
+  // no fim: alli o primeiro aviso comprido comia-lhes o logar.
+  if (!chapa.encommendas.empty())
+    partes.push_back(pinta("  " + chapa.encommendas, tokens::data2));
+  const std::size_t sobra = espaco_do_recado(chapa, largura);
+  if (!chapa.recado.empty() && sobra > 0) {
     partes.push_back(ftxui::filler());
     partes.push_back(pinta(chapa.recado + " ", tokens::glow_soft) |
                      ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
-                                 static_cast<int>(largura - gasto - 1)));
+                                 static_cast<int>(sobra + 1)));
   }
   return ftxui::hbox(std::move(partes)) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
