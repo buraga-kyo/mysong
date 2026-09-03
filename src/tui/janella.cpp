@@ -810,6 +810,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // assim o `sala.*` da lavra irmã não muda uma linha, e o clique na arte
     // continua a achar o quadro que ella pintou. Esvazia-se a cada quadro, que
     // painel que se não pinta não ha de deixar caixa velha a apanhar cliques.
+    // A ORDEM á lousa vae com a caixa do quadro ANTERIOR, que é a unica que o
+    // `reflect` já encheu: elle escreve DEPOIS de o pintor devolver o quadro.
+    // Custa UM quadro de atraso ao redimensionar, e não custa mais nada, que a
+    // mesma ordem repetida não manda cousa alguma pelo cano.
+    const std::filesystem::path capa_do_painel =
+        pela_lousa ? arquivario.de(retracto.titulo).caminho
+                   : std::filesystem::path();
+    if (capa_do_painel.empty() || caixas.capa.x_max < caixas.capa.x_min)
+      lousa.tira("capa");  // faixa sem capa, ou painel que se não pintou
+    else
+      lousa.poe("capa", capa_do_painel, caixas.capa.x_min, caixas.capa.y_min,
+                rectangulo.collunas, rectangulo.linhas);
     caixas.capa = tui::caixa_por_pintar();
     // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
     // painel, e marcador algum: a janella d'ella chega um quadro depois, e
@@ -910,7 +922,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // letra no termo em curso.
     switch (tui::gesto_do_foco(tecla)) {
       case tui::GestoDoFoco::Ganha: vigilia.ganha(); return true;
-      case tui::GestoDoFoco::Perde: vigilia.perde(); return true;
+      case tui::GestoDoFoco::Perde:
+        vigilia.perde();
+        // A janella da lousa NÃO segue o foco do terminal: perdido elle, a
+        // imagem ficaria por cima do que o operador foi ver. Tira-se aqui, e
+        // não no pintor, que adormecida a vigilia quadro algum se pinta.
+        lousa.tira_tudo();
+        return true;
       case tui::GestoDoFoco::Alheio: break;
     }
     // Tecla de gente só chega a painel focado: adormecida, a vigilia acorda
