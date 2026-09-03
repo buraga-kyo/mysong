@@ -81,9 +81,14 @@ int ergue(int* cano) noexcept {
     // novo. E o fecho guarda-se contra `par[1]` valer zero, que ahi elle
     // fecharia a entrada que se acabou de armar.
     if (par[1] != STDIN_FILENO) ::close(par[1]);
-    // A MORTE PROMETTIDA: cahindo o tocador por signal, o systema manda SIGTERM
-    // a este filho. E pergunta-se pelo pae, que elle pode ter morrido no meio.
-    ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    // A MORTE PROMETTIDA, e agora com SIGKILL. Era SIGTERM, e SIGTERM não
+    // bastava: MEDIDO em 03/09 no /proc d'elle, o ueberzugpp APANHA o SIGHUP,
+    // o SIGINT e o SIGTERM (SigCgt 0x100004003), e signal apanhavel é PEDIDO e
+    // não garantia. Parado ou preso, elle guarda-o pendente (ShdPnd 0x4001) e
+    // vive, reparentado ao gestor da sessão: é o orphão que a irmã viu vinte e
+    // quatro vezes. O SIGKILL alcança o mesmo processo parado, e é a unica
+    // porta que o kernel fecha sem pedir licença a ninguem.
+    ::prctl(PR_SET_PDEATHSIG, SIGKILL);
     // O limite d'esta guarda fica dito: em sessão com sub-reaper (o gestor do
     // utilizador é um), o orphão vae parar a elle e não ao pid um, d'onde ella
     // cala-se. Falha ABERTA, e a corrida que cobre é de microsegundos.
