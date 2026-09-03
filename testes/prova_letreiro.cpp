@@ -217,3 +217,19 @@ TEST_CASE("cada aba tem tres chapas, e as tres pedem imagens differentes") {
   std::sort(chaves.begin(), chaves.end());
   CHECK(std::unique(chaves.begin(), chaves.end()) == chaves.end());
 }
+
+TEST_CASE("o empurrão cabe na coordenada de uma janella do X11") {
+  // A coordenada de janella no X11 é inteiro de dezasseis bits com signal, e o
+  // Überzug++ somma-lhe ainda o enchimento que mediu do terminal. Não cabendo,
+  // a janella que se queria fóra da tela nasce do outro lado, DENTRO d'ella.
+  const long pixeis = static_cast<long>(nu::COLLUNHA_DO_EMPURRAO) *
+                      static_cast<long>(nu::CELLULA_DA_CASA.largura);
+  CHECK(pixeis < 0);
+  CHECK(pixeis > -32768 + 4096);
+  // E fóra de todo terminal: nem o mais largo tem mil e quinhentas collunhas.
+  CHECK(nu::COLLUNHA_DO_EMPURRAO < -400);
+  // A collunha sahe na ordem tal e qual, que é o que a lousa manda pelo cano.
+  CHECK(nu::ordem_de_por("empurrao", "/tmp/x.png", nu::COLLUNHA_DO_EMPURRAO, 0,
+                         1, 1)
+            .find("\"x\":-1500") != std::string::npos);
+}
