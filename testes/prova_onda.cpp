@@ -423,3 +423,32 @@ TEST_CASE("sem duração, a onda sahe toda por andar") {
   for (int c = 0; c < 8; ++c)
     CHECK(tela.PixelAt(c, 0).foreground_color == cor(tk::line_dim));
 }
+
+// ── O CASO VIVO. Corre o ffmpeg de verdade sobre um mp3 de verdade, e por
+// isso DORME sem `MYSONG_PROVA_MP3`: a bateria da Casa não ha de pender de
+// programa alheio nem de arquivo que nem toda machina tem. `MYSONG_PROVA_DUMP`
+// diz o directorio em que se deixa o cache postiço e o dump da linha pintada.
+TEST_CASE("com um mp3 de verdade, a onda nasce em cache e dispensa o ffmpeg") {
+  const char* const faixa = std::getenv("MYSONG_PROVA_MP3");
+  if (faixa == nullptr || faixa[0] == '\0') return;
+  const char* const posto = std::getenv("MYSONG_PROVA_DUMP");
+  const Cova cova;
+  const std::filesystem::path casa =
+      posto != nullptr && posto[0] != '\0' ? std::filesystem::path(posto) / "cache"
+                                           : cova.raiz();
+  const CachePostiço postiço(casa);
+
+  std::string razao;
+  const nu::Onda primeira = nu::colhe_onda(faixa, &razao);
+  INFO("razão: " << razao);
+  REQUIRE(primeira.pronta());
+  CHECK(razao.empty());
+  CHECK(primeira.pontos.size() == nu::PONTOS_DA_ONDA);
+  for (const float ponto : primeira.pontos) {
+    CHECK(ponto >= 0.0f);
+    CHECK(ponto <= 1.0f);
+  }
+  const std::filesystem::path guardada =
+      nu::caminho_da_onda_em_cache(nu::chave_da_onda(faixa));
+  CHECK(std::filesystem::is_regular_file(guardada));
+}
