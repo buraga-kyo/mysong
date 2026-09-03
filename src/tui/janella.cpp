@@ -864,19 +864,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           digita = Digita::Nada;
           termo_em_curso.clear();
           return true;
-        case tui::Gesto::EntraNoDegrau: {
-          // A barra abre-se no degrau CLICADO, para que o degrau sem chão
-          // mostre onde o dedo pousou. O `abre` acorda na secção corrente, e
-          // d'ahi anda-se até elle pelas ordens que SATURAM: são quando muito
-          // uma barra de degraus, e porta que o assentasse não ha.
-          const std::vector<nucleo::Rol> listas = navegador.rois();
-          menu.abre(navegador.secao(), listas, navegador.rol_corrente());
-          while (menu.degrau() != gesto.indice) {
-            const std::size_t antes = menu.degrau();
-            antes < gesto.indice ? menu.desce() : menu.sobe();
-            if (menu.degrau() == antes) break;
-          }
-          entra_no_alvo(tui::alvo_do_degrau(gesto.indice, listas));
+        case tui::Gesto::VaiParaAba: {
+          // O indice vem da caixa que o dedo achou, e a ordem d'ellas é a da
+          // fita. Aba fóra das tres não ha: a taboada do alvo só nomeia as
+          // caixas que existem, e o `default` cahiria na primeira, calado.
+          constexpr tui::Aba kAbas[3] = {tui::Aba::MySong, tui::Aba::Playlists,
+                                         tui::Aba::Download};
+          if (gesto.indice < 3) vai_para_aba(kAbas[gesto.indice]);
           return true;
         }
         case tui::Gesto::Elege:
@@ -884,7 +878,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           // Anda-se pelo sobe e pelo desce, que SATURAM: o navegador não ganha
           // `vai_a` por isto, e nem precisa, que o indice clicado está dentro
           // da fatia á vista. No Toca a volta é de zero passos.
-          menu.fecha();
           while (navegador.eleito() != gesto.indice) {
             const std::size_t antes = navegador.eleito();
             antes < gesto.indice ? navegador.desce() : navegador.sobe();
@@ -902,13 +895,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             gesto.gesto == tui::Gesto::RodaSobe ? navegador.sobe()
                                                 : navegador.desce();
           return true;
-        case tui::Gesto::DegrauSobe:
-        case tui::Gesto::DegrauDesce:
-          if (!menu.aberto())
-            menu.abre(navegador.secao(), navegador.rois(),
-                      navegador.rol_corrente());
-          gesto.gesto == tui::Gesto::DegrauSobe ? menu.sobe() : menu.desce();
-          return true;
+        // Os DOUS MODOS pelo segmento que os mostra. Alternar e cyclar são
+        // punhos do tocador, e não «ler o retracto e depois escrever»: entre a
+        // leitura e a escripta caberia o socket, e o clique assentaria o
+        // contrario do que se viu.
+        case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
+        case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
         // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
         // sempre, que é quem sabe roteá-las ao video quando elle está de pé.
         case tui::Gesto::Anterior: ordem_do_rato = {tui::Verbo::Anterior}; break;
