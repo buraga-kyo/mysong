@@ -89,6 +89,18 @@ struct Sala {
   Rectangulo rodape;     // UMA linha de dicas, no pé
 };
 
+// sala_da_tela — todos os numeros da composição, n'uma conta só, para que a
+// bateria os interrogue sem terminal. `campo_aberto` é o prompt de digitar, que
+// pede linha propria e empurra o corpo uma para baixo.
+Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
+
+// espectro_abaixo_da — o rectangulo do espectro depois de se saber quantas
+// linhas a capa tomou DE FACTO. O `capa` da sala é TECTO: a capa de 16 por 9
+// sahe mais baixa que elle, e o que ella deixa pertence ao espectro. A conta
+// mora aqui, e não no pintor, pela regra da sala: numero algum da composição
+// se resolve em janella.cpp, que é o que não se prova.
+Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa);
+
 // A GEOMETRIA da sala: quanto toma cada painel, dada a largura UTIL (a que o
 // pintor tem depois da orla) e a altura da faixa do corpo. As collunhas da
 // barra entram por PARAMETRO: quem sabe a largura d'ella é quem a pinta, e
