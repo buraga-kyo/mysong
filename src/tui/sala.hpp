@@ -105,7 +105,8 @@ struct Sala {
   Rectangulo painel;     // a metade direita; vazia abaixo de cem collunhas
   Rectangulo ficha;      // UMA linha no alto do painel: o que sôa (issue #134)
   Rectangulo capa;       // por baixo da ficha, ATÉ quarenta e cinco por cento
-  Rectangulo espectro;   // o que sobra do painel, abaixo da capa
+  Rectangulo letra;      // o bloco da letra, PARADO, abaixo da capa (#157)
+  Rectangulo espectro;   // o que sobra do painel, abaixo da letra
   Rectangulo rodape;     // UMA linha de dicas, no pé
 };
 
@@ -115,7 +116,7 @@ struct Sala {
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
 
 // espectro_abaixo_da — o rectangulo do espectro depois de se saber quantas
-// linhas a capa tomou DE FACTO. Conta a partir da CAPA, e não do painel: a
+// linhas a capa tomou DE FACTO, e já descontado o bloco da letra (issue #157). Conta a partir da CAPA, e não do painel: a
 // fileira da ficha (issue #134) é do painel e não é da arte. O `capa` da sala é TECTO: a capa de 16 por 9
 // sahe mais baixa que elle, e o que ella deixa pertence ao espectro. A conta
 // mora aqui, e não no pintor, pela regra da sala: numero algum da composição

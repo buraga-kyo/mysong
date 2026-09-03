@@ -54,6 +54,12 @@ constexpr std::size_t kPautaMinima = 40;
 // O espectro não desce de seis linhas, e a capa cede-lhe o logar antes d'elle
 // encolher: espectro de tres linhas não é serie de dados, é enfeite.
 constexpr std::size_t kEspectroMinimo = 6, kCapaPorCento = 45;
+// O BLOCO DA LETRA (issue #157), quieto debaixo da capa: UM verso, e mais nada.
+// Tres fileiras para elle (que é o corpo grande da chapa em XIROD que a lousa
+// desenha por cima) e uma de respiro. Quatro ao todo, e são fixas: bloco que
+// crescesse com o painel faria o verso saltar de logar a cada redimensionamento,
+// e o que se pede é justamente que elle fique QUIETO.
+constexpr std::size_t kLetraLinhas = 4;
 // A chapa cede o logar á pauta quando ella ficaria com menos de tres linhas: a
 // pauta é onde se navega, e a chapa diz sómente onde se está.
 constexpr std::size_t kPautaLinhasMinimas = 3;
@@ -98,7 +104,16 @@ void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
   const std::size_t tecto =
       std::min(resto * kCapaPorCento / 100, resto - kEspectroMinimo);
   sala.capa = {sala.painel.x, alto + 1, do_painel, tecto};
-  sala.espectro = {sala.painel.x, alto + 1 + tecto, do_painel, resto - tecto};
+  const std::size_t abaixo_da_capa = resto - tecto;
+  // A LETRA (issue #157) entra INTEIRA ou não entra: bloco cortado ao meio
+  // mostraria meio verso, e meio verso não se lê. Não cabendo com o espectro
+  // minimo por baixo, cede tudo, e o espectro toma o que a capa deixou.
+  const std::size_t da_letra =
+      abaixo_da_capa >= kLetraLinhas + kEspectroMinimo ? kLetraLinhas : 0;
+  if (da_letra != 0)
+    sala.letra = {sala.painel.x, alto + 1 + tecto, do_painel, da_letra};
+  sala.espectro = {sala.painel.x, alto + 1 + tecto + da_letra, do_painel,
+                   abaixo_da_capa - da_letra};
 }
 
 }  // namespace
@@ -200,7 +215,9 @@ Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa) {
   // Do pé da arte ao pé do painel: a fileira da ficha fica de fóra por conta
   // propria, que ella mora ACIMA da capa e não abaixo.
   const std::size_t fim = sala.painel.y + sala.painel.altura;
-  const std::size_t y = sala.capa.y + tomadas;
+  // O bloco da LETRA (issue #157) fica entre a arte e o espectro: o que a capa
+  // não gastou desce para elle, e o espectro principia debaixo d'elle.
+  const std::size_t y = sala.capa.y + tomadas + sala.letra.altura;
   return {sala.painel.x, y, sala.painel.largura, fim > y ? fim - y : 0};
 }
 
