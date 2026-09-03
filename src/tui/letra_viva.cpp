@@ -235,6 +235,56 @@ std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
   return tapete;
 }
 
+std::string sequencia_do_rio(const CelulaDoRio& celula) {
+  std::string bytes;
+  if (celula.letra) bytes += tokens::fundo_de(tokens::panel);
+  bytes += celula.pinta ? tokens::sgr(38, celula.tinta)
+                        : std::string(tokens::repouso);
+  return bytes + celula.glifo;
+}
+
+ftxui::Element elemento_do_rio(const Quadro& espectro,
+                               const QuadroDaLetra& letra) {
+  const std::vector<CelulaDoRio> tapete = tapete_do_rio(espectro, letra);
+  const tokens::Triade fundo = tokens::rgb(tokens::panel);
+  std::vector<ftxui::Element> pintadas;
+  pintadas.reserve(espectro.altura);
+
+  for (std::size_t l = 0; l < espectro.altura; ++l) {
+    std::vector<ftxui::Element> corridas;
+    std::size_t c = 0;
+    while (c < espectro.largura) {
+      // A CORRIDA de célullas de egual vestido n'um só elemento, como o
+      // espectro já o fazia: o gradiente d'elle é ancorado ao painel.
+      const CelulaDoRio& cabeca = tapete[l * espectro.largura + c];
+      std::string texto;
+      std::size_t fim = c;
+      while (fim < espectro.largura) {
+        const CelulaDoRio& corrente = tapete[l * espectro.largura + fim];
+        if (corrente.pinta != cabeca.pinta) break;
+        if (corrente.letra != cabeca.letra) break;
+        if (corrente.pinta && !mesma_tinta(corrente.tinta, cabeca.tinta)) break;
+        texto += corrente.glifo;
+        ++fim;
+      }
+      ftxui::Element pedaco = ftxui::text(texto);
+      if (cabeca.pinta)
+        pedaco = std::move(pedaco) | ftxui::color(ftxui::Color::RGB(
+                                         cabeca.tinta.r, cabeca.tinta.g,
+                                         cabeca.tinta.b));
+      // O FUNDO DO PAINEL sómente debaixo da letra: esconde a barra de UMA
+      // célulla e deixa as vizinhas a mexer.
+      if (cabeca.letra)
+        pedaco = std::move(pedaco) | ftxui::bgcolor(ftxui::Color::RGB(
+                                         fundo.r, fundo.g, fundo.b));
+      corridas.push_back(std::move(pedaco));
+      c = fim;
+    }
+    pintadas.push_back(ftxui::hbox(std::move(corridas)));
+  }
+  return ftxui::vbox(std::move(pintadas));
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
