@@ -106,6 +106,33 @@ std::string apara(std::string_view crua, std::size_t largura) {
   return feita;
 }
 
+// orla_com_titulo — a linha de cima, com o rotulo METTIDO na propria orla. É o
+// gesto do menu do tmux d'elle, que alli põe o nome da janella; aqui vae o
+// nome da faixa, em text_heading, para que se saiba sobre QUAL se escolhe.
+ftxui::Element orla_com_titulo(std::string_view titulo, std::size_t largura) {
+  const std::size_t cabe = largura > 5 ? largura - 5 : 0;
+  const std::string posto = apara(titulo, std::min(cabe, collunhas(titulo)));
+  return ftxui::hbox({pinta("┌─ ", tokens::line_base, tokens::panel),
+                      pinta(posto, tokens::text_heading, tokens::panel),
+                      pinta(" " + repete("─", cabe - collunhas(posto)) + "┐",
+                            tokens::line_base, tokens::panel)});
+}
+
+// linha_do_filete — o traço que aparta o que ESTRAGA cousa gravada do que a não
+// estraga. Sahe em line_dim, mais apagado que a orla: elle divide, e não fecha;
+// os dous cantos ficam na tinta da orla, que d'ella são e não do traço.
+ftxui::Element linha_do_filete(std::size_t largura) {
+  return ftxui::hbox({pinta("├", tokens::line_base, tokens::panel),
+                      pinta(repete("─", largura - 2), tokens::line_dim,
+                            tokens::panel),
+                      pinta("┤", tokens::line_base, tokens::panel)});
+}
+
+ftxui::Element linha_da_base(std::size_t largura) {
+  return pinta("└" + repete("─", largura - 2) + "┘", tokens::line_base,
+               tokens::panel);
+}
+
 }  // namespace
 
 void abre_o_menu(MenuDeContexto& menu, std::size_t faixa, std::string titulo,
@@ -202,13 +229,13 @@ MedidaDoMenu medida_do_menu(const MenuDeContexto& menu) {
 ftxui::Element elemento_do_menu(const MenuDeContexto& menu) {
   const std::size_t largura = medida_do_menu(menu).largura;
   std::vector<ftxui::Element> linhas;
-  linhas.push_back(pinta("┌" + repete("─", largura - 2) + "┐",
-                         tokens::line_base, tokens::panel));
-  for (const std::string_view rotulo : kRotulos)
-    linhas.push_back(pinta("│ " + apara(rotulo, largura - 4) + " │",
+  linhas.push_back(orla_com_titulo(menu.titulo, largura));
+  for (std::size_t qual = 0; qual < QUANTOS_ITENS; ++qual) {
+    if (qual == kFileteAntesDe) linhas.push_back(linha_do_filete(largura));
+    linhas.push_back(pinta("│ " + apara(kRotulos[qual], largura - 4) + " │",
                            tokens::text_primary, tokens::panel));
-  linhas.push_back(pinta("└" + repete("─", largura - 2) + "┘",
-                         tokens::line_base, tokens::panel));
+  }
+  linhas.push_back(linha_da_base(largura));
   return ftxui::vbox(std::move(linhas));
 }
 
