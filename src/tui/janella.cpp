@@ -817,8 +817,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::filesystem::path capa_do_painel =
         pela_lousa ? arquivario.de(retracto.titulo).caminho
                    : std::filesystem::path();
-    if (capa_do_painel.empty() || caixas.capa.x_max < caixas.capa.x_min)
-      lousa.tira("capa");  // faixa sem capa, ou painel que se não pintou
+    // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
+    // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
+    if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
+                              !capa_do_painel.empty(),
+                              caixas.capa.x_max >= caixas.capa.x_min) ==
+        nucleo::OrdemDaCapa::Tira)
+      lousa.tira("capa");
     else
       lousa.poe("capa", capa_do_painel, caixas.capa.x_min, caixas.capa.y_min,
                 rectangulo.collunas, rectangulo.linhas);
@@ -925,8 +930,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::GestoDoFoco::Perde:
         vigilia.perde();
         // A janella da lousa NÃO segue o foco do terminal: perdido elle, a
-        // imagem ficaria por cima do que o operador foi ver. Tira-se aqui, e
-        // não no pintor, que adormecida a vigilia quadro algum se pinta.
+        // imagem ficaria por cima do que o operador foi ver. Quem manda de
+        // facto é o `ordem_da_capa` do pintor, que lê a mesma vigilia em todo
+        // quadro; este é a redundancia barata que tira as demais identidades.
         lousa.tira_tudo();
         return true;
       case tui::GestoDoFoco::Alheio: break;
