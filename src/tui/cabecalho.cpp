@@ -161,8 +161,9 @@ ftxui::Element vestir(const std::string& texto, std::string_view tinta,
 // aparar_nome — o nome do que sôa, na largura que sobrou. Mede-se em COLLUNHAS
 // pelo `string_width`, e não em pontos de codigo como a fita: o nome vem do
 // acervo d'elle, e ha titulo com kanji e com emoji, que valem duas. Cabendo,
-// enche-se de espaços: o fundo do segmento veste a collunha inteira, e nome
-// curto deixaria buraco no meio da linha. Não cabendo, corta-se com «…».
+// CENTRA-SE (issue #125) e enche-se de espaços dos dous lados: o fundo do
+// segmento veste a collunha inteira, e nome encostado deixava o vão todo de um
+// lado só. Não cabendo, corta-se com «…».
 std::string aparar_nome(const std::string& nome, std::size_t largura) {
   if (largura == 0) return {};
   const std::size_t inteiro =
@@ -170,7 +171,12 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
   // O «…» só entra HAVENDO corte: a collunha d'elle guarda-se depois de se
   // saber que ha corte, e não antes. Guardada sempre, o nome que cabia
   // exactamente sahia cortado na ultima lettra, e a prova em papel accusa-o.
-  if (inteiro <= largura) return nome + std::string(largura - inteiro, ' ');
+  if (inteiro <= largura) {
+    // A collunha impar sobra á DIREITA, que é para onde o olho corre a seguir.
+    const std::size_t antes = (largura - inteiro) / 2;
+    return std::string(antes, ' ') + nome +
+           std::string(largura - inteiro - antes, ' ');
+  }
   std::string feito;
   std::size_t gastas = 0;
   for (std::size_t i = 0; i < nome.size();) {
