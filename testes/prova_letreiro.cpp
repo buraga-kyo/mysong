@@ -40,13 +40,15 @@ nu::PedidoDaChapa da_corrente() {
 // O cabeçalho pintado em PAPEL, com as caixas enchidas pelo `reflect`: é o
 // unico modo de a prova ter as caixas que o pintor terá, e não caixas
 // escriptas á mão que poderiam mentir sobre onde a palavra cae.
-ftxui::Screen papel(tui::CaixasDoCabecalho* caixas, tui::Aba corrente) {
+ftxui::Screen papel(tui::CaixasDoCabecalho* caixas, tui::Aba corrente,
+                    int altura = 1) {
   tui::Retracto retracto;
   retracto.volume = 100;
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(167),
-                                              ftxui::Dimension::Fixed(1));
+                                              ftxui::Dimension::Fixed(altura));
   ftxui::Element linha = tui::elemento_do_cabecalho(
-      retracto, corrente, "uma faixa qualquer", 167, caixas);
+      retracto, corrente, "uma faixa qualquer", 167, caixas,
+      tui::Focavel::Pauta, static_cast<std::size_t>(altura));
   ftxui::Render(ecran, linha);
   return ecran;
 }
@@ -66,30 +68,59 @@ TEST_CASE("a margem casa a proporção da chapa com a da caixa") {
   // A palavra MEDIDA n'esta machina: duzentos pixeis por trinta e sete, em
   // sete cellas de nove por vinte. A caixa é 63 por 20, d'onde a chapa ha de
   // ficar com 63 de altura, e a folga é treze de cada lado.
-  CHECK(nu::margem_da_chapa({200, 37}, 7, nu::CELLULA_DA_CASA) == 13);
+  CHECK(nu::margem_da_chapa({200, 37}, 7, 1, nu::CELLULA_DA_CASA) == 13);
   // E a folga NUNCA transborda: arredondada para baixo, a chapa fica sempre ao
   // menos tão larga quanto a caixa pede, d'onde é a LARGURA que manda na
   // reducção e a altura cabe na linha.
   const std::size_t alta =
-      37 + 2 * nu::margem_da_chapa({200, 37}, 7, nu::CELLULA_DA_CASA);
+      37 + 2 * nu::margem_da_chapa({200, 37}, 7, 1, nu::CELLULA_DA_CASA);
   CHECK(200 * nu::CELLULA_DA_CASA.altura >= alta * 7 * nu::CELLULA_DA_CASA.largura);
   // Chapa JÁ mais alta que a caixa não pede folga; nem a medida que se não
   // leu, nem a caixa de largura nenhuma.
-  CHECK(nu::margem_da_chapa({200, 200}, 7, nu::CELLULA_DA_CASA) == 0);
-  CHECK(nu::margem_da_chapa({0, 0}, 7, nu::CELLULA_DA_CASA) == 0);
-  CHECK(nu::margem_da_chapa({200, 37}, 0, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({200, 200}, 7, 1, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({0, 0}, 7, 1, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({200, 37}, 0, 1, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({200, 37}, 7, 0, nu::CELLULA_DA_CASA) == 0);
+}
+
+TEST_CASE("a caixa de duas fileiras mede-se pelas duas") {
+  // A palavra ao DOBRO do corpo, medida n'esta machina: quatrocentos pixeis
+  // por setenta e quatro, em sete cellas de largura. A caixa da fita do pé é
+  // 63 por 40, d'onde a chapa ha de ficar com 253 de altura.
+  CHECK(nu::margem_da_chapa({400, 74}, 7, 2, nu::CELLULA_DA_CASA) == 89);
+  // Contada por UMA fileira, a folga sahia menos de um terço d'esta, e a chapa
+  // pararia a meia altura do segmento com o mono a espreitar por baixo.
+  CHECK(nu::margem_da_chapa({400, 74}, 7, 1, nu::CELLULA_DA_CASA) == 26);
+  // E a folga posta enche a caixa: com ella, a chapa é ao menos tão larga
+  // quanto a caixa pede, d'onde é a LARGURA que manda na reducção.
+  const std::size_t alta =
+      74 + 2 * nu::margem_da_chapa({400, 74}, 7, 2, nu::CELLULA_DA_CASA);
+  CHECK(400 * 2 * nu::CELLULA_DA_CASA.altura >=
+        alta * 7 * nu::CELLULA_DA_CASA.largura);
+}
+
+TEST_CASE("o corpo da chapa sahe da altura da caixa") {
+  // Vinte e dous pontos por cella de vinte pixeis foi o que se mediu; a caixa
+  // de duas cellas tem quarenta, e pede pois o dobro do corpo.
+  CHECK(nu::corpo_da_altura(1) == nu::CORPO_DA_MARCA);
+  CHECK(nu::corpo_da_altura(2) == 2 * nu::CORPO_DA_MARCA);
+  // Caixa por pintar não pede palavra sem tamanho.
+  CHECK(nu::corpo_da_altura(0) == nu::CORPO_DA_MARCA);
 }
 
 TEST_CASE("a chave do cache muda com todo campo do pedido") {
   const std::string base = nu::chave_do_letreiro(da_corrente());
   CHECK(base.size() == 16);
   CHECK(nu::chave_do_letreiro(da_corrente()) == base);
-  for (int qual = 0; qual < 4; ++qual) {
+  for (int qual = 0; qual < 5; ++qual) {
     nu::PedidoDaChapa outro = da_corrente();
     if (qual == 0) outro.cellulas = 9;
     if (qual == 1) outro.tinta = "#cbb6ff";
     if (qual == 2) outro.corpo = 18;
     if (qual == 3) outro.familia = "JetBrainsMono Nerd Font";
+    // As FILEIRAS (issue #126): chapa de uma linha e chapa de duas não são a
+    // mesma imagem, e a de uma servida no logar da de duas sahiria esmagada.
+    if (qual == 4) outro.linhas = 2;
     CHECK(nu::chave_do_letreiro(outro) != base);
   }
   // A COSTURA: sem o octeto nullo entre os campos, estes dous dariam a mesma
@@ -252,4 +283,31 @@ TEST_CASE("a caixa do empurrão nunca reduz um lado a zero") {
   }
   // Medida que se não leu não dá lado algum, e ahi não se pede reducção.
   CHECK(nu::lados_do_empurrao({0, 0}, cella).largura == 0);
+}
+
+TEST_CASE("na fita do pé a chapa parte da fileira de cima e toma as duas") {
+  tui::CaixasDoCabecalho caixas;
+  papel(&caixas, tui::Aba::MySong, 2);
+  const std::vector<tui::ChapaDaAba> ordens =
+      tui::ordens_das_chapas(caixas, tui::Aba::MySong, true, true);
+  REQUIRE(ordens.size() == 3);
+  for (const tui::ChapaDaAba& ordem : ordens) {
+    REQUIRE(ordem.poe);
+    // A de CIMA, e não a de baixo: a chapa que partisse da segunda cobriria o
+    // rodapé das dicas e deixaria a primeira com o fundo pelado.
+    CHECK(ordem.linha == 0);
+    CHECK(ordem.linhas == 2);
+    const nu::PedidoDaChapa pedido = tui::pedido_da_chapa(ordem);
+    CHECK(pedido.linhas == 2);
+    CHECK(pedido.corpo == nu::corpo_da_altura(2));
+  }
+  // E a chapa da fita ALTA não é a da fita rasa: chave differente, imagem
+  // differente, e o cache de uma corrida velha não serve a esta.
+  tui::CaixasDoCabecalho rasas;
+  papel(&rasas, tui::Aba::MySong);
+  const tui::ChapaDaAba rasa =
+      tui::ordens_das_chapas(rasas, tui::Aba::MySong, true, true)[0];
+  CHECK(rasa.linhas == 1);
+  CHECK(nu::chave_do_letreiro(tui::pedido_da_chapa(rasa)) !=
+        nu::chave_do_letreiro(tui::pedido_da_chapa(ordens[0])));
 }

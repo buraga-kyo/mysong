@@ -272,10 +272,18 @@ sudo apt install pango1.0-tools   # o pango-view, que desenha a palavra
 mysong --sonda | tail -2          # diz «letreiro: Xirod, pango-view»
 ```
 
-Cada aba tem tres chapas (a corrente, a apagada e a que tem o foco). Cada uma
-rasteriza-se UMA vez e fica em `$XDG_CACHE_HOME/mysong/letreiro/<somma>.png`,
-donde a segunda corrida do tocador nao chama o pango-view uma vez sequer.
-Apagar essa pasta nao perde nada.
+A chapa toma a caixa INTEIRA do rotulo: na fita do pe, que tem duas linhas, a
+palavra sai ao dobro do corpo e ocupa as duas, a partir da linha de cima do
+segmento; na fita rasa de uma linha ella sai como sempre saiu. O corpo e a
+folga de cima e de baixo saem da altura da caixa, para a palavra nao ficar
+esmagada nem deixar o mono espreitar por baixo.
+
+Cada aba tem tres chapas (a corrente, a apagada e a que tem o foco), e cada
+altura da caixa da a sua. Cada uma rasteriza-se UMA vez e fica em
+`$XDG_CACHE_HOME/mysong/letreiro/<somma>.png`, donde a segunda corrida do
+tocador nao chama o pango-view uma vez sequer. A somma conta o texto, as
+tintas, o corpo e as duas medidas da caixa, que chapa de uma linha e chapa de
+duas nao sao a mesma imagem. Apagar essa pasta nao perde nada.
 
 Faltando qualquer das tres cousas, o cabecalho fica exactamente como estava, com
 as palavras em mono negrito, e aviso algum apparece na tela: quem quiser saber
@@ -411,10 +419,11 @@ d'esta Casa e uma fita de abas, a maneira da topbar do RADICAL-OS.
 ```
 
 A fita le-se em TRES blocos, e cada segmento pinta o fundo d'elle nas DUAS
-linhas, com o rotulo em mono na de cima. A esquerda os tres botoes do
-transporte e o nome do que soa, cortado com «…» quando nao cabe. Ao CENTRO
-EXACTO o grupo das tres abas, a corrente em bloco solido e as outras em
-repouso: a collunha em que o grupo principia e a largura da fita menos a
+linhas, com o rotulo em mono na de cima; estando a lousa de pe, a palavra em
+XIROD toma as duas e fica de facto ao centro da altura. A esquerda os tres
+botoes do transporte e o nome do que soa, cortado com «…» quando nao cabe. Ao
+CENTRO EXACTO o grupo das tres abas, a corrente em bloco solido e as outras
+em repouso: a collunha em que o grupo principia e a largura da fita menos a
 largura d'elle, a dividir por dous, donde elle NAO se move quando a faixa
 muda. A direita o tempo, o volume, o EMBARALHAR e o REPETIR.
 

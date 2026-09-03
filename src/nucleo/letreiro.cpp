@@ -48,14 +48,16 @@ std::vector<std::string> argumentos_do_letreiro(
 }
 
 // margem_da_chapa — regra de tres, e nada mais: a caixa mede `cellulas` vezes
-// a largura da cella por UMA altura d'ella, e a chapa ha de ter essa razão;
-// d'onde a altura ALVO é a largura crua dividida pela razão da caixa. O que
-// falta reparte-se em duas, que a folga vae em cima e em baixo.
+// a largura da cella por `linhas` vezes a altura d'ella, e a chapa ha de ter
+// essa razão; d'onde a altura ALVO é a largura crua dividida pela razão da
+// caixa. O que falta reparte-se em duas, que a folga vae em cima e em baixo.
 std::size_t margem_da_chapa(Medida crua, std::size_t cellulas,
-                            Medida cellula) {
-  if (crua.largura == 0 || cellulas == 0 || cellula.largura == 0) return 0;
+                            std::size_t linhas, Medida cellula) {
+  if (crua.largura == 0 || cellulas == 0 || linhas == 0 ||
+      cellula.largura == 0)
+    return 0;
   const std::size_t alvo =
-      crua.largura * cellula.altura / (cellulas * cellula.largura);
+      crua.largura * linhas * cellula.altura / (cellulas * cellula.largura);
   // Chapa JÁ mais alta que o alvo não pede folga: alli é a ALTURA que manda na
   // reducção, e a chapa sahe mais estreita que a caixa. Isso é sobra de fundo
   // n'uma ponta, e não palavra cortada; folga negativa não ha.
@@ -70,7 +72,8 @@ std::string chave_do_letreiro(const PedidoDaChapa& pedido) {
   std::string tudo = pedido.texto;
   for (const std::string& campo :
        {pedido.familia, pedido.tinta, pedido.fundo,
-        std::to_string(pedido.corpo), std::to_string(pedido.cellulas)}) {
+        std::to_string(pedido.corpo), std::to_string(pedido.cellulas),
+        std::to_string(pedido.linhas)}) {
     tudo.push_back('\0');
     tudo += campo;
   }
@@ -155,7 +158,7 @@ std::filesystem::path rasteriza(const PedidoDaChapa& pedido) {
     return desfaz(meio);
   const std::size_t margem =
       margem_da_chapa(medida_da_imagem(cabeca_do_arquivo(meio)),
-                      pedido.cellulas, CELLULA_DA_CASA);
+                      pedido.cellulas, pedido.linhas, CELLULA_DA_CASA);
   // A segunda corrida sómente HAVENDO folga: chapa que já nasceu na proporção
   // da caixa não tem o que corrigir, e tornar a correr seria gasto por nada.
   if (margem > 0 &&
