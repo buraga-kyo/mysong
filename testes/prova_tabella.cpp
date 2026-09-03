@@ -299,6 +299,34 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
 }
 
+TEST_CASE("cada linha pintada deixa a sua caixa para o rato") {
+  Cova cova;
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  navegador.mostra_rede({achado("Toccata", "Canal", 542),
+                         achado("Fuga", "Outro", 65),
+                         achado("Aria", "Terceiro", 100)});
+  std::vector<ftxui::Box> caixas;
+  ftxui::Element quadro =
+      tui::elemento_da_tabella(navegador, 0, 2, 60, {}, &caixas);
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(60),
+                                              ftxui::Dimension::Fixed(2));
+  ftxui::Render(ecran, quadro);
+  // UMA caixa por linha PINTADA, e não por linha da vista: a terceira ficou
+  // fóra da fatia, e clique algum a ha de acertar. E ella toma a LARGURA
+  // inteira, que o bloco da eleita a veste de orla a orla.
+  REQUIRE(caixas.size() == 2);
+  CHECK(caixas[0].x_min == 0);
+  CHECK(caixas[0].x_max == 59);
+  CHECK(caixas[0].y_min == 0);
+  CHECK(caixas[1].y_min == 1);
+  // Vista vazia limpa o vector: caixa velha faria o clique acertar linha que
+  // já não está na tela.
+  navegador.mostra_rede(std::vector<nu::Achado>{});
+  tui::elemento_da_tabella(navegador, 0, 2, 60, {}, &caixas);
+  CHECK(caixas.empty());
+}
+
 TEST_CASE("as vistas de artistas e albuns adaptam as columnas") {
   Cova cova;
   {
