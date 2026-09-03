@@ -112,6 +112,19 @@ constexpr const char* kCinco = "\u2585";  // cinco oitavos
 constexpr const char* kUm = "\u2581";     // um oitavo, o piso do silencio
 constexpr const char* kVazio = " ";
 
+// A LARGURA QUE DÁ UMA BARRA POR BANDA (issue #144). A fita deixou de pintar
+// uma collunha por cella: ella pinta BARRAS de duas collunhas apartadas por um
+// vão de uma, d'onde o passo é de TREZ. Vinte e quatro bandas pedem pois
+// setenta e duas collunhas, menos o vão da ultima, que depois d'ella não ha o
+// que apartar: setenta e uma. Escripto á mão, e não colhido da obra sob exame.
+constexpr std::size_t kUmaBarraPorBanda = 3 * mysong::nucleo::QUANTAS_BANDAS - 1;
+
+// no_vao — a collunha é a do VÃO, que a issue #144 deixa POR PINTAR: ella é a
+// terceira de cada passo, d'onde o resto da divisão por trez vale dous. A conta
+// faz-se aqui, á mão, e vale nas larguras que estes casos escolhem, que todas
+// fecham em barra inteira.
+bool no_vao(std::size_t c) { return c % 3 == 2; }
+
 // cor — a tríade em côr do FTXUI, que é como a tela a guarda. Recebe TRÍADE e
 // não token porque os degraus do meio da rampa nascem de tokens::mistura, e
 // nome na paleta não têm.
@@ -125,10 +138,19 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
   // que dá 21 degraus: DOUS cheios (16) e resto CINCO. A conta faz-se aqui, á
   // mão, e não se pergunta a oitavos() qual seria.
   const std::vector<float> bandas = bandas_uniformes(21.0f / 32.0f);
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 4);
+  // A largura vae em setenta e uma, e não nas vinte e quatro de dantes: com uma
+  // BARRA por banda (issue #144) o empilhamento afere-se collunha a collunha
+  // sem que barra alguma funda duas bandas.
+  const es::Quadro quadro = es::compor(bandas, kUmaBarraPorBanda, 4);
 
   REQUIRE(quadro.altura == 4);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
+    // O VÃO fica POR PINTAR, e em linha alguma: é a promessa nova da issue
+    // #144, e a prova cobra-a antes de aferir a barra que vem ao lado.
+    if (no_vao(c)) {
+      for (std::size_t l = 0; l < 4; ++l) CHECK(quadro.em(l, c).pinta == false);
+      continue;
+    }
     // A BASE é a linha 3, e é lá que mora o primeiro cheio.
     CHECK(quadro.em(3, c).glifo == kCheio);
     CHECK(quadro.em(2, c).glifo == kCheio);
@@ -149,11 +171,18 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
 TEST_CASE("a rampa vae da base composta ao topo do registro") {
   const std::vector<float> bandas = bandas_uniformes(0.899f);
   // Cem hertz prende a fita inteira nos GRAVES, e o caso afere a RAMPA.
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
-                                       false, centros_em(100.0f));
+  // Setenta e uma collunhas: uma BARRA por banda (issue #144), que a rampa se
+  // afere na collunha da barra, e a do vão não pinta.
+  const es::Quadro quadro =
+      es::compor(bandas, kUmaBarraPorBanda, 5, false, centros_em(100.0f));
 
   REQUIRE(quadro.altura == 5);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
+    // A rampa é da BARRA: o vão fica por pintar, e rampa não tem.
+    if (no_vao(c)) {
+      for (std::size_t l = 0; l < 5; ++l) CHECK(quadro.em(l, c).pinta == false);
+      continue;
+    }
     REQUIRE(quadro.em(4, c).pinta);
     REQUIRE(quadro.em(0, c).pinta);
 
@@ -174,10 +203,16 @@ TEST_CASE("a rampa vae da base composta ao topo do registro") {
 }
 
 TEST_CASE("painel de uma célulla veste a base da rampa") {
+  // Oito collunhas dão TREZ barras (issue #144), nas collunhas 0 e 1, 3 e 4, 6
+  // e 7; as collunhas 2 e 5 são os vãos, e por ellas não passa rampa alguma.
   const es::Quadro quadro =
       es::compor(bandas_uniformes(0.5f), 8, 1, false, centros_em(100.0f));
   REQUIRE(quadro.altura == 1);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
+    if (no_vao(c)) {
+      CHECK(quadro.em(0, c).pinta == false);
+      continue;
+    }
     REQUIRE(quadro.em(0, c).pinta);
     CHECK(es::mesma_tinta(quadro.em(0, c).tinta,
                           tk::mistura(tk::v500, tk::panel_hi, 0.55)));
@@ -195,7 +230,9 @@ TEST_CASE("painel de uma célulla veste a base da rampa") {
 // pinta tres, a saber teto 40, 0,5 vezes 40 = 20 degraus, dous blocos cheios e
 // resto quatro. Ambas alcançam a linha 2, e é o que as torna comparaveis.
 TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
-  const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
+  // Uma BARRA por banda (issue #144): as duas composições hão de repartir a
+  // fita do mesmo modo, senão a linha 2 de uma não seria a linha 2 da outra.
+  const std::size_t largura = kUmaBarraPorBanda;
   const std::vector<float> centros = centros_em(100.0f);
   const es::Quadro alta =
       es::compor(bandas_uniformes(0.899f), largura, 5, false, centros);
@@ -203,6 +240,13 @@ TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
       es::compor(bandas_uniformes(0.5f), largura, 5, false, centros);
 
   for (std::size_t c = 0; c < largura; ++c) {
+    // O VÃO não pinta em nenhuma das duas, e é o que assenta que o respiro não
+    // depende da magnitude, tal como a tinta não depende.
+    if (no_vao(c)) {
+      CHECK(alta.em(2, c).pinta == false);
+      CHECK(baixa.em(4, c).pinta == false);
+      continue;
+    }
     // As duas pintam a linha 2 e a linha 4, e é premissa do caso.
     REQUIRE(alta.em(2, c).pinta);
     REQUIRE(baixa.em(2, c).pinta);
@@ -232,24 +276,44 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;  // acima do limiar: quente
   bandas[4] = 0.40f;  // abaixo: fria, e no gradiente
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
-                                       false, centros_em(100.0f));
+  // Setenta e uma collunhas: uma BARRA por banda (issue #144). Sem isto a barra
+  // fundiria a banda 3 com a 4, e as duas deixarião de se aferir uma contra a
+  // outra, que é justamente o que este caso quer.
+  const es::Quadro quadro =
+      es::compor(bandas, kUmaBarraPorBanda, 5, false, centros_em(100.0f));
 
-  // A columna 3: teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e resto 6,
-  // d'onde cinco célullas, todas em glow_hot, da base ao topo.
-  for (std::size_t l = 0; l < 5; ++l) {
-    REQUIRE(quadro.em(l, 3).pinta);
-    CHECK(es::mesma_tinta(quadro.em(l, 3).tinta, tk::rgb(tk::glow_hot)));
+  // A BARRA 3, que toma as collunhas 9 e 10 (trez por passo, e a primeira é
+  // trez vezes trez): teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e
+  // resto 6, d'onde cinco célullas, todas em glow_hot, da base ao topo, e nas
+  // DUAS collunhas d'ella.
+  const es::Barra quente = es::collunhas_da_barra(3, quadro.largura);
+  REQUIRE(quente.primeira == 9);
+  REQUIRE(quente.collunhas == 2);
+  for (std::size_t k = 0; k < quente.collunhas; ++k)
+    for (std::size_t l = 0; l < 5; ++l) {
+      REQUIRE(quadro.em(l, quente.primeira + k).pinta);
+      CHECK(es::mesma_tinta(quadro.em(l, quente.primeira + k).tinta,
+                            tk::rgb(tk::glow_hot)));
+    }
+
+  // O VÃO que segue a barra quente, a collunha 11, NÃO pinta em linha alguma: o
+  // quente veste a BARRA, e não o respiro que a aparta da visinha.
+  for (std::size_t l = 0; l < 5; ++l)
+    CHECK(quadro.em(l, quente.primeira + 2).pinta == false);
+
+  // A BARRA 4, nas collunhas 12 e 13: 0,40 vezes 40 = 16 degraus, dous cheios e
+  // resto zero, d'onde duas célullas, e no GRADIENTE. A base na rampa composta
+  // sobre o painel, e não em glow_hot.
+  const es::Barra fria = es::collunhas_da_barra(4, quadro.largura);
+  REQUIRE(fria.primeira == 12);
+  for (std::size_t k = 0; k < fria.collunhas; ++k) {
+    const std::size_t c = fria.primeira + k;
+    REQUIRE(quadro.em(4, c).pinta);
+    CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+    CHECK_FALSE(es::mesma_tinta(quadro.em(4, c).tinta, tk::rgb(tk::glow_hot)));
+    CHECK(quadro.em(2, c).pinta == false);
   }
-
-  // A columna 4: 0,40 vezes 40 = 16 degraus, dous cheios e resto zero, d'onde
-  // duas célullas, e no GRADIENTE. A base na côr do registro composta sobre o
-  // painel, e não em glow_hot.
-  REQUIRE(quadro.em(4, 4).pinta);
-  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta,
-                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
-  CHECK_FALSE(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::glow_hot)));
-  CHECK(quadro.em(2, 4).pinta == false);
 }
 
 // O limiar pertence ao quente: afere-se nos DOUS lados d'elle, que é onde o
@@ -288,8 +352,16 @@ TEST_CASE("o mudo veste text_faint e vence o quente") {
         CHECK_FALSE(es::mesma_tinta(quadro.em(l, c).tinta, tk::rgb(tk::glow_hot)));
       }
   // As ALTURAS conservam-se: o mudo esmaece, e não derruba a fita. Cinco linhas
-  // por columna, pela conta do caso do quente (0,95 pinta as cinco).
-  CHECK(pintadas == 5 * largura);
+  // por collunha PINTADA, pela conta do caso do quente (0,95 pinta as cinco);
+  // e as pintadas são as das BARRAS, que desde a issue #144 não são todas: em
+  // vinte e quatro collunhas cabem oito barras de duas, que são dezeseis, e os
+  // outros oito são vãos. Dezeseis vezes cinco dá oitenta, e não cento e vinte.
+  CHECK(pintadas == 5 * 16);
+
+  // E o VÃO fica por pintar em toda linha, que é o respiro entre as barras.
+  for (std::size_t l = 0; l < quadro.altura; ++l)
+    for (std::size_t c = 0; c < quadro.largura; ++c)
+      if (no_vao(c)) CHECK(quadro.em(l, c).pinta == false);
 }
 
 // O piso: as barras cahem a zero e FICAM VISIVEIS, que é o que faz o aceite
@@ -299,6 +371,12 @@ TEST_CASE("o silencio deixa um piso de um oitavo em text_faint") {
   const es::Quadro quadro = es::compor(bandas_uniformes(0.0f), largura, 6);
 
   for (std::size_t c = 0; c < largura; ++c) {
+    // O piso é da BARRA, e não da fita: doze collunhas dão quatro barras, e as
+    // collunhas 2, 5, 8 e 11 são os vãos, que nem no silencio pintam.
+    if (no_vao(c)) {
+      for (std::size_t l = 0; l < 6; ++l) CHECK(quadro.em(l, c).pinta == false);
+      continue;
+    }
     // UMA célulla, na BASE (linha 5), de um oitavo, em text_faint.
     REQUIRE(quadro.em(5, c).pinta);
     CHECK(quadro.em(5, c).glifo == kUm);
@@ -358,6 +436,12 @@ TEST_CASE("cada registro tem a sua côr de batida, e a rampa é a mesma") {
     const es::Quadro quadro =
         es::compor(bandas_uniformes(0.899f), 6, 5, false, centros_em(caso.hertz));
     for (std::size_t c = 0; c < quadro.largura; ++c) {
+      // Seis collunhas dão DUAS barras (issue #144): as collunhas 2 e 5 são os
+      // vãos, e a rampa afere-se sómente nas quatro que pintam.
+      if (no_vao(c)) {
+        CHECK(quadro.em(0, c).pinta == false);
+        continue;
+      }
       REQUIRE(quadro.em(0, c).pinta);
       CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v500)));
       CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
@@ -373,24 +457,34 @@ TEST_CASE("cada registro tem a sua côr de batida, e a rampa é a mesma") {
 TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
   const std::vector<float> bandas = {0.5f, 0.5f};
   const std::vector<float> centros = {249.0f, 251.0f};
-  const es::Quadro quadro = es::compor(bandas, 2, 4, false, centros);
+  // CINCO collunhas, e não duas: desde a issue #144 cada banda quer uma BARRA
+  // de duas collunhas, e duas barras pedem cinco (trez por passo, menos o vão
+  // da ultima). Em duas collunhas as duas bandas cahirião na MESMA barra, e o
+  // caso deixaria de ter duas familias que aferir.
+  const es::Quadro quadro = es::compor(bandas, 5, 4, false, centros);
 
-  REQUIRE(quadro.registros.size() == 2);
+  REQUIRE(quadro.registros.size() == 5);
+  // A barra 0 mora nas collunhas 0 e 1, e a barra 1 nas collunhas 3 e 4.
   CHECK(quadro.registros[0] == es::Registro::Graves);
-  CHECK(quadro.registros[1] == es::Registro::MediosGraves);
+  CHECK(quadro.registros[3] == es::Registro::MediosGraves);
+  // O VÃO (a collunha 2) HERDA o registro da barra á esquerda, de propósito:
+  // é d'essa continuidade que a legenda do exemplo tira os grupos.
+  CHECK(quadro.registros[2] == es::Registro::Graves);
+  // E elle não pinta, em linha alguma.
+  for (std::size_t l = 0; l < 4; ++l) CHECK(quadro.em(l, 2).pinta == false);
 
   // E a RAMPA não segue o registro: teto 32, 0,5 vezes 32 dá 16 degraus, dous
   // blocos cheios e resto zero, d'onde duas célullas, e a base é a linha 3. As
   // duas familias vestem a MESMA base composta, que é o que a issue #132 quer;
   // o que as aparta é a côr da BATIDA, e essa só apparece na batida.
   REQUIRE(quadro.em(3, 0).pinta);
-  REQUIRE(quadro.em(3, 1).pinta);
+  REQUIRE(quadro.em(3, 3).pinta);
   CHECK(es::mesma_tinta(quadro.em(3, 0).tinta,
                         tk::mistura(tk::v500, tk::panel_hi, 0.55)));
-  CHECK(es::mesma_tinta(quadro.em(3, 1).tinta,
+  CHECK(es::mesma_tinta(quadro.em(3, 3).tinta,
                         tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   CHECK(es::tinta_do_registro(quadro.registros[0]) == tk::glow_hot);
-  CHECK(es::tinta_do_registro(quadro.registros[1]) == tk::data5);
+  CHECK(es::tinta_do_registro(quadro.registros[3]) == tk::data5);
 }
 
 // A PRECEDENCIA da côr não se mexe com o registro. Arma-se nos AGUDOS de
@@ -407,6 +501,14 @@ TEST_CASE("o pico veste a côr do registro, e o mudo text_faint por cima") {
       es::compor(bandas_uniformes(0.0f), 6, 4, false, centros);
 
   for (std::size_t c = 0; c < 6; ++c) {
+    // Seis collunhas dão duas barras, e as collunhas 2 e 5 são os vãos: elles
+    // não pintam em quadro algum dos trez, nem calado nem em silencio.
+    if (no_vao(c)) {
+      CHECK(quente.em(3, c).pinta == false);
+      CHECK(calado.em(3, c).pinta == false);
+      CHECK(silencio.em(3, c).pinta == false);
+      continue;
+    }
     // A base (linha 3) em todos os tres, que é a célulla que toda barra tem.
     REQUIRE(quente.em(3, c).pinta);
     CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
@@ -449,8 +551,10 @@ TEST_CASE("com as bordas reaes a fita reparte-se nas quatro familias") {
   const std::vector<float> centros = es::centros_das_bandas(
       espectro.bordas(),
       48000.0f / static_cast<float>(mysong::nucleo::JANELA_DA_FFT));
-  const es::Quadro quadro = es::compor(
-      bandas_uniformes(0.5f), mysong::nucleo::QUANTAS_BANDAS, 4, false, centros);
+  // Setenta e uma collunhas: uma BARRA por banda (issue #144), de sorte que a
+  // banda b mora nas collunhas 3b e 3b+1, e o vão 3b+2 herda o registro d'ella.
+  const es::Quadro quadro =
+      es::compor(bandas_uniformes(0.5f), kUmaBarraPorBanda, 4, false, centros);
 
   struct Faixa {
     std::size_t ultima;
@@ -461,16 +565,24 @@ TEST_CASE("com as bordas reaes a fita reparte-se nas quatro familias") {
                           {12, es::Registro::MediosGraves, tk::data5},
                           {17, es::Registro::MediosAgudos, tk::data3},
                           {23, es::Registro::Agudos, tk::data2}};
-  REQUIRE(quadro.registros.size() == mysong::nucleo::QUANTAS_BANDAS);
+  REQUIRE(quadro.registros.size() == kUmaBarraPorBanda);
   std::size_t b = 0;
   for (const Faixa& faixa : faixas)
     for (; b <= faixa.ultima; ++b) {
-      CHECK(quadro.registros[b] == faixa.registro);
+      // A PRIMEIRA collunha da barra da banda b, que é 3b: é ella que se afere,
+      // e não mais a collunha b, que desde a issue #144 pertence a outra banda.
+      const es::Barra sua = es::collunhas_da_barra(b, quadro.largura);
+      REQUIRE(sua.primeira == 3 * b);
+      CHECK(quadro.registros[sua.primeira] == faixa.registro);
       // A base veste a RAMPA, egual em toda familia; o que muda de familia para
       // familia é a côr da batida, que aqui não se accende (0,5 é frio).
-      CHECK(es::mesma_tinta(quadro.em(3, b).tinta,
+      CHECK(es::mesma_tinta(quadro.em(3, sua.primeira).tinta,
                             tk::mistura(tk::v500, tk::panel_hi, 0.55)));
       CHECK(es::tinta_do_registro(faixa.registro) == faixa.batida);
+      // E o VÃO que segue a barra não pinta, ainda que herde o registro d'ella.
+      // A ultima barra da fita não tem vão: depois d'ella não ha o que apartar.
+      if (sua.primeira + 2 < quadro.largura)
+        CHECK(quadro.em(3, sua.primeira + 2).pinta == false);
     }
   CHECK(b == mysong::nucleo::QUANTAS_BANDAS);  // a taboada cobre a fita inteira
 }
@@ -591,11 +703,16 @@ TEST_CASE("o mudo vence a côr da batida do registro") {
 }
 
 // ── C16 · as quatro côres da batida na TELA ────────────────────────────────
-// Oito columnas, uma banda por columna, e as familias aos pares: a de indice
-// par bate, a impar ao lado d'ella fica fria. Assim afere-se n'uma composição só
-// que a côr é da COLUMNA e da familia d'ella, e não da fita. Lê-se por PixelAt,
+// Oito BARRAS, uma banda por barra, e as familias aos pares: a de indice par
+// bate, a impar ao lado d'ella fica fria. Assim afere-se n'uma composição só
+// que a côr é da BARRA e da familia d'ella, e não da fita. Lê-se por PixelAt,
 // que é o que o terminal receberia: a côr prova-se depois de atravessar o
 // elemento, e não sómente no quadro.
+//
+// A largura vae em VINTE E TREZ, e não em oito: desde a issue #144 a barra toma
+// duas collunhas e um vão de uma, d'onde oito barras pedem trez vezes oito menos
+// o vão da ultima. A barra da banda b principia na collunha 3b, e o par f mora
+// pois nas collunhas 6f (a quente) e 6f+3 (a fria), com o vão 6f+2 entre ellas.
 //
 // Painel de duas: teto 16, e 0,95 dá 15 degraus, um cheio e resto sete, d'onde
 // as DUAS célullas; 0,30 dá 4 degraus, que é uma célulla, na base.
@@ -604,20 +721,28 @@ TEST_CASE("as quatro batidas sahem nas quatro côres, e a vizinha fria não") {
                                      0.95f, 0.30f, 0.95f, 0.30f};
   const std::vector<float> centros = {100.0f,  100.0f,  500.0f,  500.0f,
                                       2000.0f, 2000.0f, 8000.0f, 8000.0f};
-  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(8),
+  const int largura = 3 * 8 - 1;
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
                                               ftxui::Dimension::Fixed(2));
-  ftxui::Render(ecran, es::elemento_do_espectro(
-                           es::compor(bandas, 8, 2, false, centros)));
+  ftxui::Render(
+      ecran, es::elemento_do_espectro(es::compor(
+                 bandas, static_cast<std::size_t>(largura), 2, false, centros)));
 
   // Os tokens escriptos Á MÃO, na ordem em que o ouvido sobe.
   const std::string_view batidas[] = {tk::glow_hot, tk::data5, tk::data3,
                                       tk::data2};
   for (int f = 0; f < 4; ++f) {
-    // A columna QUENTE veste a batida da familia d'ella, da base ao topo.
-    CHECK(ecran.PixelAt(2 * f, 1).foreground_color == cor(tk::rgb(batidas[f])));
-    CHECK(ecran.PixelAt(2 * f, 0).foreground_color == cor(tk::rgb(batidas[f])));
+    // A barra QUENTE veste a batida da familia d'ella, da base ao topo, e nas
+    // DUAS collunhas d'ella.
+    CHECK(ecran.PixelAt(6 * f, 1).foreground_color == cor(tk::rgb(batidas[f])));
+    CHECK(ecran.PixelAt(6 * f, 0).foreground_color == cor(tk::rgb(batidas[f])));
+    CHECK(ecran.PixelAt(6 * f + 1, 1).foreground_color ==
+          cor(tk::rgb(batidas[f])));
+    // O VÃO entre as duas fica em branco: elle não pinta, e no terminal isso
+    // lê-se por espaço.
+    CHECK(ecran.PixelAt(6 * f + 2, 1).character == " ");
     // E a vizinha FRIA veste a rampa, que é a mesma nas quatro familias.
-    CHECK(ecran.PixelAt(2 * f + 1, 1).foreground_color ==
+    CHECK(ecran.PixelAt(6 * f + 3, 1).foreground_color ==
           cor(tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   }
 }
@@ -693,17 +818,25 @@ TEST_CASE("a columna que cobre pico e vale sahe pelo pico") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[0] = 1.0f;   // pico na primeira banda
   bandas[1] = 0.0f;   // vale imediatamente ao lado
-  // Largura 12 sobre 24 bandas: cada columna cobre DUAS bandas, d'onde a
-  // columna 0 cobre as bandas 0 e 1, que são justamente o pico e o vale.
-  const es::Quadro quadro = es::compor(bandas, 12, 4);
+  // Trinta e cinco collunhas dão DOZE barras (trez por passo, menos o vão da
+  // ultima), e doze barras sobre vinte e quatro bandas dão DUAS bandas por
+  // barra: a barra 0, nas collunhas 0 e 1, cobre as bandas 0 e 1, que são
+  // justamente o pico e o vale. Em doze collunhas, como dantes, sahirião
+  // quatro barras de SEIS bandas cada, e o vale ficaria sepultado no monte.
+  const es::Quadro quadro = es::compor(bandas, 3 * 12 - 1, 4);
   CHECK(quadro.em(0, 0).pinta);
-  // Largura 12 sobre 24 bandas: cada banda cae DENTRO de uma collunha só, e
-  // ahi não ha ponta (issue #141), que meia diagonal sósinha é degrau e não
-  // seta. O topo fica bloco.
-  CHECK(quadro.em(0, 0).glifo == kCheio);
-  // E a columna seguinte, que cobre as bandas 2 e 3, ambas em zero, fica no piso.
-  CHECK(quadro.em(3, 1).glifo == kUm);
-  CHECK(quadro.em(0, 1).pinta == false);
+  // O pico cheio é quente, e a barra remata em SETA (issue #141, assentada na
+  // barra pela #144): o flanco que sobe na collunha 0 e o que desce na 1. Por
+  // baixo da ponta o bloco cheio, que a seta é o remate e não a barra.
+  CHECK(quadro.em(0, 0).glifo == std::string(es::kFlancoQueSobe));
+  CHECK(quadro.em(0, 1).glifo == std::string(es::kFlancoQueDesce));
+  CHECK(quadro.em(1, 0).glifo == kCheio);
+  // O VÃO (a collunha 2) aparta as duas barras, e não pinta.
+  CHECK(quadro.em(3, 2).pinta == false);
+  // E a barra seguinte, que cobre as bandas 2 e 3, ambas em zero, fica no piso:
+  // ella mora nas collunhas 3 e 4.
+  CHECK(quadro.em(3, 3).glifo == kUm);
+  CHECK(quadro.em(0, 3).pinta == false);
 }
 
 // ── C8 · redimensionar recompõe sem quebrar ─────────────────────────────────
@@ -829,37 +962,47 @@ TEST_CASE("o piso do silencio sahe em text_faint com o bloco de um oitavo") {
   CHECK(es::sequencia_da_celula(piso) == "\x1b[38;2;70;53;102m▁");
 }
 
-// A PONTA DA BATIDA (issue #139, refeita pela #141). A columna que accende na
-// côr do registro acaba n'uma seta ENCORPADA, feita das meias diagonaes
-// powerline: o flanco que sobe na primeira collunha da banda, o que desce na
-// ultima, e o bloco cheio nas do meio. As frias, a muda, a de uma cella e a
-// banda de uma collunha ficam como estavam.
+// A PONTA DA BATIDA (issue #139, refeita pela #141 e assentada na BARRA pela
+// #144). A barra que accende na côr do registro acaba n'uma seta ENCORPADA,
+// feita das meias diagonaes powerline: o flanco que sobe na primeira collunha
+// da barra e o que desce na segunda. Como a barra toma DUAS collunhas, e não
+// mais quantas a banda apanhasse, a seta é sempre a mesma e o bloco cheio do
+// meio já não tem onde cahir. As frias, a muda e a de uma cella ficam como
+// estavam.
 TEST_CASE("a banda quente remata em seta, flanco a flanco") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 1.0f;   // teto cheio: quente
   bandas[4] = 0.40f;  // fria
-  // Tres collunhas por banda, que é o que a tela d'elle dá: 24 bandas em 72.
+  // Trez collunhas de PASSO por banda, que é o que a tela d'elle dá: 24 bandas
+  // em 72, e a barra da banda b principia na collunha 3b.
   const es::Quadro quadro =
       es::compor(bandas, 3 * mysong::nucleo::QUANTAS_BANDAS, 5, false,
                  centros_em(100.0f));
-  // As tres collunhas da banda 3 são a 9, a 10 e a 11: a ponta lê-se n'ellas,
-  // da esquerda para a direita, e é UMA seta.
+  // A barra da banda 3 toma as collunhas 9 e 10, e a 11 é o VÃO: a seta lê-se
+  // nas duas primeiras, da esquerda para a direita, e é UMA seta. Dantes ella
+  // abria-se em trez, com o bloco cheio no meio; agora o meio não existe.
   CHECK(quadro.em(0, 9).glifo == std::string(es::kFlancoQueSobe));
-  CHECK(quadro.em(0, 10).glifo == std::string(es::kBlocoCheio));
-  CHECK(quadro.em(0, 11).glifo == std::string(es::kFlancoQueDesce));
-  // Por baixo da ponta, bloco cheio: a seta é o REMATE, e não a barra.
-  for (std::size_t l = 1; l < 5; ++l)
-    for (std::size_t c = 9; c <= 11; ++c)
+  CHECK(quadro.em(0, 10).glifo == std::string(es::kFlancoQueDesce));
+  CHECK(quadro.em(0, 11).pinta == false);
+  // Por baixo da ponta, bloco cheio: a seta é o REMATE, e não a barra. E o vão
+  // não pinta por baixo d'ella tampouco.
+  for (std::size_t l = 1; l < 5; ++l) {
+    for (std::size_t c = 9; c <= 10; ++c)
       CHECK(quadro.em(l, c).glifo == es::glifo_do_degrau(8));
+    CHECK(quadro.em(l, 11).pinta == false);
+  }
   // A ponta veste a MESMA côr da columna: ella é o topo da barra, e não peça
   // á parte.
   CHECK(es::mesma_tinta(quadro.em(0, 9).tinta, quadro.em(1, 9).tinta));
   CHECK(es::mesma_tinta(quadro.em(0, 10).tinta,
                         tk::rgb(es::tinta_do_registro(es::Registro::Graves))));
-  // A FRIA acaba em bloco, e a altura d'ella é a de sempre: duas cellas.
-  CHECK(quadro.em(3, 12).glifo == es::glifo_do_degrau(8));
-  CHECK(quadro.em(4, 12).glifo == es::glifo_do_degrau(8));
-  CHECK_FALSE(quadro.em(2, 12).pinta);
+  // A FRIA, que é a barra da banda 4 e mora nas collunhas 12 e 13, acaba em
+  // bloco, e a altura d'ella é a de sempre: duas cellas, nas duas collunhas.
+  for (std::size_t c = 12; c <= 13; ++c) {
+    CHECK(quadro.em(3, c).glifo == es::glifo_do_degrau(8));
+    CHECK(quadro.em(4, c).glifo == es::glifo_do_degrau(8));
+    CHECK_FALSE(quadro.em(2, c).pinta);
+  }
 }
 
 TEST_CASE("a taboada da ponta dá flanco, bloco, e nada na banda de uma collunha") {
@@ -870,11 +1013,15 @@ TEST_CASE("a taboada da ponta dá flanco, bloco, e nada na banda de uma collunha
 
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;
-  // Banda de UMA collunha: a fita tem tantas collunhas quantas bandas, e ahi a
-  // barra fica com o topo de BLOCO, que meia diagonal sósinha é degrau.
-  const es::Quadro justo = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
-                                      false, centros_em(100.0f));
-  CHECK(justo.em(0, 3).glifo == es::glifo_do_degrau(6));
+  // BARRA de uma collunha: desde a issue #144 a barra toma sempre duas, e a de
+  // uma sómente acontece na BEIRA DA TELA, quando a largura a corta. A tela de
+  // UMA collunha é o caso limite d'isso: ha uma barra só, ella funde as vinte e
+  // quatro bandas e toma o máximo, que é o 0,95 da banda 3. Ahi a barra fica com
+  // o topo de BLOCO, que meia diagonal sósinha é degrau e não seta. Teto 40,
+  // 0,95 vezes 40 dá 38 degraus, quatro cheios e resto SEIS.
+  const es::Quadro justo =
+      es::compor(bandas, 1, 5, false, centros_em(100.0f));
+  CHECK(justo.em(0, 0).glifo == es::glifo_do_degrau(6));
 
   // Painel de UMA linha: a columna tem uma cella só, e ponta sem corpo não é
   // barra. Fica o bloco, mesmo com tres collunhas por banda.

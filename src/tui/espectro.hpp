@@ -129,6 +129,37 @@ std::string_view tinta_do_registro(Registro registro);
 // se escrevesse no exemplo divergiria da tela no dia em que a côr mudasse.
 std::string_view nome_do_registro(Registro registro);
 
+// ── AS BARRAS (issue #144). A fita deixou de pintar uma columna por cella: ella
+// pinta BARRAS de duas collunhas, apartadas por um vão de uma. O que se ganha
+// não é enfeite: com uma banda por barra, duas barras visinhas nunca sahem
+// eguaes por serem a mesma banda repartida em collunhas, que era o que fazia a
+// fita parecer um bloco de trez em trez collunhas.
+//
+// E a seta da batida (issue #141) assenta EXACTAMENTE nas duas collunhas da
+// barra: o flanco que sobe na primeira e o que desce na segunda. Antes ella
+// dependia de quantas collunhas a banda tivesse apanhado, e em largura impar
+// abria ao meio.
+inline constexpr std::size_t LARGURA_DA_BARRA = 2;
+inline constexpr std::size_t VAO_ENTRE_BARRAS = 1;
+inline constexpr std::size_t PASSO_DA_BARRA =
+    LARGURA_DA_BARRA + VAO_ENTRE_BARRAS;
+
+// quantas_barras — quantas cabem na largura. A ULTIMA não precisa do vão d'ella
+// (o vão aparta barras, e depois da ultima não ha o que apartar), d'onde a
+// conta soma o vão antes de dividir. Largura zero dá zero; largura que não
+// chegue para uma barra inteira dá UMA, mais estreita, que fita sem barra
+// alguma seria painel morto.
+std::size_t quantas_barras(std::size_t largura);
+
+// collunhas_da_barra — a primeira collunha da barra `b` e quantas ella toma de
+// facto (duas, ou uma na beira da tela). Serve á pintura e á bateria, que assim
+// não repetem a conta do passo.
+struct Barra {
+  std::size_t primeira = 0;
+  std::size_t collunhas = 0;
+};
+Barra collunhas_da_barra(std::size_t b, std::size_t largura);
+
 // Quantos degraus cabem n'uma célulla. Oito, que são os blocos U+2581 a U+2588,
 // e não é numero de gosto: é quanto o terminal sabe subdividir uma célulla na
 // vertical. D'onde a resolução de uma columna de N célullas é 8N degraus, e é
@@ -203,11 +234,11 @@ inline constexpr std::string_view kFlancoQueDesce = "\ue0b8";  // , á direita
 // que a ponta o não vá buscar por arithmetica de degrau.
 inline constexpr std::string_view kBlocoCheio = "\u2588";
 
-// glifo_da_ponta — a cella do topo, dada a posição da collunha DENTRO da banda:
+// glifo_da_ponta — a cella do topo, dada a posição da collunha DENTRO da barra:
 // o flanco que sobe na primeira, o que desce na ultima, e o bloco cheio nas do
-// meio. Banda de UMA collunha (painel estreito, em que cada collunha funde
-// varias bandas) devolve VAZIO: meia diagonal sósinha não é seta, é degrau, e
-// ahi a barra fica com o topo de bloco.
+// meio (que na barra de duas não ha). Barra de UMA collunha, que sómente
+// acontece na beira da tela, devolve VAZIO: meia diagonal sósinha não é seta, é
+// degrau, e ahi a barra fica com o topo de bloco.
 //
 // A ponta SUBSTITUE a cella do topo, e não a acrescenta: a barra acesa e a
 // apagada da mesma magnitude hão de medir o mesmo, senão a côr passaria a
