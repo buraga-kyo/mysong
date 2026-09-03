@@ -145,6 +145,11 @@ struct Quadro {
   std::size_t altura = 0;
   std::vector<Celula> celulas;
 
+  // O REGISTRO de cada collunha, `largura` d'elles. Mora no quadro, e não se
+  // recalcula por fóra: a legenda que o exemplo escreve e a prova que afere a
+  // fronteira lêem assim a MESMA verdade que a tinta leu.
+  std::vector<Registro> registros;
+
   // em — a célulla da linha e da collunha. Fóra de limite devolve célulla vazia,
   // e não estoura: assim a prova pode varrer largura + 1 sem armar guarda.
   const Celula& em(std::size_t linha, std::size_t collunha) const;
@@ -194,8 +199,14 @@ std::vector<float> centros_da_escala(std::size_t quantas);
 // mesmo quadro, hoje e depois de dez redimensionamentos. Não presume que as
 // bandas sejam QUANTAS_BANDAS: conta o tamanho REAL do vector, que presumir o
 // vinte e quatro seria ler fóra de limite no dia em que o contracto mudasse.
+//
+// Os `centros_em_hertz` dizem onde cada banda mora, e d'elles sahe o registro que
+// veste a columna. VAZIOS, deduzem-se da posição relativa da banda pela escala
+// nominal do analisador: é approximação declarada, e não silencio. Quem passa os
+// centros do proprio nucleo::Espectro resolve a fronteira pelas bordas REAES.
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
-              std::size_t altura, bool mudo = false);
+              std::size_t altura, bool mudo = false,
+              const std::vector<float>& centros_em_hertz = {});
 
 // sequencia_da_celula — os BYTES da célulla: a tinta imediatamente antes do
 // glifo, sem repouso pelo meio, ou a ordem de repouso quando não se pinta. Mora

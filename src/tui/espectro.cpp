@@ -175,6 +175,19 @@ float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
   return pico;
 }
 
+// registro_da_columna — o registro que veste a columna INTEIRA. Toma o centro da
+// banda do MEIO do intervallo, e não o da banda que deu o pico: a côr é do
+// LOGAR, e não do nivel, pelo mesmo motivo por que o invariante (iii) ancora o
+// gradiente ao painel. Fosse do pico, a columna trocaria de côr a cada batida, e
+// a legenda por baixo deixaria de dizer verdade.
+Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
+                             std::size_t largura) {
+  const Intervallo faixa = intervallo_da_columna(centros.size(), c, largura);
+  if (faixa.fim <= faixa.principio) return Registro::Graves;
+  return registro_da_banda(
+      centros[faixa.principio + (faixa.fim - faixa.principio - 1) / 2]);
+}
+
 }  // namespace
 
 tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
@@ -228,14 +241,25 @@ tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
 }  // namespace
 
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
-              std::size_t altura, bool mudo) {
+              std::size_t altura, bool mudo,
+              const std::vector<float>& centros_em_hertz) {
   Quadro quadro;
   quadro.largura = largura;
   quadro.altura = altura;
   if (largura == 0 || altura == 0) return quadro;  // painel sem célulla
   quadro.celulas.assign(largura * altura, Celula{});
 
+  // Os deduzidos ficam n'um vector á parte, e a referencia elege qual vale: quem
+  // passa os centros não paga copia alguma por quadro, e são quarenta e seis
+  // quadros por segundo.
+  std::vector<float> deduzidos;
+  if (centros_em_hertz.empty()) deduzidos = centros_da_escala(bandas.size());
+  const std::vector<float>& centros =
+      centros_em_hertz.empty() ? deduzidos : centros_em_hertz;
+  quadro.registros.assign(largura, Registro::Graves);
+
   for (std::size_t c = 0; c < largura; ++c) {
+    quadro.registros[c] = registro_da_columna(centros, c, largura);
     const float valor = valor_da_columna(bandas, c, largura);
     const int degraus = oitavos(valor, altura);
     const std::size_t cheias =
