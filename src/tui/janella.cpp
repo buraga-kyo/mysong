@@ -1410,6 +1410,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // veio na sessão inteira. Diz-se o FATO, e não a culpa, que saber se o
   // terminal é incapaz ou se ninguem trocou de foco não se pode; e diz-se
   // depois da tela, no stderr, como o relatorio dos requisitos se diz.
+  // As ordens da capa que o cano não coube (issue #103). Dizem-se DEPOIS da
+  // tela, no stderr, pelo molde exacto da linha da vigilia abaixo: byte algum
+  // sahe por baixo de um quadro do FTXUI.
+  if (lousa.descartadas() > 0)
+    std::cerr << "mysong: " << lousa.descartadas()
+              << " ordens da capa não couberam no cano do ueberzugpp e"
+                 " descartaram-se; a capa pode ter piscado.\n";
   if (!vigilia.ha_noticia())
     std::cerr << "mysong: evento de foco nenhum veio nesta sessão; o relogio "
                  "nunca dormiu. Dentro do tmux, «set -g focus-events on» é o "

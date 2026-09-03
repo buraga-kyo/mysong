@@ -118,6 +118,9 @@ class Lousa {
   void tira_tudo() noexcept;
 
   const Parecer& parecer() const noexcept { return parecer_; }
+  // descartadas — as ordens que o cano cheio engoliu. A janella di-las no
+  // stderr ao sahir, pelo molde da linha da vigilia: o --sonda é outra corrida
+  // do programa e lousa viva alguma tem, d'onde ali o numero seria sempre zero.
   std::size_t descartadas() const noexcept { return descartadas_; }
 
  private:
