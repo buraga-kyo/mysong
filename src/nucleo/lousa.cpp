@@ -13,6 +13,7 @@
 
 #include "nucleo/aquisicao.hpp"  // corre(): o fork e o exec sem shell
 
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <cstdlib>
@@ -326,6 +327,16 @@ std::string versao_da_lousa() {
   if (fim != std::string::npos) colhido.resize(fim);
   while (!colhido.empty() && colhido.back() == '\r') colhido.pop_back();
   return colhido;
+}
+
+const std::vector<int>& signaes_da_lousa() {
+  static const std::vector<int> kQuaes = {SIGHUP, SIGINT, SIGQUIT, SIGTERM};
+  return kQuaes;
+}
+
+bool signal_amarrado(int signal) noexcept {
+  const std::vector<int>& quaes = signaes_da_lousa();
+  return std::find(quaes.begin(), quaes.end(), signal) != quaes.end();
 }
 
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao) {
