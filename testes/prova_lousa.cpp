@@ -152,5 +152,33 @@ TEST_CASE("o arquivo da capa mora debaixo do cache do operador") {
     ::setenv("XDG_CACHE_HOME", guardado.c_str(), 1);
 }
 
+TEST_CASE("a alavanca desligada vence o mundo inteiro") {
+  const nu::Parecer qual =
+      nu::parecer_da_lousa(nu::ModoDaLousa::Nao, true, true);
+  CHECK_FALSE(qual.de_pe);
+  CHECK(qual.razao == "desligada pelo ajuste: lousa = nao");
+}
+
+TEST_CASE("sem o programa a lousa não se ergue nem por vontade d'elle") {
+  CHECK_FALSE(nu::parecer_da_lousa(nu::ModoDaLousa::Auto, true, false).de_pe);
+  CHECK_FALSE(nu::parecer_da_lousa(nu::ModoDaLousa::Sim, true, false).de_pe);
+}
+
+TEST_CASE("o sim salta a pergunta do DISPLAY e o auto não") {
+  CHECK_FALSE(nu::parecer_da_lousa(nu::ModoDaLousa::Auto, false, true).de_pe);
+  CHECK(nu::parecer_da_lousa(nu::ModoDaLousa::Sim, false, true).de_pe);
+  CHECK(nu::parecer_da_lousa(nu::ModoDaLousa::Auto, true, true).de_pe);
+}
+
+TEST_CASE("a linha do diagnostico diz a versão de pé e a razão deitada") {
+  const nu::Parecer de_pe = nu::parecer_da_lousa(nu::ModoDaLousa::Auto, true, true);
+  CHECK(nu::texto_da_lousa(de_pe, "ueberzugpp 2.9.8") ==
+        "\n  lousa: ueberzugpp 2.9.8, X11\n");
+  const nu::Parecer deitada =
+      nu::parecer_da_lousa(nu::ModoDaLousa::Nao, true, true);
+  CHECK(nu::texto_da_lousa(deitada, "ueberzugpp 2.9.8") ==
+        "\n  lousa: desligada pelo ajuste: lousa = nao\n");
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
