@@ -764,6 +764,11 @@ isso nada falta.
 O bloco tem tres linhas fixas: duas do verso corrente e uma do seguinte, que
 por isso fica logo por baixo dele.
 
+Com a chapa de pe, a celula debaixo dela pinta so o FUNDO do painel, e nao o
+texto em mono: a imagem cabe por altura nas duas linhas e sai mais curta que o
+texto, donde o fim do verso em mono aparecia de fora dela. E a mesma disciplina
+da capa. Sem a lousa, o verso sai em mono, e nada falta.
+
 Trocando o verso, a imagem do anterior e LIMPA antes de a nova entrar: a janela
 da lousa guarda o que a imagem anterior pintou fora da nova, e o verso que sai e
 quase sempre mais largo que o que entra, donde ficavam as duas pontas dele na

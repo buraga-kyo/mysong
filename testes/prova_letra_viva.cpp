@@ -579,5 +579,34 @@ TEST_CASE("a assignatura da chapa diz o verso, o canto e a largura") {
   CHECK(d_ella.cellulas == ordem.cellulas);
 }
 
+// A CELLA DEBAIXO DA CHAPA (issue #165). Estando a imagem de pé, a fileira do
+// verso corrente pinta sómente o FUNDO: a imagem cabe por ALTURA nas duas
+// fileiras e sahe mais CURTA que o texto, d'onde o fim do verso em mono
+// apparecia de fóra d'ella. É a mesma disciplina da capa.
+TEST_CASE("com a chapa de pé a fileira do verso sae em branco") {
+  const auto linha_de = [](const ftxui::Screen& ecran, int y, int largura) {
+    std::string dita;
+    for (int x = 0; x < largura; ++x) dita += ecran.PixelAt(x, y).character;
+    return dita;
+  };
+  const auto pinta = [&](bool pela_chapa) {
+    ftxui::Screen ecran = ftxui::Screen::Create(
+        ftxui::Dimension::Fixed(20),
+        ftxui::Dimension::Fixed(static_cast<int>(tui::FILEIRAS_DA_LETRA)));
+    ftxui::Render(ecran, tui::elemento_da_letra_parada(
+                             kVersos, 0, 20, tui::FILEIRAS_DA_LETRA, pela_chapa));
+    return ecran;
+  };
+  // COM a chapa: a fileira do corrente em branco, e o seguinte em mono, que
+  // elle não vae á lousa.
+  const ftxui::Screen com = pinta(true);
+  CHECK(linha_de(com, 0, 20) == "                    ");
+  CHECK(linha_de(com, 2, 20) == "       fghij        ");
+  // SEM a chapa: o corrente em mono, como sempre foi.
+  const ftxui::Screen sem = pinta(false);
+  CHECK(linha_de(sem, 0, 20) == "       abcde        ");
+  CHECK(linha_de(sem, 2, 20) == "       fghij        ");
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
