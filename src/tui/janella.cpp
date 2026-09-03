@@ -698,9 +698,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // Nada se perde: o correio guarda o recado até ser colhido, e a bandeira do
     // acervo novo só se consome na leitura. A novidade espera, e assenta no
     // primeiro quadro depois de o campo fechar.
+    //
+    // O MENU ABERTO congela pela mesma razão, e por uma peor (issue #96): com
+    // elle de pé o alvo é a faixa ELEITA, e varredura que assentasse aqui
+    // refazia a vista debaixo d'elle. O APAGAR seguinte mandava á lixeira o
+    // arquivo que ficou n'aquella linha, e não o que a orla do menu nomeia.
+    const bool assenta = tui::assenta_novidade(digita) && !menu.aberto;
     std::vector<nucleo::Achado> achados;
     std::string recado;
-    if (tui::assenta_novidade(digita) && correio.colhe(&achados, &recado)) {
+    if (assenta && correio.colhe(&achados, &recado)) {
       // A guarda da COLHEITA, par da do fio: entre a checagem de lá e o pouso
       // aqui cabe um f, e a resposta que já não é da fonte vigente cai. Os
       // achados vêm estampados; a resposta VAZIA é sempre de fonte de rede,
@@ -719,8 +725,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // para se conferir.
     std::vector<nucleo::Catalogo> lidos;
     std::string recado_da_lista;
-    if (tui::assenta_novidade(digita) &&
-        correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
+    if (assenta && correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
       if (!lidos.empty() && !lidos.front().faixas.empty())
         navegador.mostra_catalogo(std::move(lidos.front()));
       aviso_da_rede = recado_da_lista;
@@ -732,7 +737,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tratador de teclas, que corre no fio da tela; recarregá-lo do relogio era
     // mutá-lo de um fio e lê-lo de outro. O pintor corre no mesmo fio do tratador,
     // donde a corrida sahe. Não é embelleçamento: é o defeito da corrida a fechar-se.
-    if (tui::assenta_novidade(digita) && acervo_novo.exchange(false)) {
+    if (assenta && acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
     }
