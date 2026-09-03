@@ -218,11 +218,32 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
 // as outras ficam no `raised`, que é o degrau de repouso do chrome. O fundo
 // serve tambem á FITA, que d'elle tira a côr das junções: lidos em dous
 // logares, a seta sahiria de uma côr e o bloco de outra.
-std::string_view fundo_da_aba(bool corrente) {
-  return corrente ? tokens::v600 : tokens::raised;
+std::string_view fundo_da_aba(EstadoDaAba estado) {
+  switch (estado) {
+    case EstadoDaAba::ComFoco: return tokens::glow_core;
+    case EstadoDaAba::Corrente: return tokens::v600;
+    case EstadoDaAba::Apagada: break;
+  }
+  return tokens::raised;
 }
-std::string_view tinta_da_aba(bool corrente) {
-  return corrente ? tokens::v50 : tokens::text_primary;
+std::string_view tinta_da_aba(EstadoDaAba estado) {
+  switch (estado) {
+    case EstadoDaAba::ComFoco: return tokens::panel;
+    case EstadoDaAba::Corrente: return tokens::v50;
+    case EstadoDaAba::Apagada: break;
+  }
+  return tokens::text_primary;
+}
+
+// com_foco — o segmento vestido de FOCO (issue #107): glow_core por fundo e
+// panel por tinta. É o glow CONTIDO da regra, que accende no que a mão toca; e
+// é par distincto do da aba corrente, que ninguem ha de confundir onde ESTÁ com
+// onde a mão está. Não sendo a peça a que tem o foco, devolve-se intacta.
+Segmento aceso(Segmento peca, bool tem_foco) {
+  if (!tem_foco) return peca;
+  peca.fundo = tokens::glow_core;
+  peca.tinta = tokens::panel;
+  return peca;
 }
 
 }  // namespace
@@ -238,9 +259,17 @@ std::string rotulo_da_aba(Aba aba) {
   return " " + std::string(kNota) + " MY SONG ";
 }
 
-ftxui::Element elemento_da_aba(Aba aba, bool corrente) {
-  return vestir(rotulo_da_aba(aba), tinta_da_aba(corrente),
-                fundo_da_aba(corrente)) |
+EstadoDaAba estado_da_aba(Aba qual, Aba corrente, Focavel foco) noexcept {
+  const Focavel d_ella = qual == Aba::Playlists ? Focavel::AbaPlaylists
+                         : qual == Aba::Download ? Focavel::AbaDownload
+                                                 : Focavel::AbaMySong;
+  if (foco == d_ella) return EstadoDaAba::ComFoco;
+  return qual == corrente ? EstadoDaAba::Corrente : EstadoDaAba::Apagada;
+}
+
+ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado) {
+  return vestir(rotulo_da_aba(aba), tinta_da_aba(estado),
+                fundo_da_aba(estado)) |
          ftxui::bold;
 }
 
@@ -249,19 +278,24 @@ namespace {
 // fita_da_esquerda — as tres abas e os tres botões, na ordem d'elle: tocar,
 // anterior, seguinte. Os botões vestem panel_hi com o glifo em glow_core, que
 // é o glow CONTIDO da regra: elle accende no que TOCA, e não no fundo todo.
-Fita fita_da_esquerda(Aba corrente, bool tocando) {
+Fita fita_da_esquerda(Aba corrente, bool tocando, Focavel foco) {
   Fita fita(Sentido::Dextra);
-  for (const Aba qual : {Aba::MySong, Aba::Playlists, Aba::Download})
-    fita.junta({rotulo_da_aba(qual), fundo_da_aba(qual == corrente),
-                tinta_da_aba(qual == corrente)});
+  for (const Aba qual : {Aba::MySong, Aba::Playlists, Aba::Download}) {
+    const EstadoDaAba estado = estado_da_aba(qual, corrente, foco);
+    fita.junta({rotulo_da_aba(qual), fundo_da_aba(estado),
+                tinta_da_aba(estado)});
+  }
   // O botão do meio TROCA de glifo com o estado, e não de logar: botão que
   // mudasse de sitio faria o dedo errar a pausa que elle proprio pediu.
-  fita.junta({" " + std::string(tocando ? kPausar : kTocar) + " ",
-              tokens::panel_hi, tokens::glow_core});
-  fita.junta({" " + std::string(kAnterior) + " ", tokens::panel_hi,
-              tokens::glow_core});
-  fita.junta({" " + std::string(kSeguinte) + " ", tokens::panel_hi,
-              tokens::glow_core});
+  fita.junta(aceso({" " + std::string(tocando ? kPausar : kTocar) + " ",
+                    tokens::panel_hi, tokens::glow_core},
+                   foco == Focavel::Tocar));
+  fita.junta(aceso({" " + std::string(kAnterior) + " ", tokens::panel_hi,
+                    tokens::glow_core},
+                   foco == Focavel::Anterior));
+  fita.junta(aceso({" " + std::string(kSeguinte) + " ", tokens::panel_hi,
+                    tokens::glow_core},
+                   foco == Focavel::Seguinte));
   return fita;
 }
 
@@ -270,7 +304,8 @@ Fita fita_da_esquerda(Aba corrente, bool tocando) {
 // direita para a esquerda: o REPETIR cede primeiro, e o tempo por ultimo, que
 // é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
 // fundo, que é a emenda visivel que o aceite proscreve.
-Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
+Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
+                     Focavel foco) {
   const bool repete = retracto.repeticao != nucleo::Repeticao::Nenhuma;
   // A Casa CALADA por ordem (issue #106) não é o volume zero por escolha:
   // aquella diz a palavra, e este mostra o numero como todo outro volume. As
@@ -300,14 +335,20 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
   // Aceso é glow_core, apagado é text_muted, e o segmento fica PRESENTE nos
   // dous casos: modo que sommisse mudaria a largura da linha a cada tecla, e o
   // nome da faixa saltaria de logar debaixo do olho.
+  // O TEMPO não leva foco: elle DIZ, e não faz. Os outros tres acendem-se
+  // quando a mão pousa n'elles, e o segmento aceso guarda o mesmo logar.
   const Segmento todos[4] = {
       {tempo, tokens::raised, tokens::text_bright},
-      {som, tokens::raised,
-       calado ? tokens::glow_hot
-              : (no_zero ? tokens::text_muted : tokens::text_primary)},
-      {baralha, tokens::raised,
-       retracto.embaralhado ? tokens::glow_core : tokens::text_muted},
-      {torna, tokens::raised, repete ? tokens::glow_core : tokens::text_muted}};
+      aceso({som, tokens::raised,
+             calado ? tokens::glow_hot
+                    : (no_zero ? tokens::text_muted : tokens::text_primary)},
+            foco == Focavel::Volume),
+      aceso({baralha, tokens::raised,
+             retracto.embaralhado ? tokens::glow_core : tokens::text_muted},
+            foco == Focavel::Embaralhar),
+      aceso({torna, tokens::raised,
+             repete ? tokens::glow_core : tokens::text_muted},
+            foco == Focavel::Repetir)};
   Fita fita(Sentido::Esquerda);
   for (std::size_t i = 0; i < quantas && i < 4; ++i) fita.junta(todos[i]);
   return fita;
@@ -334,22 +375,22 @@ std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,
-                                     CaixasDoCabecalho* caixas) {
+                                     CaixasDoCabecalho* caixas, Focavel foco) {
   // Esvaziam-se á entrada, e antes de toda sahida antecipada: linha que se não
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
   if (largura == 0) return ftxui::text("");
-  const Fita esquerda =
-      fita_da_esquerda(corrente, retracto.estado == nucleo::Estado::Tocando);
+  const Fita esquerda = fita_da_esquerda(
+      corrente, retracto.estado == nucleo::Estado::Tocando, foco);
   const std::size_t esq = esquerda.largura_exigida();
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
   std::size_t quantas = 4;
-  Fita direita = fita_da_direita(retracto, quantas);
+  Fita direita = fita_da_direita(retracto, quantas, foco);
   while (quantas > 0 &&
          esq + direita.largura_exigida() + kNomeMinimo > largura) {
     --quantas;
-    direita = fita_da_direita(retracto, quantas);
+    direita = fita_da_direita(retracto, quantas, foco);
   }
   const std::size_t dir = direita.largura_exigida();
   const std::size_t sobra = largura > esq + dir ? largura - esq - dir : 0;
@@ -359,17 +400,21 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
              ha ? tokens::text_bright : tokens::text_muted, tokens::panel);
   if (caixas != nullptr) meio = meio | ftxui::reflect(caixas->nome);
   return ftxui::hbox(
-      {pintar_fita(esquerda.compor(), caixas_da_esquerda(caixas),
-                   {elemento_da_aba(Aba::MySong, corrente == Aba::MySong),
-                    elemento_da_aba(Aba::Playlists, corrente == Aba::Playlists),
-                    elemento_da_aba(Aba::Download,
-                                    corrente == Aba::Download)}),
+      {pintar_fita(
+           esquerda.compor(), caixas_da_esquerda(caixas),
+           {elemento_da_aba(Aba::MySong,
+                            estado_da_aba(Aba::MySong, corrente, foco)),
+            elemento_da_aba(Aba::Playlists,
+                            estado_da_aba(Aba::Playlists, corrente, foco)),
+            elemento_da_aba(Aba::Download,
+                            estado_da_aba(Aba::Download, corrente, foco))}),
        std::move(meio),
        pintar_fita(direita.compor(), caixas_da_direita(caixas), {})});
 }
 
 ftxui::Element elemento_do_trilho(const Retracto& retracto,
-                                  std::size_t largura, ftxui::Box* caixa) {
+                                  std::size_t largura, ftxui::Box* caixa,
+                                  bool com_foco) {
   if (caixa != nullptr) *caixa = caixa_por_pintar();
   if (largura == 0) return ftxui::text("");
   const std::size_t andadas =
@@ -381,8 +426,12 @@ ftxui::Element elemento_do_trilho(const Retracto& retracto,
   std::vector<ftxui::Element> cellas;
   cellas.reserve(largura);
   for (std::size_t c = 0; c < largura; ++c) {
-    const tokens::Triade tinta =
-        tokens::rgb(c < andadas ? tokens::v600 : tokens::line_dim);
+    // O foco accende o ANDADO, que é o que este trilho tem para accender: o
+    // que falta continua em line_dim, senão a linha inteira viraria glow e o
+    // trilho deixava de dizer por onde a faixa vae.
+    const tokens::Triade tinta = tokens::rgb(
+        c < andadas ? (com_foco ? tokens::glow_core : tokens::v600)
+                    : tokens::line_dim);
     cellas.push_back(ftxui::text(std::string(kTraco)) |
                      ftxui::color(ftxui::Color::RGB(tinta.r, tinta.g, tinta.b)));
   }
