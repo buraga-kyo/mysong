@@ -198,3 +198,37 @@ TEST_CASE("o caminho do cache pende do XDG_CACHE_HOME") {
   // faixas sem chave cahiriam n'elle uma por cima da outra.
   CHECK(nu::caminho_da_onda_em_cache("").empty());
 }
+
+// O cyclo fechado: o que se escreve é o que se lê. A tolerancia é a da escala
+// em que a onda se guarda, um octeto por ponto, e não folga arbitraria.
+TEST_CASE("escrever e ler fecham o cyclo, ponto a ponto") {
+  const Cova cova;
+  nu::Onda onda;
+  onda.pontos = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 0.125f};
+  const std::filesystem::path onde = cova.raiz() / "fundo" / "faixa.onda";
+  REQUIRE(nu::escreve_onda(onde, onda));
+  // O directorio nasce com a escripta: quem escreve é quem cria.
+  REQUIRE(std::filesystem::is_regular_file(onde));
+  nu::Onda lida;
+  REQUIRE(nu::le_onda(onde, &lida));
+  REQUIRE(lida.pontos.size() == onda.pontos.size());
+  for (std::size_t p = 0; p < onda.pontos.size(); ++p)
+    CHECK(lida.pontos[p] == doctest::Approx(onda.pontos[p]).epsilon(0.004));
+  // Temporario algum fica para traz: o rename leva-o inteiro.
+  int quantos = 0;
+  for (const auto& achado :
+       std::filesystem::directory_iterator(onde.parent_path()))
+    ++quantos, (void)achado;
+  CHECK(quantos == 1);
+}
+
+// Onda vazia RECUSA-SE: guardar o nada faria a falha pegajosa, que a colheita
+// seguinte acharia o arquivo, daria-o por bom e nunca mais chamaria o ffmpeg.
+TEST_CASE("a onda vazia não se guarda, nem se lê de arquivo que não ha") {
+  const Cova cova;
+  CHECK_FALSE(nu::escreve_onda(cova.raiz() / "vazia.onda", nu::Onda{}));
+  CHECK_FALSE(std::filesystem::exists(cova.raiz() / "vazia.onda"));
+  nu::Onda lida;
+  CHECK_FALSE(nu::le_onda(cova.raiz() / "não-ha.onda", &lida));
+  CHECK_FALSE(nu::le_onda({}, &lida));
+}
