@@ -380,3 +380,46 @@ TEST_CASE("os dous oraculos concordam, e o espectro concorda com os dous") {
   CHECK(espectro.banda_de(20000.0f) == nu::QUANTAS_BANDAS);
   CHECK(espectro.banda_de(1.0f) == nu::QUANTAS_BANDAS);
 }
+
+namespace {
+
+// Os numeros que a issue nomeia: o minimo, a omissão, um do meio e o maximo.
+constexpr std::size_t OS_NUMEROS[] = {8, 24, 48, 128};
+
+}  // namespace
+
+TEST_CASE("o espectro dá as bandas que se lhe pediram, e uma borda a mais") {
+  for (const std::size_t quantas : OS_NUMEROS) {
+    nu::Espectro espectro(48000.0f, 2, quantas);
+    INFO("quantas=" << quantas);
+    CHECK(espectro.quantas_bandas() == quantas);
+    CHECK(espectro.bandas().size() == quantas);
+    const auto& bordas = espectro.bordas();
+    REQUIRE(bordas.size() == quantas + 1);
+    for (std::size_t b = 0; b < quantas; ++b) {
+      // Nenhuma banda VAZIA em numero algum: banda sem raia seria columna morta
+      // na tela, e é no baixo com muitas bandas que ella appareceria primeiro.
+      INFO("banda=" << b << " de " << bordas[b] << " a " << bordas[b + 1]);
+      CHECK(bordas[b + 1] > bordas[b]);
+      CHECK(bordas[b + 1] <= nu::JANELA_DA_FFT / 2);
+    }
+  }
+}
+
+TEST_CASE("o pedido fóra dos limites cinge-se, e não é recusado") {
+  // Cingir e não recusar: quem pede vem da largura de um painel, e painel
+  // estreito é cousa do mundo, não erro de quem chama.
+  CHECK(nu::cinge_bandas(0) == nu::BANDAS_MINIMAS);
+  CHECK(nu::cinge_bandas(nu::BANDAS_MINIMAS - 1) == nu::BANDAS_MINIMAS);
+  CHECK(nu::cinge_bandas(nu::BANDAS_MINIMAS) == nu::BANDAS_MINIMAS);
+  CHECK(nu::cinge_bandas(nu::QUANTAS_BANDAS) == nu::QUANTAS_BANDAS);
+  CHECK(nu::cinge_bandas(nu::BANDAS_MAXIMAS + 1) == nu::BANDAS_MAXIMAS);
+  CHECK(nu::cinge_bandas(100000) == nu::BANDAS_MAXIMAS);
+
+  // E a obra cinge pelo mesmo aparo, na construcção e em voo.
+  nu::Espectro apertado(48000.0f, 2, 1);
+  CHECK(apertado.quantas_bandas() == nu::BANDAS_MINIMAS);
+  apertado.quer_bandas(100000);
+  CHECK(apertado.quantas_bandas() == nu::BANDAS_MAXIMAS);
+  CHECK(apertado.bordas().size() == nu::BANDAS_MAXIMAS + 1);
+}
