@@ -74,6 +74,7 @@
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
 #include "tui/letra_viva.hpp"
+#include "tui/ajuda.hpp"
 #include "tui/menu_contexto.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
@@ -341,6 +342,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::TrocaFonte:
     case tui::Verbo::RenomeiaFaixa:
     case tui::Verbo::ApagaFaixa:
+    case tui::Verbo::Ajuda:
       break;
   }
 }
@@ -368,9 +370,8 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // acabou de escrever. Em tela de cento e vinte perde-se o FIM, e o fim é o
 // README, que é justamente onde mora o que na linha não coube.
 constexpr const char* kDicas =
-    "↑↓←→ anda  Enter aperta  1 2 3 abas  Tab cicla"
-    "  F6 F7 F8 transporte  F9 mudo  F10 F11 volume"
-    "  F2 renomeia  Del apaga  m menu  q sahe  README";
+    "? HELP  ↑↓←→ anda  Enter aperta  1 2 3 abas  Tab cicla"
+    "  F6 F7 F8 transporte  F9 mudo  F10 F11 volume  q sahe";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
@@ -562,6 +563,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // O MENU DE CONTEXTO (issue #96). Vive n'esta pilha, ao lado das caixas: o
   // tratador muta-o e o pintor lê-o, e os dous correm no fio da tela.
   tui::MenuDeContexto menu;
+  // O HELP (issue #133): o estado da janella da ajuda e a caixa d'ella, que o
+  // clique de fóra consulta para a fechar. Mora aqui pela razão do menu.
+  tui::Ajuda ajuda;
+  ftxui::Box caixa_da_ajuda = tui::caixa_por_pintar();
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -571,6 +576,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // indice consultado a cada quadro seriam vinte perguntas por segundo ao
   // banco por uma cousa que sómente muda quando a faixa muda.
   tui::Ficha ficha;
+  // OS PICOS do espectro (issue #132): um por banda, e são o estado de que a
+  // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
+  // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou.
+  std::vector<float> picos;
+  std::chrono::steady_clock::time_point quadro_anterior =
+      std::chrono::steady_clock::now();
   // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
   // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
   // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
@@ -787,6 +798,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       livraria.acha_por_caminho(retracto.titulo, d_ella);
       ficha = tui::ficha_da_faixa(retracto.titulo, d_ella.titulo, d_ella.artista,
                                   d_ella.album);
+      // Os PICOS morrem com a faixa (issue #132): o pico da que sahiu accendia
+      // a primeira batida da que entra, e na côr da familia errada.
+      picos.clear();
     }
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
@@ -888,9 +902,21 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // nucleo assentou.
     static const std::vector<float> centros_em_hertz =
         tui::centros_da_escala(nucleo::QUANTAS_BANDAS);
-    const tui::Quadro quadro = tui::compor(tocador.bandas(), abaixo.largura,
+    // O TEMPO REAL do quadro (issue #132), e não os cincoenta milesimos do
+    // compasso: quadro que se atrasa derrubaria o pico de menos, e a meia-vida
+    // é conta de segundos. Calado, os picos zerão-se, que batida não ha no que
+    // se não ouve.
+    const std::chrono::steady_clock::time_point instante =
+        std::chrono::steady_clock::now();
+    const double lapso =
+        std::chrono::duration<double>(instante - quadro_anterior).count();
+    quadro_anterior = instante;
+    const std::vector<float> bandas = tocador.bandas();
+    if (retracto.mudo) picos.clear();
+    tui::avanca_picos(picos, bandas, lapso);
+    const tui::Quadro quadro = tui::compor(bandas, abaixo.largura,
                                            abaixo.altura, false,
-                                           centros_em_hertz);
+                                           centros_em_hertz, picos);
     // Tela estreita não pinta painel algum, e com elle vão-se a capa, o
     // espectro e a letra: roubar da pauta, que é onde se navega, para mostrar
     // arte seria trocar o que serve pelo que enfeita.
@@ -1075,24 +1101,34 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     if (!sala.rodape.vazio())
       tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
     ftxui::Element corpo = ftxui::vbox(std::move(tudo));
-    if (!menu.aberto) return corpo;
-    // A LINHA ALVO em coordenadas da tela. Vem da SALA, e não das caixas do
-    // rato: ellas enchem-se no `reflect`, que corre DEPOIS d'esta composição, e
-    // n'este ponto do quadro estão todas por pintar. A conta é a mesma que a
-    // pauta faz, e não outra: a linha visivel é a absoluta menos a rolagem.
-    ftxui::Box linha_alvo = tui::caixa_por_pintar();
-    if (menu.faixa >= primeira_linha &&
-        menu.faixa - primeira_linha < sala.pauta.altura)
-      linha_alvo = {
-          static_cast<int>(sala.pauta.x),
-          static_cast<int>(sala.pauta.x + sala.pauta.largura) - 1,
-          static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha),
-          static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha)};
+    if (menu.aberto) {
+      // A LINHA ALVO em coordenadas da tela. Vem da SALA, e não das caixas do
+      // rato: ellas enchem-se no `reflect`, que corre DEPOIS d'esta composição, e
+      // n'este ponto do quadro estão todas por pintar. A conta é a mesma que a
+      // pauta faz, e não outra: a linha visivel é a absoluta menos a rolagem.
+      ftxui::Box linha_alvo = tui::caixa_por_pintar();
+      if (menu.faixa >= primeira_linha &&
+          menu.faixa - primeira_linha < sala.pauta.altura)
+        linha_alvo = {
+            static_cast<int>(sala.pauta.x),
+            static_cast<int>(sala.pauta.x + sala.pauta.largura) - 1,
+            static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha),
+            static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha)};
+      corpo = ftxui::dbox(
+          {std::move(corpo),
+           tui::flutuante_do_menu(
+               menu, linha_alvo, sala.cabecalho.largura,
+               tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0)});
+    }
+    // O HELP (issue #133) flutua por cima de TUDO, menu incluido: é a peça
+    // mais de cima da tela, e é a ultima a compor-se por isso mesmo.
+    if (!ajuda.aberta) return corpo;
     return ftxui::dbox(
         {std::move(corpo),
-         tui::flutuante_do_menu(
-             menu, linha_alvo, sala.cabecalho.largura,
-             tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0)});
+         tui::flutuante_da_ajuda(
+             ajuda, sala.cabecalho.largura,
+             tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
+             &caixa_da_ajuda)});
   });
 
   // vai_para_aba — o caminho das teclas `1` `2` `3`, n'um logar só. Sahe do
@@ -1197,6 +1233,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // por isso trata-se ANTES do rato e do modo de digitar. É o mesmo logar em
     // que o campo já consome, e pela mesma razão: sem elle, a seta andava na
     // pauta por baixo do menu, e o alvo mudava sem que ninguem o visse.
+    // O HELP (issue #133) toma TODA tecla e todo clique emquanto está aberto,
+    // e trata-se ANTES do menu e do campo: é a peça mais de cima da tela, e o
+    // que está por baixo d'ella não ha de mudar debaixo de quem lê.
+    if (ajuda.aberta) {
+      const ftxui::Dimensions tela = ftxui::Terminal::Size();
+      const std::size_t maxima = tui::rolagem_maxima(tui::medida_da_ajuda(
+          tela.dimx > 0 ? static_cast<std::size_t>(tela.dimx) : 0,
+          tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0));
+      if (tecla.is_mouse()) {
+        ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
+        tui::rato_na_ajuda(ajuda, caixa_da_ajuda, copia.mouse(), maxima);
+        return true;
+      }
+      tui::tecla_na_ajuda(ajuda, tecla, maxima);
+      return true;
+    }
     tui::Ordem ordem_do_menu;
     if (menu.aberto) {
       const tui::RespostaDoMenu escolha = tui::tecla_no_menu(menu, tecla);
@@ -1299,6 +1351,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // leitura e a escripta caberia o socket, e o clique assentaria o
         // contrario do que se viu.
         case tui::Gesto::AbreMenu: abre_o_menu_na(gesto.indice); return true;
+        case tui::Gesto::Ajuda: tui::alterna_a_ajuda(ajuda); return true;
         case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
         case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
         // O MUDO pelo segmento do volume, e pela mesma razão dos dous modos:
@@ -1524,6 +1577,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::Verbo::TrocaLetra:
         mostra_letra.store(!mostra_letra.load());
         return true;
+      case tui::Verbo::Ajuda: tui::alterna_a_ajuda(ajuda); return true;
       case tui::Verbo::AbreVideo: {
         // O AUDIO CALA-SE PRIMEIRO, e sómente depois a janella abre. Nesta ordem,
         // e não na contraria: abrindo primeiro, ha um instante com os dous a tocar,

@@ -44,10 +44,11 @@ tui::CaixasDaTela tela_d_elle() {
   pe.aba_mysong = {64, 74, 64, 65};
   pe.aba_playlists = {76, 88, 64, 65};
   pe.aba_download = {90, 101, 64, 65};
-  pe.tempo = {116, 130, 64, 65};
-  pe.volume = {132, 139, 64, 65};
-  pe.embaralhar = {141, 154, 64, 65};
-  pe.repetir = {156, 166, 64, 65};
+  pe.tempo = {107, 121, 64, 65};
+  pe.volume = {123, 130, 64, 65};
+  pe.embaralhar = {132, 145, 64, 65};
+  pe.repetir = {147, 157, 64, 65};
+  pe.ajuda = {159, 166, 64, 65};
   pe.trilho = {0, 166, 63, 63};
   caixas.pauta = {0, 82, 1, 62};
   for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 1 + i, 1 + i});
@@ -111,20 +112,21 @@ TEST_CASE("o `↓` da pauta desce á fita, e o `←` d'ella não sahe") {
 }
 
 TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
-  const Focavel fita[9] = {
+  const Focavel fita[10] = {
       Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
       Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
-      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir};
-  for (int i = 0; i + 1 < 9; ++i) {
+      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir,
+      Focavel::Ajuda};
+  for (int i = 0; i + 1 < 10; ++i) {
     CHECK(salto_de(fita[i], Direcao::Dextra) == fita[i + 1]);
     CHECK(salto_de(fita[i + 1], Direcao::Esquerda) == fita[i]);
   }
   // As duas PONTAS não dão a volta: sem candidata, o foco fica. Dar a volta
   // levaria o olho ao canto opposto d'onde elle olhava.
   CHECK(salto_de(Focavel::Tocar, Direcao::Esquerda) == Focavel::Tocar);
-  CHECK(salto_de(Focavel::Repetir, Direcao::Dextra) == Focavel::Repetir);
+  CHECK(salto_de(Focavel::Ajuda, Direcao::Dextra) == Focavel::Ajuda);
   // E abaixo da fita não ha nada, que o rodapé das dicas não recebe foco: as
-  // nove ficam onde estão.
+  // dez ficam onde estão.
   for (const Focavel qual : fita)
     CHECK(salto_de(qual, Direcao::Baixo) == qual);
 }
@@ -143,8 +145,8 @@ TEST_CASE("o `↑` da fita torna ao corpo que cada segmento tem por cima") {
   // Os tres da direita têm a CAPA, que mora no painel por cima d'elles. Não é
   // capricho: a capa está mesmo alli, e mandá-los á pauta faria a seta saltar
   // meia tela por cima do que ella tem em frente.
-  for (const Focavel qual :
-       {Focavel::Volume, Focavel::Embaralhar, Focavel::Repetir})
+  for (const Focavel qual : {Focavel::Volume, Focavel::Embaralhar,
+                             Focavel::Repetir, Focavel::Ajuda})
     CHECK(salto_de(qual, Direcao::Cima) == Focavel::Capa);
   // E da capa desce-se á fita, e vae-se á pauta pelo lado.
   CHECK(salto_de(Focavel::Capa, Direcao::Baixo) == Focavel::Volume);
@@ -186,10 +188,11 @@ TEST_CASE("peça por pintar não recebe foco nem o dá") {
 
 TEST_CASE("cada peça com foco aperta o mesmo alvo que o clique n'ella") {
   const tui::CaixasDaTela caixas = tela_d_elle();
-  const Focavel botoes[9] = {
+  const Focavel botoes[10] = {
       Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
       Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
-      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir};
+      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir,
+      Focavel::Ajuda};
   for (const Focavel qual : botoes) {
     const ftxui::Box d_ella = tui::caixa_da_peca(caixas, qual);
     const tui::Alvo pelo_dedo =
@@ -229,6 +232,7 @@ TEST_CASE("o Enter na peça com foco desagua no gesto do clique") {
   CHECK(gesto(Focavel::Volume) == tui::Gesto::Muda);
   CHECK(gesto(Focavel::Embaralhar) == tui::Gesto::Embaralha);
   CHECK(gesto(Focavel::Repetir) == tui::Gesto::Repete);
+  CHECK(gesto(Focavel::Ajuda) == tui::Gesto::Ajuda);
   CHECK(gesto(Focavel::Pauta) == tui::Gesto::Nada);
   CHECK(gesto(Focavel::Trilho) == tui::Gesto::Nada);
 }
@@ -239,11 +243,11 @@ TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
   const struct {
     Focavel peca;
     int collunha;
-  } onde[9] = {{Focavel::Tocar, 1},       {Focavel::Anterior, 5},
-               {Focavel::Seguinte, 9},    {Focavel::AbaMySong, 66},
-               {Focavel::AbaPlaylists, 78}, {Focavel::AbaDownload, 92},
-               {Focavel::Volume, 135},    {Focavel::Embaralhar, 143},
-               {Focavel::Repetir, 158}};
+  } onde[10] = {{Focavel::Tocar, 1},        {Focavel::Anterior, 5},
+                {Focavel::Seguinte, 9},     {Focavel::AbaMySong, 66},
+                {Focavel::AbaPlaylists, 78}, {Focavel::AbaDownload, 92},
+                {Focavel::Volume, 125},     {Focavel::Embaralhar, 134},
+                {Focavel::Repetir, 149},    {Focavel::Ajuda, 162}};
   for (const auto& qual : onde) {
     const ftxui::Screen tela =
         papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "x", 167,

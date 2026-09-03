@@ -295,6 +295,18 @@ TEST_CASE("o F2 e o Delete são as duas ordens da faixa") {
 // mais cinco e cincoenta menos cinco, e não «o que a obra disser que é o
 // degrau»: perguntar o degrau á obra para depois conferir que ella o usou é
 // consultar o oraculo sob prova.
+TEST_CASE("o `?` e o F1 pedem a ajuda, e digitando não pedem nada") {
+  const tui::Retracto retracto = tocando();
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('?'), retracto).verbo ==
+        tui::Verbo::Ajuda);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F1, retracto).verbo ==
+        tui::Verbo::Ajuda);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Character('?'), retracto, true)
+            .verbo == tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F1, retracto, true).verbo ==
+        tui::Verbo::Nada);
+}
+
 TEST_CASE("as seis teclas de funcção desaguam nas ordens de sempre") {
   tui::Retracto retracto = tocando();  // a tocar, e o volume em cincoenta
   const auto d_ella = [&retracto](const ftxui::Event& t) {

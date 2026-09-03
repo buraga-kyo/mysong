@@ -161,6 +161,11 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
     return ordem_da_tecla(ftxui::Event::Character(' '), retracto, false);
   if (tecla == ftxui::Event::F8) return {Verbo::Proxima, 0.0};
   if (tecla == ftxui::Event::F9) return {Verbo::Mudo, 0.0};
+  // O HELP (issue #133): o `?`, que é a tecla da ajuda em toda TUI que a tem,
+  // e o F1, que é a da ajuda em todo programa de janella. As duas estavam
+  // livres, e quem chega de um lado ou do outro acha a sua.
+  if (tecla == ftxui::Event::Character('?') || tecla == ftxui::Event::F1)
+    return {Verbo::Ajuda, 0.0};
   if (tecla == ftxui::Event::F10 || tecla == ftxui::Event::F11) {
     const int degrau =
         tecla == ftxui::Event::F11 ? DEGRAU_DO_VOLUME : -DEGRAU_DO_VOLUME;

@@ -205,3 +205,5 @@ target_sources(mysong_testes PRIVATE prova_letra_viva.cpp)
 
 # ─── Prova do menu de contexto (issue #96): por target_sources, a regra ─────
 target_sources(mysong_testes PRIVATE prova_menu_contexto.cpp)
+# A bateria do HELP (issue #133), em linha propria pela mesma regra.
+target_sources(mysong_testes PRIVATE prova_ajuda.cpp)

@@ -11,8 +11,9 @@
 //
 // DOMÍNIO ......... largura e altura em célullas, e as bandas em [0,1]. Sem
 //                   bandas, arma-se uma rampa determinística.
-// CONTRA-DOMÍNIO .. `altura` linhas de fita, mais a linha da legenda com os
-//                   nomes dos quatro registros, na sahida padrão; status zero.
+// CONTRA-DOMÍNIO .. `altura` linhas de fita, mais DUAS linhas de legenda (o
+//                   nome da familia e a côr da batida d'ella), na sahida
+//                   padrão; status zero.
 // INVARIANTE ...... a tinta sahe IMMEDIATAMENTE antes do glifo que veste, sem
 //                   repouso pelo meio, e cada linha remata em repouso.
 // Q.E.D. .......... redigida a sahida a um arquivo, os bytes dizem quaes glifos
@@ -47,18 +48,31 @@ std::vector<std::string> glifos(std::string_view texto) {
   return saida;
 }
 
-// legenda — os nomes dos quatro registros por baixo, cada um na sua côr e sob as
-// columnas que o vestem. Sem ella o olho vê côres e não sabe o que dizem, e a
-// issue #104 quer justamente que se possa comparar nome com côr.
-std::string legenda(const es::Quadro& quadro) {
+// nome_da_batida — a côr da batida por NOME. Sem ella o olho vê quatro côres e
+// não sabe qual é qual, que côr não se lê em voz alta.
+std::string_view nome_da_batida(es::Registro registro) {
+  switch (registro) {
+    case es::Registro::Graves: return "batida rosa";
+    case es::Registro::MediosGraves: return "batida cyan";
+    case es::Registro::MediosAgudos: return "batida laranja";
+    case es::Registro::Agudos: return "batida amarela";
+  }
+  return "batida rosa";
+}
+
+// legenda — uma linha de rotulos por baixo, cada um na côr da batida do registro
+// e sob as columnas que o vestem. O rotulo vem de FÓRA porque são DUAS linhas: o
+// nome da familia e a côr da batida d'ella não cabem juntos n'um bloco de quinze
+// collunhas, que é o que os medios-agudos occupão n'uma fita de setenta e duas.
+std::string legenda(const es::Quadro& quadro,
+                    std::string_view (*rotulo)(es::Registro)) {
   std::vector<std::string> celulas(quadro.largura, " ");
   std::size_t c = 0;
   while (c < quadro.largura) {
     std::size_t fim = c;
     while (fim < quadro.largura && quadro.registros[fim] == quadro.registros[c])
       ++fim;
-    const std::vector<std::string> nome =
-        glifos(es::nome_do_registro(quadro.registros[c]));
+    const std::vector<std::string> nome = glifos(rotulo(quadro.registros[c]));
     // Centrado no bloco, e CORTADO quando o bloco é mais estreito que o nome:
     // fita estreita mostra o principio do nome, e não nome nenhum.
     const std::size_t largo = fim - c;
@@ -72,6 +86,26 @@ std::string legenda(const es::Quadro& quadro) {
   for (std::size_t i = 0; i < quadro.largura; ++i)
     linha += tk::tinta(es::tinta_do_registro(quadro.registros[i])) + celulas[i];
   return linha + std::string(tk::repouso) + '\n';
+}
+
+// batidas — põe UMA banda de cada familia no alto, para que as quatro côres da
+// batida appareção n'uma corrida só. Toma a banda do MEIO de cada familia, que
+// junto da fronteira a côr da vizinha encostaria n'ella. O valor passa do
+// limiar ABSOLUTO, que é a regra que vale sem picos, e picos não os ha aqui:
+// uma corrida sósinha não tem quadro anterior de que os colher.
+void batidas(std::vector<float>& bandas) {
+  const std::vector<float> centros = es::centros_da_escala(bandas.size());
+  for (const es::Registro registro :
+       {es::Registro::Graves, es::Registro::MediosGraves,
+        es::Registro::MediosAgudos, es::Registro::Agudos}) {
+    std::size_t principio = bandas.size(), fim = 0;
+    for (std::size_t b = 0; b < centros.size(); ++b)
+      if (es::registro_da_banda(centros[b]) == registro) {
+        if (b < principio) principio = b;
+        fim = b + 1;
+      }
+    if (principio < fim) bandas[(principio + fim - 1) / 2] = 0.95f;
+  }
 }
 
 int main(int argc, char** argv) {
@@ -94,10 +128,12 @@ int main(int argc, char** argv) {
   }
   // A rampa determinística: a banda b vale b sobre QUANTAS_BANDAS, de sorte que
   // a fita sobe da esquerda para a direita e o gradiente se lê em toda a altura.
-  if (bandas.empty())
+  if (bandas.empty()) {
     for (std::size_t b = 0; b < mysong::nucleo::QUANTAS_BANDAS; ++b)
       bandas.push_back(static_cast<float>(b) /
                        static_cast<float>(mysong::nucleo::QUANTAS_BANDAS));
+    batidas(bandas);
+  }
 
   const es::Quadro quadro =
       es::compor(bandas, static_cast<std::size_t>(largura),
@@ -112,7 +148,8 @@ int main(int argc, char** argv) {
   }
   // A legenda por BAIXO da fita, e não por cima: o nome fica ao pé do pé das
   // columnas que nomeia, que é onde o olho o vae buscar.
-  tela += legenda(quadro);
+  tela += legenda(quadro, es::nome_do_registro);
+  tela += legenda(quadro, nome_da_batida);
   std::fputs(tela.c_str(), stdout);
   return 0;
 }

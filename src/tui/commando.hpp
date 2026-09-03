@@ -72,6 +72,9 @@ enum class Verbo {
   // O MUDO (issue #106). Verbo PURO, como os dous modos: quem guarda o volume e
   // quem o devolve é o TOCADOR, de uma tomada só da sua tranca.
   Mudo,
+  // O HELP (issue #133): abre e fecha a janella da ajuda. Verbo PURO: quem
+  // guarda o estado d'ella é a janella, como guarda o do menu.
+  Ajuda,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

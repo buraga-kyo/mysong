@@ -13,13 +13,13 @@
 // Tres linhas, e d'ellas sahe todo o resto por decisão registrada no ledger.
 // Mudando-se a fonte lá, esta cópia não sabe: é o preço de arquivo não
 // versionado, e escreve-se aqui para que a divergencia se leia no codigo.
-// A ISSUE #104 SUBSTITUE as duas ancoras d'essa segunda linha, e vae dito para
-// que a divergencia não fique por descobrir: o v700 da base e o v400 do topo
-// vestião as vinte e quatro bandas de um violeta só, e a côr nada dizia da
-// musica, que subia e descia egual no bumbo e no chimbal. Ficam a côr do
-// REGISTRO no topo e ella mesma composta sobre o painel na base. O que a §7.4.9
-// manda de facto, e que se conserva inteiro, é a rampa VERTICAL ancorada ao
-// painel e o mudo em text_faint.
+// A ISSUE #132 SUBSTITUE as duas ancoras d'essa segunda linha, e vae dito para
+// que a divergencia não fique por descobrir: na base o v500 composto sobre o
+// painel, no topo o v500 inteiro, e a rampa é UMA só em toda a largura. A côr
+// do REGISTRO já não veste a rampa (foi a issue #104, e a fita sahia arco-iris
+// parado): ella veste a columna INTEIRA, e sómente no instante da BATIDA FORTE
+// d'aquella banda. O que a §7.4.9 manda de facto, e se conserva inteiro, é a
+// rampa VERTICAL ancorada ao painel e o mudo em text_faint.
 // ADVERTENCIA DE ORIENTAÇÃO, que se leia antes de tudo: os oito blocos U+2581 a
 // U+2588 crescem de BAIXO para cima, e o Quadro (como o FTXUI) lê-se de CIMA
 // para baixo. Os dous sentidos são OPPOSTOS, e a barra desenhada de cabeça para
@@ -72,6 +72,28 @@ namespace mysong::tui {
 // pertence ao quente, e a prova afere os dous lados d'elle.
 inline constexpr float LIMIAR_QUENTE = 0.90f;
 
+// A MEIA-VIDA DO PICO recente, em segundos. Segundo e meio: mais curto e a
+// batida apaga-se antes de o olho a apanhar; mais longo e a passagem seguinte
+// herda o pico da anterior, e o agudo nunca mais accende.
+inline constexpr double MEIA_VIDA_DO_PICO_S = 1.5;
+
+// O PISO DO QUENTE. Abaixo de meio não ha batida alguma, por alto que o valor
+// esteja em relação ao proprio pico: no silencio e na passagem baixa o pico já
+// cahiu, d'onde todo sussurro chegaria aos noventa por cento d'elle, e a fita
+// piscaria justamente onde não ha o que mostrar.
+inline constexpr float PISO_DO_QUENTE = 0.5f;
+
+// avanca_picos — o PICO RECENTE de cada banda, que é o UNICO estado d'esta obra
+// e mora no CHAMADOR: `compor` fica pura, e o quadro continua a repetir-se.
+//   picos[b] = max(bandas[b], picos[b] * pow(0,5, segundos / MEIA_VIDA)).
+// Sobe de IMMEDIATO ao valor corrente, que é o que faz a batida ser batida, e
+// cae por decaimento CONTINUO, que não depende do compasso com que se chama.
+// Tamanho differente do das bandas redimensiona e ZERA, que pico de outra
+// colheita apontaria para banda que não é a sua. Segundos negativo ou não
+// finito vale zero: relogio que recua não derruba pico algum.
+void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
+                  double segundos);
+
 // ── OS REGISTROS. Quatro familias, e a côr diz QUAL d'ellas sôa. Diga-se com
 // honestidade o que é: a côr vem do REGISTRO, que é a faixa de hertz onde a
 // familia mora, e NÃO de instrumento reconhecido. Separar instrumentos de
@@ -94,9 +116,9 @@ inline constexpr float FRONTEIRA_DOS_MEDIOS_AGUDOS = 4000.0f;
 // banda pergunta aqui, e jamais conta indices por fóra.
 Registro registro_da_banda(float centro_em_hertz);
 
-// tinta_do_registro — a côr do registro, e devolve o TOKEN e não a tríade
-// porque o gradiente compõe por tokens::mistura, que pede o hexadecimal do
-// design system. Violeta v500 nos graves, cyan data5 nos medios-graves, laranja
+// tinta_do_registro — a côr da BATIDA FORTE do registro, e devolve o TOKEN e
+// não a tríade porque quem a veste pede o hexadecimal do design system. Rosa
+// glow_hot nos graves, cyan data5 nos medios-graves, laranja
 // data3 nos medios-agudos e amarello data2 nos agudos: é o Postulado do Poente
 // Contido, que reserva o amarello, o laranja e o cyan á série de dados, e o
 // espectro É uma série de dados.
@@ -167,18 +189,18 @@ int oitavos(float magnitude, std::size_t altura);
 std::string glifo_do_degrau(int degrau);
 
 // O ALFA DA BASE. O pé da columna não se apaga por arithmetica de côr propria:
-// compõe-se a côr do registro sobre o tokens::panel_hi com este peso, que é o
+// compõe-se o violeta v500 sobre o tokens::panel_hi com este peso, que é o
 // modo com que o design system resolve opacidade. Cinco decimos e meio assentam
 // o pé no painel sem o deixar competir com o topo, que é o que canta.
 inline constexpr double ALFA_DA_BASE = 0.55;
 
 // tinta_da_linha — o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
-// base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá a côr do
-// REGISTRO exacta. Painel de uma célulla só dá a base, que é d'onde a §7.4.9
-// ancora a rampa. Não recebe magnitude alguma, e é n'isto que o invariante
-// (iii) se torna estructural em vez de boa intenção.
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
-                              Registro registro = Registro::Graves);
+// base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá o v500
+// exacto. Painel de uma célulla só dá a base, que é d'onde a §7.4.9 ancora a
+// rampa. Não recebe magnitude alguma NEM REGISTRO algum, e é n'isto que o
+// invariante (iii) se torna estructural em vez de boa intenção: a rampa é UMA
+// em toda a fita, e nada n'ella pode variar de columna para columna.
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
 
 // centros_das_bandas — os CENTROS em hertz, colhidos das bordas em RAIAS que o
 // nucleo::Espectro abre. A borda b vale `b * hertz_por_raia`, e o centro da
@@ -204,9 +226,14 @@ std::vector<float> centros_da_escala(std::size_t quantas);
 // veste a columna. VAZIOS, deduzem-se da posição relativa da banda pela escala
 // nominal do analisador: é approximação declarada, e não silencio. Quem passa os
 // centros do proprio nucleo::Espectro resolve a fronteira pelas bordas REAES.
+//
+// Os `picos` são os que avanca_picos guarda, e governão a BATIDA. VAZIOS, vale o
+// tecto ABSOLUTO de sempre (valor maior ou egual a LIMIAR_QUENTE), e é de
+// propósito: quem chama sem guardar estado continua a ver o que sempre viu.
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
               std::size_t altura, bool mudo = false,
-              const std::vector<float>& centros_em_hertz = {});
+              const std::vector<float>& centros_em_hertz = {},
+              const std::vector<float>& picos = {});
 
 // sequencia_da_celula — os BYTES da célulla: a tinta imediatamente antes do
 // glifo, sem repouso pelo meio, ou a ordem de repouso quando não se pinta. Mora

@@ -44,6 +44,7 @@ inline constexpr std::string_view kRepetirTodas = "\U000f0456";
 inline constexpr std::string_view kRepetirUma = "\U000f0458";
 inline constexpr std::string_view kSom = "\U000f057e";
 inline constexpr std::string_view kMudo = "\U000f075f";
+inline constexpr std::string_view kAjuda = "\U000f02d7";
 // O trilho: o traço PESADO, que é o que o esboço mostra. Traço leve some no
 // fundo violaceo a esta opacidade, e trilho que se não vê não diz onde a
 // faixa vae.
@@ -410,6 +411,7 @@ std::optional<Aba> aba_com_foco(Focavel foco) noexcept {
     case Focavel::Volume:
     case Focavel::Embaralhar:
     case Focavel::Repetir:
+    case Focavel::Ajuda:
     case Focavel::Trilho:
     case Focavel::Capa: break;
   }
@@ -457,10 +459,10 @@ Fita fita_dos_botoes(bool tocando, Focavel foco) {
   return fita;
 }
 
-// fita_da_direita — o tempo, o volume e os dous modos, em setas para a
+// fita_da_direita — o tempo, o volume, os dous modos e o HELP, em setas para a
 // ESQUERDA, e sómente as `quantas` primeiras. Quem não cabe sahe INTEIRO, e da
-// direita para a esquerda: o REPETIR cede primeiro, e o tempo por ultimo, que
-// é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
+// direita para a esquerda: o HELP cede primeiro (o `?` continua a abri-lo),
+// depois o REPETIR, e o tempo por ultimo, que é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
 // fundo, que é a emenda visivel que o aceite proscreve.
 Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
                      Focavel foco) {
@@ -495,7 +497,9 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
   // nome da faixa saltaria de logar debaixo do olho.
   // O TEMPO não leva foco: elle DIZ, e não faz. Os outros tres acendem-se
   // quando a mão pousa n'elles, e o segmento aceso guarda o mesmo logar.
-  const Segmento todos[4] = {
+  // O HELP (issue #133) é a ponta: um botão como os outros, que o Enter e o
+  // clique apertam, e que se veste de foco pelo mesmo `aceso`.
+  const Segmento todos[5] = {
       {tempo, tokens::raised, tokens::text_bright},
       aceso({som, tokens::raised,
              calado ? tokens::glow_hot
@@ -506,9 +510,12 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
             foco == Focavel::Embaralhar),
       aceso({torna, tokens::raised,
              repete ? tokens::glow_core : tokens::text_muted},
-            foco == Focavel::Repetir)};
+            foco == Focavel::Repetir),
+      aceso({" " + std::string(kAjuda) + " HELP ", tokens::raised,
+             tokens::text_primary},
+            foco == Focavel::Ajuda)};
   Fita fita(Sentido::Esquerda);
-  for (std::size_t i = 0; i < quantas && i < 4; ++i) fita.junta(todos[i]);
+  for (std::size_t i = 0; i < quantas && i < 5; ++i) fita.junta(todos[i]);
   return fita;
 }
 
@@ -528,7 +535,7 @@ std::vector<ftxui::Box*> caixas_dos_botoes(CaixasDoCabecalho* c) {
 }
 std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
-  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir};
+  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir, &c->ajuda};
 }
 
 }  // namespace
@@ -572,7 +579,7 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
       fita_dos_botoes(retracto.estado == nucleo::Estado::Tocando, foco);
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
-  std::vector<std::size_t> pede(5, 0);
+  std::vector<std::size_t> pede(6, 0);
   for (std::size_t q = 1; q < pede.size(); ++q)
     pede[q] = fita_da_direita(retracto, q, foco).largura_exigida();
   const ContaDaFita conta = conta_da_fita(largura, botoes.largura_exigida(),
