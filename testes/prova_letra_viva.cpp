@@ -186,5 +186,45 @@ TEST_CASE("a linha comprida corta-se com reticencias e a curta centra-se") {
   CHECK(folgado.linhas[0].collunha == 7);
 }
 
+TEST_CASE("a faixa sem letra dá quadro vazio") {
+  const std::vector<nu::LinhaDaLetra> nenhuma;
+  const tui::QuadroDaLetra nada =
+      tui::quadro_da_letra(nenhuma, 30.0, kLargura, kAltura);
+  CHECK(nada.vazio());
+  CHECK(nada.corrente == -1);
+  // A medida conserva-se, que é o que a composição lê para não pintar nada.
+  CHECK(nada.largura == kLargura);
+  CHECK(nada.altura == kAltura);
+  CHECK(tui::linha_corrente_do_rio(nada) == nullptr);
+  CHECK(tui::caixa_da_corrente(nada).vazio());
+  // Painel sem medida tambem não estoura.
+  CHECK(tui::quadro_da_letra(kVersos, 10.0, 0, 0).vazio());
+  // O SILENCIO que o LRCLIB marca com carimbo e texto vazio não pinta linha.
+  const std::vector<nu::LinhaDaLetra> calado = {{10.0, ""}};
+  CHECK(tui::quadro_da_letra(calado, 10.0, kLargura, kAltura).vazio());
+}
+
+TEST_CASE("o embaralhado sahe das proprias letras e é determinístico") {
+  const std::vector<std::string> letras = tui::glifos_da_linha("abcde");
+  const std::string mexido = tui::embaralha(letras, 0.0, 3, 17);
+  // DETERMINISTICO: a mesma chamada dá a mesma fita, sem excepção.
+  CHECK(tui::embaralha(letras, 0.0, 3, 17) == mexido);
+  // E cada glypho sahe das PROPRIAS letras da linha.
+  for (const std::string& glifo : tui::glifos_da_linha(mexido))
+    CHECK(std::string("abcde").find(glifo) != std::string::npos);
+  // Resolvido por inteiro dá a linha tal qual.
+  CHECK(tui::embaralha(letras, 1.0, 3, 17) == "abcde");
+  // A MEIO, os resolvidos são os do meio: tres de cinco, do um ao tres.
+  const std::vector<std::string> meio =
+      tui::glifos_da_linha(tui::embaralha(letras, 0.5, 3, 17));
+  REQUIRE(meio.size() == 5);
+  CHECK(meio[1] == "b");
+  CHECK(meio[2] == "c");
+  CHECK(meio[3] == "d");
+  // O BRANCO conserva-se branco, e é elle que deixa ler a fórma das palavras.
+  const std::vector<std::string> com_vao = tui::glifos_da_linha("ab cd");
+  CHECK(tui::glifos_da_linha(tui::embaralha(com_vao, 0.0, 1, 2))[2] == " ");
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
