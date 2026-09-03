@@ -226,16 +226,18 @@ namespace {
 //      célulla do topo em glow_hot seria quasi invisivel n'uma fita que salta a
 //      quarenta e seis quadros por segundo, que uma célulla a piscar não se lê;
 //      e o indicador de pico existe para SER VISTO.
-//   4. Não sendo nada d'isso, o GRADIENTE do painel.
+//   4. Não sendo nada d'isso, o GRADIENTE do painel, na côr do REGISTRO que
+//      veste esta columna. O registro é da columna e não da célulla, d'onde a
+//      columna inteira sahe da mesma familia, do pé ao topo.
 // Note-se que sómente o ramo 4 consulta a linha, e sómente os ramos 1 a 3
 // consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
 // pode depender da magnitude nem por descuido.
 tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
-                               std::size_t altura) {
+                               std::size_t altura, Registro registro) {
   if (mudo) return tokens::rgb(tokens::text_faint);
   if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
   if (valor >= LIMIAR_QUENTE) return tokens::rgb(tokens::glow_hot);
-  return tinta_da_linha(desde_a_base, altura);
+  return tinta_da_linha(desde_a_base, altura, registro);
 }
 
 }  // namespace
@@ -280,7 +282,8 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
       celula.glifo = glifo_do_degrau(degrau);
-      celula.tinta = tinta_da_celula(valor, mudo, i, altura);
+      celula.tinta =
+          tinta_da_celula(valor, mudo, i, altura, quadro.registros[c]);
       celula.pinta = true;
       // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
       // BASE para cima, que é como os blocos crescem; a linha do quadro conta do
