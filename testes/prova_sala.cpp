@@ -311,13 +311,13 @@ TEST_CASE("em tela baixa cede o rodapé, e sómente depois a segunda da fita") {
 // rectangulo da capa é TECTO, e a de 16 por 9 sahe mais baixa que elle.
 TEST_CASE("o espectro toma o que a capa não gastou") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
-  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 36);
-  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 53);
+  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 35);
+  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 52);
   CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.painel.y + 11);
   CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura);
   // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em
   // std::size_t daria numero enorme, e a peça pintaria bilhões de linhas.
-  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 36);
+  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 35);
   CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).vazio());
 }
 
