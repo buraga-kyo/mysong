@@ -299,6 +299,48 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
 }
 
+TEST_CASE("as vistas de artistas e albuns adaptam as columnas") {
+  Cova cova;
+  {
+    nu::Escriba escriba(cova.banco());
+    nu::Faixa uma;
+    uma.caminho = "/m/a.mp3";
+    uma.artista = "MXZI";
+    uma.album = "Slowed";
+    uma.titulo = "MONTAGEM TOMADA";
+    uma.numero = 1;
+    uma.duracao = 85;
+    REQUIRE(escriba.grava(uma));
+    uma.caminho = "/m/b.mp3";
+    uma.titulo = "IMMORTAL DE FINALE";
+    uma.numero = 2;
+    uma.duracao = 66;
+    REQUIRE(escriba.grava(uma));
+    REQUIRE(escriba.conclui());
+  }
+  nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
+  // NOME não é faixa: № algum á esquerda, tempo algum á direita, e régua
+  // alguma emquanto a bibliotheca não souber contar as faixas do artista.
+  const std::vector<std::string> artistas = pintar(navegador, 1, 60);
+  CHECK(artistas[0].substr(0, 6) == "  MXZI");
+  CHECK(artistas[0].find(":") == std::string::npos);
+  CHECK(artistas[0].find("\u25b1") == std::string::npos);
+  navegador.entra();  // o album do artista: `entra` só diz sim na FAIXA
+  REQUIRE(navegador.secao() == tui::Secao::Albuns);
+  CHECK(pintar(navegador, 1, 60)[0].substr(0, 8) == "  Slowed");
+  navegador.entra();  // as faixas do album
+  REQUIRE(navegador.secao() == tui::Secao::Faixas);
+  const std::vector<std::string> faixas = pintar(navegador, 2, 60);
+  // E aqui as columnas da faixa voltam todas: o №, a régua e o tempo.
+  CHECK(faixas[0].substr(0, 5) == "    1");
+  CHECK(faixas[0].find("MONTAGEM TOMADA") != std::string::npos);
+  CHECK(faixas[0].find("\u25b0\u25b0\u25b0\u25b0\u25b0\u25b0") != std::string::npos);
+  CHECK(faixas[0].find("01:25") != std::string::npos);
+  CHECK(faixas[1].find("01:06") != std::string::npos);
+}
+
 TEST_CASE("o conselho do vazio é por SECÇÃO, e a pauta fica vazia") {
   // No acervo o conselho manda varrer, e diz a tecla. Dentro de uma lista
   // escolhida á mão, mandar varrer o acervo seria mandar ao logar errado.
