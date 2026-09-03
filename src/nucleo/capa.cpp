@@ -131,15 +131,17 @@ Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
   const Conta linhas =
       (Conta(tecto_collunas) * imagem.altura * cellula.largura + por_alto - 1) /
       por_alto;
+  // Zero não sae d'estas duas contas: o numerador não é nulo (os quatro zeros
+  // da entrada já se recusaram acima) e o arredondamento é para cima. A guarda
+  // de verdade é a de lá; posta aqui, esconderia isso.
   if (linhas <= tecto_linhas)
-    return {tecto_collunas, static_cast<std::size_t>(linhas < 1 ? 1 : linhas)};
+    return {tecto_collunas, static_cast<std::size_t>(linhas)};
   const Conta por_largo = Conta(imagem.altura) * cellula.largura;
   const Conta collunas =
       (Conta(tecto_linhas) * imagem.largura * cellula.altura + por_largo - 1) /
       por_largo;
-  return {static_cast<std::size_t>(collunas > tecto_collunas ? tecto_collunas
-                                   : collunas < 1            ? 1
-                                                             : collunas),
+  return {static_cast<std::size_t>(
+              collunas > tecto_collunas ? tecto_collunas : collunas),
           tecto_linhas};
 }
 
@@ -209,7 +211,12 @@ std::vector<std::string> argumentos_do_chafa(
 }
 
 std::string somma_dos_octetos(std::string_view octetos) {
-  // A semente e o primo são os da norma do FNV-1a de 64 bits.
+  // A semente e o primo são os da norma do FNV-1a de 64 bits. E o que succede
+  // na COLLISÃO fica dito, que promettel-a impossivel seria mentira: duas
+  // capas differentes com a mesma somma fazem o segundo album mostrar a arte
+  // do primeiro. Capa trocada, e não arquivo corrompido; e em acervo de gente
+  // a probabilidade é despresivel. Colisão FEITA de proposito o FNV-1a não
+  // resiste, e aqui ninguem a faz: o conteudo é do proprio operador.
   std::uint64_t somma = 14695981039346656037ULL;
   for (const char letra : octetos) {
     somma ^= static_cast<unsigned char>(letra);
