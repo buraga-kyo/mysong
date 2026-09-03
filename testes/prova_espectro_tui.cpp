@@ -428,6 +428,40 @@ TEST_CASE("as bordas reaes do nucleo põem toda banda no mesmo registro") {
   }
 }
 
+// A FITA com as bordas REAES, que é o aceite da issue por extenso: vinte e
+// quatro columnas, uma por banda, e as quatro familias em BLOCOS na ordem, da
+// esquerda para a direita. Os limites vão escriptos Á MÃO, colhidos das bordas
+// que o nucleo assenta em 48 kHz: a banda 6 tem centro em 210 hertz e a 7 em
+// 267, a 12 em 907 e a 13 em 1163, a 17 em 3163 e a 18 em 4059.
+TEST_CASE("com as bordas reaes a fita sahe violeta, cyan, laranja, amarella") {
+  mysong::nucleo::Espectro espectro(48000.0f, 2);
+  const std::vector<float> centros = es::centros_das_bandas(
+      espectro.bordas(),
+      48000.0f / static_cast<float>(mysong::nucleo::JANELA_DA_FFT));
+  const es::Quadro quadro = es::compor(
+      bandas_uniformes(0.5f), mysong::nucleo::QUANTAS_BANDAS, 4, false, centros);
+
+  struct Faixa {
+    std::size_t ultima;
+    es::Registro registro;
+    std::string_view cor;
+  };
+  const Faixa faixas[] = {{6, es::Registro::Graves, tk::v500},
+                          {12, es::Registro::MediosGraves, tk::data5},
+                          {17, es::Registro::MediosAgudos, tk::data3},
+                          {23, es::Registro::Agudos, tk::data2}};
+  REQUIRE(quadro.registros.size() == mysong::nucleo::QUANTAS_BANDAS);
+  std::size_t b = 0;
+  for (const Faixa& faixa : faixas)
+    for (; b <= faixa.ultima; ++b) {
+      CHECK(quadro.registros[b] == faixa.registro);
+      // E a base da columna veste a côr da familia, que é o que o olho lê.
+      CHECK(es::mesma_tinta(quadro.em(3, b).tinta,
+                            tk::mistura(faixa.cor, tk::panel_hi, 0.55)));
+    }
+  CHECK(b == mysong::nucleo::QUANTAS_BANDAS);  // a taboada cobre a fita inteira
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
