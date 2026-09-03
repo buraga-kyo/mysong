@@ -348,6 +348,28 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
        pintar_fita(direita.compor(), caixas_da_direita(caixas), {})});
 }
 
+ftxui::Element elemento_do_trilho(const Retracto& retracto,
+                                  std::size_t largura, ftxui::Box* caixa) {
+  if (caixa != nullptr) *caixa = caixa_por_pintar();
+  if (largura == 0) return ftxui::text("");
+  const std::size_t andadas =
+      enchimento(retracto.posicao, retracto.duracao, largura);
+  // O trilho pinta-se n'UM elemento só, e não em dous como a barra do pé. Alli
+  // o enchido e o vazio eram textos apartados porque a caixa de cada metade
+  // servia ao clique, e no principio da faixa uma d'ellas tinha largura zero e
+  // sahia vazia. Aqui a caixa é do trilho INTEIRO, e a tinta corre por cella.
+  std::vector<ftxui::Element> cellas;
+  cellas.reserve(largura);
+  for (std::size_t c = 0; c < largura; ++c) {
+    const tokens::Triade tinta =
+        tokens::rgb(c < andadas ? tokens::v600 : tokens::line_dim);
+    cellas.push_back(ftxui::text(std::string(kTraco)) |
+                     ftxui::color(ftxui::Color::RGB(tinta.r, tinta.g, tinta.b)));
+  }
+  ftxui::Element linha = ftxui::hbox(std::move(cellas));
+  return caixa == nullptr ? linha : linha | ftxui::reflect(*caixa);
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
