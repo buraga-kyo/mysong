@@ -185,6 +185,42 @@ A arte enche a LARGURA do painel guardando a proporcao: a miniatura 16:9 do
 YouTube fica 16:9, a arte quadrada fica quadrada, e nada se estica nem se corta.
 O `--stretch` do chafa existe, e e por NAO se passar que a proporcao se guarda.
 
+### A capa NITIDA, pela lousa do Überzug++
+
+Havendo `ueberzugpp` e havendo X11, a capa do painel deixa de ser mosaico de
+caracteres e passa a ser a imagem de verdade, pixel a pixel. Nao e protocolo de
+terminal: e uma janella de X11 posta POR CIMA do terminal, no rectangulo de
+celullas que o painel deixa. E o mesmo caminho que faz o yazi ficar nitido.
+
+O programa NAO vem do apt: compila-se do repositorio dos autores, ou baixa-se o
+binario d'elles.
+
+```sh
+mysong --sonda | tail -2     # diz «lousa: ueberzugpp 2.9.8, X11», ou a razao
+./build/fita_lousa /caminho/da/capa.jpg 8x4 40x21 8    # a prova do olho
+```
+
+O `fita_lousa` recebe a imagem, o canto em `COLLUNHAxLINHA` contado de ZERO, o
+rectangulo em `LARGURAxALTURA` de celullas, e os segundos que a imagem fica.
+Escreve uma regua por baixo, para o senhor conferir a posicao contando.
+
+Tres cousas ficam ditas, e todas medidas. A imagem CABE no rectangulo guardando
+a proporcao: a miniatura 16:9 do YouTube toma menos de metade da altura, e as
+fileiras que ella deixa ficam para o espectro. Trocando de janella do tmux a
+capa some, e voltando ella volta: o proprio `ueberzugpp` arma os hooks do tmux.
+E perdendo o terminal o foco, a capa some, que a janella d'ella nao segue o foco
+e ficaria por cima do que o senhor foi ver.
+
+O limite: a sahida e de **X11**. O `ueberzugpp` tem sahida wayland, e ella fica
+para quando esta machina correr Wayland. Sem DISPLAY, a capa volta aos symbolos
+do chafa sem erro algum, que essa continua a ser a maneira legitima de a ver.
+
+A capa embutida na etiqueta escreve-se UMA vez em
+`$XDG_CACHE_HOME/mysong/capas/<somma>.jpg` (ou `.png`), porque o `ueberzugpp` le
+disco e nao memoria. O nome sahe do conteudo, donde duas faixas com a mesma arte
+partilham um arquivo so. Apagar essa pasta nao perde nada: a proxima corrida
+torna a escrever.
+
 ### Tudo o que vem do apt, n'uma linha
 
 ```sh
