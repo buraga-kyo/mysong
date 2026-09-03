@@ -105,6 +105,29 @@ TEST_CASE("a chapa diz a aba e os degraus de dentro, apartados por seta") {
         "MY SONG \u25b8 Alan Walker");
 }
 
+TEST_CASE("a chapa diz onde se está, a conta e a vista, n'uma linha só") {
+  tui::Chapa qual;
+  qual.onde = "MY SONG";
+  qual.quantas = 42;
+  qual.duracao = 5340;
+  qual.vista = "FAIXAS";
+  CHECK(tui::texto_da_chapa(qual) == "MY SONG, 42 FAIXAS, 1h29, FAIXAS");
+  const ftxui::Screen tela = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
+  CHECK(linha_de(tela, 0).substr(0, 33) == " MY SONG, 42 FAIXAS, 1h29, FAIXAS");
+  // O recado vae Á DIREITA, empurrado pelo filler, e a linha fecha a largura.
+  qual.recado = "achados na rede";
+  const ftxui::Screen com = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
+  CHECK(linha_de(com, 0).substr(64, 16) == "achados na rede ");
+  // Fóra das MY SONG a vista cala-se, e a chapa diz sómente onde e quanto.
+  qual.vista.clear();
+  qual.recado.clear();
+  qual.onde = "PLAYLISTS \u25b8 Funk";
+  qual.especie = tui::Especie::Faixas;
+  qual.quantas = 1;
+  qual.duracao = 0;
+  CHECK(tui::texto_da_chapa(qual) == "PLAYLISTS \u25b8 Funk, 1 FAIXA");
+}
+
 TEST_CASE("cada secção conta a sua especie") {
   CHECK(tui::especie_da_secao(tui::Secao::Artistas) == tui::Especie::Artistas);
   CHECK(tui::especie_da_secao(tui::Secao::Albuns) == tui::Especie::Albuns);
