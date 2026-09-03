@@ -74,6 +74,26 @@ std::string legenda(const es::Quadro& quadro) {
   return linha + std::string(tk::repouso) + '\n';
 }
 
+// batidas — põe UMA banda de cada familia no alto, para que as quatro côres da
+// batida appareção n'uma corrida só. Toma a banda do MEIO de cada familia, que
+// junto da fronteira a côr da vizinha encostaria n'ella. O valor passa do
+// limiar ABSOLUTO, que é a regra que vale sem picos, e picos não os ha aqui:
+// uma corrida sósinha não tem quadro anterior de que os colher.
+void batidas(std::vector<float>& bandas) {
+  const std::vector<float> centros = es::centros_da_escala(bandas.size());
+  for (const es::Registro registro :
+       {es::Registro::Graves, es::Registro::MediosGraves,
+        es::Registro::MediosAgudos, es::Registro::Agudos}) {
+    std::size_t principio = bandas.size(), fim = 0;
+    for (std::size_t b = 0; b < centros.size(); ++b)
+      if (es::registro_da_banda(centros[b]) == registro) {
+        if (b < principio) principio = b;
+        fim = b + 1;
+      }
+    if (principio < fim) bandas[(principio + fim - 1) / 2] = 0.95f;
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc < 3) {
     std::fprintf(stderr,
@@ -94,10 +114,12 @@ int main(int argc, char** argv) {
   }
   // A rampa determinística: a banda b vale b sobre QUANTAS_BANDAS, de sorte que
   // a fita sobe da esquerda para a direita e o gradiente se lê em toda a altura.
-  if (bandas.empty())
+  if (bandas.empty()) {
     for (std::size_t b = 0; b < mysong::nucleo::QUANTAS_BANDAS; ++b)
       bandas.push_back(static_cast<float>(b) /
                        static_cast<float>(mysong::nucleo::QUANTAS_BANDAS));
+    batidas(bandas);
+  }
 
   const es::Quadro quadro =
       es::compor(bandas, static_cast<std::size_t>(largura),
