@@ -750,12 +750,18 @@ abaixo da capa, com UM verso de cada vez. Canta-se aquele; quando a musica
 passa, entra o seguinte no mesmo lugar. Nada mais aparece: nem o verso anterior,
 nem o proximo, nem efeito algum.
 
-O verso sai em XIROD, LARANJA e em corpo grande: a chapa toma tres celulas de
-altura, e e da altura da caixa que vem o tamanho da letra. Sem a lousa ou sem o
-letreiro, o mesmo verso aparece em mono, na mesma cor, e por isso nada falta.
+O verso que se canta sai em LARANJA e em corpo grande: a chapa toma tres celulas
+de altura, e e da altura da caixa que vem o tamanho da letra. Logo abaixo dele,
+miudo e apagado, le-se o verso SEGUINTE, para o olho saber o que vem; esse nao
+vai a lousa, que celula de terminal ja o desenha. Sendo o corrente o ultimo da
+letra, a linha de baixo fica vazia.
 
-O bloco tem quatro linhas fixas: tres do verso e uma de respiro antes do
-espectro. Painel que nao tenha altura para ele e para o espectro minimo larga o
+A letra sai na fonte de LEITURA, a mesma mono do resto da tela, e nao na XIROD:
+aquela e fonte de marca, e verso inteiro nela custa a ler. Sem a lousa ou sem o
+letreiro, o verso corrente aparece em mono de uma celula, na mesma cor, e por
+isso nada falta.
+
+O bloco tem quatro linhas fixas: tres do verso corrente e uma do seguinte. Painel que nao tenha altura para ele e para o espectro minimo larga o
 bloco INTEIRO, que meio verso nao se le. Verso mais comprido que o painel corta
 com «…», e nao quebra em duas linhas.
 
