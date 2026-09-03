@@ -150,5 +150,41 @@ TEST_CASE("a linha fica na leitura até a proxima chegar e depois apaga") {
         nullptr);
 }
 
+TEST_CASE("duas linhas seguidas e perto não se pisam") {
+  const tui::QuadroDaLetra dous =
+      tui::quadro_da_letra(kVersos, 12.0, kLargura, kAltura);
+  REQUIRE(dous.linhas.size() == 2);
+  // Uma na leitura e a outra a meio da subida: linhas differentes da tela.
+  CHECK(d_ella(dous, 0)->linha_da_tela == kLeitura);
+  CHECK(d_ella(dous, 1)->linha_da_tela == kBase - 4);
+  // E UMA corrente só, que é a que se canta.
+  CHECK(tui::linha_corrente_do_rio(dous) == d_ella(dous, 0));
+  CHECK_FALSE(d_ella(dous, 1)->corrente);
+  // No instante do primeiro verso a segunda já assomou na base, que o
+  // intervallo entre os dous é justamente o nascimento d'ella.
+  const tui::QuadroDaLetra assoma =
+      tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura);
+  REQUIRE(d_ella(assoma, 1) != nullptr);
+  CHECK(d_ella(assoma, 1)->linha_da_tela == kBase);
+  CHECK(d_ella(assoma, 1)->tinta == tk::text_faint);
+}
+
+TEST_CASE("a linha comprida corta-se com reticencias e a curta centra-se") {
+  const std::vector<nu::LinhaDaLetra> comprida = {{10.0, "abcdefghijklm"}};
+  const tui::QuadroDaLetra apertado =
+      tui::quadro_da_letra(comprida, 10.0, 10, kAltura);
+  REQUIRE(apertado.linhas.size() == 1);
+  CHECK(apertado.linhas[0].texto == "abcdefghi…");
+  CHECK(apertado.linhas[0].collunha == 0);
+  // Painel de UMA collunha dá as reticencias e mais nada, e não estoura.
+  const tui::QuadroDaLetra fio = tui::quadro_da_letra(comprida, 10.0, 1, kAltura);
+  REQUIRE(fio.linhas.size() == 1);
+  CHECK(fio.linhas[0].texto == "…");
+  // A CURTA centra-se: cinco glyphos em vinte deixam sete de cada lado.
+  const tui::QuadroDaLetra folgado =
+      tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura);
+  CHECK(folgado.linhas[0].collunha == 7);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
