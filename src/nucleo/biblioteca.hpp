@@ -150,6 +150,10 @@ class Biblioteca {
   // quando o caminho não está no índice.
   bool acha_por_caminho(std::string_view caminho, Faixa& sahida) const;
 
+  // Os caminhos na ORDEM gravada. É por aqui que a prova lê o que ficou, e é a
+  // unica porta que mostra a ordem propria sem trazer a faixa inteira atraz.
+  std::vector<std::string> ordem_das_faixas() const;
+
  private:
   // A tranca NÃO é reentrante: porta publica alguma d'esta classe chama outra,
   // e a segunda tomada seria abraço de si mesma. O destructor não a toma, que o

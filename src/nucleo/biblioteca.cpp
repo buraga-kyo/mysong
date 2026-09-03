@@ -52,6 +52,17 @@ sqlite3* abre_para_ler(const std::filesystem::path& banco) {
   return punho;
 }
 
+// Abre para ESCREVER, sem crear: a escripta de UMA linha não inventa índice.
+sqlite3* abre_para_escrever(const std::filesystem::path& banco) {
+  sqlite3* punho = nullptr;
+  if (sqlite3_open_v2(banco.c_str(), &punho, SQLITE_OPEN_READWRITE, nullptr) !=
+      SQLITE_OK) {
+    sqlite3_close(punho);
+    return nullptr;
+  }
+  return punho;
+}
+
 // Corre uma consulta e entrega cada linha ao cinzel. As cadeias vão por
 // sqlite3_bind_text, na ordem em que chegam, e JAMAIS por concatenação: é isto
 // que faz um album chamado «Ária "Ré"» ser um nome e não um pedaço de SQL.
@@ -327,10 +338,14 @@ std::vector<Faixa> Biblioteca::faixas_do_album(std::string_view artista,
 std::vector<Faixa> Biblioteca::busca_faixa(std::string_view termo) const {
   const std::lock_guard<std::mutex> chave(tranca_);
   std::vector<Faixa> faixas;
-  const std::string sql = std::string("SELECT ") + kColumnas +
-                          " FROM faixas WHERE titulo LIKE '%' || ?1 || '%'"
-                          " ESCAPE '\\' ORDER BY artista, album, numero,"
-                          " titulo;";
+  // Termo VAZIO é a vista plana do acervo, e é ella que leva a ordem propria
+  // do operador; termo escripto é BUSCA, e busca ordena-se pelo que se procura,
+  // que é o artista e o album. Fica assim declarado: a ordem arrumada á mão vale
+  // na lista inteira, e não no resultado de uma procura.
+  const std::string sql =
+      std::string("SELECT ") + kColumnas +
+      " FROM faixas WHERE titulo LIKE '%' || ?1 || '%' ESCAPE '\\' ORDER BY " +
+      (termo.empty() ? "ordem;" : "artista, album, numero, titulo;");
   const std::string procurado = escapa_curingas(termo);
   corre(punho_, sql.c_str(), {procurado},
         [&faixas](sqlite3_stmt* passo) {
@@ -351,6 +366,16 @@ bool Biblioteca::acha_por_caminho(std::string_view caminho,
           achou = true;
         });
   return achou;
+}
+
+std::vector<std::string> Biblioteca::ordem_das_faixas() const {
+  const std::lock_guard<std::mutex> chave(tranca_);
+  std::vector<std::string> caminhos;
+  corre(punho_, "SELECT caminho FROM faixas ORDER BY ordem;", {},
+        [&caminhos](sqlite3_stmt* passo) {
+          caminhos.push_back(texto(passo, 0));
+        });
+  return caminhos;
 }
 
 namespace {
