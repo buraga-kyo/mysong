@@ -65,6 +65,30 @@ std::string nome_da_colleccao(Secao secao,
                               const std::vector<std::string>& trilha,
                               const std::string& nome_do_catalogo);
 
+// Um RECTANGULO da sala: onde começa e quanto mede. O canto conta-se da tela
+// INTEIRA, e não de dentro de peça alguma: a tela nova não leva orla, e canto
+// contado de dentro obrigaria quem o lê a sommar por fóra o que a orla comia.
+struct Rectangulo {
+  std::size_t x = 0, y = 0, largura = 0, altura = 0;
+  bool vazio() const noexcept { return largura == 0 || altura == 0; }
+};
+
+// A SALA (issue #102): o cabeçalho, o trilho, e duas metades. Todo numero da
+// composição sahe d'aqui, e em campo NOMEADO: as issues irmãs pendem d'estes
+// rectangulos, e indice n'um vector desloca-se á primeira peça nova.
+struct Sala {
+  Rectangulo cabecalho;  // UMA linha, no alto, de largura inteira
+  Rectangulo trilho;     // UMA linha, logo abaixo d'elle
+  Rectangulo campo;      // a linha do prompt; vazia com elle fechado
+  Rectangulo chapa;      // UMA linha por cima da pauta
+  Rectangulo pauta;      // a lista das musicas, á esquerda
+  Rectangulo divisor;    // a collunha que aparta as duas metades
+  Rectangulo painel;     // a metade direita; vazia abaixo de cem collunhas
+  Rectangulo capa;       // no alto do painel, ATÉ quarenta e cinco por cento
+  Rectangulo espectro;   // o que sobra do painel, abaixo da capa
+  Rectangulo rodape;     // UMA linha de dicas, no pé
+};
+
 // A GEOMETRIA da sala: quanto toma cada painel, dada a largura UTIL (a que o
 // pintor tem depois da orla) e a altura da faixa do corpo. As collunhas da
 // barra entram por PARAMETRO: quem sabe a largura d'ella é quem a pinta, e
