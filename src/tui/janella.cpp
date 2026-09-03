@@ -58,6 +58,7 @@
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
 #include "nucleo/lixeira.hpp"
+#include "nucleo/letreiro.hpp"
 #include "nucleo/lousa.hpp"
 #include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
@@ -550,6 +551,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // por viver aqui que a sahida da tela leva a janella d'ella junto.
   nucleo::Lousa lousa(ajustes.lousa.valor);
   nucleo::Arquivario arquivario;
+  // O LETREIRO (issue #108) vive ao lado d'ella, e pela mesma chave: a chapa
+  // que elle rasteriza é a lousa quem a põe, e desligada ella não ha onde.
+  nucleo::Letreiro letreiro(ajustes.lousa.valor);
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
@@ -872,6 +876,23 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                              rectangulo.collunas))),
                 caixas.capa.y_min, rectangulo.collunas, rectangulo.linhas);
     caixas.capa = tui::caixa_por_pintar();
+    // AS CHAPAS DAS ABAS (issue #108), pela MESMA lousa e com a mesma
+    // disciplina: a ordem sae do QUADRO, e as caixas são as do quadro
+    // anterior, que são as unicas que o `reflect` já encheu.
+    for (const tui::ChapaDaAba& ordem : tui::ordens_das_chapas(
+             caixas.cabecalho, tui::aba_da_secao(navegador.secao()),
+             lousa.disponivel() && letreiro.disponivel(),
+             vigilia.pede_batida())) {
+      const std::filesystem::path* chapa = nullptr;
+      if (ordem.poe) chapa = &letreiro.chapa(tui::pedido_da_chapa(ordem));
+      // Chapa que não veio TIRA a que estava, e não a deixa: a aba trocou de
+      // degrau, e a imagem velha mentiria sobre onde o operador está.
+      if (chapa == nullptr || chapa->empty())
+        lousa.tira(tui::identidade_da_chapa(ordem.aba));
+      else
+        lousa.poe(tui::identidade_da_chapa(ordem.aba), *chapa, ordem.collunha,
+                  ordem.linha, ordem.largura, 1);
+    }
     // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
     // painel, e marcador algum: a janella d'ella chega um quadro depois, e
     // n'esse quadro o operador não ha de ver nota musical por baixo da capa.
