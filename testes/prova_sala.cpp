@@ -218,18 +218,21 @@ TEST_CASE("as duas metades repartem a tela, com a collunha do divisor pelo meio"
 
 TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
-  CHECK(sala.cabecalho.y == 0);
-  CHECK(sala.trilho.y == 1);
+  // O corpo abre na PRIMEIRA linha da tela (issue #125), e o pé toma as
+  // quatro ultimas: o trilho, as duas da fita, e o rodapé.
+  CHECK(sala.chapa.y == 0);
+  CHECK(sala.pauta.y == 1);
+  CHECK(sala.pauta.altura == 62);
   CHECK(sala.campo.vazio());  // sem campo aberto, linha alguma se lhe reserva
-  CHECK(sala.chapa.y == 2);
-  CHECK(sala.pauta.y == 3);
-  CHECK(sala.pauta.altura == 63);
+  CHECK(sala.trilho.y == 63);
+  CHECK(sala.cabecalho.y == 64);
+  CHECK(sala.cabecalho.altura == 2);
   CHECK(sala.rodape.y == 66);
-  // O tecto da capa: quarenta e cinco por cento de sessenta e quatro é vinte e
-  // oito e oito decimos, e a conta inteira trunca em vinte e oito.
+  // O tecto da capa: quarenta e cinco por cento de sessenta e tres trunca em
+  // vinte e oito, e o que sobra pertence ao espectro.
   CHECK(sala.capa.altura == 28);
-  CHECK(sala.espectro.y == 30);
-  CHECK(sala.espectro.altura == 36);
+  CHECK(sala.espectro.y == 28);
+  CHECK(sala.espectro.altura == 35);
 }
 
 TEST_CASE("o campo aberto empurra o corpo uma linha para baixo") {
