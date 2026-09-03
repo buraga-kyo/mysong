@@ -431,12 +431,16 @@ TEST_CASE("o verso comprido corta-se e é o cortado que se rasteriza") {
   REQUIRE(ordem.poe);
   CHECK(ordem.verso == "um verso muito mais…");
   CHECK(ordem.cellulas == kLargura);
-  // E o pedido veste a chapa das MESMAS côres com que a linha em mono se pinta.
+  // E o pedido veste a chapa das MESMAS côres com que o verso em mono se pinta:
+  // o LARANJA da paleta (issue #157), que foi o que elle pediu, sobre o fundo
+  // do painel. E vae em TRES fileiras, que é o corpo grande.
   const nu::PedidoDaChapa pedido =
       tui::pedido_da_chapa_da_letra(ordem.verso, ordem.cellulas);
   CHECK(pedido.texto == "um verso muito mais…");
-  CHECK(pedido.tinta == std::string(tk::text_bright));
+  CHECK(pedido.tinta == std::string(tk::data3));
   CHECK(pedido.fundo == std::string(tk::panel));
+  CHECK(pedido.linhas == tui::FILEIRAS_DO_VERSO);
+  CHECK(pedido.corpo == nu::corpo_da_altura(tui::FILEIRAS_DO_VERSO));
   CHECK(pedido.cellulas == kLargura);
   CHECK(pedido.familia == std::string(nu::FAMILIA_DA_MARCA));
 }

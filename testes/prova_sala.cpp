@@ -237,8 +237,12 @@ TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
   CHECK(sala.ficha.altura == 1);
   CHECK(sala.capa.y == 1);
   CHECK(sala.capa.altura == 28);
-  CHECK(sala.espectro.y == 29);
-  CHECK(sala.espectro.altura == 36);
+  // O BLOCO DA LETRA (issue #157) mora entre a capa e o espectro: cinco
+  // fileiras, e o espectro principia debaixo d'elle.
+  CHECK(sala.letra.y == 29);
+  CHECK(sala.letra.altura == 4);
+  CHECK(sala.espectro.y == 33);
+  CHECK(sala.espectro.altura == 32);
 }
 
 TEST_CASE("o campo aberto tira uma linha ao corpo, por cima da fita") {
@@ -284,9 +288,19 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
       CHECK(sala.ficha.y == 0);
       CHECK(sala.ficha.altura == 1);
       CHECK(sala.capa.y == 1);
-      CHECK(1 + sala.capa.altura + sala.espectro.altura == sala.painel.altura);
+      // A ficha, a capa, a letra e o espectro fecham o painel sem vão. O bloco
+      // da letra (issue #157) entra INTEIRO ou não entra.
+      const std::size_t somma = 1 + sala.capa.altura + sala.letra.altura +
+                                sala.espectro.altura;
+      CHECK(somma == sala.painel.altura);
       CHECK(sala.espectro.altura >= 6);  // o espectro não desce de seis
-      CHECK(sala.espectro.y == sala.capa.y + sala.capa.altura);
+      const bool inteira = sala.letra.altura == 4 || sala.letra.altura == 0;
+      CHECK(inteira);
+      const std::size_t sob_a_capa = sala.capa.y + sala.capa.altura;
+      if (!sala.letra.vazio()) CHECK(sala.letra.y == sob_a_capa);
+      const std::size_t depois_da_capa =
+          sala.capa.y + sala.capa.altura + sala.letra.altura;
+      CHECK(sala.espectro.y == depois_da_capa);
     }
   }
 }
@@ -329,14 +343,15 @@ TEST_CASE("em tela baixa cede o rodapé, e sómente depois o campo") {
 // rectangulo da capa é TECTO, e a de 16 por 9 sahe mais baixa que elle.
 TEST_CASE("o espectro toma o que a capa não gastou") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
-  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 36);
-  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 53);
-  // Conta-se da CAPA, que a fileira da ficha mora acima d'ella (issue #134).
-  CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.capa.y + 11);
-  CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura - 1);
+  // A conta desconta a ficha, a capa que se gastou DE FACTO e o bloco da letra
+  // (issue #157), que mora entre as duas.
+  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 32);
+  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 49);
+  CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.capa.y + 11 + 4);
+  CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura - 1 - 4);
   // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em
   // std::size_t daria numero enorme, e a peça pintaria bilhões de linhas.
-  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 36);
+  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 32);
   CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).vazio());
 }
 
