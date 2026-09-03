@@ -11,8 +11,10 @@
 #include <string>
 
 #include "tui/cabecalho.hpp"
+#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
+namespace tk = mysong::tui::tokens;
 namespace tui = mysong::tui;
 
 namespace {
@@ -47,6 +49,11 @@ tui::Retracto tocando() {
   d_ella.duracao = 189.0;
   d_ella.volume = 100;
   return d_ella;
+}
+
+ftxui::Color cor(std::string_view token) {
+  const tk::Triade c = tk::rgb(token);
+  return ftxui::Color::RGB(c.r, c.g, c.b);
 }
 
 }  // namespace
@@ -104,6 +111,27 @@ TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
                                                 120),
                      120),
                51, 11) == "(nada toca)");
+}
+
+
+// AS TINTAS. A aba corrente é BLOCO SOLIDO, v600 com texto v50, que é o gesto do
+// site d'elle onde o que está sob a mão vira bloco cheio; as outras ficam no
+// raised do chrome. O modo aceso é glow_core, e o apagado é text_muted.
+TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
+  const ftxui::Screen tela = papel(
+      tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, "x", 167),
+      167);
+  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::v600));
+  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::v50));
+  CHECK(tela.PixelAt(4, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(4, 0).foreground_color == cor(tk::text_primary));
+  CHECK(tela.PixelAt(30, 0).background_color == cor(tk::raised));
+  // Os botões vestem panel_hi com o glifo em glow_core: é o glow CONTIDO da
+  // regra da Casa, que accende no que TOCA e nunca no fundo todo.
+  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(40, 0).foreground_color == cor(tk::glow_core));
+  // O nome veste `panel`, que é o degrau de fundo, e não o da fita.
+  CHECK(tela.PixelAt(60, 0).background_color == cor(tk::panel));
 }
 
 
