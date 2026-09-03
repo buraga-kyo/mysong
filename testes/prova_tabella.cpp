@@ -174,18 +174,19 @@ TEST_CASE("a linha da pauta diz numero, titulo, artista, régua e tempo") {
   const tui::Linha qual =
       faixa_de("Montagem Lunar Celestia 1.0", "TOKYOPHILE", 4, 96);
   const std::string linha = dito(tui::pedacos_da_linha(qual, medidas, 267, false));
-  CHECK(linha.substr(0, 5) == "    4");  // a cella do ▶ vazia, e o № á direita
-  // O titulo de vinte e sete cellas n'uma columna de vinte e quatro: corta-se,
-  // e a reticencia diz que se cortou.
-  CHECK(linha.find("Montagem Lunar Celestia\u2026") != std::string::npos);
+  // A cella do ▶ vazia, e o titulo LOGO a seguir: o № sahiu (issue #151).
+  CHECK(linha.substr(0, 4) == "  Mo");
+  // O titulo de vinte e sete cellas CABE agora na columna, que ella cresceu com
+  // a sahida do № (issue #151): sae inteiro, e reticencia alguma se põe.
+  CHECK(linha.find("Montagem Lunar Celestia 1.0") != std::string::npos);
   CHECK(linha.find("TOKYOPHILE") != std::string::npos);
   // Noventa e seis segundos de duzentos e sessenta e sete: duas cellas de seis.
   CHECK(linha.find("\u25b0\u25b0\u25b1\u25b1\u25b1\u25b1") != std::string::npos);
   CHECK(linha.find("01:36") != std::string::npos);
-  // A que SÔA leva o «▶» na cella d'elle, e NÃO perde o numero.
+  // A que SÔA leva o «▶» na cella d'elle, e o titulo não anda por isso.
   const std::vector<tui::PedacoDaPauta> soando =
       tui::pedacos_da_linha(qual, medidas, 267, true);
-  CHECK(dito(soando).substr(0, 7) == " \u25b6  4");
+  CHECK(dito(soando).substr(0, 6) == " \u25b6Mo");
   namespace tk = mysong::tui::tokens;
   for (const tui::PedacoDaPauta& pedaco : soando)
     if (pedaco.negrito) CHECK(pedaco.tinta == tk::glow_soft);
@@ -194,37 +195,39 @@ TEST_CASE("a linha da pauta diz numero, titulo, artista, régua e tempo") {
   const std::string nome =
       dito(tui::pedacos_da_linha(faixa_de("MXZI", "", 12, 0), nomes, 24, false));
   CHECK(nome.find("MXZI") != std::string::npos);
-  CHECK(nome.find("  12") != std::string::npos);
+  CHECK(nome.find("  12") != std::string::npos);  // a CONTA, á direita
   CHECK(nome.find("\u25b0\u25b0\u25b0\u25b1\u25b1\u25b1") != std::string::npos);
 }
 
 TEST_CASE("as columnas da pauta cedem por ordem de serviço") {
   // A metade esquerda de uma tela de 167 collunhas: abrem-se todas.
   const tui::Medidas larga = tui::medidas_da_pauta(83, true, false);
+  // O № sahiu da pauta (issue #151), e as tres cellas d'elle e o vão foram ao
+  // titulo, que é a collunha que mais aperta.
   CHECK(larga.marcador == 1);
-  CHECK(larga.numero == 3);
   CHECK(larga.regua == 6);
   CHECK(larga.conta == 5);  // MM:SS
-  CHECK(larga.artista == 19);
-  CHECK(larga.titulo == 40);
+  CHECK(larga.artista == 21);
+  CHECK(larga.titulo == 43);
   CHECK(larga.titulo >= 2 * larga.artista);  // dous terços contra um
   // A ESTREITA cede o ARTISTA, e mais nada: elle é o primeiro a ceder.
   const tui::Medidas media = tui::medidas_da_pauta(40, true, false);
   CHECK(media.artista == 0);
   CHECK(media.regua == 6);
-  CHECK(media.titulo == 18);
-  // Depois d'elle cede a RÉGUA, e depois o TEMPO.
-  CHECK(tui::medidas_da_pauta(30, true, false).regua == 6);
-  CHECK(tui::medidas_da_pauta(29, true, false).regua == 0);
-  CHECK(tui::medidas_da_pauta(20, true, false).conta == 0);
+  CHECK(media.titulo == 23);
+  // Depois d'elle cede a RÉGUA, e depois o TEMPO. As fronteiras desceram
+  // quatro collunhas com a sahida do № (issue #151): o que elle tomava é
+  // agora folga que as outras columnas gastam antes de ceder.
+  CHECK(tui::medidas_da_pauta(26, true, false).regua == 6);
+  CHECK(tui::medidas_da_pauta(24, true, false).regua == 0);
+  CHECK(tui::medidas_da_pauta(16, true, false).conta == 0);
   // A pauta MINIMA: as duas margens e o titulo. Nem o marcador cabe.
   const tui::Medidas minima = tui::medidas_da_pauta(10, true, false);
   CHECK(minima.marcador == 0);
   CHECK(minima.titulo == 8);
-  // A vista que CONTA nomes não tem № nem artista: o que ella conta vae na
-  // columna da direita, em quatro cellas, e a régua mede-se por elle.
+  // A vista que CONTA nomes não tem artista: o que ella conta vae na columna
+  // da direita, em quatro cellas, e a régua mede-se por elle.
   const tui::Medidas conta = tui::medidas_da_pauta(83, true, true);
-  CHECK(conta.numero == 0);
   CHECK(conta.artista == 0);
   CHECK(conta.conta == 4);
   CHECK(conta.titulo == 67);
@@ -361,8 +364,9 @@ TEST_CASE("as vistas de artistas e albuns adaptam as columnas") {
   navegador.entra();  // as faixas do album
   REQUIRE(navegador.secao() == tui::Secao::Faixas);
   const std::vector<std::string> faixas = pintar(navegador, 2, 60);
-  // E aqui as columnas da faixa voltam todas: o №, a régua e o tempo.
-  CHECK(faixas[0].substr(0, 5) == "    1");
+  // E aqui as columnas da faixa voltam: a régua e o tempo. O № sahiu da pauta
+  // (issue #151), d'onde o titulo principia logo depois da cella do «▶».
+  CHECK(faixas[0].substr(0, 4) == "  MO");
   CHECK(faixas[0].find("MONTAGEM TOMADA") != std::string::npos);
   CHECK(faixas[0].find("\u25b0\u25b0\u25b0\u25b0\u25b0\u25b0") != std::string::npos);
   CHECK(faixas[0].find("01:25") != std::string::npos);
@@ -431,8 +435,8 @@ TEST_CASE("a faixa que sôa accende com signal proprio ao lado do da eleita") {
   CHECK(dous.PixelAt(0, 0).background_color != cor(tk::v600));
   // E o «▶» NÃO empurra o titulo: elle tem cella PROPRIA, e a columna do titulo
   // cahe na mesma collunha com signal e sem elle.
-  CHECK(dous.PixelAt(7, 0).character == "T");
-  CHECK(dous.PixelAt(7, 1).character == "F");
+  CHECK(dous.PixelAt(2, 0).character == "T");
+  CHECK(dous.PixelAt(2, 1).character == "F");
   // Sôa a MESMA que está eleita: o bloco troca o violeta pelo glow_core, e o
   // texto sahe em panel, que é o fundo escuro por cima do claro.
   const ftxui::Screen um = com_som(navegador, "https://y/Fuga");

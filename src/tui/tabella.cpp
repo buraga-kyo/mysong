@@ -107,12 +107,11 @@ Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
   }
   medidas.marcador = kMarcador;
   std::size_t sobra = largura - 2 * kMargem - kMarcador;
-  // O № é numero DE FAIXA: na vista que conta nomes elle não existe, e a conta
-  // d'ella vae na columna da direita.
-  if (!pela_conta && sobra >= kNumero + kVao + kTituloMinimo) {
-    medidas.numero = kNumero;
-    sobra -= kNumero + kVao;
-  }
+  // O № SAHIU da pauta (issue #151): elle é o numero da faixa dentro do album
+  // que ella veio, e n'um acervo que se lê pelo titulo nada dizia. A largura
+  // d'elle vae ao titulo, que é a collunha que mais aperta. A vista que CONTA
+  // nomes conserva a conta d'ella, que aquillo não é numero de faixa: é
+  // quantas faixas ha, e vae na columna da direita.
   const std::size_t direita = pela_conta ? kConta : kTempo;
   if (sobra >= direita + 1 + kTituloMinimo) {
     medidas.conta = direita;
@@ -210,18 +209,10 @@ std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
       feitos.push_back({std::string(quantas, ' '), tokens::text_faint, false});
   };
   vao(kMargem);
-  // O «▶» tem cella PROPRIA, e não toma o logar do №: tomando-o, a linha que
-  // sôa perdia o numero d'ella, e o operador que conta pela pauta perdia a
-  // conta justamente na linha que está a ouvir.
+  // O «▶» tem cella PROPRIA, e é a primeira coisa da linha: o titulo principia
+  // logo a seguir a ella, que o numero da faixa sahiu (issue #151).
   if (medidas.marcador > 0)
     feitos.push_back({soa ? "\u25b6" : " ", tokens::glow_core, false});
-  if (medidas.numero > 0) {
-    const std::string numero =
-        linha.numero > 0 ? std::to_string(linha.numero) : std::string();
-    feitos.push_back(
-        {a_direita(numero, medidas.numero), tokens::text_faint, false});
-    vao(kVao);
-  }
   // O titulo da que SÔA accende sem que o resto da linha accenda: são dous
   // signaes apartados, e o outro, o da eleita, é o bloco inteiro.
   feitos.push_back({apara_collunhas(linha.texto, medidas.titulo),
