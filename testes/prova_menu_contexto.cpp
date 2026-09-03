@@ -9,14 +9,17 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/mouse.hpp>
 #include <ftxui/dom/node.hpp>
+#include <ftxui/screen/color.hpp>
 #include <ftxui/screen/screen.hpp>
 #include "tui/menu_contexto.hpp"
+#include "tui/tokens.hpp"
 
 namespace tui = mysong::tui;
 namespace nucleo = mysong::nucleo;
@@ -178,4 +181,30 @@ TEST_CASE("a caixa do menu veste o chrome do RADICAL, linha a linha") {
   CHECK(linha_de(ecran, 14).rfind("└", 0) == 0);
   // A linha ACIMA fica intacta: a camada não pinta o que não é d'ella.
   CHECK(linha_de(ecran, 6).find_first_not_of(' ') == std::string::npos);
+}
+
+namespace {
+namespace tokens = mysong::tui::tokens;
+
+ftxui::Color cor_de(std::string_view token) {
+  const tokens::Triade c = tokens::rgb(token);
+  return ftxui::Color::RGB(c.r, c.g, c.b);
+}
+}  // namespace
+
+TEST_CASE("o item eleito sahe em bloco v600 de tinta v50") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  ftxui::Screen ecran = pintado(menu, {0, 59, 6, 6}, 120, 30);
+  // A linha oito é a do TOCAR, que é o item em que o menu abre.
+  CHECK(ecran.PixelAt(2, 8).background_color == cor_de(tokens::v600));
+  CHECK(ecran.PixelAt(2, 8).foreground_color == cor_de(tokens::v50));
+  // A de baixo não: fundo panel, tinta text_primary, que é o chrome pedido.
+  CHECK(ecran.PixelAt(2, 9).background_color == cor_de(tokens::panel));
+  CHECK(ecran.PixelAt(2, 9).foreground_color == cor_de(tokens::text_primary));
+  // A ORLA fica de FÓRA do bloco, ainda na linha eleita: ella é do chrome, e
+  // bloco que a comesse faria a caixa parecer partida na linha do dedo.
+  CHECK(ecran.PixelAt(0, 8).background_color == cor_de(tokens::panel));
+  CHECK(ecran.PixelAt(0, 8).foreground_color == cor_de(tokens::line_base));
+  // E o filete sahe mais apagado que a orla, que elle divide e não fecha.
+  CHECK(ecran.PixelAt(4, 11).foreground_color == cor_de(tokens::line_dim));
 }
