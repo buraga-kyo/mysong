@@ -214,6 +214,51 @@ Rectangulo caixa_da_corrente(const QuadroDaLetra& quadro) {
           glifos_da_linha(viva->texto).size(), 1};
 }
 
+ChapaDaLetra ordem_da_chapa_da_letra(const QuadroDaLetra& rio,
+                                     const Rectangulo& espectro,
+                                     bool letreiro_de_pe, bool foco_dentro,
+                                     bool mostra_letra) {
+  ChapaDaLetra ordem;
+  // As quatro condições são de CONJUNCÇÃO, e nenhuma sobra: sem letreiro não ha
+  // chapa que pôr, o foco fóra manda tirar, o `l` escondido tambem, e painel
+  // que se não pinta não tem canto onde a janella assente.
+  if (!letreiro_de_pe || !foco_dentro || !mostra_letra || espectro.vazio())
+    return ordem;
+  const LinhaViva* corrente = linha_corrente_do_rio(rio);
+  const Rectangulo caixa = caixa_da_corrente(rio);
+  if (corrente != nullptr && !caixa.vazio()) {
+    ordem.poe = true;
+    // O canto do PAINEL sommado á caixa do rio: aquelle é o unico que sabe onde
+    // o painel começa, e esta o unico que sabe onde o verso assenta.
+    ordem.collunha = static_cast<int>(espectro.x + caixa.x);
+    ordem.linha = static_cast<int>(espectro.y + caixa.y);
+    ordem.cellulas = caixa.largura;
+    ordem.verso = corrente->verso;
+  }
+  // A que SOBE adianta-se ainda que corrente alguma haja: é o caso da primeira
+  // linha da faixa, que nasce sem quem a preceda na leitura, e é justamente
+  // essa que não ha de esperar pelo pango-view.
+  const LinhaViva* proxima = linha_que_sobe_do_rio(rio);
+  if (proxima != nullptr) {
+    ordem.adiantado = proxima->verso;
+    ordem.cellulas_adiantadas = glifos_da_linha(proxima->verso).size();
+  }
+  return ordem;
+}
+
+nucleo::PedidoDaChapa pedido_da_chapa_da_letra(const std::string& verso,
+                                               std::size_t cellulas) {
+  nucleo::PedidoDaChapa pedido;
+  pedido.texto = verso;
+  // O BRILHO CHEIO da linha de leitura, e o fundo do painel por cama: são as
+  // duas côres com que a linha em mono já se pinta debaixo d'ella, e é d'essa
+  // egualdade que a imagem assenta sem se ver emenda.
+  pedido.tinta = std::string(tokens::text_bright);
+  pedido.fundo = std::string(tokens::panel);
+  pedido.cellulas = cellulas;
+  return pedido;
+}
+
 std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
                                        const QuadroDaLetra& letra) {
   std::vector<CelulaDoRio> tapete(espectro.largura * espectro.altura);
