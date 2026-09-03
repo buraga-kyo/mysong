@@ -762,7 +762,13 @@ letreiro, o verso corrente aparece em mono de uma celula, na mesma cor, e por
 isso nada falta.
 
 O bloco tem tres linhas fixas: duas do verso corrente e uma do seguinte, que
-por isso fica logo por baixo dele. Painel que nao tenha altura para ele e para o espectro minimo larga o
+por isso fica logo por baixo dele.
+
+Trocando o verso, a imagem do anterior e LIMPA antes de a nova entrar: a janela
+da lousa guarda o que a imagem anterior pintou fora da nova, e o verso que sai e
+quase sempre mais largo que o que entra, donde ficavam as duas pontas dele na
+tela. A mesma chapa nao se limpa, que tirar e por a cada quadro faria a letra
+piscar. Painel que nao tenha altura para ele e para o espectro minimo larga o
 bloco INTEIRO, que meio verso nao se le. Verso mais comprido que o painel corta
 com «…», e nao quebra em duas linhas.
 

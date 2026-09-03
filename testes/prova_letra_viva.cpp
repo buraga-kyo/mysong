@@ -544,5 +544,40 @@ TEST_CASE("o bloco parado tem o corrente no alto e o seguinte logo por baixo") {
   CHECK(linha_de(sem, 0, 20) == "                    ");
 }
 
+// LIMPAR ANTES DE PÔR (issue #163). A janella do Überzug++ conserva o que a
+// imagem anterior pintou FÓRA da nova, e o verso que sae é quasi sempre mais
+// largo que o que entra: ficavam as duas pontas d'elle na tela, uma de cada
+// lado do verso novo. A regra prova-se como valores, á parte da lousa.
+TEST_CASE("a chapa que muda manda limpar, e a que fica não manda") {
+  const tui::AssignaturaDaChapa posta{"abcde", 30, 20, 5};
+  const tui::AssignaturaDaChapa mesma{"abcde", 30, 20, 5};
+  const tui::AssignaturaDaChapa outra{"fghij", 30, 20, 5};
+  // Nada posto na tela: nada ha que limpar, e mandar tirar seria ordem á toa.
+  CHECK_FALSE(tui::limpa_antes_de_por(posta, outra, false));
+  // A MESMA não se limpa: tirar e pôr a cada quadro faria a lettra piscar.
+  CHECK_FALSE(tui::limpa_antes_de_por(posta, mesma, true));
+  // Verso novo, sim.
+  CHECK(tui::limpa_antes_de_por(posta, outra, true));
+  // E tambem quando sómente o CANTO muda: a imagem anda, e o que ella pintou
+  // no logar velho fica.
+  CHECK(tui::limpa_antes_de_por(posta, {"abcde", 31, 20, 5}, true));
+  CHECK(tui::limpa_antes_de_por(posta, {"abcde", 30, 21, 5}, true));
+  // E quando muda a LARGURA, que é o caso que o defeito mostrou: o verso novo
+  // é mais estreito, e as pontas do velho ficavam de fóra d'elle.
+  CHECK(tui::limpa_antes_de_por(posta, {"abcde", 30, 20, 9}, true));
+}
+
+TEST_CASE("a assignatura da chapa diz o verso, o canto e a largura") {
+  const ftxui::Box real{30, 41, 20, 22};
+  const tui::ChapaDaLetra ordem =
+      tui::ordem_da_chapa_parada(kVersos, 0, real, true, true, true);
+  REQUIRE(ordem.poe);
+  const tui::AssignaturaDaChapa d_ella = tui::assignatura_da(ordem);
+  CHECK(d_ella.verso == ordem.verso);
+  CHECK(d_ella.collunha == ordem.collunha);
+  CHECK(d_ella.linha == ordem.linha);
+  CHECK(d_ella.cellulas == ordem.cellulas);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

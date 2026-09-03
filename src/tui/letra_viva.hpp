@@ -254,6 +254,32 @@ ftxui::Element elemento_da_letra_parada(
     const std::vector<nucleo::LinhaDaLetra>& linhas, int corrente,
     std::size_t largura, std::size_t altura);
 
+// A ASSIGNATURA da chapa que está na tela (issue #163): o verso, o canto e a
+// largura. Trocando qualquer d'ellas, a janella da lousa ha de LIMPAR-SE antes
+// de receber a nova: a imagem que sae é mais larga que a que entra, e o
+// Überzug++ conserva na janella d'elle o que a anterior pintou fóra da nova.
+// Eram as duas PONTAS que ficavam na tela, uma de cada lado do verso novo.
+struct AssignaturaDaChapa {
+  std::string verso;
+  int collunha = 0;
+  int linha = 0;
+  std::size_t cellulas = 0;
+
+  bool operator==(const AssignaturaDaChapa& outra) const noexcept {
+    return verso == outra.verso && collunha == outra.collunha &&
+           linha == outra.linha && cellulas == outra.cellulas;
+  }
+};
+
+// assignatura_da — a assignatura de uma ordem de chapa.
+AssignaturaDaChapa assignatura_da(const ChapaDaLetra& ordem);
+
+// limpa_antes_de_por — se a chapa nova pede que se TIRE a que está. Pede quando
+// ha uma na tela e ella é OUTRA; não pede quando é a mesma (senão a fita
+// piscaria a cada quadro), nem quando não ha chapa alguma posta.
+bool limpa_antes_de_por(const AssignaturaDaChapa& posta,
+                        const AssignaturaDaChapa& nova, bool ha_posta) noexcept;
+
 // verso_do_bloco — o texto do verso corrente, já cortado á largura, que é o que
 // a lousa manda rasterizar. Vazio quando não ha verso a mostrar.
 std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,

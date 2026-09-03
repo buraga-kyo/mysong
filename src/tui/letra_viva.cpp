@@ -403,6 +403,16 @@ std::string verso_de(const std::vector<nucleo::LinhaDaLetra>& linhas, int qual) 
 
 }  // namespace
 
+AssignaturaDaChapa assignatura_da(const ChapaDaLetra& ordem) {
+  return {ordem.verso, ordem.collunha, ordem.linha, ordem.cellulas};
+}
+
+bool limpa_antes_de_por(const AssignaturaDaChapa& posta,
+                        const AssignaturaDaChapa& nova, bool ha_posta) noexcept {
+  if (!ha_posta) return false;   // nada ha na tela que limpar
+  return !(posta == nova);       // a mesma não se limpa: piscaria por quadro
+}
+
 std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,
                            int corrente, std::size_t largura) {
   if (linhas.empty() || largura == 0) return {};
