@@ -13,6 +13,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/cabecalho.hpp"
 
+#include <algorithm>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -274,8 +275,15 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
   const bool mudo = retracto.volume == 0;
   const std::string tempo =
       " " + mm_ss(retracto.posicao) + " / " + mm_ss(retracto.duracao) + " ";
+  // O volume vae a TRES algarismos, enchido á esquerda. Sem o enchimento, cada
+  // `-` encolhia o segmento de uma collunha e deslocava as quatro peças da
+  // direita, e com ellas o nome da faixa: a fita andava debaixo do olho de
+  // quem só queria baixar o som.
+  const std::string conta = std::to_string(retracto.volume);
   const std::string som = " " + std::string(mudo ? kMudo : kSom) + " " +
-                          std::to_string(retracto.volume) + "% ";
+                          std::string(3 - std::min<std::size_t>(3, conta.size()),
+                                      ' ') +
+                          conta + "% ";
   const std::string baralha = " " + std::string(kEmbaralhar) + " EMBARALHAR ";
   const std::string torna =
       " " +

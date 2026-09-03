@@ -83,6 +83,14 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
   CHECK(pedaco(tela, 115, 1) == "\ue0b2");        // a seta de entrada da direita
   CHECK(pedaco(tela, 116, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(tela, 132, 8) == " \U000f057e 100% ");
+  // O volume a TRES algarismos, enchido á esquerda: sem elle, cada `-` movia
+  // as quatro peças da direita uma collunha, e o nome da faixa com ellas.
+  tui::Retracto baixo = tocando();
+  baixo.volume = 95;
+  CHECK(pedaco(papel(tui::elemento_do_cabecalho(baixo, tui::Aba::MySong, "x",
+                                                167),
+                     167),
+               132, 8) == " \U000f057e  95% ");
   CHECK(pedaco(tela, 141, 14) == " \U000f049d EMBARALHAR ");
   CHECK(pedaco(tela, 156, 11) == " \U000f0456 REPETIR ");
   // E a linha FECHA a largura: nada sobra, e nada transborda.
