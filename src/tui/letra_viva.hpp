@@ -128,6 +128,41 @@ const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro);
 // linha corrente, e por ahi se sabe que chapa alguma se ha de pôr.
 Rectangulo caixa_da_corrente(const QuadroDaLetra& quadro);
 
+// Uma CÉLULLA do rio: o espectro por baixo, a letra por cima. `letra` verdadeiro
+// quer dizer que a célulla é de LETRA, e leva o FUNDO DO PAINEL por cama: é assim
+// que ella esconde a barra que está debaixo d'ella, e sómente essa.
+struct CelulaDoRio {
+  std::string glifo = " ";
+  tokens::Triade tinta;
+  bool pinta = false;
+  bool letra = false;
+};
+
+// tapete_do_rio — as célullas já compostas, em vector chato de largura vezes
+// altura, pela medida do QUADRO DO ESPECTRO. A célulla com letra é a que tem
+// glypho que não é branco: o branco entre as palavras deixa passar a barra, que
+// é o que faz o rio parecer sahir do espectro em vez de assentar n'uma tarja.
+//
+// D'aqui sahem os DOUS consumidores, e por isso mora aqui: o ftxui::Element da
+// janella e a sequencia SGR crua do exemplo. Duas composições dariam duas telas.
+std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
+                                       const QuadroDaLetra& letra);
+
+// sequencia_do_rio — os BYTES da célulla: o fundo, depois a tinta, depois o
+// glypho, sem repouso pelo meio. A célulla que não é de letra não escreve fundo
+// algum, que fundo escripto em toda a tela apagaria a transparencia do terminal.
+std::string sequencia_do_rio(const CelulaDoRio& celula);
+
+// elemento_do_rio — o espectro e a letra n'um só elemento.
+//
+// POR QUE NÃO `dbox`: o `text` do FTXUI escreve TODA célulla que o seu texto
+// tem, e o espaço é célulla escripta. Posta a letra por cima em dbox, a linha
+// inteira d'ella apagaria as barras de orla a orla, e não sómente as célullas
+// das letras. Compõe-se pois célulla a célulla, que é a unica composição em que
+// o que se esconde se pode NOMEAR, e a bateria afere-a por PixelAt.
+ftxui::Element elemento_do_rio(const Quadro& espectro,
+                               const QuadroDaLetra& letra);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
