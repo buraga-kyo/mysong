@@ -232,3 +232,39 @@ TEST_CASE("a onda vazia não se guarda, nem se lê de arquivo que não ha") {
   CHECK_FALSE(nu::le_onda(cova.raiz() / "não-ha.onda", &lida));
   CHECK_FALSE(nu::le_onda({}, &lida));
 }
+
+namespace {
+
+// escreve_cru — o arquivo do cache lavrado Á MÃO, que é o que deixa aferir a
+// RECUSA sem se correr o ffmpeg: cada maneira de o corromper põe-se de
+// propósito, octeto por octeto.
+std::filesystem::path escreve_cru(const Cova& cova, const std::string& nome,
+                                  const std::string& conteudo) {
+  const std::filesystem::path onde = cova.raiz() / nome;
+  std::ofstream(onde) << conteudo;
+  return onde;
+}
+
+}  // namespace
+
+// Arquivo cortado ao meio ha de sahir como AUSENCIA, e nunca como onda pela
+// metade: essa a tela pintaria sem desconfiar, e a fórma sahiria mentirosa.
+TEST_CASE("o formato estranho é recusado, e não lido pela metade") {
+  const Cova cova;
+  nu::Onda lida;
+  // A marca de outrem, e a versão que esta geração não escreveu.
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "a", "mysong-vento 1 2\n10 20\n"), &lida));
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "b", "mysong-onda 2 2\n10 20\n"), &lida));
+  // A conta declarada que não bate: de menos e de mais.
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "c", "mysong-onda 1 3\n10 20\n"), &lida));
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "d", "mysong-onda 1 2\n10 20 30\n"), &lida));
+  // Valor fóra da escala de um octeto, e cabeçalho que declara nada.
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "e", "mysong-onda 1 2\n10 300\n"), &lida));
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "f", "mysong-onda 1 0\n\n"), &lida));
+  CHECK_FALSE(nu::le_onda(escreve_cru(cova, "g", ""), &lida));
+  // E o que ESTÁ certo passa, senão o caso provaria sómente que tudo recusa.
+  CHECK(nu::le_onda(escreve_cru(cova, "h", "mysong-onda 1 2\n0 255\n"), &lida));
+  REQUIRE(lida.pontos.size() == 2);
+  CHECK(lida.pontos[0] == 0.0f);
+  CHECK(lida.pontos[1] == doctest::Approx(1.0));
+}
