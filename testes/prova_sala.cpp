@@ -269,16 +269,15 @@ TEST_CASE("sem capa o marcador toma seis linhas, e o de baixo vem na setima") {
 TEST_CASE("a arte cinge-se ao tecto que se lhe pediu") {
   // Capa mais alta que o tecto: o chafa não a devolveria assim, mas a promessa
   // do `linhas_da_arte` é o MINIMO, e quem compõe conta com ella. Sem o cinge,
-  // a ficha sahiria para fóra do painel.
+  // o espectro sahiria para fóra do painel.
   const nu::CapaPintada alta = capa_de(30, 39);
   CHECK(tui::linhas_da_arte(alta, 20) == 20);
   const ftxui::Screen tela =
-      papel(tui::elemento_do_painel({"Faded", "Alan Walker", "Faded"},
-                                    tui::elemento_da_arte(alta, 39, 20),
-                                    ftxui::emptyElement(), 39),
+      papel(tui::elemento_do_painel(tui::elemento_da_arte(alta, 39, 20),
+                                    ftxui::text("BAIXO"), 39),
             39, 34);
-  CHECK(linha_de(tela, 20) == std::string(39, '#'));
-  CHECK(linha_de(tela, 21).substr(0, 5) == "Faded");
+  CHECK(linha_de(tela, 19) == std::string(39, '#'));
+  CHECK(linha_de(tela, 20).substr(0, 5) == "BAIXO");
 }
 
 // A ALTURA EXACTA, que é o que a geometria promette a quem compõe. O elemento
@@ -287,14 +286,10 @@ TEST_CASE("a arte cinge-se ao tecto que se lhe pediu") {
 TEST_CASE("o painel sem capa não abre fileira parasita") {
   const nu::CapaPintada nenhuma;
   const ftxui::Screen tela =
-      papel(tui::elemento_do_painel({"Faded", "Alan Walker", "Faded"},
-                                    tui::elemento_da_arte(nenhuma, 39, 0),
+      papel(tui::elemento_do_painel(tui::elemento_da_arte(nenhuma, 39, 0),
                                     ftxui::text("BAIXO"), 39),
             39, 9);
-  CHECK(linha_de(tela, 0).substr(0, 13) == "TOCANDO AGORA");
-  CHECK(linha_de(tela, 1).substr(0, 5) == "Faded");
-  CHECK(linha_de(tela, 2).substr(0, 11) == "Alan Walker");
-  CHECK(linha_de(tela, 4).substr(0, 5) == "BAIXO");
+  CHECK(linha_de(tela, 0).substr(0, 5) == "BAIXO");
   // A FONTE do defeito, aferida á parte para que a razão fique escripta: o
   // `text` vazio do FTXUI mede UMA linha, e o `emptyElement` mede zero.
   CHECK(linha_de(papel(ftxui::vbox({ftxui::emptyElement(), ftxui::text("X")}),
