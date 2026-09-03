@@ -129,28 +129,35 @@ TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
     CHECK(salto_de(qual, Direcao::Baixo) == qual);
 }
 
-TEST_CASE("o `↓` do cabeçalho torna ao corpo que cada segmento tem por baixo") {
-  // Os seis da esquerda têm a PAUTA por baixo, e é a ella que descem.
+TEST_CASE("o `↑` da fita torna ao corpo que cada segmento tem por cima") {
+  // Os tres botões têm a PAUTA por cima, e é a ella que sobem.
   for (const Focavel qual :
-       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
-        Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte})
-    CHECK(salto_de(qual, Direcao::Baixo) == Focavel::Pauta);
-  // Os tres da direita têm a CAPA, que mora no painel debaixo d'elles. Não é
+       {Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte})
+    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Pauta);
+  // As tres ABAS têm o TRILHO: elle corre a largura toda, mora na linha logo
+  // acima d'ellas, e o centro d'elle cae mesmo sobre o grupo. Um segundo `↑`
+  // leva d'elle á pauta, que é onde a lista está.
+  for (const Focavel qual :
+       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload})
+    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Trilho);
+  // Os tres da direita têm a CAPA, que mora no painel por cima d'elles. Não é
   // capricho: a capa está mesmo alli, e mandá-los á pauta faria a seta saltar
   // meia tela por cima do que ella tem em frente.
   for (const Focavel qual :
        {Focavel::Volume, Focavel::Embaralhar, Focavel::Repetir})
-    CHECK(salto_de(qual, Direcao::Baixo) == Focavel::Capa);
-  // E da capa torna-se ao cabeçalho por cima, e á pauta pelo lado.
-  CHECK(salto_de(Focavel::Capa, Direcao::Cima) == Focavel::Volume);
+    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Capa);
+  // E da capa desce-se á fita, e vae-se á pauta pelo lado.
+  CHECK(salto_de(Focavel::Capa, Direcao::Baixo) == Focavel::Volume);
   CHECK(salto_de(Focavel::Capa, Direcao::Esquerda) == Focavel::Pauta);
   CHECK(salto_de(Focavel::Capa, Direcao::Dextra) == Focavel::Capa);
-  CHECK(salto_de(Focavel::Capa, Direcao::Baixo) == Focavel::Capa);
+  CHECK(salto_de(Focavel::Capa, Direcao::Cima) == Focavel::Capa);
 }
 
-TEST_CASE("o trilho anda com o cabeçalho e com o corpo, e não da tela fóra") {
-  CHECK(salto_de(Focavel::Trilho, Direcao::Cima) == Focavel::Seguinte);
-  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::Capa);
+TEST_CASE("o trilho anda entre a pauta e a fita, e não da tela fóra") {
+  CHECK(salto_de(Focavel::Trilho, Direcao::Cima) == Focavel::Pauta);
+  // Para baixo cae na aba do meio, que é a que tem o centro mais perto do
+  // d'elle: o trilho corre a largura toda, e o meio d'ella é o meio do grupo.
+  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::AbaPlaylists);
   // Elle toma a largura INTEIRA: peça alguma lhe fica ao lado.
   CHECK(salto_de(Focavel::Trilho, Direcao::Esquerda) == Focavel::Trilho);
   CHECK(salto_de(Focavel::Trilho, Direcao::Dextra) == Focavel::Trilho);
