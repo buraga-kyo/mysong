@@ -122,3 +122,30 @@ TEST_CASE("nome já tomado na lixeira ganha suffixo, e o bilhete ganha o mesmo")
   CHECK(std::filesystem::exists(cova.lixeira() / "info" /
                                 "roda.mp3.2.trashinfo"));
 }
+
+TEST_CASE("o .lrc ao lado da faixa vae junto, e por par proprio") {
+  Cova cova;
+  const std::filesystem::path faixa = cova.poe("chuva.mp3", "som");
+  const std::filesystem::path lrc = cova.poe("chuva.lrc", "[00:01.00] agua");
+  const nu::DaLixeira desfecho = nu::manda_a_lixeira(faixa, cova.lixeira());
+  CHECK(desfecho.levou_a_letra);
+  CHECK_FALSE(std::filesystem::exists(lrc));
+  CHECK(texto_de(cova.lixeira() / "files" / "chuva.lrc") == "[00:01.00] agua");
+  // Par PROPRIO, e não pendurado no da faixa: assim cada um se restaura por si.
+  CHECK(std::filesystem::exists(cova.lixeira() / "info" /
+                                "chuva.lrc.trashinfo"));
+}
+
+TEST_CASE("a lixeira recusa com razão, e o que ella recusa fica no logar") {
+  Cova cova;
+  const nu::DaLixeira ausente =
+      nu::manda_a_lixeira(cova.lixeira() / "nunca houve.mp3", cova.lixeira());
+  CHECK_FALSE(ausente.feita);
+  CHECK_FALSE(ausente.razao.empty());
+  const std::filesystem::path faixa = cova.poe("fica.mp3", "som");
+  const nu::DaLixeira sem_raiz = nu::manda_a_lixeira(faixa, {});
+  CHECK_FALSE(sem_raiz.feita);
+  CHECK_FALSE(sem_raiz.razao.empty());
+  // Recusa não apaga: a faixa que não se pôde mandar ha de continuar a tocar.
+  CHECK(std::filesystem::exists(faixa));
+}
