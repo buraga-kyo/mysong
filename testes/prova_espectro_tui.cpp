@@ -40,6 +40,7 @@
 #include <ftxui/screen/screen.hpp>
 
 #include "nucleo/analisador.hpp"
+#include "nucleo/espectro.hpp"
 #include "tui/espectro.hpp"
 #include "tui/tokens.hpp"
 
@@ -401,6 +402,29 @@ TEST_CASE("o pico veste glow_hot e o mudo text_faint em qualquer registro") {
     CHECK_FALSE(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
     CHECK(es::mesma_tinta(calado.em(3, c).tinta, tk::rgb(tk::text_faint)));
     CHECK(es::mesma_tinta(silencio.em(3, c).tinta, tk::rgb(tk::text_faint)));
+  }
+}
+
+// ── C13 · as bordas REAES do nucleo ─────────────────────────────────────────
+// A obra viva não alcança as bordas do nucleo::Espectro, que o punho do
+// analisador as não abre, e vae pela escala NOMINAL do contracto. Este caso
+// afere que as duas põem TODA banda no mesmo registro, nas taxas que esta Casa
+// encontra, e é o que fecha a differença entre o que a tela pinta e o que o
+// nucleo colheu. Em 96 kHz ellas divergem em tres bandas do grave, que a
+// quantização em raias empurra as bordas para cima; taxa que o mundo não dá a
+// um tocador de mesa, e por isso se nomeia aqui em vez de se affirmar.
+TEST_CASE("as bordas reaes do nucleo põem toda banda no mesmo registro") {
+  const std::vector<float> nominais =
+      es::centros_da_escala(mysong::nucleo::QUANTAS_BANDAS);
+  for (const float taxa : {44100.0f, 48000.0f}) {
+    mysong::nucleo::Espectro espectro(taxa, 2);
+    const std::vector<float> reaes = es::centros_das_bandas(
+        espectro.bordas(),
+        taxa / static_cast<float>(mysong::nucleo::JANELA_DA_FFT));
+    REQUIRE(reaes.size() == mysong::nucleo::QUANTAS_BANDAS);
+    for (std::size_t b = 0; b < reaes.size(); ++b)
+      CHECK(es::registro_da_banda(reaes[b]) ==
+            es::registro_da_banda(nominais[b]));
   }
 }
 
