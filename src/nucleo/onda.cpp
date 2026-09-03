@@ -15,6 +15,8 @@
 
 #include "nucleo/capa.hpp"  // somma_dos_octetos, raiz_do_cache: o mesmo cache
 
+#include <unistd.h>
+
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -110,6 +112,54 @@ std::filesystem::path caminho_da_onda_em_cache(std::string_view chave) {
   // o que se guarda aqui é fórma de faixa, e apagar uma pasta não ha de levar
   // a outra pelo caminho.
   return raiz / "ondas" / (std::string(chave) + ".onda");
+}
+
+namespace {
+
+// A MARCA e a VERSÃO do formato. A marca diz de quem é o arquivo; a versão diz
+// que geração de conta o escreveu: mudando a conta dos pontos ou a escala dos
+// valores, sobe-se a versão e o cache de hontem sahe recusado.
+inline constexpr std::string_view MARCA_DA_ONDA = "mysong-onda";
+inline constexpr int VERSAO_DA_ONDA = 1;
+
+// O DEGRAU de um ponto: um octeto, que é a escala em que a onda se guarda. A
+// cella do terminal tem oito degraus, e guardar float de quatro octetos seria
+// guardar precisão que a tela deita fóra na primeira pintura.
+int degrau_do_ponto(float ponto) {
+  const float dentro = ponto < 0.0f ? 0.0f : (ponto > 1.0f ? 1.0f : ponto);
+  return static_cast<int>(std::lround(dentro * 255.0f));
+}
+
+}  // namespace
+
+bool escreve_onda(const std::filesystem::path& onde, const Onda& onda) {
+  if (onde.empty() || !onda.pronta()) return false;
+  std::error_code erro;
+  std::filesystem::create_directories(onde.parent_path(), erro);
+  if (erro) return false;
+  // Por TEMPORARIO e RENAME, pela razão exacta do cache da capa: quem acha o
+  // arquivo toma-o por bom sem lhe conferir octeto, d'onde um arquivo cortado
+  // ao meio (queda a meio da escripta, disco cheio, duas instancias sobre a
+  // mesma faixa) envenenaria essa chave para sempre. O rename no mesmo systema
+  // de arquivos é atomico, e resolve de graça a corrida entre duas instancias.
+  const std::filesystem::path meio =
+      onde.string() + "." + std::to_string(::getpid()) + ".parte";
+  std::ofstream sahida(meio, std::ios::trunc);
+  if (!sahida) return false;
+  sahida << MARCA_DA_ONDA << ' ' << VERSAO_DA_ONDA << ' ' << onda.pontos.size()
+         << '\n';
+  for (std::size_t p = 0; p < onda.pontos.size(); ++p)
+    sahida << (p == 0 ? "" : " ") << degrau_do_ponto(onda.pontos[p]);
+  sahida << '\n';
+  // O `close` ANTES do `good`: o ultimo despejo corre no fecho, e aferil-o
+  // antes d'elle daria por bom o erro que mora justamente na cauda.
+  sahida.close();
+  if (sahida.good()) std::filesystem::rename(meio, onde, erro);
+  if (!sahida.good() || erro) {
+    std::filesystem::remove(meio, erro);
+    return false;
+  }
+  return true;
 }
 
 }  // namespace mysong::nucleo
