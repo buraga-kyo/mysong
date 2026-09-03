@@ -142,51 +142,58 @@ TEST_CASE("cada secção conta a sua especie") {
   CHECK(tui::especie_da_secao(tui::Secao::NoRol) == tui::Especie::Faixas);
 }
 
-// A BARRA entra por parametro em toda chamada: as onze collunhas são as de
-// hoje, e a tarefa irmã da bibliotheca ha de as alargar sem tocar n'este
-// arquivo. Passa-se o numero, e não se o presume.
-TEST_CASE("a geometria esconde o painel abaixo de cem collunhas de tela") {
-  // 96 collunhas UTEIS são as cem da tela do operador menos as quatro da orla.
-  for (std::size_t larga : {40, 59, 60, 95})
-    CHECK(tui::geometria_da_sala(larga, 38, 11).painel == 0);
-  CHECK(tui::geometria_da_sala(95, 38, 11).meio == 84);
-  const tui::Geometria justa = tui::geometria_da_sala(96, 38, 11);
-  CHECK(justa.painel == 24);
-  CHECK(justa.meio == 60);
-  CHECK(justa.meio + 1 + justa.painel + 11 == 96);
+// A GEOMETRIA nas larguras que a issue #102 nomeia, e de doze a setenta linhas.
+// Alvo escripto Á MÃO, e nunca a conta da obra repetida aqui: assertiva que
+// compara o valor com a formula que o produziu não pode falhar.
+TEST_CASE("a sala esconde o painel abaixo de cem collunhas de tela") {
+  for (const std::size_t larga : {40, 60, 80, 99}) {
+    const tui::Sala sala = tui::sala_da_tela(larga, 40, false);
+    CHECK(sala.painel.vazio());
+    CHECK(sala.pauta.largura == larga);  // a pauta toma a tela toda
+    CHECK(sala.divisor.vazio());
+  }
+  const tui::Sala justa = tui::sala_da_tela(100, 40, false);
+  CHECK(justa.painel.largura == 50);
+  CHECK(justa.pauta.largura == 49);
+  CHECK(justa.divisor.x == 49);
 }
 
-TEST_CASE("o painel toma a quarta parte da largura e o meio o que sobra") {
-  const tui::Geometria d160 = tui::geometria_da_sala(156, 38, 11);
-  CHECK(d160.painel == 39);
-  CHECK(d160.meio == 105);
-  CHECK(d160.livre == 34);
-  CHECK(d160.capa == 20);
-  CHECK(d160.cabecalho == 6);
-  CHECK(d160.tabella == 32);
-  const tui::Geometria d220 = tui::geometria_da_sala(216, 38, 11);
-  CHECK(d220.painel == 54);
-  CHECK(d220.meio + 1 + d220.painel + 11 == 216);
-}
-
-TEST_CASE("o espectro não desce de oito linhas em altura alguma") {
-  for (std::size_t alta = 1; alta <= 60; ++alta) {
-    const tui::Geometria geo = tui::geometria_da_sala(156, alta, 11);
-    if (geo.painel != 0) CHECK(geo.livre - geo.capa >= 8);
-    CHECK(geo.cabecalho + geo.tabella == (alta == 0 ? 1 : alta));
+TEST_CASE("as duas metades repartem a tela, com a collunha do divisor pelo meio") {
+  const std::size_t larguras[4] = {120, 160, 167, 200};
+  const std::size_t painel[4] = {60, 80, 83, 100};
+  for (int i = 0; i < 4; ++i) {
+    const tui::Sala sala = tui::sala_da_tela(larguras[i], 67, false);
+    CHECK(sala.painel.largura == painel[i]);
+    CHECK(sala.pauta.largura + 1 + sala.painel.largura == larguras[i]);
+    CHECK(sala.painel.x == sala.pauta.largura + 1);
+    CHECK(sala.cabecalho.largura == larguras[i]);
+    CHECK(sala.trilho.largura == larguras[i]);
   }
 }
 
-TEST_CASE("terminal baixo cede a capa, depois o cabeçalho, depois o painel") {
-  const tui::Geometria baixa = tui::geometria_da_sala(156, 13, 11);
-  CHECK(baixa.painel == 39);
-  CHECK(baixa.capa == 0);
-  CHECK(baixa.cabecalho == 6);
-  CHECK(baixa.tabella == 7);
-  const tui::Geometria rasa = tui::geometria_da_sala(156, 5, 11);
-  CHECK(rasa.painel == 0);
-  CHECK(rasa.cabecalho == 0);
-  CHECK(rasa.tabella == 5);
+TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
+  const tui::Sala sala = tui::sala_da_tela(167, 67, false);
+  CHECK(sala.cabecalho.y == 0);
+  CHECK(sala.trilho.y == 1);
+  CHECK(sala.campo.vazio());  // sem campo aberto, linha alguma se lhe reserva
+  CHECK(sala.chapa.y == 2);
+  CHECK(sala.pauta.y == 3);
+  CHECK(sala.pauta.altura == 63);
+  CHECK(sala.rodape.y == 66);
+  // O tecto da capa: quarenta e cinco por cento de sessenta e quatro é vinte e
+  // oito e oito decimos, e a conta inteira trunca em vinte e oito.
+  CHECK(sala.capa.altura == 28);
+  CHECK(sala.espectro.y == 30);
+  CHECK(sala.espectro.altura == 36);
+}
+
+TEST_CASE("o campo aberto empurra o corpo uma linha para baixo") {
+  const tui::Sala com = tui::sala_da_tela(167, 67, true);
+  CHECK(com.campo.y == 2);
+  CHECK(com.campo.largura == 167);
+  CHECK(com.chapa.y == 3);
+  CHECK(com.pauta.altura == 62);
+  CHECK(com.rodape.y == 66);
 }
 
 // A ARTE não tem altura reservada: a de 16 por 9 sahe mais baixa que o tecto.
