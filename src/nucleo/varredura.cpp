@@ -208,6 +208,37 @@ bool le_etiqueta(const std::filesystem::path& caminho, Faixa* faixa) {
   return true;
 }
 
+// A etiqueta escreve-se pelo MESMO punho por onde o le_etiqueta a lê, e de
+// proposito: o `FileRef` acha o fórmato por si, donde mp3, m4a, opus e flac
+// entram por uma porta só. Um ramo por fórmato daria quatro verdades sobre o
+// que é a TITLE, e a que ficasse por corrigir gravava no logar errado.
+DoTitulo renomeia_titulo(const std::filesystem::path& caminho,
+                         std::string_view titulo) {
+  DoTitulo desfecho;
+  std::size_t principio = 0, fim = titulo.size();
+  const auto branco = [](char c) { return c == ' ' || c == '\t' || c == '\n'; };
+  while (principio < fim && branco(titulo[principio])) ++principio;
+  while (fim > principio && branco(titulo[fim - 1])) --fim;
+  desfecho.titulo = saneia_utf8(titulo.substr(principio, fim - principio));
+  if (desfecho.titulo.empty()) {
+    desfecho.razao = "o titulo não pode ficar vazio";
+    return desfecho;
+  }
+  TagLib::FileRef arquivo(caminho.c_str());
+  if (arquivo.isNull() || arquivo.tag() == nullptr) {
+    desfecho.razao = "esse arquivo não tem etiqueta que se escreva";
+    return desfecho;
+  }
+  arquivo.tag()->setTitle(
+      TagLib::String(desfecho.titulo, TagLib::String::UTF8));
+  if (!arquivo.save()) {
+    desfecho.razao = "a etiqueta não se deixou gravar";
+    return desfecho;
+  }
+  desfecho.feito = true;
+  return desfecho;
+}
+
 // trata_arquivo — um arquivo, um passo. Aqui vive o INCREMENTAL: hora e tamanho
 // eguaes aos do índice antigo copiam a linha em vez de a reler, e é onde o
 // primeiro scan gasta o seu tempo.

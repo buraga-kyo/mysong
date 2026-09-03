@@ -316,6 +316,12 @@ target_link_libraries(mysong_core PUBLIC Threads::Threads)
 # Dependencia nova alguma: o sqlite3 já entrou com a bibliotheca na issue #8.
 target_sources(mysong_core PRIVATE src/nucleo/rol.cpp)
 
+# ─── A LIXEIRA DO SYSTEMA (issue #105) ──────────────────────────────────────
+# Apagar faixa é mandá-la á lixeira freedesktop, e nunca desligá-la do disco.
+# Dependencia nova alguma se cobra: o que a especificação pede é directorio,
+# arquivo de texto e rename, que o <filesystem> da norma já dá.
+target_sources(mysong_core PRIVATE src/nucleo/lixeira.cpp)
+
 # ─── O VÍDEO EM JANELLA PROPRIA (issue #17) ─────────────────────────────────
 # Segunda instancia de mpv, em processo proprio, governada por soquete de commando.
 # Dependencia de bibliotheca nova alguma: o soquete é POSIX, e o mpv corre por

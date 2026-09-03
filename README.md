@@ -322,6 +322,8 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 | `v` | abre a faixa eleita em janella de video |
 | `I` | le uma playlist publica do Spotify por catalogo |
 | `T` | baixa TODAS as faixas da lista lida |
+| F2 | renomeia a faixa eleita: o campo abre com o titulo corrente |
+| Delete | manda a faixa eleita a lixeira do systema (pede confirmacao) |
 | `q` | sahe |
 
 ### O rato
@@ -438,6 +440,26 @@ lista em que se entrou fica sendo a ALVO, e o titulo passa a mostra-la; volta-se
 ao acervo, elege-se a faixa e tecla-se `a`. Dentro da lista, `K` e `J` movem o
 item, `t` retira-o, e Enter enche a fila do nucleo com a lista TODA na ordem
 gravada, comecando na faixa eleita.
+
+### Renomear e apagar a faixa
+
+Com uma faixa eleita, `F2` abre o campo de digitar ja com o titulo corrente
+dentro: Enter grava, Escape desiste. O que se grava e a tag TITLE do arquivo,
+pela taglib, e a linha do indice; o NOME DO ARQUIVO nao muda, que o `.lrc` ao
+lado e as listas apontam pelo caminho. Titulo vazio recusa-se, e o recado diz.
+
+`Delete` pergunta `apagar «titulo»? s/n`, a mesma pergunta do `D` das listas, e
+responde-se com a mesma tecla. Com `s`, o arquivo vae para a LIXEIRA do systema,
+e nunca para o nada: e a mesma lixeira do gerenciador de arquivos, pela
+especificacao freedesktop. Vive em `$XDG_DATA_HOME/Trash`, e sem a variavel em
+`~/.local/share/Trash`, com o arquivo em `Trash/files/<nome>` e o bilhete de par
+em `Trash/info/<nome>.trashinfo`. De la restaura-se pelo gerenciador de arquivos.
+
+O `.lrc` ao lado vae junto, por entrada propria, para que cada um se restaure
+por si. Nome ja tomado na lixeira ganha suffixo `.2`, `.3`, e o suffixo vae ao
+arquivo E ao bilhete. Arquivo n'outro volume, que nao se renomeia para dentro do
+`$HOME`, copia-se e apaga-se, e o recado diz que houve copia. A faixa sae do
+indice e de todas as listas no mesmo quadro.
 
 ### O socket de commando
 

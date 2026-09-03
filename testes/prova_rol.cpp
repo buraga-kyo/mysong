@@ -213,5 +213,30 @@ TEST_CASE("nome com aspas é nome, e não pedaço de SQL") {
   CHECK(roleiro.faixas(id).size() == 1);
 }
 
+TEST_CASE("a faixa apagada sae de todas as listas, e a ordem fecha o buraco") {
+  Cova cova;
+  nu::Roleiro roleiro(cova.banco());
+  const int manha = roleiro.cria("Da manhã");
+  const int noite = roleiro.cria("Da noite");
+  REQUIRE(roleiro.junta(manha, "/a/uma.mp3"));
+  REQUIRE(roleiro.junta(manha, "/a/vae.mp3"));
+  REQUIRE(roleiro.junta(manha, "/a/outra.mp3"));
+  REQUIRE(roleiro.junta(noite, "/a/vae.mp3"));
+  // Duas vezes na MESMA lista: é o caso que a ordem descendente resolve, e o
+  // que uma retirada de baixo para cima tiraria do logar errado.
+  REQUIRE(roleiro.junta(noite, "/a/vae.mp3"));
+  CHECK(roleiro.retira_de_todos("/a/vae.mp3") == 3);
+  CHECK(roleiro.faixas(manha) ==
+        std::vector<std::string>{"/a/uma.mp3", "/a/outra.mp3"});
+  CHECK(roleiro.faixas(noite).empty());
+  // Retirar o que já não está é zero, e não avaria.
+  CHECK(roleiro.retira_de_todos("/a/vae.mp3") == 0);
+  // A ordem ficou CONTIGUA: sem isso, subir e descer passavam a adivinhar quem
+  // é o visinho. Trocar as duas que ficaram prova-o sem se ler a columna.
+  CHECK(roleiro.troca(manha, 0, 1));
+  CHECK(roleiro.faixas(manha) ==
+        std::vector<std::string>{"/a/outra.mp3", "/a/uma.mp3"});
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

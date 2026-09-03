@@ -63,6 +63,12 @@ enum class Verbo {
   // OS DOUS MODOS de reprodução (issue #62). Verbos puros, como o TrocaFonte:
   // quem alterna e quem cicla é o TOCADOR, de uma tomada só da sua tranca.
   Embaralhar, Repetir,
+  // AS DUAS DA FAIXA (issue #105): renomear a musica, e mandá-la á lixeira.
+  // Teclas de FUNCÇÃO, e não lettras: as duas estragam cousa gravada, e o F2 e
+  // o Delete são o que o gerenciador de arquivos d'elle já faz, donde a mão não
+  // reaprende. Quem pergunta ao operador é a tela; estes verbos sómente dizem
+  // que se pediu.
+  RenomeiaFaixa, ApagaFaixa,
 };
 
 // Uma ORDEM. `alvo` sómente presta para Buscar (segundos) e Volume (por cento),

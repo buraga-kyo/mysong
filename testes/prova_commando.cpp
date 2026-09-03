@@ -274,5 +274,22 @@ TEST_CASE("com janella de pé, a busca sahe RELATIVA e não absoluta") {
   CHECK(no_motor.alvo == doctest::Approx(35.0));
 }
 
+TEST_CASE("o F2 e o Delete são as duas ordens da faixa") {
+  const tui::Retracto retracto = tocando();
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F2, retracto).verbo ==
+        tui::Verbo::RenomeiaFaixa);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Delete, retracto).verbo ==
+        tui::Verbo::ApagaFaixa);
+  // Alvo algum: são verbos puros, e numero n'ellas seria numero que alguem
+  // viria a ler por engano.
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F2, retracto).alvo == 0.0);
+  // Com o campo de digitar aberto, tecla alguma da taboada vale, e estas duas
+  // menos que as outras: o Delete dentro de um nome apaga lettra, não faixa.
+  CHECK(tui::ordem_da_tecla(ftxui::Event::Delete, retracto, true).verbo ==
+        tui::Verbo::Nada);
+  CHECK(tui::ordem_da_tecla(ftxui::Event::F2, retracto, true).verbo ==
+        tui::Verbo::Nada);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
