@@ -292,6 +292,32 @@ porque pergunta ao `--sonda`. A alavanca e a MESMA da lousa, e nao ha outra:
 `lousa = nao` (ou `MYSONG_LOUSA=nao`) desliga a capa nitida e o letreiro juntos,
 que a chapa sem lousa nao tem onde se pôr.
 
+### A onda da faixa
+
+No meio da fita do pe corre a ONDA da faixa, ao modo do SoundCloud: a
+envolvente de amplitude da musica inteira, um bloco por collunha, do oitavo ao
+cheio. O que ja tocou fica violeta, o que falta fica apagado, e clicar n'ella
+busca a posicao.
+
+A onda sai do `ffmpeg`, que decodifica a faixa toda uma vez, n'um fio de fundo,
+quando a faixa muda. Sao mil e vinte e quatro pontos, um por balde de tempo,
+com a media quadratica de cada balde normalizada ao maior da faixa: por isso a
+gravacao baixinha se ve tao bem quanto a alta.
+
+O resultado fica em `~/.cache/mysong/ondas/` (ou em `$XDG_CACHE_HOME/mysong/`,
+havendo a variavel), um arquivo de texto por faixa, com o caminho, o tamanho e
+a data de alteracao dentro da chave. A segunda vez que a faixa toca, a onda vem
+do cache e programa algum corre. Apagar a pasta so custa recalcular:
+
+```sh
+du -sh ~/.cache/mysong/ondas/    # o que ella ocupa
+rm -rf ~/.cache/mysong/ondas/    # e a Casa colhe outra vez quando precisar
+```
+
+Sem o `ffmpeg`, o meio da fita mostra a barra chata que o trilho mostrava
+antes, nas mesmas cores, e o progresso e o clique continuam iguais: a onda e
+feicao, e nunca dependencia. O `mysong --sonda` diz se elle esta na machina.
+
 ### Tudo o que vem do apt, n'uma linha
 
 ```sh
