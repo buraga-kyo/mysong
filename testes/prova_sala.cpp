@@ -236,84 +236,34 @@ TEST_CASE("o espectro toma o que a capa não gastou") {
 }
 
 // A ARTE não tem altura reservada: a de 16 por 9 sahe mais baixa que o tecto.
-TEST_CASE("a ficha vem na linha seguinte á ultima da capa") {
-  const tui::Ficha ficha{"Dawn Chorus", "Boards of Canada", "Geogaddi"};
-  for (int alta : {11, 20}) {
+TEST_CASE("a arte abre o painel na primeira linha, e o de baixo segue-a") {
+  for (const int alta : {11, 20}) {
     const nu::CapaPintada capa = capa_de(static_cast<std::size_t>(alta), 39);
     CHECK(tui::linhas_da_arte(capa, 20) == static_cast<std::size_t>(alta));
-    const ftxui::Screen tela = papel(
-        tui::elemento_do_painel(ficha, tui::elemento_da_arte(capa, 39, 20),
-                                ftxui::text(""), 39),
-        39, 34);
-    CHECK(linha_de(tela, 0).substr(0, 13) == "TOCANDO AGORA");
-    CHECK(linha_de(tela, 1) == std::string(39, '#'));
-    CHECK(linha_de(tela, alta) == std::string(39, '#'));
-    CHECK(linha_de(tela, alta + 1).substr(0, 11) == "Dawn Chorus");
-    CHECK(linha_de(tela, alta + 2).substr(0, 16) == "Boards of Canada");
-    CHECK(linha_de(tela, alta + 3).substr(0, 8) == "Geogaddi");
+    const ftxui::Screen tela =
+        papel(tui::elemento_do_painel(tui::elemento_da_arte(capa, 39, 20),
+                                      ftxui::text("BAIXO"), 39),
+              39, 34);
+    CHECK(linha_de(tela, 0) == std::string(39, '#'));
+    CHECK(linha_de(tela, alta - 1) == std::string(39, '#'));
+    CHECK(linha_de(tela, alta).substr(0, 5) == "BAIXO");
   }
 }
 
 // O MARCADOR sahe do elemento_da_capa com orla POR FÓRA, e é por isso que se
 // lhe pede quatro por trinta e sete: o que se ha de ver são seis por trinta e
 // nove, sem transbordar o painel.
-TEST_CASE("sem capa o marcador toma seis linhas e a ficha vem na setima") {
+TEST_CASE("sem capa o marcador toma seis linhas, e o de baixo vem na setima") {
   const nu::CapaPintada nenhuma;
   CHECK(tui::linhas_da_arte(nenhuma, 20) == 6);
-  const ftxui::Screen tela = papel(
-      tui::elemento_do_painel({"Dawn Chorus", "Boards of Canada", "Geogaddi"},
-                              tui::elemento_da_arte(nenhuma, 39, 6),
-                              ftxui::text(""), 39),
-      39, 34);
-  CHECK(collunha_de(tela, 4, "\u266b") > 0);
-  CHECK(collunha_de(tela, 6, "\u2500") >= 0);
-  CHECK(collunha_de(tela, 7, "\u2500") == -1);
-  CHECK(linha_de(tela, 7).substr(0, 11) == "Dawn Chorus");
-}
-
-TEST_CASE("o cabeçalho diz o nome e a conta e risca o separador") {
-  tui::Colleccao qual;
-  qual.nome = "GEOGADDI";
-  qual.quantas = 4;
-  qual.duracao = 840;
   const ftxui::Screen tela =
-      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105), 105, 6);
-  CHECK(linha_de(tela, 0).substr(0, 10) == std::string(10, '#'));
-  CHECK(linha_de(tela, 1).substr(12, 8) == "GEOGADDI");
-  CHECK(linha_de(tela, 3).find("4 FAIXAS, 14min") == 12);
-  CHECK(collunha_de(tela, 5, "\u2500") == 0);
-  CHECK(collunha_de(tela, 4, "\u2500") == -1);
-  // Meio estreito: os chips cedem o logar, e o vão da capa fica de pé. A
-  // fronteira é exacta: em sessenta collunhas elles cabem, em cincoenta e nove
-  // não, e ahi a linha da conta sahe sósinha.
-  CHECK(collunha_de(papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 60),
-                          60, 6),
-                    3, "\u21c4") == 30);
-  const ftxui::Screen curta =
-      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 59), 59, 6);
-  CHECK(collunha_de(curta, 3, "\u21c4") == -1);
-  CHECK(linha_de(curta, 1).substr(12, 8) == "GEOGADDI");
-}
-
-TEST_CASE("o chip do modo accende quando o modo liga") {
-  tui::Colleccao qual;
-  qual.nome = "GEOGADDI";
-  qual.quantas = 4;
-  const ftxui::Screen apagado =
-      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105), 105, 6);
-  const int x = collunha_de(apagado, 3, "\u21c4");
-  REQUIRE(x > 0);
-  CHECK(apagado.PixelAt(x, 3).foreground_color == cor(tk::text_faint));
-  qual.embaralhado = true;
-  qual.repeticao = nu::Repeticao::Todas;
-  const ftxui::Screen aceso =
-      papel(tui::elemento_do_cabecalho(qual, capa_de(5, 10), 105), 105, 6);
-  // A collunha é a MESMA: o chip apagado guarda o logar do aceso, e a linha da
-  // conta não muda de largura quando o operador tecla `z`.
-  CHECK(collunha_de(aceso, 3, "\u21c4") == x);
-  CHECK(aceso.PixelAt(x, 3).background_color == cor(tk::v700));
-  CHECK(aceso.PixelAt(x, 3).foreground_color == cor(tk::text_bright));
-  CHECK(collunha_de(aceso, 3, "\u21bb") > x);
+      papel(tui::elemento_do_painel(tui::elemento_da_arte(nenhuma, 39, 6),
+                                    ftxui::text("BAIXO"), 39),
+            39, 34);
+  CHECK(collunha_de(tela, 3, "\u266b") > 0);
+  CHECK(collunha_de(tela, 5, "\u2500") >= 0);
+  CHECK(collunha_de(tela, 6, "\u2500") == -1);
+  CHECK(linha_de(tela, 6).substr(0, 5) == "BAIXO");
 }
 
 TEST_CASE("a arte cinge-se ao tecto que se lhe pediu") {
