@@ -106,3 +106,19 @@ TEST_CASE("a data da exclusão sahe em ISO 8601 na hora local") {
   partido.tm_isdst = -1;
   CHECK(nu::data_da_exclusao(std::mktime(&partido)) == "2026-09-03T04:05:06");
 }
+
+TEST_CASE("nome já tomado na lixeira ganha suffixo, e o bilhete ganha o mesmo") {
+  Cova cova;
+  nu::manda_a_lixeira(cova.poe("roda.mp3", "primeira"), cova.lixeira());
+  const nu::DaLixeira segunda =
+      nu::manda_a_lixeira(cova.poe("roda.mp3", "segunda"), cova.lixeira());
+  CHECK(segunda.feita);
+  CHECK(segunda.nome == "roda.mp3.2");
+  // A primeira NÃO se perde: é o que a collisão por suffixo veio guardar.
+  CHECK(texto_de(cova.lixeira() / "files" / "roda.mp3") == "primeira");
+  CHECK(texto_de(cova.lixeira() / "files" / "roda.mp3.2") == "segunda");
+  // O suffixo vae aos DOUS. Separados, a lixeira mostraria a segunda faixa com
+  // o bilhete da primeira, e restaurá-la escreveria por cima do que ha.
+  CHECK(std::filesystem::exists(cova.lixeira() / "info" /
+                                "roda.mp3.2.trashinfo"));
+}
