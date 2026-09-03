@@ -694,12 +694,18 @@ meio, donde pouco depois de a batida passar a coluna ja voltou ao violeta. E por
 ser relativa ao pico de cada banda que o agudo acende no prato, em vez de ficar
 apagado so por nunca chegar ao teto da fita.
 
-A coluna acesa acaba em PONTA, e nao em topo chato: a celula do alto dela vira
-`▲` quando a barra subiu a celula inteira e `▴` quando subiu so parte dela, que
-a ponta pequena assenta mais baixo e nao mente sobre a altura. A ponta toma o
-lugar do topo, e nao acrescenta celula: a barra acesa e a apagada da mesma
-altura medem o mesmo. As colunas violeta continuam de topo chato, e a fita muda
-tambem.
+A coluna acesa acaba em PONTA, e nao em topo chato: as celulas do alto da banda
+desenham uma seta ENCORPADA, feita das mesmas meias diagonais powerline das
+setas que apartam MY SONG, PLAYLISTS e DOWNLOAD. O flanco que sobe fica na
+primeira coluna da banda, o que desce na ultima, e o bloco cheio nas do meio,
+donde as tres colunas de uma banda (que e o que a tela de 167 da) formam uma so
+seta cheia, de orla a orla.
+
+A ponta toma o lugar da celula do topo, e nao acrescenta celula: a barra acesa e
+a apagada da mesma altura medem o mesmo. Banda que caiba numa coluna so (painel
+estreito, onde cada coluna funde varias bandas) fica com o topo de bloco, que
+meia diagonal sozinha e degrau e nao seta. As colunas violeta continuam de topo
+chato, e a fita muda tambem.
 
 | registro | faixa | cor da batida | o que costuma morar ali |
 |---|---|---|---|
