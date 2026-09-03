@@ -226,5 +226,34 @@ TEST_CASE("o embaralhado sahe das proprias letras e é determinístico") {
   CHECK(tui::glifos_da_linha(tui::embaralha(com_vao, 0.0, 1, 2))[2] == " ");
 }
 
+TEST_CASE("a caixa da corrente diz a linha da tela e as collunhas") {
+  const tui::QuadroDaLetra canta =
+      tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura);
+  const tui::Rectangulo caixa = tui::caixa_da_corrente(canta);
+  CHECK_FALSE(caixa.vazio());
+  CHECK(caixa.x == 7);
+  CHECK(caixa.y == kLeitura);
+  CHECK(caixa.largura == 5);
+  CHECK(caixa.altura == 1);
+  // Sem corrente a caixa sae vazia, e por ahi se sabe que chapa alguma se põe.
+  const tui::QuadroDaLetra subindo =
+      tui::quadro_da_letra(kVersos, 8.0, kLargura, kAltura);
+  CHECK(tui::linha_corrente_do_rio(subindo) == nullptr);
+  CHECK(tui::caixa_da_corrente(subindo).vazio());
+}
+
+TEST_CASE("a mesma posição dá o mesmo quadro") {
+  const tui::QuadroDaLetra uma =
+      tui::quadro_da_letra(kVersos, 11.7, kLargura, kAltura);
+  const tui::QuadroDaLetra outra =
+      tui::quadro_da_letra(kVersos, 11.7, kLargura, kAltura);
+  REQUIRE(uma.linhas.size() == outra.linhas.size());
+  for (std::size_t i = 0; i < uma.linhas.size(); ++i) {
+    CHECK(uma.linhas[i].linha_da_tela == outra.linhas[i].linha_da_tela);
+    CHECK(uma.linhas[i].texto == outra.linhas[i].texto);
+    CHECK(uma.linhas[i].tinta == outra.linhas[i].tinta);
+  }
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
