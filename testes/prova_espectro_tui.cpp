@@ -962,37 +962,47 @@ TEST_CASE("o piso do silencio sahe em text_faint com o bloco de um oitavo") {
   CHECK(es::sequencia_da_celula(piso) == "\x1b[38;2;70;53;102m▁");
 }
 
-// A PONTA DA BATIDA (issue #139, refeita pela #141). A columna que accende na
-// côr do registro acaba n'uma seta ENCORPADA, feita das meias diagonaes
-// powerline: o flanco que sobe na primeira collunha da banda, o que desce na
-// ultima, e o bloco cheio nas do meio. As frias, a muda, a de uma cella e a
-// banda de uma collunha ficam como estavam.
+// A PONTA DA BATIDA (issue #139, refeita pela #141 e assentada na BARRA pela
+// #144). A barra que accende na côr do registro acaba n'uma seta ENCORPADA,
+// feita das meias diagonaes powerline: o flanco que sobe na primeira collunha
+// da barra e o que desce na segunda. Como a barra toma DUAS collunhas, e não
+// mais quantas a banda apanhasse, a seta é sempre a mesma e o bloco cheio do
+// meio já não tem onde cahir. As frias, a muda e a de uma cella ficam como
+// estavam.
 TEST_CASE("a banda quente remata em seta, flanco a flanco") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 1.0f;   // teto cheio: quente
   bandas[4] = 0.40f;  // fria
-  // Tres collunhas por banda, que é o que a tela d'elle dá: 24 bandas em 72.
+  // Trez collunhas de PASSO por banda, que é o que a tela d'elle dá: 24 bandas
+  // em 72, e a barra da banda b principia na collunha 3b.
   const es::Quadro quadro =
       es::compor(bandas, 3 * mysong::nucleo::QUANTAS_BANDAS, 5, false,
                  centros_em(100.0f));
-  // As tres collunhas da banda 3 são a 9, a 10 e a 11: a ponta lê-se n'ellas,
-  // da esquerda para a direita, e é UMA seta.
+  // A barra da banda 3 toma as collunhas 9 e 10, e a 11 é o VÃO: a seta lê-se
+  // nas duas primeiras, da esquerda para a direita, e é UMA seta. Dantes ella
+  // abria-se em trez, com o bloco cheio no meio; agora o meio não existe.
   CHECK(quadro.em(0, 9).glifo == std::string(es::kFlancoQueSobe));
-  CHECK(quadro.em(0, 10).glifo == std::string(es::kBlocoCheio));
-  CHECK(quadro.em(0, 11).glifo == std::string(es::kFlancoQueDesce));
-  // Por baixo da ponta, bloco cheio: a seta é o REMATE, e não a barra.
-  for (std::size_t l = 1; l < 5; ++l)
-    for (std::size_t c = 9; c <= 11; ++c)
+  CHECK(quadro.em(0, 10).glifo == std::string(es::kFlancoQueDesce));
+  CHECK(quadro.em(0, 11).pinta == false);
+  // Por baixo da ponta, bloco cheio: a seta é o REMATE, e não a barra. E o vão
+  // não pinta por baixo d'ella tampouco.
+  for (std::size_t l = 1; l < 5; ++l) {
+    for (std::size_t c = 9; c <= 10; ++c)
       CHECK(quadro.em(l, c).glifo == es::glifo_do_degrau(8));
+    CHECK(quadro.em(l, 11).pinta == false);
+  }
   // A ponta veste a MESMA côr da columna: ella é o topo da barra, e não peça
   // á parte.
   CHECK(es::mesma_tinta(quadro.em(0, 9).tinta, quadro.em(1, 9).tinta));
   CHECK(es::mesma_tinta(quadro.em(0, 10).tinta,
                         tk::rgb(es::tinta_do_registro(es::Registro::Graves))));
-  // A FRIA acaba em bloco, e a altura d'ella é a de sempre: duas cellas.
-  CHECK(quadro.em(3, 12).glifo == es::glifo_do_degrau(8));
-  CHECK(quadro.em(4, 12).glifo == es::glifo_do_degrau(8));
-  CHECK_FALSE(quadro.em(2, 12).pinta);
+  // A FRIA, que é a barra da banda 4 e mora nas collunhas 12 e 13, acaba em
+  // bloco, e a altura d'ella é a de sempre: duas cellas, nas duas collunhas.
+  for (std::size_t c = 12; c <= 13; ++c) {
+    CHECK(quadro.em(3, c).glifo == es::glifo_do_degrau(8));
+    CHECK(quadro.em(4, c).glifo == es::glifo_do_degrau(8));
+    CHECK_FALSE(quadro.em(2, c).pinta);
+  }
 }
 
 TEST_CASE("a taboada da ponta dá flanco, bloco, e nada na banda de uma collunha") {
