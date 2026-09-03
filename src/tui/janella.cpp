@@ -958,8 +958,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         lousa.tira(tui::identidade_da_chapa(ordem.aba));
         continue;
       }
+      // A caixa INTEIRA do rotulo (issue #126): a linha de partida é a de
+      // CIMA do segmento, e a chapa toma as fileiras que a ordem traz, que na
+      // fita do pé são duas. Pedida com altura UM, a imagem parava na fileira
+      // de cima e a de baixo ficava com o fundo pelado.
       lousa.poe(tui::identidade_da_chapa(ordem.aba), *chapa, ordem.collunha,
-                ordem.linha, ordem.largura, 1);
+                ordem.linha, ordem.largura, ordem.linhas);
       ultima_chapa = *chapa;
     }
     // A CHAPA DA LINHA CORRENTE (issue #110), ao lado das das abas e pela mesma
@@ -990,8 +994,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     if (!da_letra.adiantado.empty())
       letreiro.chapa(tui::pedido_da_chapa_da_letra(
           da_letra.adiantado, da_letra.cellulas_adiantadas));
-    // O EMPURRÃO, e sómente havendo ordem nova: a chapa tem UMA linha, e a
-    // janella de uma linha do Überzug++ fica preta até que outra ordem chegue.
+    // O EMPURRÃO, e sómente havendo ordem nova: a chapa do VERSO tem uma
+    // linha, e a janella de uma linha do Überzug++ fica preta até que outra
+    // ordem chegue. As das abas passaram a duas (issue #126) e desenham-se
+    // sósinhas; é a d'ellas que empurra, que a do verso aborta na reducção.
     if (!ultima_chapa.empty() && lousa.escritas() != escritas)
       lousa.empurra(ultima_chapa);
     // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
