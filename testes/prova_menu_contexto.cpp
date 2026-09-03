@@ -208,3 +208,34 @@ TEST_CASE("o item eleito sahe em bloco v600 de tinta v50") {
   // E o filete sahe mais apagado que a orla, que elle divide e não fecha.
   CHECK(ecran.PixelAt(4, 11).foreground_color == cor_de(tokens::line_dim));
 }
+
+TEST_CASE("o menu pousa abaixo da linha, e acima quando não cabe") {
+  tui::MenuDeContexto menu = menu_de_pe({});
+  const tui::MedidaDoMenu medida = tui::medida_do_menu(menu);
+  const int alta = static_cast<int>(medida.altura);
+  const tui::CantoDoMenu abaixo = tui::ancora_do_menu({4, 60, 6, 6}, medida, 120, 30);
+  CHECK(abaixo.y == 7);  // logo abaixo da linha, sem tapar a faixa
+  CHECK(abaixo.x == 4);  // e alinhado com o principio d'ella
+  // Na ultima linha da pauta não cabe abaixo: abre ACIMA, e o pé encosta-se-lhe.
+  const tui::CantoDoMenu acima =
+      tui::ancora_do_menu({4, 60, 28, 28}, medida, 120, 30);
+  CHECK(acima.y == 28 - alta);
+  CHECK(acima.y + alta <= 30);
+}
+
+TEST_CASE("o menu nunca sahe da tela, nem ao alto nem á direita") {
+  tui::MenuDeContexto menu = menu_de_pe({});
+  const tui::MedidaDoMenu medida = tui::medida_do_menu(menu);
+  const int alta = static_cast<int>(medida.altura);
+  const int larga = static_cast<int>(medida.largura);
+  // Tela baixa: não cabe abaixo da linha nem acima d'ella. Cinge-se á borda.
+  const tui::CantoDoMenu preso = tui::ancora_do_menu({0, 20, 1, 1}, medida, 30, 9);
+  CHECK(preso.y == 9 - alta);
+  CHECK(preso.y >= 0);
+  // Linha encostada á direita: o menu recua o bastante para caber, e nem uma
+  // collunha a mais. Sem este recuo elle sahia pela borda, aparado em silencio.
+  const tui::CantoDoMenu recuado =
+      tui::ancora_do_menu({110, 119, 2, 2}, medida, 120, 30);
+  CHECK(recuado.x == 120 - larga);
+  CHECK(recuado.x + larga == 120);
+}
