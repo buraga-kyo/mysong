@@ -228,7 +228,7 @@ TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
 // A vizinha fria entra na MESMA composição, de propósito: é o que distingue «o
 // quente é d'esta columna» de «o quente é da fita toda». Sem ella, uma obra que
 // pintasse tudo de glow_hot ao ver um pico passaria o caso.
-TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
+TEST_CASE("a columna quente accende o topo em glow_hot, e a vizinha fria não") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;  // acima do limiar: quente
   bandas[4] = 0.40f;  // abaixo: fria, e no gradiente
@@ -236,11 +236,14 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
                                        false, centros_em(100.0f));
 
   // A columna 3: teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e resto 6,
-  // d'onde cinco célullas, todas em glow_hot, da base ao topo.
-  for (std::size_t l = 0; l < 5; ++l) {
-    REQUIRE(quadro.em(l, 3).pinta);
-    CHECK(es::mesma_tinta(quadro.em(l, 3).tinta, tk::rgb(tk::glow_hot)));
-  }
+  // d'onde cinco célullas. Sómente a do TOPO (a linha 0) accende em glow_hot
+  // (issue #167); as de baixo ficam na rampa violeta.
+  for (std::size_t l = 0; l < 5; ++l) REQUIRE(quadro.em(l, 3).pinta);
+  CHECK(es::mesma_tinta(quadro.em(0, 3).tinta, tk::rgb(tk::glow_hot)));
+  for (std::size_t l = 1; l < 5; ++l)
+    CHECK_FALSE(es::mesma_tinta(quadro.em(l, 3).tinta, tk::rgb(tk::glow_hot)));
+  CHECK(es::mesma_tinta(quadro.em(4, 3).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
 
   // A columna 4: 0,40 vezes 40 = 16 degraus, dous cheios e resto zero, d'onde
   // duas célullas, e no GRADIENTE. A base na côr do registro composta sobre o
@@ -264,9 +267,14 @@ TEST_CASE("o limiar de noventa por cento pertence ao quente") {
 
   REQUIRE(no_limiar.em(3, 0).pinta);
   REQUIRE(sob_limiar.em(3, 0).pinta);
-  // Em cima do limiar: quente.
-  CHECK(es::mesma_tinta(no_limiar.em(3, 0).tinta, tk::rgb(tk::glow_hot)));
-  // Um milesimo abaixo: frio, e de volta á base da rampa.
+  // Em cima do limiar: quente, e o rosa accende na cella do TOPO (issue #167).
+  // 0,90 de teto 32 dá 28 degraus, tres cellas cheias e resto quatro, d'onde
+  // QUATRO cellas e o topo na linha 0. A BASE fica na rampa nos dous casos.
+  CHECK(es::mesma_tinta(no_limiar.em(0, 0).tinta, tk::rgb(tk::glow_hot)));
+  CHECK(es::mesma_tinta(no_limiar.em(3, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+  // Um milesimo abaixo: frio, e topo algum accende.
+  CHECK_FALSE(es::mesma_tinta(sob_limiar.em(0, 0).tinta, tk::rgb(tk::glow_hot)));
   CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta,
                         tk::mistura(tk::v500, tk::panel_hi, 0.55)));
 }
@@ -397,8 +405,8 @@ TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
 // propósito: a batida d'elles é amarella, e uma obra que esquecesse o ramo do
 // quente e cahisse na rampa denuncia-se pelo violeta, ao passo que armada nos
 // graves a mesma falha daria côr parecida de mais com o rosa da batida.
-TEST_CASE("o pico veste a côr do registro, e o mudo text_faint por cima") {
-  const std::vector<float> centros = centros_em(8000.0f);  // agudos, o amarello
+TEST_CASE("o topo da barra quente veste rosa, e o mudo text_faint por cima") {
+  const std::vector<float> centros = centros_em(8000.0f);  // agudos
   const es::Quadro quente =
       es::compor(bandas_uniformes(0.95f), 6, 4, false, centros);
   const es::Quadro calado =
@@ -409,8 +417,12 @@ TEST_CASE("o pico veste a côr do registro, e o mudo text_faint por cima") {
   for (std::size_t c = 0; c < 6; ++c) {
     // A base (linha 3) em todos os tres, que é a célulla que toda barra tem.
     REQUIRE(quente.em(3, c).pinta);
-    CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
-    CHECK_FALSE(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::glow_hot)));
+    // A BASE fica na rampa: o rosa é sómente do topo (issue #167). 0,95 de
+    // teto 32 dá 30 degraus, tres cheias e resto seis, d'onde quatro cellas e
+    // o topo na linha 0.
+    CHECK(es::mesma_tinta(quente.em(3, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+    CHECK(es::mesma_tinta(quente.em(0, c).tinta, tk::rgb(tk::glow_hot)));
     CHECK(es::mesma_tinta(calado.em(3, c).tinta, tk::rgb(tk::text_faint)));
     CHECK(es::mesma_tinta(silencio.em(3, c).tinta, tk::rgb(tk::text_faint)));
   }
@@ -550,7 +562,9 @@ TEST_CASE("a batida mede-se contra o pico da columna, com piso de meio") {
   const es::Quadro bate = es::compor(bandas_uniformes(0.6f), 4, 3, false,
                                      centros, bandas_uniformes(0.6f));
   REQUIRE(bate.em(2, 0).pinta);
-  CHECK(es::mesma_tinta(bate.em(2, 0).tinta, tk::rgb(tk::data2)));
+  // O rosa no TOPO (issue #167): duas cellas, d'onde a de cima é a linha 1.
+  CHECK(es::mesma_tinta(bate.em(1, 0).tinta, tk::rgb(tk::glow_hot)));
+  CHECK(es::mesma_tinta(bate.em(2, 0).tinta, rampa));
 
   // Os mesmos seis decimos com o pico em um: 0,6 não chega a 0,9 vezes 1, e a
   // columna fica FRIA. É a banda que já deu mais e ainda não tornou a dar.
@@ -576,7 +590,11 @@ TEST_CASE("sem picos a batida continua a medir-se pelo tecto absoluto") {
   // E o tecto continua a accender, sem pico algum a governá-lo.
   const es::Quadro tecto =
       es::compor(bandas_uniformes(0.95f), 4, 3, false, centros);
-  CHECK(es::mesma_tinta(tecto.em(2, 0).tinta, tk::rgb(tk::data2)));
+  // Painel de tres: 0,95 de teto 24 dá 22 degraus, duas cheias e resto seis,
+  // d'onde tres cellas e o topo na linha 0.
+  CHECK(es::mesma_tinta(tecto.em(0, 0).tinta, tk::rgb(tk::glow_hot)));
+  CHECK(es::mesma_tinta(tecto.em(2, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
 }
 
 // O MUDO vence a batida, como vencia o quente: ordem do operador não se deixa
@@ -599,7 +617,7 @@ TEST_CASE("o mudo vence a côr da batida do registro") {
 //
 // Painel de duas: teto 16, e 0,95 dá 15 degraus, um cheio e resto sete, d'onde
 // as DUAS célullas; 0,30 dá 4 degraus, que é uma célulla, na base.
-TEST_CASE("as quatro batidas sahem nas quatro côres, e a vizinha fria não") {
+TEST_CASE("a batida accende o topo em rosa, e a vizinha fria fica na rampa") {
   const std::vector<float> bandas = {0.95f, 0.30f, 0.95f, 0.30f,
                                      0.95f, 0.30f, 0.95f, 0.30f};
   const std::vector<float> centros = {100.0f,  100.0f,  500.0f,  500.0f,
@@ -609,14 +627,12 @@ TEST_CASE("as quatro batidas sahem nas quatro côres, e a vizinha fria não") {
   ftxui::Render(ecran, es::elemento_do_espectro(
                            es::compor(bandas, 8, 2, false, centros)));
 
-  // Os tokens escriptos Á MÃO, na ordem em que o ouvido sobe.
-  const std::string_view batidas[] = {tk::glow_hot, tk::data5, tk::data3,
-                                      tk::data2};
+  // A côr da batida é UMA (issue #167), e não quatro: o rosa, em toda familia.
+  // E accende sómente no TOPO: a base fica na rampa, como a fria.
   for (int f = 0; f < 4; ++f) {
-    // A columna QUENTE veste a batida da familia d'ella, da base ao topo.
-    CHECK(ecran.PixelAt(2 * f, 1).foreground_color == cor(tk::rgb(batidas[f])));
-    CHECK(ecran.PixelAt(2 * f, 0).foreground_color == cor(tk::rgb(batidas[f])));
-    // E a vizinha FRIA veste a rampa, que é a mesma nas quatro familias.
+    CHECK(ecran.PixelAt(2 * f, 0).foreground_color == cor(tk::rgb(tk::glow_hot)));
+    CHECK(ecran.PixelAt(2 * f, 1).foreground_color ==
+          cor(tk::mistura(tk::v500, tk::panel_hi, 0.55)));
     CHECK(ecran.PixelAt(2 * f + 1, 1).foreground_color ==
           cor(tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   }
