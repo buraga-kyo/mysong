@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +25,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "nucleo/letreiro.hpp"
+#include "tui/foco.hpp"
 #include "tui/navegador.hpp"
 #include "tui/rato.hpp"
 #include "tui/transporte.hpp"
@@ -97,6 +99,16 @@ std::string palavra_da_aba(Aba aba);
 // responde VAZIA, e ahi o pintor não tem chapa que pôr.
 ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept;
 
+// estado_da_aba — o degrau de uma aba, dada a corrente e a peça com foco
+// (issue #107). O FOCO GANHA da corrente: quem anda com as setas ha de ver
+// ONDE está a mão, e onde se ESTÁ diz-o tambem a chapa por cima da pauta.
+EstadoDaAba estado_da_aba(Aba qual, Aba corrente, Focavel foco) noexcept;
+
+// aba_com_foco — a aba que tem o foco, ou vazio quando elle está fóra da fita.
+// É o punho que o `ordens_das_chapas` pede: assim a chapa em XIROD da aba
+// focada sahe do MESMO degrau que pinta a cella debaixo d'ella.
+std::optional<Aba> aba_com_foco(Focavel foco) noexcept;
+
 // rotulo_da_aba — a palavra da aba com o seu glifo e a guarnição dos flancos.
 // UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a
 // pintura d'esta palavra, e rotulo espalhado por dous ramos dar-lhe-hia duas
@@ -106,7 +118,7 @@ std::string rotulo_da_aba(Aba aba);
 // elemento_da_aba — a palavra JÁ PINTADA, corrente ou não. Vive apartada da
 // fita pela mesma razão: quem puzer imagem por cima da cella troca aqui, e a
 // composição da linha não muda uma linha.
-ftxui::Element elemento_da_aba(Aba aba, bool corrente);
+ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado);
 
 // elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
@@ -114,10 +126,15 @@ ftxui::Element elemento_da_aba(Aba aba, bool corrente);
 // O `nome` é o que se MOSTRA, e não o caminho que o Retracto carrega: o titulo
 // vem da etiqueta do indice, e caminho de arquivo na linha do alto diria a
 // pasta do operador em vez de dizer a musica.
+// O `foco` diz que PEÇA d'esta linha tem o foco (issue #107): ella veste-se de
+// glow_core com texto panel, que é par distincto do da aba corrente (v600 com
+// v50) sem sahir da familia. `Focavel::Pauta`, que é o padrão, quer dizer que o
+// foco está fóra do cabeçalho, e ahi a linha sahe a mesma, cella a cella.
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,
-                                     CaixasDoCabecalho* caixas = nullptr);
+                                     CaixasDoCabecalho* caixas = nullptr,
+                                     Focavel foco = Focavel::Pauta);
 
 // A ORDEM que o pintor dá á lousa quanto á chapa de UMA aba. Sahem TRES de
 // cada quadro, uma por aba e na ordem da fita, e nunca menos: aba que não tem
@@ -151,9 +168,13 @@ nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem);
 // elemento_do_trilho — a linha do progresso, de largura inteira, logo abaixo
 // do cabeçalho: v600 no andado e line_dim no que falta. A caixa d'elle é a do
 // clique que busca, e a barra do pé morre porque os botões subiram.
+// `com_foco` accende o andado em glow_core no logar do v600 (issue #107): o
+// trilho é peça focavel como as outras, e o que elle tem para accender é o que
+// já anda pintado.
 ftxui::Element elemento_do_trilho(const Retracto& retracto,
                                   std::size_t largura,
-                                  ftxui::Box* caixa = nullptr);
+                                  ftxui::Box* caixa = nullptr,
+                                  bool com_foco = false);
 
 }  // namespace mysong::tui
 

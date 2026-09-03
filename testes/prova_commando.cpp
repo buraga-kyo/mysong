@@ -84,7 +84,6 @@ TEST_CASE("digitando, tecla alguma da taboada vale") {
       ftxui::Event::Character('z'), ftxui::Event::Character('x'),
       ftxui::Event::ArrowUp,
       ftxui::Event::ArrowDown,
-      ftxui::Event::ArrowLeft,      ftxui::Event::ArrowRight,
       ftxui::Event::Return,         ftxui::Event::Escape,
       ftxui::Event::Home,           ftxui::Event::End,
   };
@@ -127,10 +126,8 @@ TEST_CASE("as teclas da navegação valem por seta e por letra") {
   CHECK(verbo(ftxui::Event::End) == tui::Verbo::AoFim);
   CHECK(verbo(ftxui::Event::Character('G')) == tui::Verbo::AoFim);
   CHECK(verbo(ftxui::Event::Return) == tui::Verbo::Entra);
-  CHECK(verbo(ftxui::Event::ArrowRight) == tui::Verbo::Entra);
   CHECK(verbo(ftxui::Event::Escape) == tui::Verbo::Volta);
   CHECK(verbo(ftxui::Event::Backspace) == tui::Verbo::Volta);
-  CHECK(verbo(ftxui::Event::ArrowLeft) == tui::Verbo::Volta);
   CHECK(verbo(ftxui::Event::Character('/')) == tui::Verbo::AbreBusca);
   CHECK(verbo(ftxui::Event::Character('r')) == tui::Verbo::Varre);
   CHECK(verbo(ftxui::Event::Character('b')) == tui::Verbo::AbreBaixa);
@@ -195,12 +192,14 @@ TEST_CASE("a virgula e o ponto buscam pelo passo, e aparam-se nas bordas") {
   CHECK(tui::ordem_da_tecla(ftxui::Event::Character('.'), tocando(30.0, 0.0)).alvo ==
         doctest::Approx(0.0));
 
-  // E as setas JÁ NÃO buscam: navegam. É a negativa que fecha a mudança, e sem ella uma
-  // taboada que respondesse ás duas cousas passaria calada.
+  // E as setas de lado JÁ NÃO buscam nem navegam a arvore (issue #107): ellas
+  // andam pelo LAYOUT, e quem as trata é o foco. É a negativa que fecha a
+  // mudança: taboada que ainda respondesse por ellas passaria calada, e a
+  // janella teria duas donas para a mesma tecla.
   CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowRight, tocando()).verbo ==
-        tui::Verbo::Entra);
+        tui::Verbo::Nada);
   CHECK(tui::ordem_da_tecla(ftxui::Event::ArrowLeft, tocando()).verbo ==
-        tui::Verbo::Volta);
+        tui::Verbo::Nada);
 }
 
 TEST_CASE("o volume anda por degrau, e apara-se em zero e cem") {

@@ -72,6 +72,7 @@
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
+#include "tui/foco.hpp"
 #include "tui/letra_viva.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
@@ -356,8 +357,9 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // o Enter, o espaço e o `n`/`p`, que dizem o que o F7, o F6 e o F8 já dizem, e
 // sahiu o `o` da vista, que a chapa por cima da pauta annuncia por si.
 constexpr const char* kDicas =
-    "1 2 3 abas · Tab cicla · F6 F7 F8 transporte · F9 mudo"
-    " · F10 F11 volume · F2 renomeia · Del apaga · q sahe · README";
+    "↑↓←→ anda · Enter aperta · 1 2 3 abas · Tab cicla"
+    " · F6 F7 F8 transporte · F9 mudo · F10 F11 volume"
+    " · F2 renomeia · Del apaga · q sahe · README";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
@@ -542,6 +544,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
   // pintura.
   tui::CaixasDaTela caixas;
+  // A PEÇA COM FOCO (issue #107). Nasce na PAUTA, que é onde o operador está
+  // quando abre o programa: foco de nascença n'uma aba faria a primeira seta
+  // andar no cabeçalho em vez de andar na lista, que é o que elle veio fazer.
+  tui::Focavel foco = tui::Focavel::Pauta;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -852,7 +858,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::size_t alt_arte =
         pela_lousa ? rectangulo.linhas
                    : tui::linhas_da_arte(arte, sala.capa.altura);
-    const tui::Rectangulo abaixo = tui::espectro_abaixo_da(sala, alt_arte);
+    // A ORLA do foco come duas linhas (issue #107), e a conta do espectro
+    // desconta-as: sem o desconto, o pé do painel sahia aparado em silencio
+    // emquanto a capa tivesse o foco.
+    const bool capa_com_foco = foco == tui::Focavel::Capa;
+    const tui::Rectangulo abaixo =
+        tui::espectro_abaixo_da(sala, alt_arte + (capa_com_foco ? 2 : 0));
     // Os centros em hertz (issue #104), colhidos UMA vez: a escala é do
     // contracto do analisador, e o punho d'elle não abre as bordas que o
     // nucleo assentou.
@@ -900,10 +911,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // anterior, que são as unicas que o `reflect` já encheu.
     const std::size_t escritas = lousa.escritas();
     std::filesystem::path ultima_chapa;
+    // A aba com FOCO (issue #107) entra na ordem: assim a chapa em XIROD da
+    // aba focada sae do MESMO degrau que pinta a cella debaixo d'ella, e as
+    // duas não se desencontram. Vazio quer dizer que o foco está fóra da fita.
+    const std::optional<tui::Aba> focada = tui::aba_com_foco(foco);
     for (const tui::ChapaDaAba& ordem : tui::ordens_das_chapas(
              caixas.cabecalho, tui::aba_da_secao(navegador.secao()),
              lousa.disponivel() && letreiro.disponivel(),
-             vigilia.pede_batida())) {
+             vigilia.pede_batida(), focada ? &*focada : nullptr)) {
       const std::filesystem::path* chapa = nullptr;
       if (ordem.poe) chapa = &letreiro.chapa(tui::pedido_da_chapa(ordem));
       // Chapa que não veio TIRA a que estava, e não a deixa: a aba trocou de
@@ -932,6 +947,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
+    // A CAIXA fica por DENTRO da orla do foco (issue #107), e é de proposito:
+    // é ella que a lousa lê para saber onde pôr a janella da imagem, e medida
+    // por fóra a imagem sahiria por cima do quadro que a assignala.
+    ftxui::Element quadro_com_caixa =
+        std::move(quadro_da_arte) | ftxui::reflect(caixas.capa);
+    if (capa_com_foco)
+      quadro_com_caixa = tui::orla_do_foco(std::move(quadro_com_caixa));
     // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
     // base d'elle e sobe por cima. Escondido o rio pelo `l`, o quadro d'elle sae
     // VAZIO, e a composição devolve o espectro tal qual; faixa sem `.lrc` faz o
@@ -945,16 +967,26 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         sala.painel.vazio()
             ? ftxui::emptyElement()
             : tui::elemento_do_painel(
-                  std::move(quadro_da_arte) | ftxui::reflect(caixas.capa),
+                  std::move(quadro_com_caixa),
                   tui::elemento_do_rio(quadro, rio), sala.painel.largura);
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
     // pela razão que a composição velha ensinou: por menos, o pé da tela fica
     // em branco; por mais, o rodapé sahe d'ella.
     std::vector<ftxui::Element> metades = {ftxui::vbox(
         {tui::elemento_da_chapa(chapa, sala.chapa.largura),
+         // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
+         // da tabella: é a caixa que o FOCO lê para saltar ás visinhas.
+         //
+         // O cinge da ALTURA vem antes d'ella, e é o que a faz existir sempre:
+         // a pauta vazia da issue #111 devolve `emptyElement`, que não pede
+         // linha alguma, e caixa de altura zero não é candidata a salto. Sem o
+         // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
          tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                   sala.pauta.largura, retracto.titulo,
-                                  &caixas.linhas)})};
+                                  &caixas.linhas) |
+             ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                         static_cast<int>(sala.pauta.altura)) |
+             ftxui::reflect(caixas.pauta)})};
     if (!sala.painel.vazio()) {
       metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
       metades.push_back(std::move(painel));
@@ -963,9 +995,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         tui::elemento_do_cabecalho(retracto,
                                    tui::aba_da_secao(navegador.secao()),
                                    ficha.titulo, sala.cabecalho.largura,
-                                   &caixas.cabecalho),
+                                   &caixas.cabecalho, foco),
         tui::elemento_do_trilho(retracto, sala.trilho.largura,
-                                &caixas.cabecalho.trilho)};
+                                &caixas.cabecalho.trilho,
+                                foco == tui::Focavel::Trilho)};
     if (!sala.campo.vazio())
       tudo.push_back(tui::elemento_do_campo(digita, contexto_do_campo,
                                             termo_em_curso,
@@ -1023,12 +1056,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
     // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
     tui::Ordem ordem_do_rato;
-    if (tecla.is_mouse()) {
+    // O ALVO vem do RATO quando o evento é do rato, e do FOCO quando é o Enter
+    // ou o Espaço n'uma peça que não é a pauta (issue #107). A taboada do gesto
+    // é a MESMA, e é isso que faz a tecla apertar o botão exactamente como o
+    // dedo o aperta: caminho proprio daria duas verdades sobre o que cada peça
+    // faz, e ellas desencontrar-se-hiam na primeira issue que mexesse n'uma.
+    //
+    // A guarda do `digita` é o que deixa o campo e a pergunta ficarem com o
+    // Enter d'elles: com modo modal aberto, este ramo não corre.
+    const bool pelo_foco = !tecla.is_mouse() && digita == Digita::Nada &&
+                           foco != tui::Focavel::Pauta &&
+                           (tecla == ftxui::Event::Return ||
+                            tecla == ftxui::Event::Character(' '));
+    if (tecla.is_mouse() || pelo_foco) {
       ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
-      const ftxui::Mouse rato = copia.mouse();
+      const ftxui::Mouse rato = pelo_foco ? ftxui::Mouse{} : copia.mouse();
       const tui::Retracto agora = retracto_do(tocador, projector);
       const tui::GestoDoRato gesto = tui::gesto_do_alvo(
-          tui::alvo_do_ponto(caixas, rato.x, rato.y), rato.button, rato.motion,
+          pelo_foco ? tui::alvo_do_foco(foco)
+                    : tui::alvo_do_ponto(caixas, rato.x, rato.y),
+          pelo_foco ? ftxui::Mouse::Left : rato.button,
+          pelo_foco ? ftxui::Mouse::Pressed : rato.motion,
           {digita != Digita::Nada, navegador.eleito(),
            navegador.vista().size(),
            // A duração vae ZERO com a janella do video de pé, e a guarda do
@@ -1083,6 +1131,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // contrario do que se viu.
         case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
         case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
+        // O MUDO pelo segmento do volume, e pela mesma razão dos dous modos:
+        // quem guarda o numero e quem o devolve é o TOCADOR, de uma tomada só.
+        case tui::Gesto::Muda: tocador.alterna_mudo(); return true;
         // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
         // sempre, que é quem sabe roteá-las ao video quando elle está de pé.
         case tui::Gesto::Anterior: ordem_do_rato = {tui::Verbo::Anterior}; break;
@@ -1191,6 +1242,34 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;  // dentro do modo, tecla alguma sahe para fóra
     }
 
+    // AS SETAS (issue #107) andam pelo LAYOUT, e deixaram de voltar e de
+    // entrar. Tratam DEPOIS do campo e da pergunta, e pela mesma razão que
+    // ellas: com modo modal aberto, a tela não ha de mudar debaixo de quem
+    // está a responder. Modo modal que venha depois d'este (o menu de contexto
+    // da issue #96) trata-se ACIMA d'esta linha, e as setas cedem-lhe sem que
+    // este ramo saiba d'elle.
+    //
+    // Dentro da PAUTA o `↑` e o `↓` continuam a andar na LISTA, e sómente no
+    // alto d'ella o `↑` sobe ao cabeçalho: sahir da lista á primeira seta
+    // tiraria ao operador o gesto que elle mais faz. O `←` e o `→` sahem para
+    // as visinhas, e á esquerda da pauta não ha visinha alguma: a seta FICA, e
+    // não volta degrau algum, que voltar é o Escape e o Backspace.
+    if (const tui::Direcao rumo = tui::rumo_da_tecla(tecla);
+        rumo != tui::Direcao::Nenhuma) {
+      if (foco == tui::Focavel::Pauta) {
+        if (rumo == tui::Direcao::Baixo) {
+          navegador.desce();
+          return true;
+        }
+        if (rumo == tui::Direcao::Cima && navegador.eleito() > 0) {
+          navegador.sobe();
+          return true;
+        }
+      }
+      foco = tui::salto(caixas, foco, rumo);
+      return true;
+    }
+
     // AS TECLAS DAS ABAS (issue #102) tratam DEPOIS do campo e ANTES da
     // taboada geral. É a ordem que a barra tinha, e pela mesma razão: com o
     // campo aberto, o `1` é o algarismo um do termo, e não a aba.
@@ -1238,7 +1317,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
     const tui::Ordem ordem =
-        tecla.is_mouse()
+        tecla.is_mouse() || pelo_foco
             ? ordem_do_rato
             : tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {

@@ -62,6 +62,11 @@ struct CaixasDaTela {
   // A linha da vista que está no alto: é ella que faz o indice VISIVEL virar o
   // indice ABSOLUTO da vista do navegador, que é o que a eleição consome.
   std::size_t primeira_linha = 0;
+  // A PAUTA INTEIRA (issue #107). Não é a somma das linhas: com a vista vazia
+  // não ha linha alguma, e o foco não teria caixa a que voltar. É a caixa que a
+  // tabella occupa, pintada ou vazia, e sómente o foco a lê: o dedo continua a
+  // achar a LINHA, que é o que elle quer eleger.
+  ftxui::Box pauta = caixa_por_pintar();
   ftxui::Box capa = caixa_por_pintar();
 };
 
@@ -70,6 +75,10 @@ struct CaixasDaTela {
 enum class Peca {
   Nada, Aba, Linha, Capa, Anterior, Pausa, Proxima, Progresso,
   Embaralhar, Repetir,
+  // O VOLUME (issue #107). Entrou quando o foco lhe passou a parar em cima: a
+  // issue pede que todo botão aceite o clique do teclado, e peça que o teclado
+  // aperta e o dedo não seriam duas verdades sobre o mesmo segmento.
+  Volume,
 };
 
 // Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é a aba no
@@ -100,6 +109,7 @@ enum class Gesto {
   Anterior, PausaOuRetoma, Proxima, Busca,
   RodaSobe, RodaDesce,   // na pauta, LINHAS_POR_DENTE de cada vez
   Embaralha, Repete,     // os dous modos, pelo segmento que os mostra
+  Muda,                  // o segmento do volume cala a Casa e devolve-a
 };
 
 // Tres linhas por dente. Uma seria a roda a arrastar-se; uma tela inteira seria

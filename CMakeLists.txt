@@ -429,6 +429,12 @@ target_sources(mysong_core PRIVATE src/tui/prompt.cpp)
 # a cella, e a janella não se prova.
 target_sources(mysong_core PRIVATE src/tui/cabecalho.cpp)
 
+# ─── O FOCO E AS SETAS (issue #107) ─────────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Peça nova
+# pela razão do rato: o salto de peça em peça é geometria pura, e a janella,
+# que é quem a consome, não se prova.
+target_sources(mysong_core PRIVATE src/tui/foco.cpp)
+
 # ─── O RATO (issue #95) ─────────────────────────────────────────────────────
 # Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Peça nova
 # pela razão do prompt e do menu: a traducção de coordenada em gesto precisava
