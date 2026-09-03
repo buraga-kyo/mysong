@@ -113,6 +113,8 @@ std::vector<AmostraDaAjuda> legenda_do_espectro() {
   std::vector<AmostraDaAjuda> legenda;
   legenda.push_back({tokens::rgb(tokens::v500), "A BARRA", "",
                      "violeta, escura no pé e viva no topo"});
+  legenda.push_back({tokens::rgb(tokens::glow_hot), "A BATIDA", "",
+                     "o topo da barra acende em rosa"});
   const struct {
     Registro registro;
     float desde, ate;
@@ -126,8 +128,10 @@ std::vector<AmostraDaAjuda> legenda_do_espectro() {
        FRONTEIRA_DOS_MEDIOS_AGUDOS, "voz, presença, teclados"},
       {Registro::Agudos, FRONTEIRA_DOS_MEDIOS_AGUDOS, nucleo::HERTZ_MAXIMO,
        "pratos, chimbal, o ar"}};
+  // Os quatro registros vão SEM côr propria (issue #167): o que elles dizem é
+  // em que faixa de hertz cada columna sôa, e a côr da batida é uma só.
   for (const auto& q : quatro)
-    legenda.push_back({tokens::rgb(tinta_do_registro(q.registro)),
+    legenda.push_back({tokens::rgb(tokens::text_body),
                        std::string(nome_do_registro(q.registro)),
                        hertz(q.desde) + " a " + hertz(q.ate), q.nota});
   legenda.push_back(

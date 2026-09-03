@@ -48,18 +48,6 @@ std::vector<std::string> glifos(std::string_view texto) {
   return saida;
 }
 
-// nome_da_batida — a côr da batida por NOME. Sem ella o olho vê quatro côres e
-// não sabe qual é qual, que côr não se lê em voz alta.
-std::string_view nome_da_batida(es::Registro registro) {
-  switch (registro) {
-    case es::Registro::Graves: return "batida rosa";
-    case es::Registro::MediosGraves: return "batida cyan";
-    case es::Registro::MediosAgudos: return "batida laranja";
-    case es::Registro::Agudos: return "batida amarela";
-  }
-  return "batida rosa";
-}
-
 // legenda — uma linha de rotulos por baixo, cada um na côr da batida do registro
 // e sob as columnas que o vestem. O rotulo vem de FÓRA porque são DUAS linhas: o
 // nome da familia e a côr da batida d'ella não cabem juntos n'um bloco de quinze
@@ -148,8 +136,9 @@ int main(int argc, char** argv) {
   }
   // A legenda por BAIXO da fita, e não por cima: o nome fica ao pé do pé das
   // columnas que nomeia, que é onde o olho o vae buscar.
+  // UMA linha de legenda (issue #167): a côr da batida é uma só, o rosa, e
+  // nomeá-la por familia diria quatro côres que a fita já não tem.
   tela += legenda(quadro, es::nome_do_registro);
-  tela += legenda(quadro, nome_da_batida);
   std::fputs(tela.c_str(), stdout);
   return 0;
 }
