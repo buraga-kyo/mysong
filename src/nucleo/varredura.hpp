@@ -73,6 +73,25 @@ bool extensao_de_audio(std::string_view extensao);
 // ganhasse `.mkv` e a outra não, o acervo indexava o que a tela recusava abrir.
 bool extensao_que_interessa(std::string_view extensao);
 
+// O DESFECHO de renomear. O titulo GRAVADO volta com elle: quem o mostra na
+// pauta ha de mostrar o que ficou no arquivo, e não o que se pediu, que
+// aparado e saneado os dous podem differir.
+struct DoTitulo {
+  bool feito = false;
+  std::string titulo;  // o que ficou na etiqueta
+  std::string razao;   // vazio quando feito
+};
+
+// renomeia_titulo — grava a TITLE da etiqueta pelo `TagLib::FileRef`, que é o
+// mesmo punho generico por onde a varredura a LÊ: assim o que se escreve e o
+// que se torna a ler são a mesma cousa em mp3, m4a, opus e flac, sem um ramo
+// por fórmato. O NOME DO ARQUIVO não muda, e é decisão e não descuido: o `.lrc`
+// e as listas apontam para o caminho, e renomear o arquivo quebraria os dous.
+// Titulo que se reduza a nada depois de aparado RECUSA-SE com razão: etiqueta
+// vazia faria a faixa desapparecer da pauta sem se ter apagado nada.
+DoTitulo renomeia_titulo(const std::filesystem::path& caminho,
+                         std::string_view titulo);
+
 // A VARREDURA. Conduz-se por passos, e nasce com o Escriba já aberto sobre um
 // temporario: donde o destino não existe até se concluir, e o destructor desfaz
 // o temporario de quem a abandonou.
