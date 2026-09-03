@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -68,6 +69,20 @@ struct OrdemDaAba {
 // as abas, e o `o` cycla a vista. Nenhuma d'estas teclas estava tomada, e o
 // Tab abria a barra que esta issue apaga.
 OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept;
+
+// Os tres degraus de pintura de uma aba. O `ComFoco` é da issue irmã das setas
+// e nasce aqui por a chapa em XIROD precisar dos tres n'um logar só: a côr da
+// chapa e a da cella debaixo d'ella, lidas em dous logares, divergiriam na
+// primeira issue que mexesse n'uma.
+enum class EstadoDaAba { Apagada, Corrente, ComFoco };
+
+struct PinturaDaAba {
+  std::string_view tinta;
+  std::string_view fundo;
+};
+
+// pintura_da_aba — o par de côres de cada degrau, e o UNICO logar que o diz.
+PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept;
 
 // rotulo_da_aba — a palavra da aba com o seu glifo e a guarnição dos flancos.
 // UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a

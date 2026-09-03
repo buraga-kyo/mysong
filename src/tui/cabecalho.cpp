@@ -213,19 +213,34 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
   return ftxui::hbox(std::move(partes));
 }
 
-// As tintas da aba, n'um logar só: a corrente é BLOCO SOLIDO, v600 com texto
-// v50, que é o gesto do site d'elle onde o que está sob a mão vira bloco cheio;
-// as outras ficam no `raised`, que é o degrau de repouso do chrome. O fundo
-// serve tambem á FITA, que d'elle tira a côr das junções: lidos em dous
-// logares, a seta sahiria de uma côr e o bloco de outra.
+// As tintas da aba, e o fundo serve tambem á FITA, que d'elle tira a côr das
+// junções: lidos em dous logares, a seta sahiria de uma côr e o bloco de outra.
 std::string_view fundo_da_aba(bool corrente) {
-  return corrente ? tokens::v600 : tokens::raised;
+  return pintura_da_aba(corrente ? EstadoDaAba::Corrente
+                                 : EstadoDaAba::Apagada)
+      .fundo;
 }
 std::string_view tinta_da_aba(bool corrente) {
-  return corrente ? tokens::v50 : tokens::text_primary;
+  return pintura_da_aba(corrente ? EstadoDaAba::Corrente
+                                 : EstadoDaAba::Apagada)
+      .tinta;
 }
 
 }  // namespace
+
+// pintura_da_aba — a corrente é BLOCO SOLIDO, v600 com texto v50, que é o
+// gesto do site d'elle onde o que está sob a mão vira bloco cheio; a apagada
+// fica no `raised`, que é o degrau de repouso do chrome; e a que tem o FOCO
+// accende em glow_core com a tinta do painel, distincta da corrente de
+// proposito, que peça focada e peça eleita não são a mesma cousa.
+PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept {
+  switch (estado) {
+    case EstadoDaAba::Corrente: return {tokens::v50, tokens::v600};
+    case EstadoDaAba::ComFoco: return {tokens::panel, tokens::glow_core};
+    case EstadoDaAba::Apagada: break;
+  }
+  return {tokens::text_primary, tokens::raised};
+}
 
 std::string rotulo_da_aba(Aba aba) {
   // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
