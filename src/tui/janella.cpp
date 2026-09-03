@@ -576,6 +576,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // indice consultado a cada quadro seriam vinte perguntas por segundo ao
   // banco por uma cousa que sómente muda quando a faixa muda.
   tui::Ficha ficha;
+  // A ONDA da faixa (issue #131), para o meio da fita: vazia emquanto não
+  // chega, e ahi o meio mostra a barra chata do progresso.
+  std::vector<float> onda_da_faixa;
   // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
   // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
   // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
@@ -1027,12 +1030,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // O RIO já se resolveu lá em cima, antes das chapas (issue #110): é d'elle
     // que sae a caixa da chapa da linha corrente, e a chapa vae pela mesma
     // lousa das abas. Aqui só se compõe o que d'elle sahiu.
+    // A FICHA do que sôa (issue #134) na primeira fileira do painel, por cima
+    // da arte: o nome deixou a fita, que a ordem d'elle não lhe deixou logar.
     ftxui::Element painel =
         sala.painel.vazio()
             ? ftxui::emptyElement()
-            : tui::elemento_do_painel(
-                  std::move(quadro_com_caixa),
-                  tui::elemento_do_rio(quadro, rio), sala.painel.largura);
+            : ftxui::vbox(
+                  {tui::elemento_da_ficha(ficha, sala.ficha.largura),
+                   tui::elemento_do_painel(std::move(quadro_com_caixa),
+                                           tui::elemento_do_rio(quadro, rio),
+                                           sala.painel.largura)});
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
     // pela razão que a composição velha ensinou: por menos, o pé da tela fica
     // em branco; por mais, o rodapé sahe d'ella.
@@ -1055,14 +1062,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
       metades.push_back(std::move(painel));
     }
-    // A FITA compõe-se ANTES do trilho, ainda que se pinte DEPOIS d'elle: ella
-    // esvazia as caixas do cabeçalho á entrada, e a do trilho mora entre ellas.
-    // Composta depois, apagaria a caixa que o trilho acabou de pendurar.
+    // A FITA leva a onda da faixa ao meio (issue #134), e com ella a caixa do
+    // trilho: o clique que busca é agora um clique na fita.
     ftxui::Element fita = tui::elemento_do_cabecalho(
-        retracto, tui::aba_da_secao(navegador.secao()), ficha.titulo,
+        retracto, tui::aba_da_secao(navegador.secao()), onda_da_faixa,
         sala.cabecalho.largura, &caixas.cabecalho, foco, sala.cabecalho.altura);
     // A ORDEM da tela nova (issue #125): o corpo abre na PRIMEIRA linha, e o pé
-    // toma as ultimas, de cima para baixo o campo, o trilho, a fita e as dicas.
+    // toma as ultimas, de cima para baixo o campo, a fita e as dicas. O trilho
+    // morreu na issue #134: a onda no meio da fita é o progresso.
     std::vector<ftxui::Element> tudo = {
         ftxui::hbox(std::move(metades)) |
         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
@@ -1072,10 +1079,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       tudo.push_back(tui::elemento_do_campo(digita, contexto_do_campo,
                                             termo_em_curso,
                                             sala.campo.largura));
-    if (!sala.trilho.vazio())
-      tudo.push_back(tui::elemento_do_trilho(retracto, sala.trilho.largura,
-                                             &caixas.cabecalho.trilho,
-                                             foco == tui::Focavel::Trilho));
     tudo.push_back(std::move(fita));
     if (!sala.rodape.vazio())
       tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
