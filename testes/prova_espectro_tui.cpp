@@ -301,6 +301,31 @@ TEST_CASE("o silencio deixa um piso de um oitavo em text_faint") {
   }
 }
 
+// ── C11 · os quatro registros, e a fronteira em HERTZ ───────────────────────
+// A taboada vae escripta Á MÃO, e nos DOUS lados de cada fronteira: é ahi que o
+// maior-ou-egual se distingue do maior, e é o unico logar onde um erro de um
+// hertz se apanha, que no meio da faixa toda obra acerta.
+TEST_CASE("a fronteira do registro decide-se pelo centro em hertz") {
+  CHECK(es::registro_da_banda(40.0f) == es::Registro::Graves);
+  CHECK(es::registro_da_banda(249.0f) == es::Registro::Graves);
+  CHECK(es::registro_da_banda(250.0f) == es::Registro::Graves);
+  CHECK(es::registro_da_banda(251.0f) == es::Registro::MediosGraves);
+  CHECK(es::registro_da_banda(999.0f) == es::Registro::MediosGraves);
+  CHECK(es::registro_da_banda(1000.0f) == es::Registro::MediosGraves);
+  CHECK(es::registro_da_banda(1001.0f) == es::Registro::MediosAgudos);
+  CHECK(es::registro_da_banda(3999.0f) == es::Registro::MediosAgudos);
+  CHECK(es::registro_da_banda(4000.0f) == es::Registro::MediosAgudos);
+  CHECK(es::registro_da_banda(4001.0f) == es::Registro::Agudos);
+  CHECK(es::registro_da_banda(16000.0f) == es::Registro::Agudos);
+
+  // O lixo, e é a mesma lição do cingido: toda comparação com NaN é falsa,
+  // d'onde elle atravessaria os tres ramos e sahiria AGUDOS, que é a familia
+  // que ninguem pediu. Sahe GRAVES, que é o principio da escala.
+  CHECK(es::registro_da_banda(std::numeric_limits<float>::quiet_NaN()) ==
+        es::Registro::Graves);
+  CHECK(es::registro_da_banda(-1.0f) == es::Registro::Graves);
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
