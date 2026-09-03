@@ -13,7 +13,39 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/cabecalho.hpp"
 
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include <ftxui/screen/string.hpp>
+
+#include "tui/arrowline.hpp"
+#include "tui/tokens.hpp"
+
 namespace mysong::tui {
+
+// Os GLIFOS, da JetBrainsMono Nerd Font que esta Casa EXIGE, conferidos um a um
+// n'ella. Escrevem-se por PONTO DE CODIGO, e não pelo glifo cru: moram no plano
+// supplementar de uso privado, onde editor, tubo e terminal os engolem sem dar
+// signal, e o que resta é cadeia vazia, falha que passaria calada por toda a
+// linha. Medido no FTXUI v7.0.3: o plano quinze não entra na taboa dos glifos
+// largos, donde cada um d'estes conta UMA collunha, e a conta da fita presta.
+inline constexpr std::string_view kNota = "\U000f075a";
+inline constexpr std::string_view kListas = "\U000f0cb8";
+inline constexpr std::string_view kBaixa = "\U000f01da";
+inline constexpr std::string_view kTocar = "\U000f040a";
+inline constexpr std::string_view kPausar = "\U000f03e4";
+inline constexpr std::string_view kAnterior = "\U000f04ae";
+inline constexpr std::string_view kSeguinte = "\U000f04ad";
+inline constexpr std::string_view kEmbaralhar = "\U000f049d";
+inline constexpr std::string_view kRepetirTodas = "\U000f0456";
+inline constexpr std::string_view kRepetirUma = "\U000f0458";
+inline constexpr std::string_view kSom = "\U000f057e";
+inline constexpr std::string_view kMudo = "\U000f075f";
+// O trilho: o traço PESADO, que é o que o esboço mostra. Traço leve some no
+// fundo violaceo a esta opacidade, e trilho que se não vê não diz onde a
+// faixa vae.
+inline constexpr std::string_view kTraco = "\u2501";
 
 Secao secao_da_aba(Aba aba) noexcept {
   switch (aba) {
