@@ -500,6 +500,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> mostra_letra{false};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
   nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
+  // A LOUSA (issue #103) e o arquivario que a serve. Vivem n'esta pilha, ao
+  // lado da Galeria: a lousa ergue o filho ao nascer e mata-o ao morrer, e é
+  // por viver aqui que a sahida da tela leva a janella d'ella junto.
+  nucleo::Lousa lousa(ajustes.lousa.valor);
+  nucleo::Arquivario arquivario;
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
@@ -776,11 +781,24 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         tui::chave_e_caminho(navegador.secao()) && !navegador.vista().empty()
             ? navegador.vista().front().chave
             : std::string();
+    // A LOUSA de pé toma a capa (issue #103), e ahi o chafa NÃO corre: o render
+    // d'elle ficaria por baixo da janella e ninguem o veria, e cada troca de
+    // faixa pagaria dezenas de milesimos por um desenho invisivel.
+    const bool pela_lousa =
+        lousa.disponivel() && geo.painel > 0 && geo.capa > 0;
+    static const nucleo::CapaPintada kSemArte;
+    const nucleo::CapaPintada& arte =
+        pela_lousa ? kSemArte
+                   : galeria.capa(retracto.titulo, geo.painel, geo.capa);
+    nucleo::Retangulo rectangulo;
+    if (pela_lousa)
+      rectangulo = nucleo::rectangulo_da_capa(
+          arquivario.de(retracto.titulo).medida, geo.painel, geo.capa,
+          nucleo::CELLULA_DA_CASA);
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
-    const nucleo::CapaPintada& arte =
-        galeria.capa(retracto.titulo, geo.painel, geo.capa);
-    const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
+    const std::size_t alt_arte =
+        pela_lousa ? rectangulo.linhas : tui::linhas_da_arte(arte, geo.capa);
     const std::size_t alt_baixo =
         geo.livre > alt_arte ? geo.livre - alt_arte : 1;
     const tui::Quadro quadro =
@@ -793,13 +811,20 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // continua a achar o quadro que ella pintou. Esvazia-se a cada quadro, que
     // painel que se não pinta não ha de deixar caixa velha a apanhar cliques.
     caixas.capa = tui::caixa_por_pintar();
+    // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
+    // painel, e marcador algum: a janella d'ella chega um quadro depois, e
+    // n'esse quadro o operador não ha de ver nota musical por baixo da capa.
+    ftxui::Element quadro_da_arte =
+        pela_lousa ? ftxui::text(std::string(geo.painel, ' ')) |
+                         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                                     static_cast<int>(alt_arte))
+                   : tui::elemento_da_arte(arte, geo.painel, alt_arte);
     ftxui::Element painel =
         geo.painel == 0
             ? ftxui::text("")
             : tui::elemento_do_painel(
                   ficha,
-                  tui::elemento_da_arte(arte, geo.painel, alt_arte) |
-                      ftxui::reflect(caixas.capa),
+                  std::move(quadro_da_arte) | ftxui::reflect(caixas.capa),
                   mostra_letra.load()
                       ? tui::elemento_da_letra(
                             letra,
