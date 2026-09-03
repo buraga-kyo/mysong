@@ -184,21 +184,37 @@ struct Quadro {
 // falsa, d'onde um cingir escripto ingenuamente deixaria o NaN passar ao floor.
 int oitavos(float magnitude, std::size_t altura);
 
-// AS PONTAS da batida (issue #139). A columna que accende na côr do registro
-// deixa de acabar em topo chato: a cella do alto d'ella vira PONTA, e é assim
-// que o olho apanha a batida de relance no meio da fita. Escrevem-se por PONTO
-// DE CODIGO, e não pelo glifo cru, pela regra da Casa; conferidos na
-// JetBrainsMono Nerd Font d'elle, e medidos a UMA collunha pelo
-// `ftxui::string_width`, que é o que faz a conta da fita prestar.
-inline constexpr std::string_view kPontaCheia = "\u25b2";  // ▲, topo cheio
-inline constexpr std::string_view kPontaRasa = "\u25b4";   // ▴, topo parcial
+// A PONTA da batida (issue #139, refeita pela #141). A columna que accende na
+// côr do registro deixa de acabar em topo chato: as cellas do alto da BANDA
+// desenham uma seta ENCORPADA, e é assim que o olho apanha a batida de relance
+// no meio da fita.
+//
+// Os glifos são os MESMOS da fita arrowline que aparta MY SONG, PLAYLISTS e
+// DOWNLOAD: as meias diagonaes powerline, que enchem a cella de orla a orla. O
+// triangulo do Unicode (U+25B2) desenha-se miudo no meio da cella e nada tem
+// que ver com o chrome d'esta Casa; foi o que a primeira lavra fez, e é o que
+// esta desfaz. Escrevem-se por PONTO DE CODIGO, e não pelo glifo cru, pela
+// regra da Casa; conferidos na JetBrainsMono Nerd Font d'elle e medidos a UMA
+// collunha pelo `ftxui::string_width`, que é o que faz a conta da fita prestar.
+inline constexpr std::string_view kFlancoQueSobe = "\ue0ba";   // , á esquerda
+inline constexpr std::string_view kFlancoQueDesce = "\ue0b8";  // , á direita
+// O BLOCO CHEIO, que enche as cellas do MEIO da ponta. É o mesmo U+2588 que o
+// `glifo_do_degrau` devolve nos oito oitavos, e escreve-se aqui por nome para
+// que a ponta o não vá buscar por arithmetica de degrau.
+inline constexpr std::string_view kBlocoCheio = "\u2588";
 
-// glifo_da_ponta — a ponta que remata a columna quente. Cheia quando o topo era
-// bloco CHEIO, pequena quando era degrau parcial: a pequena assenta mais baixo
-// na cella, e assim a ponta não mente sobre a altura que a barra tinha. A ponta
-// SUBSTITUE o glifo do topo, e não acrescenta cella: a barra quente e a fria da
-// mesma magnitude hão de ter a mesma altura, senão a côr passaria a crescer.
-std::string_view glifo_da_ponta(int degrau);
+// glifo_da_ponta — a cella do topo, dada a posição da collunha DENTRO da banda:
+// o flanco que sobe na primeira, o que desce na ultima, e o bloco cheio nas do
+// meio. Banda de UMA collunha (painel estreito, em que cada collunha funde
+// varias bandas) devolve VAZIO: meia diagonal sósinha não é seta, é degrau, e
+// ahi a barra fica com o topo de bloco.
+//
+// A ponta SUBSTITUE a cella do topo, e não a acrescenta: a barra acesa e a
+// apagada da mesma magnitude hão de medir o mesmo, senão a côr passaria a
+// crescer. Sendo o topo um degrau parcial, a ponta toma a cella inteira: a
+// differença é de sub-cella, dura o que dura a batida, e o que se pede é que a
+// batida se VEJA.
+std::string_view glifo_da_ponta(bool primeira, bool ultima);
 
 // glifo_do_degrau — o bloco de k oitavos, em U+2580 + k. Zero dá a célulla
 // vazia; acima de oito cinge-se a oito, que é o bloco cheio.

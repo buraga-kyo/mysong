@@ -108,8 +108,11 @@ void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
   }
 }
 
-std::string_view glifo_da_ponta(int degrau) {
-  return degrau >= DEGRAUS_POR_CELULA ? kPontaCheia : kPontaRasa;
+std::string_view glifo_da_ponta(bool primeira, bool ultima) {
+  if (primeira && ultima) return {};  // banda de uma collunha: sem ponta
+  if (primeira) return kFlancoQueSobe;
+  if (ultima) return kFlancoQueDesce;
+  return kBlocoCheio;
 }
 
 std::vector<float> centros_das_bandas(
@@ -186,6 +189,18 @@ Intervallo intervallo_da_columna(std::size_t quantas, std::size_t c,
   if (faixa.fim <= faixa.principio) faixa.fim = faixa.principio + 1;
   if (faixa.fim > quantas) faixa.fim = quantas;
   return faixa;
+}
+
+// mesma_banda — se duas collunhas cobrem o MESMO intervallo de bandas. A
+// segunda vem como `std::size_t` que pode ter transbordado (o `c - 1` da
+// primeira collunha dá o maximo), e o transbordo responde falso pelo caminho
+// natural: o intervallo d'essa collunha imaginaria não é o d'esta.
+bool mesma_banda(std::size_t quantas, std::size_t a, std::size_t b,
+                 std::size_t largura) {
+  if (a >= largura || b >= largura) return false;
+  const Intervallo d_a = intervallo_da_columna(quantas, a, largura);
+  const Intervallo d_b = intervallo_da_columna(quantas, b, largura);
+  return d_a.principio == d_b.principio && d_a.fim == d_b.fim;
 }
 
 float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
@@ -304,6 +319,13 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
   for (std::size_t c = 0; c < largura; ++c) {
     quadro.registros[c] = registro_da_columna(centros, c, largura);
     const float valor = valor_da_columna(bandas, c, largura);
+    // ONDE a collunha cae DENTRO da banda d'ella (issue #141). A banda pode
+    // tomar varias collunhas (na tela d'elle, tres), e é d'ellas que a ponta
+    // se compõe: o flanco que sobe na primeira, o que desce na ultima. Sahe da
+    // MESMA repartição que dá o valor, e não de conta feita á parte: duas
+    // contas divergiriam, e a seta abriria ao meio.
+    const bool primeira_da_banda = !mesma_banda(bandas.size(), c, c - 1, largura);
+    const bool ultima_da_banda = !mesma_banda(bandas.size(), c, c + 1, largura);
     const bool quente = columna_quente(picos, valor, c, largura);
     const int degraus = oitavos(valor, altura);
     const std::size_t cheias =
@@ -323,13 +345,18 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              ? 1
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
-      // A PONTA (issue #139) sómente no TOPO da columna QUENTE, e sómente
-      // tendo ella corpo: columna de uma cella é o piso do silencio, e ponta
-      // sem corpo não é barra, é ruido. As frias e a muda ficam de topo chato.
+      // A PONTA (issue #139, refeita pela #141) sómente no TOPO da columna
+      // QUENTE, e sómente tendo ella corpo: columna de uma cella é o piso do
+      // silencio, e ponta sem corpo não é barra, é ruido. As frias e a muda
+      // ficam de topo chato. O glifo sahe da posição da collunha DENTRO da
+      // banda, que é o que faz as tres cellas do topo desenharem UMA seta.
       const bool no_topo = i + 1 == desenhadas;
-      celula.glifo = quente && !mudo && no_topo && desenhadas >= 2
-                         ? std::string(glifo_da_ponta(degrau))
-                         : glifo_do_degrau(degrau);
+      const std::string_view ponta =
+          quente && !mudo && no_topo && desenhadas >= 2
+              ? glifo_da_ponta(primeira_da_banda, ultima_da_banda)
+              : std::string_view();
+      celula.glifo =
+          ponta.empty() ? glifo_do_degrau(degrau) : std::string(ponta);
       celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura,
                                      quadro.registros[c]);
       celula.pinta = true;
