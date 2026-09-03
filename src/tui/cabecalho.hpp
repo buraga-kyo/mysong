@@ -45,9 +45,10 @@ Aba aba_da_secao(Secao secao) noexcept;
 Aba aba_seguinte(Aba corrente) noexcept;
 
 // vista_seguinte — o `o` dentro das MY SONG: faixas, artistas, albuns, e torna
-// ás faixas. Os ÁLBUNS pedem artista na trilha, que a bibliotheca lista os
-// albuns D'ELLE e não os do acervo inteiro; sem artista o cyclo salta-os, que
-// vista sem chão seria tecla a não fazer nada.
+// ás faixas. Os ÁLBUNS pedem artista A QUE DESCER, que a bibliotheca lista os
+// albuns D'ELLE e não os do acervo inteiro: dos ARTISTAS entra-se no eleito, e
+// é essa a terceira vista. Não havendo eleito, o cyclo salta-a, que vista sem
+// chão seria tecla a não fazer nada.
 Secao vista_seguinte(Secao corrente, bool ha_artista) noexcept;
 
 // nome_da_vista — a palavra que a chapa diz da vista: FAIXAS, ARTISTAS,
