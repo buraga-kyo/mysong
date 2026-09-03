@@ -25,8 +25,10 @@
 
 #include "nucleo/onda.hpp"
 #include "tui/onda.hpp"
+#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
+namespace tk = mysong::tui::tokens;
 namespace tui = mysong::tui;
 
 namespace {
@@ -344,4 +346,46 @@ TEST_CASE("a onda em écran de papel dá um bloco por cella, do cheio ao raso") 
   const ftxui::Screen tela =
       papel(tui::elemento_da_onda(escada(), 3.0, 8.0, 8, false), 8);
   CHECK(pedaco(tela, 0, 8) == "█▇▆▄▂▁▁█");
+}
+
+namespace {
+
+ftxui::Color cor(std::string_view token) {
+  const tk::Triade c = tk::rgb(token);
+  return ftxui::Color::RGB(c.r, c.g, c.b);
+}
+
+}  // namespace
+
+// A côr é o que diz por onde a faixa vae: v600 no andado, line_dim no que
+// falta, e o fundo do painel por baixo de tudo.
+TEST_CASE("a onda veste v600 no andado, e line_dim no que falta") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_da_onda(escada(), 3.0, 8.0, 8, false), 8);
+  for (int c = 0; c < 3; ++c) {
+    CHECK(tela.PixelAt(c, 0).foreground_color == cor(tk::v600));
+    CHECK(tela.PixelAt(c, 0).background_color == cor(tk::panel));
+  }
+  for (int c = 3; c < 8; ++c)
+    CHECK(tela.PixelAt(c, 0).foreground_color == cor(tk::line_dim));
+}
+
+// O foco accende o ANDADO, e não a linha inteira: accendendo tudo, a onda
+// deixaria de dizer por onde a faixa vae, que é o officio primeiro d'ella.
+TEST_CASE("com foco, o andado accende em glow_core") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_da_onda(escada(), 3.0, 8.0, 8, true), 8);
+  CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(2, 0).foreground_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(3, 0).foreground_color == cor(tk::line_dim));
+}
+
+// Sem pontos, a barra chata do trilho, nas MESMAS côres: o progresso e o
+// clique nunca hão de pender do ffmpeg, e machina que o não tenha vê a fita
+// exactamente como via antes da onda.
+TEST_CASE("sem pontos, a onda mostra a barra chata do trilho") {
+  const ftxui::Screen tela = papel(tui::elemento_da_onda({}, 3.0, 8.0, 8, false), 8);
+  CHECK(pedaco(tela, 0, 8) == "━━━━━━━━");
+  CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(7, 0).foreground_color == cor(tk::line_dim));
 }
