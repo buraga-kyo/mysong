@@ -825,8 +825,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         nucleo::OrdemDaCapa::Tira)
       lousa.tira("capa");
     else
-      lousa.poe("capa", capa_do_painel, caixas.capa.x_min, caixas.capa.y_min,
-                rectangulo.collunas, rectangulo.linhas);
+      // O canto é do quadro ANTERIOR e o rectangulo é d'este: encolhendo-se o
+      // terminal, o canto velho cae fóra da tela nova e a imagem sahia meia
+      // por fóra por um quadro. Cinge-se á borda, que atraso de um quadro se
+      // corrige na batida seguinte e imagem fóra da tela não se corrige.
+      lousa.poe("capa", capa_do_painel,
+                std::min(caixas.capa.x_min,
+                         std::max(0, col - static_cast<int>(
+                                              rectangulo.collunas))),
+                caixas.capa.y_min, rectangulo.collunas, rectangulo.linhas);
     caixas.capa = tui::caixa_por_pintar();
     // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
     // painel, e marcador algum: a janella d'ella chega um quadro depois, e
