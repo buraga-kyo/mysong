@@ -121,6 +121,14 @@ TEST_CASE("a chapa diz onde se está, a conta e a vista, n'uma linha só") {
   // Recado comprido CINGE-SE ao que sobra, e o texto sahe INTEIRO: medido n'um
   // pty, sem o cinge os dous juntos pediam mais do que ha, e o hbox aparava por
   // egual os dous, d'onde a chapa perdia o «S» de FAIXAS.
+  // As ENCOMMENDAS vão logo á direita do texto, e não no fim: alli o primeiro
+  // aviso comprido comia-lhes o logar, e a issue pede-as por cima da lista.
+  qual.encommendas = "3 colhidas, 1 falhada";
+  const ftxui::Screen com_baixas = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
+  CHECK(linha_de(com_baixas, 0).substr(33, 23) == "  3 colhidas, 1 falhada");
+  // E o espaço do recado desconta-as: quem o monta ha de saber o que sobra.
+  CHECK(tui::espaco_do_recado(qual, 80) == 22);
+  qual.encommendas.clear();
   qual.recado = std::string(90, 'R');
   CHECK(linha_de(papel(tui::elemento_da_chapa(qual, 80), 80, 1), 0).substr(0, 33) ==
         " MY SONG, 42 FAIXAS, 1h29, FAIXAS");
