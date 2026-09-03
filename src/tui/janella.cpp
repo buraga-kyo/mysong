@@ -1061,9 +1061,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     switch (const tui::OrdemDaAba d_ella = tui::ordem_da_aba(tecla);
             d_ella.gesto) {
       case tui::GestoDaAba::Vai: vai_para_aba(d_ella.aba); return true;
-      case tui::GestoDaAba::Cycla:
-        vai_para_aba(tui::aba_seguinte(tui::aba_da_secao(navegador.secao())));
+      case tui::GestoDaAba::Cycla: {
+        // Tenta até TRES, e SALTA a aba sem chão. Sem o salto o Tab ficava
+        // preso nas PLAYLISTS emquanto não houvesse busca na rede feita, que é
+        // o estado de nascença: a tecla que a issue annuncia como «cicla as
+        // tres abas» não ciclava, e carregar n'ella duas vezes dava o mesmo
+        // recado e a mesma tela.
+        tui::Aba qual = tui::aba_da_secao(navegador.secao());
+        for (int volta = 0; volta < 3; ++volta) {
+          qual = tui::aba_seguinte(qual);
+          if (navegador.vai_para(tui::secao_da_aba(qual))) return true;
+          // Saltou-se, e diz-se PORQUE: aba a passar em silencio deixaria o
+          // operador a crer que o Tab pulou uma por engano d'elle.
+          aviso_da_rede = "DOWNLOAD saltada: a rede está vazia (s busca)";
+        }
         return true;
+      }
       case tui::GestoDaAba::CyclaVista: {
         const tui::Secao alvo = tui::vista_seguinte(
             navegador.secao(), !navegador.vista().empty());
