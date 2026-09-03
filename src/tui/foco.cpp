@@ -42,6 +42,12 @@ int centro_y2(const ftxui::Box& caixa) noexcept {
   return caixa.y_min + caixa.y_max;
 }
 
+// cruza — se dous arcos se tocam. A seta anda no seu CORREDOR: candidata que
+// não cruze a peça corrente no eixo de TRAVÉS não é candidata alguma.
+bool cruza(int a_min, int a_max, int b_min, int b_max) noexcept {
+  return a_min <= b_max && b_min <= a_max;
+}
+
 }  // namespace
 
 Direcao rumo_da_tecla(const ftxui::Event& tecla) noexcept {
@@ -93,6 +99,14 @@ Focavel salto(const CaixasDaTela& caixas, Focavel corrente,
     // aponta, e peça de centro egual ficaria a disputar com a corrente.
     const int adeante = (eixo - meu_eixo) * sentido;
     if (adeante <= 0) continue;
+    // O CORREDOR. Sem elle, o `←` da pauta cahia no botão de tocar, que está
+    // ACIMA d'ella e não á esquerda: o cabeçalho começa na collunha zero, e os
+    // centros diziam «á esquerda» de uma peça que a pauta tem por cima. Medido
+    // em 167 por 67, que é a tela d'elle.
+    const bool no_corredor =
+        vertical ? cruza(d_onde.x_min, d_onde.x_max, outra.x_min, outra.x_max)
+                 : cruza(d_onde.y_min, d_onde.y_max, outra.y_min, outra.y_max);
+    if (!no_corredor) continue;
     const int traves = vertical ? centro_x2(outra) : centro_y2(outra);
     const long custo = adeante + static_cast<long>(PESO_DE_TRAVES) *
                                      std::abs(traves - meu_traves);

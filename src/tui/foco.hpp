@@ -61,7 +61,11 @@ ftxui::Box caixa_da_peca(const CaixasDaTela& caixas, Focavel qual) noexcept;
 inline constexpr int PESO_DE_TRAVES = 2;
 
 // salto — a peça mais proxima na direcção pedida, pela geometria dos CENTROS
-// das caixas. Sem candidata, devolve a corrente: a tela não tem beira por onde
+// das caixas, e SÓMENTE entre as que cruzam a corrente no eixo de través: a
+// seta anda no seu corredor, que peça posta ACIMA não está á esquerda ainda
+// que o centro d'ella caia mais á esquerda.
+//
+// Sem candidata, devolve a corrente: a tela não tem beira por onde
 // o foco caia, nem volta ao principio, que dar a volta faria a seta levar o
 // olho ao canto opposto d'onde elle olhava.
 Focavel salto(const CaixasDaTela& caixas, Focavel corrente,
