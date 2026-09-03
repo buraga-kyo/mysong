@@ -669,30 +669,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       navegador.recarrega();
     }
     const tui::Retracto retracto = retracto_do(tocador, projector);
-    const int col = ftxui::Terminal::Size().dimx;
-    const int lin = ftxui::Terminal::Size().dimy;
-    const std::size_t larg = col > 4 ? static_cast<std::size_t>(col - 4) : 1;
-    // A guarnição em altura: marca, topo, transporte, rodapé e as duas da orla,
-    // que são CINCO mais o topo. Eram quinze com a fita do espectro no pé e a
-    // linha em branco que a precedia (issue #92). Foram seis por um quadro, e
-    // ahi sobrava sempre uma fileira vazia no pé: a conta cobrava uma linha que
-    // desenho algum gastava. O TOPO conta-se pelo modo, que aberto o prompt são
-    // duas linhas e não uma.
-    const std::size_t guarnicao = 5 + tui::linhas_do_topo(digita);
-    const std::size_t alt_corpo = lin > static_cast<int>(guarnicao)
-                                      ? static_cast<std::size_t>(lin) - guarnicao
-                                      : 1;
-    // A barra mais o espaçador de duas collunhas que o hbox lhe põe ao lado. O
-    // numero é da BARRA, e a barra é lavra da issue #93: vem por isso da
-    // constante d'ella, e não de um onze escripto á mão. A geometria da sala
-    // recebe-o por PARAMETRO, que é o que faz d'esta a UNICA linha a mudar no
-    // dia em que a barra mudar de largura outra vez.
-    const std::size_t kBarraCollunhas = tui::LARGURA_DA_BARRA + 2;
-    const tui::Geometria geo =
-        tui::geometria_da_sala(larg, alt_corpo, kBarraCollunhas);
+    // A tela INTEIRA, sem desconto algum. A conta velha tirava-lhe quatro
+    // collunhas de orla e cinco linhas de guarnição (a marca, o topo, o
+    // transporte, o rodapé e as duas da orla); a sala da issue #102 não tem
+    // orla, e as linhas que ella gasta reparte-as ella propria.
+    const ftxui::Dimensions tela = ftxui::Terminal::Size();
+    const tui::Sala sala = tui::sala_da_tela(
+        tela.dimx > 0 ? static_cast<std::size_t>(tela.dimx) : 0,
+        tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
+        digita != Digita::Nada);
     primeira_linha =
         tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
-                                geo.tabella, primeira_linha);
+                                sala.pauta.altura, primeira_linha);
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
 
     std::string trilha = "ARTISTAS";
