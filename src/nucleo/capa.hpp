@@ -85,6 +85,28 @@ struct Medida {
 // a bateria a afere contra cabeçalhos escriptos á mão, sem imagem no disco.
 Medida medida_da_imagem(std::string_view octetos);
 
+// O RECTANGULO que a capa toma, em CÉLULLAS.
+struct Retangulo {
+  std::size_t collunas = 0, linhas = 0;
+};
+
+// A CÉLULLA d'esta machina, em pixeis: nove por vinte, medido no Alacritty do
+// operador com a JetBrainsMono NF de corpo onze. Entra por PARAMETRO na conta,
+// e este é sómente o padrão da Casa: quem trocar de fonte troca um numero.
+inline constexpr Medida CELLULA_DA_CASA{9, 20};
+
+// rectangulo_da_capa — quantas célullas a imagem toma dentro do tecto, GUARDADA
+// A PROPORÇÃO. A célulla é mais alta que larga, e sem essa razão na conta a
+// capa quadrada pediria o dobro das linhas que toma. Medida por ler (formato
+// que este modulo não conhece) toma o tecto inteiro, que o Überzug++ encolhe a
+// imagem por dentro e o que se perde é sómente a fileira que sobraria.
+//
+// PURA, e sem parametro de omissão pela razão do argumentos_do_chafa: com
+// padrão, o valor avaliar-se-ia no logar da chamada e a bateria deixaria de
+// alcançar a machina de célulla differente.
+Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
+                             std::size_t tecto_linhas, Medida cellula);
+
 // ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
 // (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
 // degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a

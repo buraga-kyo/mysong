@@ -114,6 +114,32 @@ Medida medida_da_imagem(std::string_view octetos) {
   return {};  // WebP e o mais: quem chama toma isto por «não sei»
 }
 
+Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
+                             std::size_t tecto_linhas, Medida cellula) {
+  if (tecto_collunas == 0 || tecto_linhas == 0) return {};
+  if (imagem.largura == 0 || imagem.altura == 0 || cellula.largura == 0 ||
+      cellula.altura == 0)
+    return {tecto_collunas, tecto_linhas};
+  // Em inteiro GRANDE, e arredondando para cima: capa de mil e oitenta por mil
+  // e oitenta em cento e vinte collunhas passa dos dous milhões, e o
+  // rectangulo curto de uma linha deixaria a imagem a pingar sobre o espectro.
+  using Conta = unsigned long long;
+  const Conta por_alto = Conta(imagem.largura) * cellula.altura;
+  const Conta linhas =
+      (Conta(tecto_collunas) * imagem.altura * cellula.largura + por_alto - 1) /
+      por_alto;
+  if (linhas <= tecto_linhas)
+    return {tecto_collunas, static_cast<std::size_t>(linhas < 1 ? 1 : linhas)};
+  const Conta por_largo = Conta(imagem.altura) * cellula.largura;
+  const Conta collunas =
+      (Conta(tecto_linhas) * imagem.largura * cellula.altura + por_largo - 1) /
+      por_largo;
+  return {static_cast<std::size_t>(collunas > tecto_collunas ? tecto_collunas
+                                   : collunas < 1            ? 1
+                                                             : collunas),
+          tecto_linhas};
+}
+
 // O SEXTANTE, e a classe de fonte que o desenha. Medido n'esta machina:
 // `fc-list ':charset=1fb00'` acha sómente a Noto Sans Symbols2, que Nerd Font
 // não é; a JetBrainsMono NF tem os quadrantes (U+2596) e não tem os sextantes.
