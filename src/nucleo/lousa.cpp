@@ -15,7 +15,57 @@
 
 #include <cstdlib>
 
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/prctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 namespace mysong::nucleo {
+
+namespace {
+
+// ergue — o fork com CANO na entrada do filho: devolve o pid, e menos um
+// quando não vae. SOCKETPAR, e não `pipe`: escrevendo-se n'um cano cujo leitor
+// morreu, o systema manda SIGPIPE e o padrão d'elle mata o processo; com o
+// socket, o MSG_NOSIGNAL desliga isso SEM tocar no tratador global.
+int ergue(int* cano) noexcept {
+  int par[2] = {-1, -1};
+  if (::socketpair(AF_UNIX, SOCK_STREAM, 0, par) != 0) return -1;
+  const ::pid_t filho = ::fork();
+  if (filho < 0) { ::close(par[0]); ::close(par[1]); return -1; }
+  if (filho == 0) {
+    ::close(par[0]);  // senão a entrada d'elle nunca veria o fim do cano
+    ::dup2(par[1], STDIN_FILENO);
+    // Sahida e erro ao buraco: byte do filho no terminal estraga o quadro.
+    const int buraco = ::open("/dev/null", O_WRONLY);
+    if (buraco >= 0) {
+      ::dup2(buraco, STDOUT_FILENO);
+      ::dup2(buraco, STDERR_FILENO);
+      ::close(buraco);
+    }
+    ::close(par[1]);
+    // A MORTE PROMETTIDA: cahindo o tocador por signal, o systema manda SIGTERM
+    // a este filho. E pergunta-se pelo pae, que elle pode ter morrido no meio.
+    ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    if (::getppid() == 1) ::_exit(0);
+    const std::vector<std::string> ordem = argumentos_da_lousa();
+    std::vector<char*> argv;
+    for (const std::string& um : ordem)
+      argv.push_back(const_cast<char*>(um.c_str()));
+    argv.push_back(nullptr);
+    ::execvp(argv[0], argv.data());
+    ::_exit(127);  // o 127 do shell para «commando não achado»
+  }
+  ::close(par[1]);
+  // NÃO BLOQUEANTE: cano cheio não ha de segurar o quadro do pintor.
+  const int bandeiras = ::fcntl(par[0], F_GETFL, 0);
+  if (bandeiras >= 0) ::fcntl(par[0], F_SETFL, bandeiras | O_NONBLOCK);
+  *cano = par[0];
+  return static_cast<int>(filho);
+}
+
+}  // namespace
 
 std::vector<std::string> argumentos_da_lousa() {
   return {"ueberzugpp", "layer", "--silent", "-o", "x11"};
