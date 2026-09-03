@@ -297,6 +297,8 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::AbreCatalogo:
     case tui::Verbo::BaixaTudo:
     case tui::Verbo::TrocaFonte:
+    case tui::Verbo::RenomeiaFaixa:
+    case tui::Verbo::ApagaFaixa:
       break;
   }
 }
