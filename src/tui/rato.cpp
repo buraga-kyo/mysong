@@ -47,6 +47,7 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept {
   if (alto.volume.Contain(x, y)) return {Peca::Volume, 0, 0.0};
   if (alto.embaralhar.Contain(x, y)) return {Peca::Embaralhar, 0, 0.0};
   if (alto.repetir.Contain(x, y)) return {Peca::Repetir, 0, 0.0};
+  if (alto.ajuda.Contain(x, y)) return {Peca::Ajuda, 0, 0.0};
   if (alto.trilho.Contain(x, y))
     return {Peca::Progresso, 0, fracao_na(alto.trilho, x)};
   // O indice sahe ABSOLUTO: a caixa é da linha VISIVEL, e a rolagem somma-se
@@ -97,6 +98,7 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
     // que elle troca o numero pela palavra MUDO. Numero se não arrasta com o
     // dedo n'este modo de rato, e por isso o clique n'elle não assenta valor.
     case Peca::Volume: return {Gesto::Muda, 0, 0.0};
+    case Peca::Ajuda: return {Gesto::Ajuda, 0, 0.0};
     case Peca::Linha:
       // Indice além da vista é o quadro que envelheceu entre a pintura e o
       // clique. Não se elege ás cegas: o quadro seguinte já mostra o certo.
