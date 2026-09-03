@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "nucleo/ajustes.hpp"  // ModoDaLousa: a alavanca do operador
+#include "nucleo/capa.hpp"     // Medida: a chapa mede-se como a capa
 
 namespace mysong::nucleo {
 
@@ -90,6 +91,22 @@ std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 // nascia a trinta mil pixeis á DIREITA; n'esta tela ficou invisivel por acaso,
 // e em tela mais larga apparecia. Mil e quinhentas cabem de sobra.
 inline constexpr int COLLUNHA_DO_EMPURRAO = -1500;
+
+// A CAIXA do empurrão, em célullas: larga e alta, e nunca de UMA. O Überzug++
+// encolhe guardando a proporção, e chapa de uma linha é muito mais larga que
+// alta: cabendo n'uma cella, a altura arredonda a ZERO e o OpenCV d'elle
+// ABORTA na redimensão (asserção `inv_scale_x > 0`), levando comsigo a capa e
+// as abas. Medido pela lavra da letra em 03/09. Sessenta e quatro por trinta e
+// dous aguentam proporção de mil e cento e cinquenta para um, e a chapa mais
+// larga que esta Casa faz é a da linha inteira, que não passa de setenta e
+// cinco. A janella é invisivel, d'onde o tamanho d'ella nada custa ao olho.
+inline constexpr std::size_t LARGURA_DO_EMPURRAO = 64;
+inline constexpr std::size_t ALTURA_DO_EMPURRAO = 32;
+
+// lados_do_empurrao — quantos pixeis a imagem toma DENTRO d'essa caixa, pela
+// mesma reducção que o Überzug++ faz. PURA, e é o que a bateria afere: lado
+// ZERO é o que o faz abortar, e nenhum dos dous ha de chegar lá.
+Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept;
 
 // A ORDEM que o pintor da a lousa quanto á capa, e as duas unicas que ha.
 enum class OrdemDaCapa { Tira, Poe };
