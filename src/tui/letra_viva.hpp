@@ -250,9 +250,15 @@ inline constexpr std::size_t FILEIRA_DO_SEGUINTE = FILEIRAS_DA_LETRA - 1;
 // e ahi mostra-se o PRIMEIRO, que é o que vem a caminho. Faixa sem letra dá
 // bloco VAZIO (fileiras em branco), e não recado algum: letra que não ha não se
 // annuncia, que o painel não é logar de aviso.
+// `pela_chapa` diz que a imagem do verso corrente está de pé (issue #165). Nesse
+// caso a fileira d'elle sae em BRANCO, e sómente o fundo do painel se pinta: a
+// imagem cabe por ALTURA nas duas fileiras e sahe mais CURTA que o texto, d'onde
+// o fim do verso em mono apparecia de fóra d'ella. É a mesma disciplina da CAPA,
+// cujas cellas tambem pintam o fundo e mais nada quando a lousa a cobre. O verso
+// SEGUINTE fica em mono nos dous casos, que elle não vae á lousa.
 ftxui::Element elemento_da_letra_parada(
     const std::vector<nucleo::LinhaDaLetra>& linhas, int corrente,
-    std::size_t largura, std::size_t altura);
+    std::size_t largura, std::size_t altura, bool pela_chapa = false);
 
 // A ASSIGNATURA da chapa que está na tela (issue #163): o verso, o canto e a
 // largura. Trocando qualquer d'ellas, a janella da lousa ha de LIMPAR-SE antes

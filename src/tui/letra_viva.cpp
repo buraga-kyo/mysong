@@ -424,7 +424,7 @@ std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,
 
 ftxui::Element elemento_da_letra_parada(
     const std::vector<nucleo::LinhaDaLetra>& linhas, int corrente,
-    std::size_t largura, std::size_t altura) {
+    std::size_t largura, std::size_t altura, bool pela_chapa) {
   if (largura == 0 || altura == 0) return ftxui::emptyElement();
   const int qual = corrente < 0 ? 0 : corrente;
   std::vector<ftxui::Element> fileiras;
@@ -433,8 +433,12 @@ ftxui::Element elemento_da_letra_parada(
     // O CORRENTE no alto, GRANDE e laranja: elle assenta na primeira fileira, e
     // as duas seguintes ficam em branco, que são a caixa que a chapa cobre.
     if (f == FILEIRA_DO_CORRENTE && !linhas.empty()) {
-      fileiras.push_back(
-          ao_centro(verso_de(linhas, qual), tokens::data3, largura, true));
+      // Com a CHAPA de pé (issue #165), a cella pinta sómente o fundo: a
+      // imagem cobre-a, e o mono por baixo appareceria de fóra d'ella, que
+      // ella cabe por altura e sahe mais curta que o texto.
+      fileiras.push_back(ao_centro(
+          pela_chapa ? std::string() : verso_de(linhas, qual), tokens::data3,
+          largura, !pela_chapa));
       continue;
     }
     // O SEGUINTE na ultima (issue #159), miudo e apagado: elle diz o que vem, e

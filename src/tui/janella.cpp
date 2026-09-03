@@ -1048,6 +1048,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         letra, verso_corrente, caixas.letra,
         lousa.disponivel() && letreiro.disponivel(), vigilia.pede_batida(),
         mostra_letra.load());
+    // A CHAPA DE PÉ (issue #165) é a MESMA condição que manda pô-la, e não uma
+    // segunda conta: assim a cella nunca fica em branco sem que a imagem venha.
+    bool chapa_de_pe = false;
     const std::filesystem::path* cristal = nullptr;
     if (da_letra.poe)
       cristal = &letreiro.chapa(
@@ -1066,6 +1069,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         lousa.tira(tui::IDENTIDADE_DA_LETRA);
       assignatura_posta = agora;
       chapa_posta = true;
+      chapa_de_pe = true;
       // TRES fileiras (issue #157), que é o corpo GRANDE que elle pediu: a
       // chapa cobre as cellas que a sala reservou ao verso.
       lousa.poe(tui::IDENTIDADE_DA_LETRA, *cristal, da_letra.collunha,
@@ -1133,7 +1137,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                             ? letra
                                             : std::vector<nucleo::LinhaDaLetra>(),
                                         verso_corrente, sala.letra.largura,
-                                        sala.letra.altura) |
+                                        sala.letra.altura, chapa_de_pe) |
                                         ftxui::reflect(caixas.letra),
                                     tui::elemento_do_espectro(quadro)}),
                        sala.painel.largura)});
