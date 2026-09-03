@@ -339,7 +339,8 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // teclas d'esta tela que ninguem conhece de outra casa.
 constexpr const char* kDicas =
     "1 2 3 abas · Tab cicla · o vista · ↑↓ anda · → entra · ← volta"
-    " · Enter toca · espaço pausa · , . busca · + - volume · z x modos"
+    " · Enter toca · espaço pausa · F2 renomeia · Del apaga"
+    " · , . busca · + - volume · z x modos"
     " · / filtra · s rede · f fonte · b baixa · r varre · l letra"
     " · P listas · c cria · a junta · t retira · K/J move · R renomeia"
     " · D apaga · v video · I spotify · T baixa todas · q sahe";
