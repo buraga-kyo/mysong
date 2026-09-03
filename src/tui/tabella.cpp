@@ -306,10 +306,11 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   if (caixas != nullptr) caixas->clear();
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
+  // A pauta VAZIA fica VAZIA: o conselho sobe á chapa. O cinge da largura fica,
+  // que sem elle a metade esquerda encolhia e o divisor sahia do logar d'elle.
   if (vista.empty())
-    return pinta("  " + conselho_do_vazio(navegador.secao(),
-                                          !navegador.termo().empty()),
-                 tokens::text_faint);
+    return ftxui::emptyElement() |
+           ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 
   // As columnas e a maior linha da fatia sahem d'uma conta só, que a bateria
   // interroga sem écran. A pintura d'aqui em diante é traducção, e não decisão.

@@ -762,6 +762,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     for (const tui::Linha& qual : navegador.vista())
       chapa.duracao += qual.duracao;
     chapa.vista = tui::nome_da_vista(navegador.secao());
+    // A pauta vazia não pinta recado algum (issue #111): o conselho sobe á
+    // chapa, que é a linha em que se lê o estado do logar em que se está.
+    if (navegador.vista().empty())
+      chapa.conselho = tui::conselho_do_vazio(navegador.secao(),
+                                              !navegador.termo().empty());
     // As ENCOMMENDAS ganham logar proprio na DOWNLOAD, que é onde a issue as
     // pede por cima da lista. Nas outras abas ellas descem ao recado, que alli
     // a linha não é d'ellas e o que importa é a secção em que se está.

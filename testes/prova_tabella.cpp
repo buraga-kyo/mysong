@@ -299,31 +299,26 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
 }
 
-TEST_CASE("o recado do vazio é por SECÇÃO, e não um para todas") {
+TEST_CASE("o conselho do vazio é por SECÇÃO, e a pauta fica vazia") {
+  // No acervo o conselho manda varrer, e diz a tecla. Dentro de uma lista
+  // escolhida á mão, mandar varrer o acervo seria mandar ao logar errado.
+  const auto diz = [](tui::Secao q) { return tui::conselho_do_vazio(q, false); };
+  CHECK(diz(tui::Secao::Artistas) == "varra o acervo (r)");
+  CHECK(diz(tui::Secao::Rois).find("cria uma") != std::string::npos);
+  CHECK(diz(tui::Secao::Rede).find("outra vez") != std::string::npos);
+  CHECK(diz(tui::Secao::NoRol).find("tecla a") != std::string::npos);
+  // Nas MINHAS MÚSICAS elle depende do TERMO: sem elle o vazio é do acervo.
+  CHECK(diz(tui::Secao::Busca) == "varra o acervo (r)");
+  CHECK(tui::conselho_do_vazio(tui::Secao::Busca, true) ==
+        "nada casa com esse termo");
+  // E a PAUTA fica vazia de facto: cella por pintar não tem glypho algum.
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);  // acervo vazio, e sem roleiro
   REQUIRE(navegador.vai_para(tui::Secao::Artistas));
-  // No acervo, o recado manda varrer. Dentro de uma lista de faixas escolhidas á
-  // mão, mandar varrer o acervo seria mandar o operador ao logar errado.
-  const std::vector<std::string> acervo = pintar(navegador, 1, 70);
-  CHECK(acervo[0].find("varra o acervo") != std::string::npos);
-
-  navegador.mostra_rois();
-  const std::vector<std::string> listas = pintar(navegador, 1, 70);
-  CHECK(listas[0].find("cria uma") != std::string::npos);
-  CHECK(listas[0].find("varra o acervo") == std::string::npos);
-
-  navegador.mostra_rede(std::vector<nu::Achado>{});
-  const std::vector<std::string> rede = pintar(navegador, 1, 70);
-  CHECK(rede[0].find("pergunta outra vez") != std::string::npos);
-
-  // Nas MINHAS MÚSICAS o recado depende do TERMO: sem elle, quem está vazio é o
-  // acervo, e mandar procurar erro de escripta seria mandar ao logar errado.
-  REQUIRE(navegador.vai_para(tui::Secao::Busca));
-  CHECK(pintar(navegador, 1, 70)[0].find("varra o acervo") != std::string::npos);
-  navegador.filtra("zzz");
-  CHECK(pintar(navegador, 1, 70)[0].find("esse termo") != std::string::npos);
+  const std::vector<std::string> vazia = pintar(navegador, 2, 70);
+  CHECK(vazia[0].empty());
+  CHECK(vazia[1].empty());
 }
 
 
