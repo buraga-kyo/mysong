@@ -106,12 +106,32 @@ DaLixeira manda_a_lixeira(const std::filesystem::path& caminho,
                           const std::filesystem::path& lixeira) {
   DaLixeira desfecho;
   std::error_code erro;
+  // As quatro recusas têm NOME. «Não deu» faria o recado da tela mentir por
+  // omissão, e o operador ficaria sem saber se a faixa foi ou se está no logar.
+  if (lixeira.empty()) {
+    desfecho.razao = "não ha lixeira: nem HOME nem XDG_DATA_HOME";
+    return desfecho;
+  }
   const std::filesystem::path qual = std::filesystem::absolute(caminho, erro);
+  if (!std::filesystem::exists(qual, erro)) {
+    desfecho.razao = "esse arquivo já não está no logar";
+    return desfecho;
+  }
   std::filesystem::create_directories(lixeira / "files", erro);
-  std::filesystem::create_directories(lixeira / "info", erro);
+  if (!erro) std::filesystem::create_directories(lixeira / "info", erro);
+  if (erro) {
+    desfecho.razao = "a lixeira não se deixa abrir: " + erro.message();
+    return desfecho;
+  }
   desfecho.feita = poe_o_par(lixeira / "files", lixeira / "info", qual,
                              &desfecho.nome, &desfecho.copiada);
+  if (!desfecho.feita) desfecho.razao = "não se pôde mudar para a lixeira";
   return desfecho;
+}
+
+// A do systema. É a que a tela chama, e a unica que lê o ambiente.
+DaLixeira manda_a_lixeira(const std::filesystem::path& caminho) {
+  return manda_a_lixeira(caminho, caminho_da_lixeira());
 }
 
 }  // namespace mysong::nucleo
