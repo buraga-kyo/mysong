@@ -11,10 +11,8 @@
 #include <string>
 
 #include "tui/cabecalho.hpp"
-#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
-namespace tk = mysong::tui::tokens;
 namespace tui = mysong::tui;
 
 namespace {
@@ -28,18 +26,16 @@ ftxui::Screen papel(ftxui::Element quadro, int largura) {
   return ecran;
 }
 
-std::string lida(const ftxui::Screen& ecran) {
+// pedaco — as `quantas` cellas a partir da collunha `x`, na fileira zero. Por
+// CELLA, e não por byte: `substr` n'uma cadeia UTF-8 contaria octetos, e o
+// glifo de tres bytes desalinharia todo indice depois do primeiro.
+std::string pedaco(const ftxui::Screen& ecran, int x, int quantas) {
   std::string dita;
-  for (int x = 0; x < ecran.dimx(); ++x) {
-    const std::string& glifo = ecran.PixelAt(x, 0).character;
+  for (int i = x; i < x + quantas && i < ecran.dimx(); ++i) {
+    const std::string& glifo = ecran.PixelAt(i, 0).character;
     dita += glifo.empty() ? " " : glifo;
   }
   return dita;
-}
-
-ftxui::Color cor(std::string_view token) {
-  const tk::Triade c = tk::rgb(token);
-  return ftxui::Color::RGB(c.r, c.g, c.b);
 }
 
 // O que sôa: uma faixa de verdade do acervo d'elle, a tocar aos dezanove
@@ -54,6 +50,37 @@ tui::Retracto tocando() {
 }
 
 }  // namespace
+
+// A LINHA INTEIRA contra alvo escripto Á MÃO. Contar collunhas do écran de
+// papel não provaria cousa alguma: elle enche sempre a largura que se lhe
+// pediu. O que prova é a cadeia, que diz ordem, guarnição e conta de uma vez.
+TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
+  const ftxui::Screen tela = papel(
+      tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong,
+                                 "Montagem Lunar Celestia 1.0 (SLOWED)", 167),
+      167);
+
+  // A conta, feita á mão: a fita da esquerda pede 51 collunhas (11 da primeira
+  // aba, 13 da segunda, 12 da terceira, 3 por botão, e as 6 setas), a da
+  // direita pede 52 (a seta de entrada, 15 do tempo, 8 do volume, 14 do
+  // embaralhar, 11 do repetir, e as 3 setas do meio), e o nome toma as 64 que
+  // sobram: 51 mais 64 mais 52 dão 167 em ponto.
+  CHECK(pedaco(tela, 0, 11) == " \U000f075a MY SONG ");
+  CHECK(pedaco(tela, 11, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 12, 13) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 26, 12) == " \U000f01da DOWNLOAD ");
+  CHECK(pedaco(tela, 39, 3) == " \U000f03e4 ");   // toca: o botão diz PAUSAR
+  CHECK(pedaco(tela, 43, 3) == " \U000f04ae ");   // anterior
+  CHECK(pedaco(tela, 47, 3) == " \U000f04ad ");   // seguinte
+  CHECK(pedaco(tela, 51, 36) == "Montagem Lunar Celestia 1.0 (SLOWED)");
+  CHECK(pedaco(tela, 115, 1) == "\ue0b2");        // a seta de entrada da direita
+  CHECK(pedaco(tela, 116, 15) == " 00:19 / 03:09 ");
+  CHECK(pedaco(tela, 132, 8) == " \U000f057e 100% ");
+  CHECK(pedaco(tela, 141, 14) == " \U000f049d EMBARALHAR ");
+  CHECK(pedaco(tela, 156, 11) == " \U000f0456 REPETIR ");
+  // E a linha FECHA a largura: nada sobra, e nada transborda.
+  CHECK(pedaco(tela, 0, 167) == pedaco(tela, 0, 200));
+}
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
