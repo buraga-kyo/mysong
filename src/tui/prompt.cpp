@@ -115,6 +115,9 @@ std::string rotulo_do_prompt(Modo modo, std::string_view contexto) {
     case Modo::Procura: return "BUSCA NA REDE (" + std::string(contexto) + "):";
     case Modo::Lista: return "PLAYLIST DO SPOTIFY:";
     case Modo::NomeNovo: return "LISTA NOVA:";
+    // A faixa vae no rotulo, e não sómente a lista: este Enter cria E junta, e
+    // rotulo que dissesse «LISTA NOVA» calava a metade que se não desfaz.
+    case Modo::NomeComEsta: return "LISTA NOVA COM ESTA FAIXA:";
     case Modo::NomeOutro: return "NOME:";
     // O titulo da faixa, e não «NOME:»: o campo abre já com o titulo corrente
     // dentro, e o rotulo ha de dizer o que aquelle texto é.
