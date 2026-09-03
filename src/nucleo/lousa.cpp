@@ -134,7 +134,19 @@ Lousa::~Lousa() noexcept {
     // A UNICA espera d'este modulo, e é da SAHIDA: sem ella o filho ficaria
     // zombie e a janella d'elle podia sobreviver ao ultimo quadro do tocador,
     // que é justamente o fantasma que a issue manda não deixar na tela.
+    //
+    // Mas espera-se com TECTO, que o tractado promette que nada bloqueia:
+    // cahindo o servidor de X, o Überzug++ pode ficar preso n'uma chamada que
+    // não volta e não tratar o SIGTERM, e o tocador ficava pendurado sem
+    // quadro nenhum a pedir um kill de fóra. Duzentos milesimos, e depois o
+    // SIGKILL, contra o qual ninguem resiste: o waitpid que vem a seguir a
+    // elle já tem tecto de facto.
     int estado = 0;
+    for (int volta = 0; volta < 40; ++volta) {
+      if (::waitpid(filho_, &estado, WNOHANG) == filho_) return;
+      ::usleep(5000);
+    }
+    ::kill(filho_, SIGKILL);
     while (::waitpid(filho_, &estado, 0) < 0 && errno == EINTR) {}
   }
 }
