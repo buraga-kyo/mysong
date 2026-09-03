@@ -727,24 +727,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
-    // O CABEÇALHO da colleção á vista. A somma é das linhas Á VISTA, e não do
+    // A CHAPA por cima da pauta. A somma é das linhas Á VISTA, e não do
     // acervo: com filtro posto, o operador ha de ler a conta do que VÊ.
-    tui::Colleccao colleccao;
-    colleccao.nome = tui::nome_da_colleccao(navegador.secao(), navegador.trilha(),
-                                            navegador.nome_do_catalogo());
-    colleccao.quantas = navegador.vista().size();
-    colleccao.especie = tui::especie_da_secao(navegador.secao());
+    tui::Chapa chapa;
+    chapa.onde = tui::onde_da_chapa(navegador.secao(), navegador.trilha(),
+                                    navegador.nome_do_catalogo());
+    chapa.quantas = navegador.vista().size();
+    chapa.especie = tui::especie_da_secao(navegador.secao());
     for (const tui::Linha& qual : navegador.vista())
-      colleccao.duracao += qual.duracao;
-    colleccao.embaralhado = retracto.embaralhado;
-    colleccao.repeticao = retracto.repeticao;
-    // A capa pequena é a da PRIMEIRA linha, e sómente onde a chave é caminho de
-    // arquivo. Quem o sabe é a sala, por switch exhaustivo: secção nova accende
-    // aviso do compilador lá, e não passa calada a pedir capa de uma URL.
-    const std::string capa_do_meio =
-        tui::chave_e_caminho(navegador.secao()) && !navegador.vista().empty()
-            ? navegador.vista().front().chave
-            : std::string();
+      chapa.duracao += qual.duracao;
+    chapa.vista = tui::nome_da_vista(navegador.secao());
+    chapa.recado = recado;
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
     const nucleo::CapaPintada& arte =
