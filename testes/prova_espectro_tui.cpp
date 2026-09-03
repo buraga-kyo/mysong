@@ -374,15 +374,18 @@ TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
   CHECK(quadro.registros[0] == es::Registro::Graves);
   CHECK(quadro.registros[1] == es::Registro::MediosGraves);
 
-  // E a TINTA segue o registro, que é o que o olho vê: teto 32, 0,5 vezes 32 dá
-  // 16 degraus, dous blocos cheios e resto zero, d'onde duas célullas, e a base
-  // é a linha 3. Violeta n'uma columna, cyan na outra, no mesmo quadro.
+  // E a RAMPA não segue o registro: teto 32, 0,5 vezes 32 dá 16 degraus, dous
+  // blocos cheios e resto zero, d'onde duas célullas, e a base é a linha 3. As
+  // duas familias vestem a MESMA base composta, que é o que a issue #132 quer;
+  // o que as aparta é a côr da BATIDA, e essa só apparece na batida.
   REQUIRE(quadro.em(3, 0).pinta);
   REQUIRE(quadro.em(3, 1).pinta);
   CHECK(es::mesma_tinta(quadro.em(3, 0).tinta,
                         tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   CHECK(es::mesma_tinta(quadro.em(3, 1).tinta,
-                        tk::mistura(tk::data5, tk::panel_hi, 0.55)));
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+  CHECK(es::tinta_do_registro(quadro.registros[0]) == tk::glow_hot);
+  CHECK(es::tinta_do_registro(quadro.registros[1]) == tk::data5);
 }
 
 // A PRECEDENCIA da côr não se mexe com o registro. Arma-se nos AGUDOS de
@@ -436,7 +439,7 @@ TEST_CASE("as bordas reaes do nucleo põem toda banda no mesmo registro") {
 // esquerda para a direita. Os limites vão escriptos Á MÃO, colhidos das bordas
 // que o nucleo assenta em 48 kHz: a banda 6 tem centro em 210 hertz e a 7 em
 // 267, a 12 em 907 e a 13 em 1163, a 17 em 3163 e a 18 em 4059.
-TEST_CASE("com as bordas reaes a fita sahe violeta, cyan, laranja, amarella") {
+TEST_CASE("com as bordas reaes a fita reparte-se nas quatro familias") {
   mysong::nucleo::Espectro espectro(48000.0f, 2);
   const std::vector<float> centros = es::centros_das_bandas(
       espectro.bordas(),
@@ -447,9 +450,9 @@ TEST_CASE("com as bordas reaes a fita sahe violeta, cyan, laranja, amarella") {
   struct Faixa {
     std::size_t ultima;
     es::Registro registro;
-    std::string_view cor;
+    std::string_view batida;
   };
-  const Faixa faixas[] = {{6, es::Registro::Graves, tk::v500},
+  const Faixa faixas[] = {{6, es::Registro::Graves, tk::glow_hot},
                           {12, es::Registro::MediosGraves, tk::data5},
                           {17, es::Registro::MediosAgudos, tk::data3},
                           {23, es::Registro::Agudos, tk::data2}};
@@ -458,9 +461,11 @@ TEST_CASE("com as bordas reaes a fita sahe violeta, cyan, laranja, amarella") {
   for (const Faixa& faixa : faixas)
     for (; b <= faixa.ultima; ++b) {
       CHECK(quadro.registros[b] == faixa.registro);
-      // E a base da columna veste a côr da familia, que é o que o olho lê.
+      // A base veste a RAMPA, egual em toda familia; o que muda de familia para
+      // familia é a côr da batida, que aqui não se accende (0,5 é frio).
       CHECK(es::mesma_tinta(quadro.em(3, b).tinta,
-                            tk::mistura(faixa.cor, tk::panel_hi, 0.55)));
+                            tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+      CHECK(es::tinta_do_registro(faixa.registro) == faixa.batida);
     }
   CHECK(b == mysong::nucleo::QUANTAS_BANDAS);  // a taboada cobre a fita inteira
 }
