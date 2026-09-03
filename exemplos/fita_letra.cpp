@@ -36,5 +36,34 @@ namespace es = mysong::tui;
 namespace nu = mysong::nucleo;
 namespace tk = mysong::tui::tokens;
 
+
+namespace {
+
+// A LETRA de dentro, quando não se dá `.lrc`. Quatro versos de quatro em quatro
+// segundos, que é o passo em que o nascimento e a subida se vêem inteiros.
+std::vector<nu::LinhaDaLetra> letra_de_dentro() {
+  return {{4.0, "e u   v o u   e m b o r a"},
+          {8.0, "e   n ã o   v o l t o   m a i s"},
+          {12.0, "esta é a linha que canta"},
+          {16.0, "dreams never die"}};
+}
+
+// bandas_da_posição — a fita do espectro por baixo, armada da POSIÇÃO e não do
+// som: o exemplo não abre PipeWire, e ainda assim as barras hão de mexer entre
+// uma corrida e a seguinte, que é o que o olho precisa de ver por baixo do rio.
+std::vector<float> bandas_da_posicao(double posicao) {
+  std::vector<float> bandas;
+  for (std::size_t b = 0; b < nu::QUANTAS_BANDAS; ++b) {
+    const double fase = posicao * 1.7 + static_cast<double>(b) * 0.6;
+    // Serra em vez de seno: sem bibliotheca de trigonometria a mais, e o dente
+    // dá altura differente em cada banda, que é o que a fita quer mostrar.
+    const double dente = fase - static_cast<double>(static_cast<long>(fase));
+    bandas.push_back(static_cast<float>(0.25 + 0.7 * dente));
+  }
+  return bandas;
+}
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
