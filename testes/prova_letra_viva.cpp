@@ -1,8 +1,10 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DAS PROVAS DO RIO — testes/prova_letra_viva.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// Prova o rio da letra da issue #109. Caso algum abre terminal, som ou relogio:
-// o rio resolve-se em QUADRO por POSIÇÃO, e é pelo quadro que se prova. Sendo a
+// Prova o rio da letra da issue #109, e a chapa em XIROD da linha corrente da
+// issue #110, que d'elle pende e por isso aqui mora. Caso algum abre terminal,
+// som, relogio nem X11: o rio resolve-se em QUADRO por POSIÇÃO, e é pelo quadro
+// que se prova, e a chapa é ORDEM tirada d'esse quadro. Sendo a
 // funcção pura, a posição escreve-se á mão e o instante da prova é o instante
 // que se quer, sem esperar segundo algum.
 //
@@ -437,6 +439,31 @@ TEST_CASE("o verso comprido corta-se e é o cortado que se rasteriza") {
   CHECK(pedido.fundo == std::string(tk::panel));
   CHECK(pedido.cellulas == kLargura);
   CHECK(pedido.familia == std::string(nu::FAMILIA_DA_MARCA));
+}
+
+TEST_CASE("a chapa da proxima adianta-se assim que ella nasce na base") {
+  // Aos onze segundos a primeira canta e a segunda já assomou na base, que o
+  // intervallo entre as duas é de quatro segundos.
+  const tui::QuadroDaLetra aos_onze =
+      tui::quadro_da_letra(kVersos, 11.0, kLargura, kAltura);
+  const tui::ChapaDaLetra ordem = da_chapa(aos_onze);
+  REQUIRE(ordem.poe);
+  CHECK(ordem.verso == "abcde");
+  CHECK(ordem.adiantado == "fghij");
+  CHECK(ordem.cellulas_adiantadas == 5);
+  // O que se adianta é o verso INTEIRO, e não o embaralho do instante: aos onze
+  // segundos a segunda linha ainda vem sem fórma, e imagem de glyphos
+  // embaralhados seria chapa por deitar fóra no instante em que ella chegasse.
+  const tui::LinhaViva* sobe = tui::linha_que_sobe_do_rio(aos_onze);
+  REQUIRE(sobe != nullptr);
+  CHECK(sobe->qual == 1);
+  CHECK(sobe->verso == "fghij");
+  CHECK(sobe->resolvida < 1.0);
+  // Cantada a ultima linha, não ha mais nada que adiantar.
+  const tui::QuadroDaLetra na_ultima =
+      tui::quadro_da_letra(kVersos, 14.0, kLargura, kAltura);
+  CHECK(tui::linha_que_sobe_do_rio(na_ultima) == nullptr);
+  CHECK(da_chapa(na_ultima).adiantado.empty());
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
