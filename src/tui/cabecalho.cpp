@@ -400,16 +400,24 @@ ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
 
 namespace {
 
-// fita_da_esquerda — as tres abas e os tres botões, na ordem d'elle: tocar,
-// anterior, seguinte. Os botões vestem panel_hi com o glifo em glow_core, que
-// é o glow CONTIDO da regra: elle accende no que TOCA, e não no fundo todo.
-Fita fita_da_esquerda(Aba corrente, bool tocando, Focavel foco) {
+// fita_das_abas — o GRUPO das tres abas, apartado dos botões porque é elle, e
+// sómente elle, que se centra na fita (issue #125): n'uma fita só, o bloco
+// cresceria com o nome do que sôa e o centro d'elle andaria com o nome.
+Fita fita_das_abas(Aba corrente, Focavel foco) {
   Fita fita(Sentido::Dextra);
   for (const Aba qual : {Aba::MySong, Aba::Playlists, Aba::Download}) {
     const EstadoDaAba estado = estado_da_aba(qual, corrente, foco);
     fita.junta({rotulo_da_aba(qual), fundo_da_aba(estado),
                 tinta_da_aba(estado)});
   }
+  return fita;
+}
+
+// fita_dos_botoes — os tres do transporte, na ordem d'elle: tocar, anterior,
+// seguinte. Vestem panel_hi com o glifo em glow_core, que é o glow CONTIDO da
+// regra: elle accende no que TOCA, e não no fundo todo.
+Fita fita_dos_botoes(bool tocando, Focavel foco) {
+  Fita fita(Sentido::Dextra);
   // O botão do meio TROCA de glifo com o estado, e não de logar: botão que
   // mudasse de sitio faria o dedo errar a pausa que elle proprio pediu.
   fita.junta(aceso({" " + std::string(tocando ? kPausar : kTocar) + " ",
@@ -485,10 +493,13 @@ constexpr std::size_t kNomeMinimo = 7;
 
 // caixas_da — os punhos das caixas na ORDEM em que a fita junta os segmentos.
 // Punho nullo em toda a lista quer dizer «esta chamada não quer saber».
-std::vector<ftxui::Box*> caixas_da_esquerda(CaixasDoCabecalho* c) {
+std::vector<ftxui::Box*> caixas_das_abas(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
-  return {&c->aba_mysong,   &c->aba_playlists,  &c->aba_download,
-          &c->botao_tocar,  &c->botao_anterior, &c->botao_seguinte};
+  return {&c->aba_mysong, &c->aba_playlists, &c->aba_download};
+}
+std::vector<ftxui::Box*> caixas_dos_botoes(CaixasDoCabecalho* c) {
+  if (c == nullptr) return {};
+  return {&c->botao_tocar, &c->botao_anterior, &c->botao_seguinte};
 }
 std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
@@ -530,9 +541,11 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
   if (largura == 0) return ftxui::text("");
-  const Fita esquerda = fita_da_esquerda(
-      corrente, retracto.estado == nucleo::Estado::Tocando, foco);
-  const std::size_t esq = esquerda.largura_exigida();
+  const Fita abas = fita_das_abas(corrente, foco);
+  const Fita botoes =
+      fita_dos_botoes(retracto.estado == nucleo::Estado::Tocando, foco);
+  const std::size_t esq =
+      abas.largura_exigida() + botoes.largura_exigida();
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
   std::size_t quantas = 4;
@@ -551,13 +564,14 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
   if (caixas != nullptr) meio = meio | ftxui::reflect(caixas->nome);
   return ftxui::hbox(
       {pintar_fita(
-           esquerda.compor(), caixas_da_esquerda(caixas),
+           abas.compor(), caixas_das_abas(caixas),
            {elemento_da_aba(Aba::MySong,
                             estado_da_aba(Aba::MySong, corrente, foco)),
             elemento_da_aba(Aba::Playlists,
                             estado_da_aba(Aba::Playlists, corrente, foco)),
             elemento_da_aba(Aba::Download,
                             estado_da_aba(Aba::Download, corrente, foco))}),
+       pintar_fita(botoes.compor(), caixas_dos_botoes(caixas), {}),
        std::move(meio),
        pintar_fita(direita.compor(), caixas_da_direita(caixas), {})});
 }
