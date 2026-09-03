@@ -311,6 +311,43 @@ std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
 
 }  // namespace
 
+ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
+                                     const std::string& nome,
+                                     std::size_t largura,
+                                     CaixasDoCabecalho* caixas) {
+  // Esvaziam-se á entrada, e antes de toda sahida antecipada: linha que se não
+  // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
+  if (caixas != nullptr) *caixas = CaixasDoCabecalho();
+  if (largura == 0) return ftxui::text("");
+  const Fita esquerda =
+      fita_da_esquerda(corrente, retracto.estado == nucleo::Estado::Tocando);
+  const std::size_t esq = esquerda.largura_exigida();
+  // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
+  // par de côres de um segmento ao meio.
+  std::size_t quantas = 4;
+  Fita direita = fita_da_direita(retracto, quantas);
+  while (quantas > 0 &&
+         esq + direita.largura_exigida() + kNomeMinimo > largura) {
+    --quantas;
+    direita = fita_da_direita(retracto, quantas);
+  }
+  const std::size_t dir = direita.largura_exigida();
+  const std::size_t sobra = largura > esq + dir ? largura - esq - dir : 0;
+  const bool ha = !nome.empty();
+  ftxui::Element meio =
+      vestir(aparar_nome(ha ? nome : "(nada toca)", sobra),
+             ha ? tokens::text_bright : tokens::text_muted, tokens::panel);
+  if (caixas != nullptr) meio = meio | ftxui::reflect(caixas->nome);
+  return ftxui::hbox(
+      {pintar_fita(esquerda.compor(), caixas_da_esquerda(caixas),
+                   {elemento_da_aba(Aba::MySong, corrente == Aba::MySong),
+                    elemento_da_aba(Aba::Playlists, corrente == Aba::Playlists),
+                    elemento_da_aba(Aba::Download,
+                                    corrente == Aba::Download)}),
+       std::move(meio),
+       pintar_fita(direita.compor(), caixas_da_direita(caixas), {})});
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
