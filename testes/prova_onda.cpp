@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -155,4 +156,45 @@ TEST_CASE("a chave da onda muda quando o mtime muda") {
   std::filesystem::last_write_time(
       faixa, std::filesystem::last_write_time(faixa) + std::chrono::hours(1));
   CHECK(nu::chave_da_onda(faixa) != antes);
+}
+
+namespace {
+
+// A CASA DO CACHE trocada por uma cova, e devolvida no fim. A prova nunca
+// escreve em `~/.cache/mysong`: o que ella lá deixasse ficaria depois da
+// bateria, e cache do operador não é logar de lixo de prova.
+class CachePostiço {
+ public:
+  explicit CachePostiço(const std::filesystem::path& onde) {
+    const char* const antes = std::getenv("XDG_CACHE_HOME");
+    havia_ = antes != nullptr;
+    if (havia_) guardado_ = antes;
+    ::setenv("XDG_CACHE_HOME", onde.c_str(), 1);
+  }
+  ~CachePostiço() {
+    if (havia_)
+      ::setenv("XDG_CACHE_HOME", guardado_.c_str(), 1);
+    else
+      ::unsetenv("XDG_CACHE_HOME");
+  }
+  CachePostiço(const CachePostiço&) = delete;
+  CachePostiço& operator=(const CachePostiço&) = delete;
+
+ private:
+  bool havia_ = false;
+  std::string guardado_;
+};
+
+}  // namespace
+
+// `ondas/` ao lado de `capas/` e de `letreiro/`: apagar uma pasta não ha de
+// levar a outra pelo caminho.
+TEST_CASE("o caminho do cache pende do XDG_CACHE_HOME") {
+  const Cova cova;
+  const CachePostiço postiço(cova.raiz());
+  CHECK(nu::caminho_da_onda_em_cache("abc123") ==
+        cova.raiz() / "mysong" / "ondas" / "abc123.onda");
+  // Chave vazia não dá caminho: sahiria o arquivo escondido «.onda», e duas
+  // faixas sem chave cahiriam n'elle uma por cima da outra.
+  CHECK(nu::caminho_da_onda_em_cache("").empty());
 }
