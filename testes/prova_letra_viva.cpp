@@ -1,8 +1,10 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DAS PROVAS DO RIO — testes/prova_letra_viva.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// Prova o rio da letra da issue #109. Caso algum abre terminal, som ou relogio:
-// o rio resolve-se em QUADRO por POSIÇÃO, e é pelo quadro que se prova. Sendo a
+// Prova o rio da letra da issue #109, e a chapa em XIROD da linha corrente da
+// issue #110, que d'elle pende e por isso aqui mora. Caso algum abre terminal,
+// som, relogio nem X11: o rio resolve-se em QUADRO por POSIÇÃO, e é pelo quadro
+// que se prova, e a chapa é ORDEM tirada d'esse quadro. Sendo a
 // funcção pura, a posição escreve-se á mão e o instante da prova é o instante
 // que se quer, sem esperar segundo algum.
 //
@@ -32,8 +34,10 @@
 #include <ftxui/screen/screen.hpp>
 
 #include "nucleo/letra.hpp"
+#include "nucleo/letreiro.hpp"
 #include "tui/espectro.hpp"
 #include "tui/letra_viva.hpp"
+#include "tui/sala.hpp"
 #include "tui/tokens.hpp"
 
 namespace tui = mysong::tui;
@@ -356,6 +360,110 @@ TEST_CASE("a sequencia crua veste o fundo sómente na célulla da letra") {
   // A célulla da barra não escreve fundo algum.
   const std::string da_barra = tui::sequencia_do_rio(tapete[kLeitura * kLargura]);
   CHECK(da_barra.find(tk::sgr(48, tom)) == std::string::npos);
+}
+
+namespace {
+
+// O rectangulo do espectro na TELA, escripto á mão: o canto em (84, 2) e a
+// medida do rio de prova. Serve aos casos em que o que se afere é a DECISÃO; a
+// geometria da sala de verdade prova-se em caso proprio, adeante.
+const tui::Rectangulo kPainel = {84, 2, kLargura, kAltura};
+
+// da_chapa — a ordem com o letreiro de pé, o foco dentro e o `l` a mostrar, que
+// é o estado em que a chapa se põe. Os tres bools ficam soltos nos casos que
+// provam justamente a falta de cada um d'elles.
+tui::ChapaDaLetra da_chapa(const tui::QuadroDaLetra& rio) {
+  return tui::ordem_da_chapa_da_letra(rio, kPainel, true, true, true);
+}
+
+}  // namespace
+
+TEST_CASE("a chapa põe-se na linha de leitura e nunca antes nem depois") {
+  // ANTES a linha ainda sobe e chapa alguma se põe; DEPOIS a chapa é a da
+  // SEGUINTE, que é quem tomou a linha de leitura.
+  CHECK_FALSE(da_chapa(tui::quadro_da_letra(kVersos, 8.0, kLargura, kAltura)).poe);
+  const tui::ChapaDaLetra no_instante =
+      da_chapa(tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura));
+  CHECK(no_instante.poe);
+  CHECK(no_instante.verso == "abcde");
+  CHECK(no_instante.cellulas == 5);
+  const tui::ChapaDaLetra depois =
+      da_chapa(tui::quadro_da_letra(kVersos, 14.0, kLargura, kAltura));
+  CHECK(depois.poe);
+  CHECK(depois.verso == "fghij");
+  // Faixa SEM letra alguma não tem chapa que pôr.
+  CHECK_FALSE(da_chapa(tui::quadro_da_letra({}, 10.0, kLargura, kAltura)).poe);
+}
+
+TEST_CASE("sem letreiro ou sem foco ou com a letra escondida não ha chapa") {
+  const tui::QuadroDaLetra canta =
+      tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura);
+  REQUIRE(da_chapa(canta).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, kPainel, false, true, true).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, kPainel, true, false, true).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, kPainel, true, true, false).poe);
+  // E painel por pintar tambem não: rectangulo vazio não tem canto onde a pôr.
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, {}, true, true, true).poe);
+}
+
+TEST_CASE("a caixa da chapa sae em coordenadas da tela") {
+  // A SALA de verdade, na tela d'elle. A 167 collunhas o painel fica com 83 e
+  // começa na 84, e o verso de cinco glyphos centra-se na (83 menos 5) meio.
+  const tui::Sala sala = tui::sala_da_tela(167, 45, false);
+  const tui::Rectangulo espectro = tui::espectro_abaixo_da(sala, 0);
+  REQUIRE(espectro.x == 84);
+  REQUIRE(espectro.largura == 83);
+  const tui::QuadroDaLetra rio =
+      tui::quadro_da_letra(kVersos, 10.0, espectro.largura, espectro.altura);
+  const tui::ChapaDaLetra ordem =
+      tui::ordem_da_chapa_da_letra(rio, espectro, true, true, true);
+  REQUIRE(ordem.poe);
+  CHECK(ordem.collunha == 84 + 39);
+  CHECK(ordem.linha == static_cast<int>(espectro.y + espectro.altura / 3));
+  CHECK(ordem.cellulas == 5);
+}
+
+TEST_CASE("o verso comprido corta-se e é o cortado que se rasteriza") {
+  const std::vector<nu::LinhaDaLetra> comprido = {
+      {10.0, "um verso muito mais comprido que o painel"}};
+  const tui::ChapaDaLetra ordem =
+      da_chapa(tui::quadro_da_letra(comprido, 10.0, kLargura, kAltura));
+  REQUIRE(ordem.poe);
+  CHECK(ordem.verso == "um verso muito mais…");
+  CHECK(ordem.cellulas == kLargura);
+  // E o pedido veste a chapa das MESMAS côres com que a linha em mono se pinta.
+  const nu::PedidoDaChapa pedido =
+      tui::pedido_da_chapa_da_letra(ordem.verso, ordem.cellulas);
+  CHECK(pedido.texto == "um verso muito mais…");
+  CHECK(pedido.tinta == std::string(tk::text_bright));
+  CHECK(pedido.fundo == std::string(tk::panel));
+  CHECK(pedido.cellulas == kLargura);
+  CHECK(pedido.familia == std::string(nu::FAMILIA_DA_MARCA));
+}
+
+TEST_CASE("a chapa da proxima adianta-se assim que ella nasce na base") {
+  // Aos onze segundos a primeira canta e a segunda já assomou na base, que o
+  // intervallo entre as duas é de quatro segundos.
+  const tui::QuadroDaLetra aos_onze =
+      tui::quadro_da_letra(kVersos, 11.0, kLargura, kAltura);
+  const tui::ChapaDaLetra ordem = da_chapa(aos_onze);
+  REQUIRE(ordem.poe);
+  CHECK(ordem.verso == "abcde");
+  CHECK(ordem.adiantado == "fghij");
+  CHECK(ordem.cellulas_adiantadas == 5);
+  // O que se adianta é o verso INTEIRO, e não o embaralho do instante: aos onze
+  // segundos a segunda linha ainda vem sem fórma, e imagem de glyphos
+  // embaralhados seria chapa por deitar fóra no instante em que ella chegasse.
+  const tui::LinhaViva* sobe = tui::linha_que_sobe_do_rio(aos_onze);
+  REQUIRE(sobe != nullptr);
+  CHECK(sobe->qual == 1);
+  CHECK(sobe->verso == "fghij");
+  CHECK(sobe->resolvida < 1.0);
+  // Cantada a ultima linha, não ha mais nada que adiantar.
+  const tui::QuadroDaLetra na_ultima =
+      tui::quadro_da_letra(kVersos, 14.0, kLargura, kAltura);
+  CHECK(tui::linha_que_sobe_do_rio(na_ultima) == nullptr);
+  CHECK(da_chapa(na_ultima).adiantado.empty());
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
