@@ -340,8 +340,10 @@ TEST_CASE("recado comprido não empurra a pauta nem o painel") {
                                                       39)}),
                  100, 1);
   };
-  CHECK(collunha_de(sala_de(""), 0, "P") == 61);
-  CHECK(collunha_de(sala_de(std::string(120, 'R')), 0, "P") == 61);
+  // Afere-se o DIVISOR, e não a arte: a arte vae centrada dentro do painel, e
+  // é a collunha do divisor que diz onde a metade direita começa.
+  CHECK(collunha_de(sala_de(""), 0, "\u2503") == 60);
+  CHECK(collunha_de(sala_de(std::string(120, 'R')), 0, "\u2503") == 60);
   CHECK(linha_de(sala_de(""), 0).substr(1, 7) == "MY SONG");
   CHECK(linha_de(sala_de(std::string(120, 'R')), 0).substr(1, 7) == "MY SONG");
 }
