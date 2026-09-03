@@ -470,6 +470,41 @@ TEST_CASE("com as bordas reaes a fita reparte-se nas quatro familias") {
   CHECK(b == mysong::nucleo::QUANTAS_BANDAS);  // a taboada cobre a fita inteira
 }
 
+// ── C14 · o pico recente de cada banda ─────────────────────────────────────
+// A conta do decaimento vae escripta Á MÃO, e não pela mesma fórmula da obra:
+// escripta por std::pow com o mesmo expoente, o caso affirmaria a redacção em
+// vez do decaimento. Metade n'uma meia-vida, um quarto em duas.
+TEST_CASE("o pico sobe de immediato ao valor da banda") {
+  std::vector<float> picos;
+  es::avanca_picos(picos, {0.2f, 0.8f}, 0.0);
+  REQUIRE(picos.size() == 2);
+  CHECK(picos[0] == doctest::Approx(0.2f));
+  CHECK(picos[1] == doctest::Approx(0.8f));
+
+  // E a banda que CAE não leva o pico com ella: elle fica, e é contra elle que
+  // a batida seguinte se ha de medir. Sem isto não haveria pico algum, sómente
+  // o valor corrente por outro nome.
+  es::avanca_picos(picos, {0.0f, 0.0f}, 0.0);
+  CHECK(picos[1] == doctest::Approx(0.8f));
+}
+
+TEST_CASE("o pico cae á metade na meia-vida") {
+  std::vector<float> picos;
+  es::avanca_picos(picos, {1.0f}, 0.0);
+  REQUIRE(picos.size() == 1);
+
+  es::avanca_picos(picos, {0.0f}, es::MEIA_VIDA_DO_PICO_S);
+  CHECK(picos[0] == doctest::Approx(0.5f));
+  // Outra meia-vida dá um QUARTO, e não zero: o decaimento é continuo, e não
+  // um degrau que se desse por inteiro ao fim do prazo.
+  es::avanca_picos(picos, {0.0f}, es::MEIA_VIDA_DO_PICO_S);
+  CHECK(picos[0] == doctest::Approx(0.25f));
+  // E meia meia-vida não dá tres oitavos: dá um quarto vezes a raiz de meio,
+  // que é o que aparta o decaimento continuo do linear.
+  es::avanca_picos(picos, {0.0f}, es::MEIA_VIDA_DO_PICO_S / 2.0);
+  CHECK(picos[0] == doctest::Approx(0.25f * std::sqrt(0.5f)));
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
