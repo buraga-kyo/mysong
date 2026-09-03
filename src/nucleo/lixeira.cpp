@@ -15,6 +15,8 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
+#include <system_error>
 
 namespace mysong::nucleo {
 
@@ -62,6 +64,54 @@ std::filesystem::path caminho_da_lixeira() {
   const char* casa = std::getenv("HOME");
   if (casa == nullptr || casa[0] == '\0') return {};
   return std::filesystem::path(casa) / ".local" / "share" / "Trash";
+}
+
+namespace {
+// UM arquivo, o par inteiro: nome livre, bilhete, e sómente depois a mudança.
+// Junto, e não em tres funcções, porque a mudança que falha ha de apagar o
+// bilhete que já se escreveu, e para isso precisa de o ter na mão.
+bool poe_o_par(const std::filesystem::path& files,
+               const std::filesystem::path& info,
+               const std::filesystem::path& qual, std::string* nome,
+               bool* copiada) {
+  std::error_code erro;
+  const std::string cru = qual.filename().string();
+  std::string livre = cru;
+  for (int n = 2; std::filesystem::exists(files / livre, erro) && n < 10000; ++n)
+    livre = cru + "." + std::to_string(n);
+  const std::filesystem::path bilhete = info / (livre + ".trashinfo");
+  std::ofstream papel(bilhete, std::ios::binary | std::ios::trunc);
+  papel << "[Trash Info]\nPath=" << escapa_o_caminho(qual.string())
+        << "\nDeletionDate=" << data_da_exclusao(std::time(nullptr)) << "\n";
+  papel.close();
+  if (!papel.good()) return false;
+  std::filesystem::rename(qual, files / livre, erro);
+  if (erro) {
+    // Outro volume: a lixeira mora no `$HOME`, e faixa de disco externo não se
+    // renomeia para lá. Sem a copia, essa faixa não se apagaria de todo.
+    std::filesystem::copy_file(qual, files / livre, erro);
+    if (erro) {
+      std::filesystem::remove(bilhete, erro);
+      return false;
+    }
+    std::filesystem::remove(qual, erro);
+    *copiada = true;
+  }
+  *nome = livre;
+  return true;
+}
+}  // namespace
+
+DaLixeira manda_a_lixeira(const std::filesystem::path& caminho,
+                          const std::filesystem::path& lixeira) {
+  DaLixeira desfecho;
+  std::error_code erro;
+  const std::filesystem::path qual = std::filesystem::absolute(caminho, erro);
+  std::filesystem::create_directories(lixeira / "files", erro);
+  std::filesystem::create_directories(lixeira / "info", erro);
+  desfecho.feita = poe_o_par(lixeira / "files", lixeira / "info", qual,
+                             &desfecho.nome, &desfecho.copiada);
+  return desfecho;
 }
 
 }  // namespace mysong::nucleo
