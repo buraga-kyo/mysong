@@ -71,6 +71,7 @@
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
+#include "tui/foco.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
 #include "tui/rato.hpp"
@@ -539,6 +540,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
   // pintura.
   tui::CaixasDaTela caixas;
+  // A PEÇA COM FOCO (issue #107). Nasce na PAUTA, que é onde o operador está
+  // quando abre o programa: foco de nascença n'uma aba faria a primeira seta
+  // andar no cabeçalho em vez de andar na lista, que é o que elle veio fazer.
+  tui::Focavel foco = tui::Focavel::Pauta;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -837,7 +842,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const std::size_t alt_arte =
         pela_lousa ? rectangulo.linhas
                    : tui::linhas_da_arte(arte, sala.capa.altura);
-    const tui::Rectangulo abaixo = tui::espectro_abaixo_da(sala, alt_arte);
+    // A ORLA do foco come duas linhas (issue #107), e a conta do espectro
+    // desconta-as: sem o desconto, o pé do painel sahia aparado em silencio
+    // emquanto a capa tivesse o foco.
+    const bool capa_com_foco = foco == tui::Focavel::Capa;
+    const tui::Rectangulo abaixo =
+        tui::espectro_abaixo_da(sala, alt_arte + (capa_com_foco ? 2 : 0));
     // Os centros em hertz (issue #104), colhidos UMA vez: a escala é do
     // contracto do analisador, e o punho d'elle não abre as bordas que o
     // nucleo assentou.
@@ -892,11 +902,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
+    // A CAIXA fica por DENTRO da orla, e é de proposito: é ella que a lousa lê
+    // para saber onde pôr a janella da imagem, e medida por fóra a imagem
+    // sahiria por cima do quadro que a assignala.
+    ftxui::Element quadro_com_caixa =
+        std::move(quadro_da_arte) | ftxui::reflect(caixas.capa);
+    if (capa_com_foco)
+      quadro_com_caixa = tui::orla_do_foco(std::move(quadro_com_caixa));
     ftxui::Element painel =
         sala.painel.vazio()
             ? ftxui::emptyElement()
             : tui::elemento_do_painel(
-                  std::move(quadro_da_arte) | ftxui::reflect(caixas.capa),
+                  std::move(quadro_com_caixa),
                   mostra_letra.load()
                       ? tui::elemento_da_letra(
                             letra,
@@ -925,9 +942,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         tui::elemento_do_cabecalho(retracto,
                                    tui::aba_da_secao(navegador.secao()),
                                    ficha.titulo, sala.cabecalho.largura,
-                                   &caixas.cabecalho),
+                                   &caixas.cabecalho, foco),
         tui::elemento_do_trilho(retracto, sala.trilho.largura,
-                                &caixas.cabecalho.trilho)};
+                                &caixas.cabecalho.trilho,
+                                foco == tui::Focavel::Trilho)};
     if (!sala.campo.vazio())
       tudo.push_back(tui::elemento_do_campo(digita, contexto_do_campo,
                                             termo_em_curso,
