@@ -147,7 +147,8 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
 // n'este painel ellas sahiriam todas da arte.
 ftxui::Element elemento_do_divisor(std::size_t altura);
 
-// elemento_do_painel — a metade direita: a arte no alto, e o que o chamador
+// elemento_do_painel — a metade direita: a arte no alto, CENTRADA na largura,
+// e o que o chamador
 // quizer por baixo (o espectro, ou a letra quando o `l` a pede). Os dous entram
 // já compostos, para que esta peça não conheça nem um nem outra e a bateria
 // lh'os arme á mão. O titulo e a ficha sahiram: o nome do que sôa vive agora na

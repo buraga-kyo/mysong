@@ -281,7 +281,12 @@ ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
   // O fundo `panel` veste a collunna inteira, e é elle que a aparta da pauta
   // por dentro; por fóra aparta-a o divisor, que é collunha propria.
   const tokens::Triade fundo = tokens::rgb(tokens::panel);
-  return ftxui::vbox({std::move(arte), std::move(baixo)}) |
+  // A ARTE vae CENTRADA, que é o que a issue pede. O chafa guarda a proporção,
+  // d'onde a capa quadrada n'um painel largo sahe mais estreita que elle: sem
+  // o centro ella ficava encostada á esquerda, com o vão todo de um lado só.
+  // O `hcenter` mede o que a arte pediu, e não o que o painel tem, donde a
+  // capa que enche a largura não se desloca de uma collunha.
+  return ftxui::vbox({std::move(arte) | ftxui::hcenter, std::move(baixo)}) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
