@@ -490,14 +490,15 @@ que ella deixar.
 ### A pauta
 
 A lista das musicas nao e planilha: e uma folha de leitura. Cada linha traz, da
-esquerda para a direita, a cella do «▶» de quem soa, o numero da faixa (tres
-cellas, encostado a direita), o TITULO, o ARTISTA, a REGUA da duracao, e o tempo
-em MM:SS.
+esquerda para a direita, a cella do «▶» de quem soa, o TITULO, o ARTISTA, a
+REGUA da duracao, e o tempo em MM:SS. O numero da faixa saiu: ele diz a ordem
+dentro do album de onde a faixa veio, e num acervo que se le pelo titulo nada
+dizia.
 
 ```
-    1  97Kickstvr, without you   97Kickstvr   ▰▰▱▱▱▱ 03:09
- ▶  2  FUNK ESTRANHO, SUPER SL…  ALXIKE       ▰▰▱▱▱▱ 02:30
-    3  NO FEAR!                  ANDROMEDA    ▰▱▱▱▱▱ 01:49
+    97Kickstvr, without you      97Kickstvr   ▰▰▱▱▱▱ 03:09
+ ▶  FUNK ESTRANHO, SUPER SL…     ALXIKE       ▰▰▱▱▱▱ 02:30
+    NO FEAR!                     ANDROMEDA    ▰▱▱▱▱▱ 01:49
 ```
 
 A ELEITA e um BLOCO: a linha inteira ganha fundo violeta e o texto todo sae
@@ -513,7 +514,7 @@ O titulo e o artista dividem o que sobra em dous tercos e um terco, e cortam com
 glifo, e a linha nao alarga por isso.
 
 Apertando a tela, as columnas cedem por ordem de servico: primeiro o artista,
-depois a regua, depois o tempo, e por fim o numero. O titulo fica ate ao fim.
+depois a regua, depois o tempo. O titulo fica ate ao fim.
 
 Nas vistas de ARTISTAS e de ALBUNS (tecla `o`) as columnas adaptam-se: o nome
 toma a largura, sem numero de faixa e sem tempo.
