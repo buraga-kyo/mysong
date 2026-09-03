@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -89,6 +90,30 @@ bool ha_familia_da_marca();
 // texto_do_letreiro — a linha do --sonda, pura pelo precedente do
 // `texto_da_lousa`: escape algum sahe d'aqui.
 std::string texto_do_letreiro(const Parecer& parecer);
+
+// ── E AGORA O QUE TOCA O MUNDO.
+
+// O LETREIRO: o rasterizador, com o que já se fez guardado. Ergue-se UMA vez
+// na pilha da tela, ao lado da lousa, e é d'elle que sahem os caminhos que
+// ella põe. Funcção alguma d'elle lança nem bloqueia por mais que o
+// pango-view demore a primeira vez, que da segunda em deante nada corre.
+class Letreiro {
+ public:
+  explicit Letreiro(ModoDaLousa modo);
+
+  bool disponivel() const noexcept { return parecer_.de_pe; }
+  const Parecer& parecer() const noexcept { return parecer_; }
+
+  // chapa — o caminho do PNG do pedido, rasterizado na PRIMEIRA vez e nunca
+  // mais. Vazio quando não ha letreiro, ou quando o pango-view falhou; e o
+  // vazio GUARDA-SE tambem, que tornar a tentar a cada quadro seria erguer
+  // processo vinte vezes por segundo por uma chapa que não ha de vir.
+  const std::filesystem::path& chapa(const Pedido& pedido);
+
+ private:
+  Parecer parecer_;
+  std::map<std::string, std::filesystem::path> feitas_;
+};
 
 }  // namespace mysong::nucleo
 
