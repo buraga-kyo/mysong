@@ -17,7 +17,11 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <string_view>
 #include <vector>
+
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 
 #include "nucleo/onda.hpp"
 #include "tui/onda.hpp"
@@ -301,4 +305,43 @@ TEST_CASE("dobrar fecha a largura exacta de uma a duzentas collunhas") {
     CHECK(*std::max_element(dobrados.begin(), dobrados.end()) ==
           doctest::Approx(maior));
   }
+}
+
+namespace {
+
+// papel — o écran de mentira, da largura pedida e de UMA fileira.
+ftxui::Screen papel(ftxui::Element quadro, int largura) {
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
+                                              ftxui::Dimension::Fixed(1));
+  ftxui::Render(ecran, quadro);
+  return ecran;
+}
+
+// pedaco — as cellas por GLIFO, e não por octeto: `substr` n'uma cadeia UTF-8
+// contaria bytes, e o bloco de tres desalinharia todo indice depois do
+// primeiro.
+std::string pedaco(const ftxui::Screen& ecran, int x, int quantas) {
+  std::string dita;
+  for (int i = x; i < x + quantas && i < ecran.dimx(); ++i) {
+    const std::string& glifo = ecran.PixelAt(i, 0).character;
+    dita += glifo.empty() ? " " : glifo;
+  }
+  return dita;
+}
+
+// A onda dos oito degraus, do cheio ao raso, para se ler bloco a bloco.
+const std::vector<float>& escada() {
+  static const std::vector<float> kEscada = {1.0f,   0.875f, 0.75f, 0.5f,
+                                             0.25f,  0.125f, 0.0f,  1.0f};
+  return kEscada;
+}
+
+}  // namespace
+
+// A LINHA INTEIRA contra uma cadeia escripta á mão: diz de uma vez a escada
+// dos blocos, o piso de um oitavo e a conta das cellas.
+TEST_CASE("a onda em écran de papel dá um bloco por cella, do cheio ao raso") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_da_onda(escada(), 3.0, 8.0, 8, false), 8);
+  CHECK(pedaco(tela, 0, 8) == "█▇▆▄▂▁▁█");
 }
