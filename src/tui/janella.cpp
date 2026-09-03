@@ -71,6 +71,7 @@
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
+#include "tui/letra_viva.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
 #include "tui/rato.hpp"
@@ -885,18 +886,21 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
+    // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
+    // base d'elle e sobe por cima. Escondido o rio pelo `l`, o quadro d'elle sae
+    // VAZIO, e a composição devolve o espectro tal qual; faixa sem `.lrc` faz o
+    // mesmo por si, que letra alguma se inventa.
+    const tui::QuadroDaLetra rio =
+        mostra_letra.load()
+            ? tui::quadro_da_letra(letra, retracto.posicao, abaixo.largura,
+                                   abaixo.altura)
+            : tui::QuadroDaLetra{};
     ftxui::Element painel =
         sala.painel.vazio()
             ? ftxui::emptyElement()
             : tui::elemento_do_painel(
                   std::move(quadro_da_arte) | ftxui::reflect(caixas.capa),
-                  mostra_letra.load()
-                      ? tui::elemento_da_letra(
-                            letra,
-                            nucleo::linha_corrente(letra, retracto.posicao),
-                            abaixo.altura, abaixo.largura)
-                      : tui::elemento_do_espectro(quadro),
-                  sala.painel.largura);
+                  tui::elemento_do_rio(quadro, rio), sala.painel.largura);
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
     // pela razão que a composição velha ensinou: por menos, o pé da tela fica
     // em branco; por mais, o rodapé sahe d'ella.
