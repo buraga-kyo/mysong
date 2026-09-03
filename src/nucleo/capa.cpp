@@ -239,22 +239,24 @@ std::string_view extensao_da_capa(std::string_view octetos) {
   return {};
 }
 
+std::filesystem::path raiz_do_cache() {
+  const char* const posto = std::getenv("XDG_CACHE_HOME");
+  if (posto != nullptr && posto[0] != '\0')
+    return std::filesystem::path(posto) / "mysong";
+  const char* const casa = std::getenv("HOME");
+  if (casa == nullptr) return {};
+  return std::filesystem::path(casa) / ".cache" / "mysong";
+}
+
 std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos) {
   const std::string_view extensao = extensao_da_capa(octetos);
   if (extensao.empty()) return {};
   // O CACHE, e não o directorio de corrida em que o chafa recebia a arte:
   // aquelle morre no fim da sessão, e a lousa quer o arquivo enquanto a janella
   // estiver de pé. E cache é o logar certo, que isto se apaga sem perda.
-  const char* const posto = std::getenv("XDG_CACHE_HOME");
-  std::filesystem::path raiz;
-  if (posto != nullptr && posto[0] != '\0') {
-    raiz = std::filesystem::path(posto);
-  } else {
-    const char* const casa = std::getenv("HOME");
-    if (casa == nullptr) return {};
-    raiz = std::filesystem::path(casa) / ".cache";
-  }
-  return raiz / "mysong" / "capas" /
+  const std::filesystem::path raiz = raiz_do_cache();
+  if (raiz.empty()) return {};
+  return raiz / "capas" /
          (somma_dos_octetos(octetos) + "." + std::string(extensao));
 }
 
