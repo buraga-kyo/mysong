@@ -25,15 +25,15 @@ const std::vector<tui::Modo> kTodos = {
     tui::Modo::Nada,     tui::Modo::Busca,    tui::Modo::Url,
     tui::Modo::Procura,  tui::Modo::NomeNovo, tui::Modo::NomeOutro,
     tui::Modo::Confirma, tui::Modo::Lista,   tui::Modo::TituloOutro,
-    tui::Modo::ConfirmaFaixa};
+    tui::Modo::ConfirmaFaixa, tui::Modo::NomeComEsta};
 }  // namespace
 
-TEST_CASE("o enum tem dez modos e sete d'elles digitam") {
-  CHECK(kTodos.size() == 10);
+TEST_CASE("o enum tem onze modos e oito d'elles digitam") {
+  CHECK(kTodos.size() == 11);
   std::size_t digitam = 0;
   for (const tui::Modo modo : kTodos)
     if (tui::aceita_letra(modo)) ++digitam;
-  CHECK(digitam == 7);
+  CHECK(digitam == 8);
   CHECK_FALSE(tui::aceita_letra(tui::Modo::Nada));
   CHECK_FALSE(tui::aceita_letra(tui::Modo::Confirma));
   // A pergunta do apagar a faixa tambem não digita: responde-se com uma tecla.
@@ -56,6 +56,9 @@ TEST_CASE("cada modo que captura tecla diz o seu rotulo") {
   CHECK(tui::rotulo_do_prompt(tui::Modo::NomeNovo, "") == "LISTA NOVA:");
   CHECK(tui::rotulo_do_prompt(tui::Modo::NomeOutro, "") == "NOME:");
   CHECK(tui::rotulo_do_prompt(tui::Modo::TituloOutro, "") == "TITULO:");
+  // O do menu diz a faixa, e não sómente a lista: o Enter d'elle cria E junta.
+  CHECK(tui::rotulo_do_prompt(tui::Modo::NomeComEsta, "") ==
+        "LISTA NOVA COM ESTA FAIXA:");
   // Palavra por palavra a mesma pergunta do apagar a lista, que a resposta é a
   // mesma tecla e duas redacções fariam o operador ler duas vezes.
   CHECK(tui::rotulo_do_prompt(tui::Modo::ConfirmaFaixa, "Tear") ==

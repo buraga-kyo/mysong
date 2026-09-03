@@ -74,6 +74,7 @@
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
 #include "tui/letra_viva.hpp"
+#include "tui/menu_contexto.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
 #include "tui/rato.hpp"
@@ -348,18 +349,28 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // ellas mudam a cada issue que dá tecla nova, e assim quem as procura sabe
 // onde estão. As tres primeiras são as da issue #102, que são as unicas
 // teclas d'esta tela que ninguem conhece de outra casa.
-// Cabe em CENTO E QUINZE collunhas, e o piso do esboço é cento e vinte. Linha
-// que transbordasse aparar-se-hia em silencio, e o que se perderia seria o FIM,
-// onde moram as teclas que menos se usam e que ninguem adivinha; o que não
-// coube está no README, e a linha diz que lá está.
+// Coube em CENTO E QUINZE collunhas emquanto as dicas eram nove, e o piso do
+// esboço é cento e vinte. Linha que transborde apara-se em silencio, e o que se
+// perde é o FIM; por isso o fim é o README, que é onde mora o que não coube.
 //
 // As seis de funcção (issue #106) entraram, e para lhes caber o logar sahiram
 // o Enter, o espaço e o `n`/`p`, que dizem o que o F7, o F6 e o F8 já dizem, e
 // sahiu o `o` da vista, que a chapa por cima da pauta annuncia por si.
+//
+// O `m` do menu (issue #96) entrou, e para lhe caber o logar o ponto do meio
+// cedeu o passo a DOUS ESPAÇOS, que é o separador do proprio esboço da tela.
+//
+// E declara-se o que se MEDIU, que a promessa das cento e vinte já se não
+// cumpre: com as setas e o Enter da issue #107 a linha ficou em cento e
+// quarenta e duas collunhas, e o `m` com o ponto punha-a em cento e cincoenta
+// e uma. Com os dous espaços mede cento e quarenta, que é MENOS do que ella
+// media sem o `m`; menos do que isso pedia apagar dica que uma lavra irmã
+// acabou de escrever. Em tela de cento e vinte perde-se o FIM, e o fim é o
+// README, que é justamente onde mora o que na linha não coube.
 constexpr const char* kDicas =
-    "↑↓←→ anda · Enter aperta · 1 2 3 abas · Tab cicla"
-    " · F6 F7 F8 transporte · F9 mudo · F10 F11 volume"
-    " · F2 renomeia · Del apaga · q sahe · README";
+    "↑↓←→ anda  Enter aperta  1 2 3 abas  Tab cicla"
+    "  F6 F7 F8 transporte  F9 mudo  F10 F11 volume"
+    "  F2 renomeia  Del apaga  m menu  q sahe  README";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
@@ -548,6 +559,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // quando abre o programa: foco de nascença n'uma aba faria a primeira seta
   // andar no cabeçalho em vez de andar na lista, que é o que elle veio fazer.
   tui::Focavel foco = tui::Focavel::Pauta;
+  // O MENU DE CONTEXTO (issue #96). Vive n'esta pilha, ao lado das caixas: o
+  // tratador muta-o e o pintor lê-o, e os dous correm no fio da tela.
+  tui::MenuDeContexto menu;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -705,9 +719,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // Nada se perde: o correio guarda o recado até ser colhido, e a bandeira do
     // acervo novo só se consome na leitura. A novidade espera, e assenta no
     // primeiro quadro depois de o campo fechar.
+    //
+    // O MENU ABERTO congela pela mesma razão, e por uma peor (issue #96): com
+    // elle de pé o alvo é a faixa ELEITA, e varredura que assentasse aqui
+    // refazia a vista debaixo d'elle. O APAGAR seguinte mandava á lixeira o
+    // arquivo que ficou n'aquella linha, e não o que a orla do menu nomeia.
+    const bool assenta = tui::assenta_novidade(digita) && !menu.aberto;
     std::vector<nucleo::Achado> achados;
     std::string recado;
-    if (tui::assenta_novidade(digita) && correio.colhe(&achados, &recado)) {
+    if (assenta && correio.colhe(&achados, &recado)) {
       // A guarda da COLHEITA, par da do fio: entre a checagem de lá e o pouso
       // aqui cabe um f, e a resposta que já não é da fonte vigente cai. Os
       // achados vêm estampados; a resposta VAZIA é sempre de fonte de rede,
@@ -726,8 +746,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // para se conferir.
     std::vector<nucleo::Catalogo> lidos;
     std::string recado_da_lista;
-    if (tui::assenta_novidade(digita) &&
-        correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
+    if (assenta && correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
       if (!lidos.empty() && !lidos.front().faixas.empty())
         navegador.mostra_catalogo(std::move(lidos.front()));
       aviso_da_rede = recado_da_lista;
@@ -739,7 +758,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tratador de teclas, que corre no fio da tela; recarregá-lo do relogio era
     // mutá-lo de um fio e lê-lo de outro. O pintor corre no mesmo fio do tratador,
     // donde a corrida sahe. Não é embelleçamento: é o defeito da corrida a fechar-se.
-    if (tui::assenta_novidade(digita) && acervo_novo.exchange(false)) {
+    if (assenta && acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
     }
@@ -1044,7 +1063,25 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                      (sala.chapa.vazio() ? 0 : 1))));
     if (!sala.rodape.vazio())
       tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
-    return ftxui::vbox(std::move(tudo));
+    ftxui::Element corpo = ftxui::vbox(std::move(tudo));
+    if (!menu.aberto) return corpo;
+    // A LINHA ALVO em coordenadas da tela. Vem da SALA, e não das caixas do
+    // rato: ellas enchem-se no `reflect`, que corre DEPOIS d'esta composição, e
+    // n'este ponto do quadro estão todas por pintar. A conta é a mesma que a
+    // pauta faz, e não outra: a linha visivel é a absoluta menos a rolagem.
+    ftxui::Box linha_alvo = tui::caixa_por_pintar();
+    if (menu.faixa >= primeira_linha &&
+        menu.faixa - primeira_linha < sala.pauta.altura)
+      linha_alvo = {
+          static_cast<int>(sala.pauta.x),
+          static_cast<int>(sala.pauta.x + sala.pauta.largura) - 1,
+          static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha),
+          static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha)};
+    return ftxui::dbox(
+        {std::move(corpo),
+         tui::flutuante_do_menu(
+             menu, linha_alvo, sala.cabecalho.largura,
+             tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0)});
   });
 
   // vai_para_aba — o caminho das teclas `1` `2` `3`, n'um logar só. Sahe do
@@ -1058,6 +1095,64 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   const auto vai_para_aba = [&](tui::Aba qual) {
     if (navegador.vai_para(tui::secao_da_aba(qual))) return;
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+  };
+
+  // abre_o_menu_na — o menu sobre a faixa de indice `qual`, que se ELEGE
+  // primeiro. Eleger ao abrir é o que o gerenciador de arquivos d'elle faz com
+  // o botão direito, e é o que deixa o menu chamar as ordens que já existem:
+  // ellas trabalham todas sobre a ELEITA, e menu que abrisse n'outra faixa
+  // pediria um segundo caminho para cada uma d'ellas.
+  const auto abre_o_menu_na = [&](std::size_t qual) {
+    while (navegador.eleito() != qual) {
+      const std::size_t antes = navegador.eleito();
+      antes < qual ? navegador.desce() : navegador.sobe();
+      if (navegador.eleito() == antes) break;  // saturou: acabou a lista
+    }
+    const std::string caminho = navegador.caminho_eleito();
+    if (caminho.empty()) {
+      aviso_da_rede = "o menu é da faixa: elege uma primeiro";
+      return;
+    }
+    nucleo::Faixa d_ella;
+    livraria.acha_por_caminho(caminho, d_ella);
+    tui::abre_o_menu(menu, navegador.eleito(),
+                     tui::ficha_da_faixa(caminho, d_ella.titulo, d_ella.artista,
+                                         d_ella.album)
+                         .titulo,
+                     navegador.rois());
+  };
+
+  // cria_a_lista_com — a lista NOVA já com a faixa eleita dentro, que é o que o
+  // item NOVA LISTA COM ESTA promette (issue #96). Vae pelo roleiro, e não pelo
+  // `cria_rol` do navegador: esse não devolve o id da que nasceu, e sem o id
+  // não ha onde juntar. Passa-se ás listas a seguir, como o `c` já passava:
+  // quem cria uma lista quer vê-la, e vê-la é o modo de conferir que nasceu.
+  const auto cria_a_lista_com = [&](const std::string& nome) {
+    const std::string caminho = navegador.caminho_eleito();
+    const int qual = roleiro.cria(nome);
+    if (qual == 0) {
+      aviso_da_rede = "esse nome já existe, ou é vazio";
+      return;
+    }
+    roleiro.junta(qual, caminho);
+    navegador.mostra_rois();
+    aviso_da_rede = "«" + nome + "» criada com a faixa";
+  };
+
+  // junta_na_lista — a faixa eleita na lista de id `qual`, que é a que o submenu
+  // escolheu. Chama o roleiro, e não o `junta_ao_rol` do navegador: esse junta
+  // na lista CORRENTE, e a corrente não é a que se escolheu; mudar a corrente
+  // por um item de menu faria o `a` seguinte juntar n'outra lista sem que
+  // ninguem lh'o tivesse pedido.
+  const auto junta_na_lista = [&](int qual) {
+    const std::string caminho = navegador.caminho_eleito();
+    if (qual == 0 || caminho.empty() || !roleiro.junta(qual, caminho)) {
+      aviso_da_rede = "não se pôde juntar á lista";
+      return;
+    }
+    navegador.recarrega();  // dentro d'ella, a faixa apparece no mesmo quadro
+    for (const nucleo::Rol& rol : menu.listas)
+      if (rol.id == qual) aviso_da_rede = "juntada a «" + rol.nome + "»";
   };
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
@@ -1087,6 +1182,35 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // a sessão inteira, e comia o logar que a conta do recado reservaria ao
     // andamento das baixas, que é obra em curso e não desfecho velho.
     if (tui::eh_tecla_de_gente(tecla)) aviso_da_rede.clear();
+    // O MENU DE CONTEXTO (issue #96) toma TODA tecla emquanto está aberto, e
+    // por isso trata-se ANTES do rato e do modo de digitar. É o mesmo logar em
+    // que o campo já consome, e pela mesma razão: sem elle, a seta andava na
+    // pauta por baixo do menu, e o alvo mudava sem que ninguem o visse.
+    tui::Ordem ordem_do_menu;
+    if (menu.aberto) {
+      const tui::RespostaDoMenu escolha = tui::tecla_no_menu(menu, tecla);
+      switch (escolha.pedido) {
+        case tui::PedidoDoMenu::Nada: return true;  // consumida, e nada mais
+        // Os TRES que a tecla já cumpre desaguam na taboada de sempre, e não
+        // ganham caminho proprio: TOCAR é o Entra da eleita, e os outros dous
+        // são o F2 e o Delete. Dous caminhos para renomear divergiriam na
+        // primeira issue que mexesse n'um d'elles.
+        case tui::PedidoDoMenu::Toca: ordem_do_menu = {tui::Verbo::Entra}; break;
+        case tui::PedidoDoMenu::Renomeia:
+          ordem_do_menu = {tui::Verbo::RenomeiaFaixa};
+          break;
+        case tui::PedidoDoMenu::Apaga:
+          ordem_do_menu = {tui::Verbo::ApagaFaixa};
+          break;
+        case tui::PedidoDoMenu::Junta:
+          junta_na_lista(escolha.lista);
+          return true;
+        case tui::PedidoDoMenu::NovaLista:
+          digita = Digita::NomeComEsta;
+          termo_em_curso.clear();
+          return true;
+      }
+    }
     // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
     // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
     tui::Ordem ordem_do_rato;
@@ -1163,6 +1287,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // punhos do tocador, e não «ler o retracto e depois escrever»: entre a
         // leitura e a escripta caberia o socket, e o clique assentaria o
         // contrario do que se viu.
+        case tui::Gesto::AbreMenu: abre_o_menu_na(gesto.indice); return true;
         case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
         case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
         // O MUDO pelo segmento do volume, e pela mesma razão dos dous modos:
@@ -1224,6 +1349,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         } else if (era == Digita::NomeNovo) {
           if (!navegador.cria_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::NomeComEsta) {
+          cria_a_lista_com(termo_em_curso);
         } else if (era == Digita::TituloOutro) {
           const std::string qual = navegador.caminho_eleito();
           aviso_da_rede = renomeia_a_faixa(qual, termo_em_curso, livraria);
@@ -1347,11 +1474,20 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::GestoDaAba::Alheio: break;
     }
 
+    // A TECLA `m` (issue #96): o menu sobre a ELEITA, que é o par de teclado do
+    // botão direito. Trata-se AQUI, depois do campo e das abas, e não na
+    // taboada do commando: ella não dá Ordem alguma, e verbo que sómente
+    // abrisse caixa da tela seria verbo que o tocador nunca cumpriria.
+    if (tecla == ftxui::Event::Character('m')) {
+      abre_o_menu_na(navegador.eleito());
+      return true;
+    }
     // A ordem vem do RATO quando o evento é do rato, e da tecla quando é da
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
     const tui::Ordem ordem =
-        tecla.is_mouse() || pelo_foco
+        ordem_do_menu.verbo != tui::Verbo::Nada ? ordem_do_menu
+        : tecla.is_mouse() || pelo_foco
             ? ordem_do_rato
             : tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {

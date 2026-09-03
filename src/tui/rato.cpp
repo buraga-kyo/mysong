@@ -66,7 +66,8 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
   if (movimento != ftxui::Mouse::Pressed) return {};
   const bool roda =
       botao == ftxui::Mouse::WheelUp || botao == ftxui::Mouse::WheelDown;
-  if (botao != ftxui::Mouse::Left && !roda) return {};
+  const bool direito = botao == ftxui::Mouse::Right;
+  if (botao != ftxui::Mouse::Left && !roda && !direito) return {};
   // Com o campo aberto o clique é o Escape, e nada mais: o rato não escreve no
   // termo, e a tela não ha de mudar debaixo de quem está a digitar.
   if (estado.digitando) return {Gesto::FechaCampo, 0, 0.0};
@@ -78,6 +79,15 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
     // que era andar n'uma collunha; sobre uma fita de tres abas seria trocar de
     // secção por acaso, com o dedo a caminho de outra peça.
     return {};
+  }
+  // O BOTÃO DIREITO abre o menu, e sómente sobre uma LINHA: no cabeçalho e na
+  // capa não ha faixa alguma de que o menu fosse, e menu sem faixa alvo seria
+  // caixa a perguntar sobre nada. Indice além da vista tambem se recusa, pela
+  // razão do clique esquerdo: é o quadro que envelheceu entre a pintura e o
+  // clique, e abrir ás cegas poria o nome de uma faixa por cima de outra.
+  if (direito) {
+    if (alvo.peca != Peca::Linha || alvo.indice >= estado.quantas) return {};
+    return {Gesto::AbreMenu, alvo.indice, 0.0};
   }
   switch (alvo.peca) {
     case Peca::Aba: return {Gesto::VaiParaAba, alvo.indice, 0.0};

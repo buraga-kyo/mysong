@@ -121,8 +121,9 @@ TEST_CASE("sómente o botão esquerdo a descer governa alguma cousa") {
   for (const Mouse::Motion mexeu : {Mouse::Released, Mouse::Moved})
     CHECK(tui::gesto_do_alvo(linha, Mouse::Left, mexeu, estado).gesto ==
           tui::Gesto::Nada);
-  // O direito é da issue #96, e o do meio não é de issue alguma.
-  for (const Mouse::Button qual : {Mouse::Right, Mouse::Middle, Mouse::None})
+  // O do meio não é de issue alguma, e continua mudo. O direito tem officio
+  // desde a issue #96, e por isso sahiu d'esta lista: elle abre o menu.
+  for (const Mouse::Button qual : {Mouse::Middle, Mouse::None})
     CHECK(tui::gesto_do_alvo(linha, qual, Mouse::Pressed, estado).gesto ==
           tui::Gesto::Nada);
   CHECK(tui::gesto_do_alvo(linha, Mouse::Left, Mouse::Pressed, estado).gesto ==
@@ -337,17 +338,35 @@ TEST_CASE("com a janella do video de pé o clique no trilho fica inerte") {
   CHECK(clicou(caixas, 37, 0, com_video).gesto == tui::Gesto::Anterior);
 }
 
-TEST_CASE("o botão direito é mudo tambem com o campo de digitar aberto") {
+TEST_CASE("com o campo aberto o botão direito fecha-o, e menu algum abre") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato digita{true, 21, 40, 200.0};
   const tui::Alvo linha = tui::alvo_do_ponto(caixas, 30, 4);
-  // Desempate conservador: a guarda do BOTÃO vem antes da do campo, donde o
-  // direito não fecha nada. Elle é da issue #96, e fechar o campo seria
-  // dar-lhe officio antes de ella lho definir.
-  CHECK(tui::gesto_do_alvo(linha, Mouse::Right, Mouse::Pressed, digita).gesto ==
-        tui::Gesto::Nada);
-  CHECK(tui::gesto_do_alvo(linha, Mouse::Left, Mouse::Pressed, digita).gesto ==
-        tui::Gesto::FechaCampo);
+  // A guarda do campo vem antes da do menu, e não ao contrario: com o campo de
+  // pé a tela não ha de mudar debaixo de quem digita, e menu que abrisse alli
+  // tomaria as teclas ao termo em curso a meio de uma palavra.
+  for (const Mouse::Button qual : {Mouse::Left, Mouse::Right})
+    CHECK(tui::gesto_do_alvo(linha, qual, Mouse::Pressed, digita).gesto ==
+          tui::Gesto::FechaCampo);
+}
+
+TEST_CASE("o botão direito n'uma linha abre o menu, e sómente n'uma linha") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  const tui::EstadoDoRato estado{false, 21, 40, 200.0};
+  const tui::GestoDoRato d_ella =
+      tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, 30, 4), Mouse::Right,
+                         Mouse::Pressed, estado);
+  CHECK(d_ella.gesto == tui::Gesto::AbreMenu);
+  CHECK(d_ella.indice == 21);  // o indice ABSOLUTO, com a rolagem sommada
+  // No cabeçalho e na capa não ha faixa alguma de que o menu fosse.
+  for (const tui::Alvo alheio : {tui::alvo_do_ponto(caixas, 5, 0),
+                                 tui::alvo_do_ponto(caixas, 70, 5)})
+    CHECK(tui::gesto_do_alvo(alheio, Mouse::Right, Mouse::Pressed, estado)
+              .gesto == tui::Gesto::Nada);
+  // E o soltar não abre: elle chega sempre, e o menu piscaria e sumia.
+  CHECK(tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, 30, 4), Mouse::Right,
+                           Mouse::Released, estado)
+            .gesto == tui::Gesto::Nada);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒

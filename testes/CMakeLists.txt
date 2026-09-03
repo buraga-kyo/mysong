@@ -196,3 +196,6 @@ target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)
 # Sem terminal, sem som e sem relogio: o rio é funcção da POSIÇÃO, e a posição
 # escreve-se á mão. A composição sobre o espectro prova-se em écran de papel.
 target_sources(mysong_testes PRIVATE prova_letra_viva.cpp)
+
+# ─── Prova do menu de contexto (issue #96): por target_sources, a regra ─────
+target_sources(mysong_testes PRIVATE prova_menu_contexto.cpp)

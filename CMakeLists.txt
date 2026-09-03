@@ -470,3 +470,9 @@ target_sources(mysong_core PRIVATE src/tui/letra_viva.cpp)
 add_executable(fita_letra exemplos/fita_letra.cpp)
 target_compile_options(fita_letra PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_letra PRIVATE mysong_core)
+
+# ─── O MENU DE CONTEXTO (issue #96) ─────────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Peça nova
+# pela razão do rato: o estado do menu e a taboada de dentro d'elle precisam de
+# se provar cella a cella, e a janella não se prova.
+target_sources(mysong_core PRIVATE src/tui/menu_contexto.cpp)
