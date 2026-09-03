@@ -270,7 +270,56 @@ int corre_o_ffmpeg(const std::vector<std::string>& argumentos,
   return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
 
+// amostras_dos_octetos — o `s16le` em inteiros de dezasseis bits, pequeno
+// primeiro. Copia-se octeto a octeto, e NÃO se aponta um `int16_t*` para o
+// meio da cadeia: cadeia alguma promette alinhamento de dous octetos, e
+// reinterpretar o ponteiro seria andar por sorte n'esta architectura e cahir
+// n'outra. O octeto impar que sobre deita-se fóra: meia amostra não é amostra.
+std::vector<std::int16_t> amostras_dos_octetos(const std::string& crus) {
+  std::vector<std::int16_t> amostras;
+  amostras.reserve(crus.size() / 2);
+  for (std::size_t i = 0; i + 1 < crus.size(); i += 2) {
+    const unsigned baixo = static_cast<unsigned char>(crus[i]);
+    const unsigned alto = static_cast<unsigned char>(crus[i + 1]);
+    amostras.push_back(
+        static_cast<std::int16_t>(static_cast<std::uint16_t>((alto << 8) | baixo)));
+  }
+  return amostras;
+}
+
 }  // namespace
+
+Onda colhe_onda(const std::filesystem::path& faixa, std::string* razao) {
+  const auto dizer = [razao](std::string_view porque) {
+    if (razao != nullptr) *razao = std::string(porque);
+    return Onda{};
+  };
+  if (razao != nullptr) razao->clear();
+  std::error_code erro;
+  if (faixa.empty() || !std::filesystem::is_regular_file(faixa, erro) || erro)
+    return dizer("a faixa não existe");
+  // O CACHE primeiro, e antes de se perguntar sequer pelo ffmpeg: a segunda
+  // corrida do tocador ha de pintar a onda sem erguer processo algum, e ha de
+  // pintal-a ainda que o operador tenha desinstalado o ffmpeg entretanto.
+  const std::filesystem::path guardada =
+      caminho_da_onda_em_cache(chave_da_onda(faixa));
+  Onda onda;
+  if (!guardada.empty() && le_onda(guardada, &onda) && onda.pronta())
+    return onda;
+  if (!ha_no_caminho("ffmpeg"))
+    return dizer("falta o ffmpeg (o desenhador da onda)");
+  std::string crus;
+  if (corre_o_ffmpeg(linha_de_commando_da_onda(faixa), &crus) != 0)
+    return dizer("o ffmpeg não leu a faixa");
+  const std::vector<std::int16_t> amostras = amostras_dos_octetos(crus);
+  onda = onda_das_amostras(amostras.data(), amostras.size());
+  if (!onda.pronta()) return dizer("a faixa não deu amostra alguma");
+  // O cache é conveniencia, e não contracto: falhando a escripta (disco cheio,
+  // pasta sem licença) a onda vae á tela á mesma, e a corrida seguinte torna
+  // a colhel-a. Por isso não se afere o que ella devolve.
+  if (!guardada.empty()) escreve_onda(guardada, onda);
+  return onda;
+}
 
 }  // namespace mysong::nucleo
 
