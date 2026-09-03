@@ -65,6 +65,28 @@ namespace mysong::tui {
 // pertence ao quente, e a prova afere os dous lados d'elle.
 inline constexpr float LIMIAR_QUENTE = 0.90f;
 
+// ── OS REGISTROS. Quatro familias, e a côr diz QUAL d'ellas sôa. Diga-se com
+// honestidade o que é: a côr vem do REGISTRO, que é a faixa de hertz onde a
+// familia mora, e NÃO de instrumento reconhecido. Separar instrumentos de
+// verdade pede modelo de separação de fontes, que não corre em tempo real
+// dentro d'um tocador de terminal, e vender o que não ha seria mentir na tela.
+enum class Registro { Graves, MediosGraves, MediosAgudos, Agudos };
+
+// As tres fronteiras, em HERTZ e não em indice de banda: mudando-se
+// QUANTAS_BANDAS, a familia continua onde estava, que a physica não se mexe com
+// o numero de columnas. São as da mesa de som: o bumbo e o baixo até 250, a
+// caixa, a guitarra e o corpo da voz até 1 k, a voz, a presença e os teclados
+// até 4 k, e os pratos, o chimbal e o ar d'ahi para cima. Fronteira FECHADA em
+// cima: 250 Hz ainda é grave, e 250,1 já não.
+inline constexpr float FRONTEIRA_DOS_GRAVES = 250.0f;
+inline constexpr float FRONTEIRA_DOS_MEDIOS_GRAVES = 1000.0f;
+inline constexpr float FRONTEIRA_DOS_MEDIOS_AGUDOS = 4000.0f;
+
+// registro_da_banda — o registro em que cae o CENTRO da banda. Funcção pura, e é
+// a UNICA regra de pertença d'esta obra: quem quiser saber a familia de uma
+// banda pergunta aqui, e jamais conta indices por fóra.
+Registro registro_da_banda(float centro_em_hertz);
+
 // Quantos degraus cabem n'uma célulla. Oito, que são os blocos U+2581 a U+2588,
 // e não é numero de gosto: é quanto o terminal sabe subdividir uma célulla na
 // vertical. D'onde a resolução de uma columna de N célullas é 8N degraus, e é

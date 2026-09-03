@@ -29,6 +29,18 @@ float cingido(float magnitude) {
 
 }  // namespace
 
+Registro registro_da_banda(float centro_em_hertz) {
+  // A guarda da finitude vem PRIMEIRO, e pelo mesmo motivo que o cingido: toda
+  // comparação com NaN é falsa, d'onde um NaN atravessaria os tres ramos e
+  // sahiria AGUDOS, que é a familia que ninguem pediu. Sahe GRAVES, que é o
+  // principio da escala e a côr que a obra já vestia.
+  if (!std::isfinite(centro_em_hertz)) return Registro::Graves;
+  if (centro_em_hertz <= FRONTEIRA_DOS_GRAVES) return Registro::Graves;
+  if (centro_em_hertz <= FRONTEIRA_DOS_MEDIOS_GRAVES) return Registro::MediosGraves;
+  if (centro_em_hertz <= FRONTEIRA_DOS_MEDIOS_AGUDOS) return Registro::MediosAgudos;
+  return Registro::Agudos;
+}
+
 int oitavos(float magnitude, std::size_t altura) {
   const int teto = static_cast<int>(altura) * DEGRAUS_POR_CELULA;
   if (teto <= 0) return 0;
