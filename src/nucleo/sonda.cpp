@@ -285,6 +285,13 @@ bool familia_com_glypho(std::string_view agulha, char32_t ponto) {
   });
 }
 
+// familia_installada — a mesma consulta que a taboa dos requisitos faz, aberta
+// a quem não é requisito: a XIROD não tranca porta alguma, e por isso não entra
+// n'aquella taboa, mas o letreiro precisa de saber se ella está.
+bool familia_installada(std::string_view agulha) {
+  return ha_familia_de_fonte(agulha);
+}
+
 namespace {
 
 // forcado — traduz especie e alvo na chave da taboa, e pergunta pela forçagem.
