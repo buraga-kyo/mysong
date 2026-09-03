@@ -212,11 +212,14 @@ bool Lousa::tira(std::string_view identidade) noexcept {
 void Lousa::empurra(const std::filesystem::path& imagem) noexcept {
   if (!disponivel() || imagem.empty()) return;
   empurrao_ = !empurrao_;
-  // Quatro mil célullas á esquerda: terminal algum está a tanto do canto da
-  // tela, d'onde a janella cae inteira fóra d'ella e ninguem a vê. Não entra
-  // nas `postas_` de proposito: não ha o que tirar de janella que se não vê, e
-  // o filho leva-a comsigo ao morrer.
-  escreve(ordem_de_por("empurrao", imagem, empurrao_ ? -4000 : -4001, 0, 1, 1));
+  // Mil e quinhentas célullas á esquerda: terminal algum está a tanto do canto,
+  // d'onde a janella cae inteira fóra da tela e ninguem a vê. Não entra nas
+  // `postas_` de proposito: não ha o que tirar de janella que se não vê, e o
+  // filho leva-a comsigo ao morrer.
+  escreve(ordem_de_por("empurrao", imagem,
+                       empurrao_ ? COLLUNHA_DO_EMPURRAO
+                                 : COLLUNHA_DO_EMPURRAO - 1,
+                       0, LARGURA_DO_EMPURRAO, ALTURA_DO_EMPURRAO));
 }
 
 void Lousa::tira_tudo() noexcept {
@@ -276,6 +279,19 @@ OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
   return lousa_de_pe && foco_dentro && ha_arquivo && caixa_pintada
              ? OrdemDaCapa::Poe
              : OrdemDaCapa::Tira;
+}
+
+// lados_do_empurrao — a reducção do Überzug++ em duas linhas: cabe por dentro,
+// proporção guardada. Escripta aqui, e não sómente confiada, porque é d'ella
+// que se prova que lado algum chega a zero.
+Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept {
+  if (imagem.largura == 0 || imagem.altura == 0) return {};
+  const std::size_t caixa_larga = LARGURA_DO_EMPURRAO * cellula.largura;
+  const std::size_t caixa_alta = ALTURA_DO_EMPURRAO * cellula.altura;
+  // Manda o lado que aperta primeiro, que é o da MENOR razão de reducção.
+  return caixa_larga * imagem.altura <= caixa_alta * imagem.largura
+             ? Medida{caixa_larga, caixa_larga * imagem.altura / imagem.largura}
+             : Medida{caixa_alta * imagem.largura / imagem.altura, caixa_alta};
 }
 
 Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa) {

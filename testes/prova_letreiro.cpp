@@ -217,3 +217,38 @@ TEST_CASE("cada aba tem tres chapas, e as tres pedem imagens differentes") {
   std::sort(chaves.begin(), chaves.end());
   CHECK(std::unique(chaves.begin(), chaves.end()) == chaves.end());
 }
+
+TEST_CASE("o empurrão cabe na coordenada de uma janella do X11") {
+  // A coordenada de janella no X11 é inteiro de dezasseis bits com signal, e o
+  // Überzug++ somma-lhe ainda o enchimento que mediu do terminal. Não cabendo,
+  // a janella que se queria fóra da tela nasce do outro lado, DENTRO d'ella.
+  const long pixeis = static_cast<long>(nu::COLLUNHA_DO_EMPURRAO) *
+                      static_cast<long>(nu::CELLULA_DA_CASA.largura);
+  CHECK(pixeis < 0);
+  CHECK(pixeis > -32768 + 4096);
+  // E fóra de todo terminal: nem o mais largo tem mil e quinhentas collunhas.
+  CHECK(nu::COLLUNHA_DO_EMPURRAO < -400);
+  // A collunha sahe na ordem tal e qual, que é o que a lousa manda pelo cano.
+  CHECK(nu::ordem_de_por("empurrao", "/tmp/x.png", nu::COLLUNHA_DO_EMPURRAO, 0,
+                         1, 1)
+            .find("\"x\":-1500") != std::string::npos);
+}
+
+TEST_CASE("a caixa do empurrão nunca reduz um lado a zero") {
+  // O que o Überzug++ fazia com a caixa de UMA cella: a chapa da aba (duzentos
+  // por sessenta e tres) sahia com dous pixeis de altura, e a da linha inteira
+  // sahia com ZERO, e ahi o OpenCV d'elle abortava e levava tudo comsigo.
+  const nu::Medida cella = nu::CELLULA_DA_CASA;
+  for (const nu::Medida chapa : {nu::Medida{200, 63}, nu::Medida{248, 67},
+                                 nu::Medida{1503, 20}, nu::Medida{4000, 20},
+                                 nu::Medida{20, 4000}}) {
+    const nu::Medida lados = nu::lados_do_empurrao(chapa, cella);
+    CHECK(lados.largura > 0);
+    CHECK(lados.altura > 0);
+    // E cabe na caixa, que é o que a reducção promette.
+    CHECK(lados.largura <= nu::LARGURA_DO_EMPURRAO * cella.largura);
+    CHECK(lados.altura <= nu::ALTURA_DO_EMPURRAO * cella.altura);
+  }
+  // Medida que se não leu não dá lado algum, e ahi não se pede reducção.
+  CHECK(nu::lados_do_empurrao({0, 0}, cella).largura == 0);
+}
