@@ -34,10 +34,11 @@ constexpr char kEsquema[] =
     "  album TEXT NOT NULL, titulo TEXT NOT NULL, numero INTEGER NOT NULL,"
     "  anno INTEGER NOT NULL, duracao INTEGER NOT NULL,"
     "  modificado INTEGER NOT NULL, tamanho INTEGER NOT NULL,"
-    "  deduzido INTEGER NOT NULL);"
+    "  deduzido INTEGER NOT NULL, ordem INTEGER NOT NULL);"
     "CREATE INDEX faixas_artista_album ON faixas(artista, album, numero,"
     "  titulo);"
-    "CREATE INDEX faixas_titulo ON faixas(titulo);";
+    "CREATE INDEX faixas_titulo ON faixas(titulo);"
+    "CREATE INDEX faixas_ordem ON faixas(ordem);";
 
 // Abre em SÓMENTE-LEITURA, e nullo quando não ha banco que se abra. Banco
 // ausente é resposta vazia, e o nullo é como ella se carrega até ás consultas.
@@ -99,6 +100,23 @@ void assenta_versao_e_limite(sqlite3* punho, long limite) {
   sqlite3_exec(punho, sql, nullptr, nullptr, nullptr);
 }
 
+
+// O LOGAR PROVISORIO da faixa que entra sem ordem. Alto de proposito: assim
+// ella fica DEPOIS de toda faixa que já tinha logar, e o renumerar do conclui()
+// a traz ao fim da fila contigua. Um bilhão cabe folgado n'um inteiro de oito
+// octetos, e nenhum acervo o alcança por baixo.
+constexpr std::int64_t kFimDaFila = 1000000000;
+
+// RENUMERA a ordem de zero até ao que ha menos um, conservando a ordem
+// relativa. É o que faz a ordem ficar CONTIGUA depois de uma varredura em que
+// umas faixas trouxeram logar antigo e outras nasceram sem elle. O desempate
+// pelo caminho é necessario: duas faixas com a mesma ordem antiga hão de sahir
+// n'uma ordem que se repita de corrida para corrida.
+constexpr char kRenumera[] =
+    "WITH posta AS (SELECT caminho, ROW_NUMBER() OVER"
+    " (ORDER BY ordem, caminho) - 1 AS logar FROM faixas)"
+    " UPDATE faixas SET ordem ="
+    " (SELECT logar FROM posta WHERE posta.caminho = faixas.caminho);";
 
 // Escapa os curingas do LIKE. Amarrar o termo NÃO os neutraliza: o SQLite
 // concatena o valor amarrado no padrão e sómente depois o lê como padrão, donde
@@ -215,6 +233,7 @@ Faixa faixa_da_linha(sqlite3_stmt* passo) {
   faixa.modificado = sqlite3_column_int64(passo, 8);
   faixa.tamanho = sqlite3_column_int64(passo, 9);
   faixa.deduzido = static_cast<unsigned>(sqlite3_column_int(passo, 10));
+  faixa.ordem = sqlite3_column_int64(passo, 11);
   return faixa;
 }
 
@@ -222,7 +241,7 @@ Faixa faixa_da_linha(sqlite3_stmt* passo) {
 // cada uma á sua maneira. Repetidas, uma d'ellas sahiria da ordem um dia.
 constexpr char kColumnas[] =
     "caminho, raiz, artista, album, titulo, numero, anno, duracao,"
-    " modificado, tamanho, deduzido";
+    " modificado, tamanho, deduzido, ordem";
 
 }  // namespace
 
@@ -358,7 +377,7 @@ bool Escriba::grava(const Faixa& faixa) {
   if (punho_ == nullptr) return false;
   const std::string sql = std::string("INSERT OR REPLACE INTO faixas (") +
                           kColumnas + ") VALUES" +
-                          " (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11);";
+                          " (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12);";
   sqlite3_stmt* passo = nullptr;
   if (sqlite3_prepare_v2(punho_, sql.c_str(), -1, &passo, nullptr) != SQLITE_OK)
     return false;
@@ -377,6 +396,10 @@ bool Escriba::grava(const Faixa& faixa) {
   sqlite3_bind_int64(passo, 9, faixa.modificado);
   sqlite3_bind_int64(passo, 10, faixa.tamanho);
   sqlite3_bind_int(passo, 11, static_cast<int>(faixa.deduzido));
+  // Faixa sem logar vae para o FIM, e não para o principio: por isso a ordem
+  // provisoria d'ella nasce ALTA, e cresce na ordem em que a varredura a acha.
+  sqlite3_bind_int64(passo, 12, faixa.ordem >= 0 ? faixa.ordem
+                                                 : kFimDaFila + ao_cabo_++);
   const int veredicto = sqlite3_step(passo);
   sqlite3_finalize(passo);
   return veredicto == SQLITE_DONE;
@@ -387,6 +410,7 @@ bool Escriba::conclui() {
   // Fecha ANTES de renomear. O SQLite guarda o nome com que abriu, e renomear
   // por baixo de um punho aberto é pedir que elle escreva n'um arquivo que já
   // não é o que elle crê ser.
+  sqlite3_exec(punho_, kRenumera, nullptr, nullptr, nullptr);
   const bool fechou = sqlite3_close(punho_) == SQLITE_OK;
   punho_ = nullptr;
   std::error_code erro;

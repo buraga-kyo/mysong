@@ -70,6 +70,10 @@ struct Faixa {
   std::int64_t modificado = 0;
   std::int64_t tamanho = 0;
   unsigned deduzido = kDeduziuNada;
+  // A ORDEM PROPRIA d'esta faixa na vista plana do acervo, explicita e
+  // contigua. Negativa quer dizer «ainda sem logar»: o Escriba dá-lhe o FIM da
+  // fila. É por isso que faixa nova entra no fim sem quem a grava o dizer.
+  std::int64_t ordem = -1;
 };
 
 // A VERSÃO do esquema. Sobe quando o esquema muda de forma, e serve a UMA
@@ -77,7 +81,7 @@ struct Faixa {
 // mysong mais novo o pode ter lavrado, e rebaixá-lo por trás do operador
 // perderia o que a versão nova enche. Versão MENOR é caso normal: nada se
 // reaproveita d'ella, reconstroe-se tudo, e o banco novo sahe nesta versão.
-inline constexpr int kVersaoDoEsquema = 1;
+inline constexpr int kVersaoDoEsquema = 2;
 
 // O DESFECHO de uma escripta. Toda falha tem nome, porque «falhou» não diz a
 // quem chama se ha de tentar outra vez, avisar o operador, ou calar-se.
@@ -189,6 +193,9 @@ class Escriba {
   std::filesystem::path banco_;
   std::filesystem::path temporario_;
   sqlite3* punho_ = nullptr;
+  // Quantas faixas entraram SEM logar. Serve para as distinguir umas das outras
+  // no fim da fila, que sem isso ficariam todas na mesma ordem provisoria.
+  std::int64_t ao_cabo_ = 0;
 };
 
 }  // namespace mysong::nucleo
