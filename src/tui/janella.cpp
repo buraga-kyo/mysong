@@ -1101,6 +1101,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         return true;
       }
       case tui::GestoDaAba::CyclaVista: {
+        // Fóra das MY SONG a tecla fica MUDA. A vista só se cycla alli, e a
+        // chapa di-lo calando a palavra d'ella: sem esta guarda, um `o` por
+        // engano dentro de uma lista ou nos achados da rede abandonava a
+        // secção, e signal algum na tela dizia que a tecla fazia cousa alguma.
+        if (tui::nome_da_vista(navegador.secao()).empty()) return true;
         const tui::Secao alvo = tui::vista_seguinte(
             navegador.secao(), !navegador.vista().empty());
         // Dos ARTISTAS DESCE-SE no eleito: os albuns que a bibliotheca sabe
