@@ -40,6 +40,28 @@ namespace mysong::tui {
 // cortou, e pô-la sem corte seria mentir ao olho.
 std::string apara_collunhas(const std::string& crua, std::size_t collunhas);
 
+// As MEDIDAS de uma linha da pauta, em cellas. Sahem d'uma conta só, e não do
+// pintor, para que a bateria as interrogue sem terminal: é a mesma regra da
+// sala. Zero quer dizer «esta columna não se abre n'esta largura».
+struct Medidas {
+  std::size_t marcador = 0;  // a cella do «▶» da que sôa
+  std::size_t numero = 0;    // o № á direita, tres cellas
+  std::size_t titulo = 0;    // o titulo, ou o nome; toma o que sobra
+  std::size_t artista = 0;   // um terço do que sobra ao titulo
+  std::size_t regua = 0;     // a régua da duração, seis cellas
+  std::size_t conta = 0;     // MM:SS na faixa, a conta de faixas no nome
+  bool pela_conta = false;   // a vista que conta nomes: artistas, albuns, listas
+};
+
+// medidas_da_pauta — as columnas na largura que ha. As de largura fixa cedem
+// por ORDEM DE SERVIÇO, da menos util para a mais: primeiro o artista, depois a
+// régua, depois o tempo, e por fim o №. O titulo fica até ao fim, que sem elle
+// a linha não diz cousa alguma.
+//
+// `ha_autor` decide-se pela FATIA á vista, e não por linha: por linha, as
+// columnas de baixo desalinhavam das de cima e a pauta parecia quebrada.
+Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta);
+
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
