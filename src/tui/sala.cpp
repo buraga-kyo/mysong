@@ -270,15 +270,13 @@ ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
-ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
-                                  ftxui::Element baixo, std::size_t largura) {
-  if (largura == 0) return ftxui::text("");
-  // O fundo `panel` veste a collunna inteira, e é elle que a aparta do meio:
-  // orla custaria duas collunhas, que n'este painel sahem da arte.
+ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
+                                  std::size_t largura) {
+  if (largura == 0) return ftxui::emptyElement();
+  // O fundo `panel` veste a collunna inteira, e é elle que a aparta da pauta
+  // por dentro; por fóra aparta-a o divisor, que é collunha propria.
   const tokens::Triade fundo = tokens::rgb(tokens::panel);
-  return ftxui::vbox({pinta("TOCANDO AGORA", tokens::text_heading) | ftxui::bold,
-                      std::move(arte), elemento_da_ficha(ficha, largura),
-                      std::move(baixo)}) |
+  return ftxui::vbox({std::move(arte), std::move(baixo)}) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }

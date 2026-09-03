@@ -154,12 +154,13 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
 // terminal é de dous por um. Quem pede a capa á Galeria pede-a n'este tamanho.
 inline constexpr std::size_t kCapaPequena = 10, kCapaPequenaLinhas = 5;
 
-// elemento_do_painel — o TOCANDO AGORA: o titulo, a arte, a ficha logo abaixo
-// d'ella SEM VÃO, e o que o chamador quizer por baixo (o espectro, ou a letra
-// quando o `l` a pede). O de baixo entra já composto, para que esta peça não
-// conheça nem um nem outra e a bateria lh'os arme á mão.
-ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
-                                  ftxui::Element baixo, std::size_t largura);
+// elemento_do_painel — a metade direita: a arte no alto, e o que o chamador
+// quizer por baixo (o espectro, ou a letra quando o `l` a pede). Os dous entram
+// já compostos, para que esta peça não conheça nem um nem outra e a bateria
+// lh'os arme á mão. O titulo e a ficha sahiram: o nome do que sôa vive agora na
+// linha do alto, e repeti-lo aqui gastaria quatro linhas da arte.
+ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
+                                  std::size_t largura);
 
 }  // namespace mysong::tui
 
