@@ -144,19 +144,33 @@ namespace {
 //
 // D'aqui sahe de graça o invariante que o aceite cobra: os intervallos partem
 // [0, n) sem sobra e sem vão, d'onde banda alguma se perde em largura alguma.
+//
+// O INTERVALLO aparta-se em punho proprio porque DOUS leitores o querem: o valor
+// da columna, que lhe toma o máximo, e o registro da columna, que lhe toma o
+// meio. Escripta a conta duas vezes, um dia a côr apontaria para bandas que não
+// são as que a barra mostra, e nada n'esta Casa o accusaria.
+struct Intervallo {
+  std::size_t principio = 0;
+  std::size_t fim = 0;
+};
+
+Intervallo intervallo_da_columna(std::size_t quantas, std::size_t c,
+                                 std::size_t largura) {
+  Intervallo faixa;
+  if (quantas == 0 || largura == 0) return faixa;
+  faixa.principio = (c * quantas) / largura;
+  if (faixa.principio >= quantas) faixa.principio = quantas - 1;
+  faixa.fim = ((c + 1) * quantas) / largura;
+  if (faixa.fim <= faixa.principio) faixa.fim = faixa.principio + 1;
+  if (faixa.fim > quantas) faixa.fim = quantas;
+  return faixa;
+}
+
 float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
                        std::size_t largura) {
-  const std::size_t n = bandas.size();
-  if (n == 0 || largura == 0) return 0.0f;
-
-  std::size_t principio = (c * n) / largura;
-  if (principio >= n) principio = n - 1;
-  std::size_t fim = ((c + 1) * n) / largura;
-  if (fim <= principio) fim = principio + 1;  // o intervallo nunca é vazio
-  if (fim > n) fim = n;
-
+  const Intervallo faixa = intervallo_da_columna(bandas.size(), c, largura);
   float pico = 0.0f;
-  for (std::size_t b = principio; b < fim; ++b)
+  for (std::size_t b = faixa.principio; b < faixa.fim; ++b)
     pico = std::max(pico, cingido(bandas[b]));
   return pico;
 }
