@@ -239,3 +239,25 @@ TEST_CASE("o menu nunca sahe da tela, nem ao alto nem á direita") {
   CHECK(recuado.x == 120 - larga);
   CHECK(recuado.x + larga == 120);
 }
+
+TEST_CASE("o submenu abre ao lado, com o nome de cada lista") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowRight);
+  // A caixa das listas SOMMA-SE á dos itens, e não a substitue: a largura
+  // cresce, e a altura fica na maior das duas.
+  CHECK(tui::medida_do_menu(menu).largura == 36);
+  CHECK(tui::medida_do_menu(menu).altura == 8);
+  ftxui::Screen ecran = pintado(menu, {0, 59, 6, 6}, 120, 30);
+  CHECK(linha_de(ecran, 7).find("LISTAS") != std::string::npos);
+  CHECK(linha_de(ecran, 8).find("funk") != std::string::npos);
+  CHECK(linha_de(ecran, 9).find("estudo") != std::string::npos);
+  CHECK(linha_de(ecran, 10).find("domingo") != std::string::npos);
+  // A dos itens continua á vista, e o JUNTAR continua aceso: é o rasto de
+  // onde se veio, e é o que dá sentido á seta esquerda.
+  CHECK(linha_de(ecran, 9).find("JUNTAR À LISTA") != std::string::npos);
+  CHECK(ecran.PixelAt(2, 9).background_color == cor_de(tokens::v600));
+  // E a lista eleita acende no MESMO bloco, na caixa da direita.
+  CHECK(ecran.PixelAt(27, 8).background_color == cor_de(tokens::v600));
+  CHECK(ecran.PixelAt(27, 8).foreground_color == cor_de(tokens::v50));
+}
