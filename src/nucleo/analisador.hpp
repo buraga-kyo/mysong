@@ -10,7 +10,7 @@
 // DOMÍNIO ......... o grafo do PipeWire, tal como elle está: com nó, sem nó,
 //                   com dous nós de mpv, com o serviço morto, e com o nó a
 //                   morrer no meio de uma leitura.
-// CONTRA-DOMÍNIO .. QUANTAS_BANDAS magnitudes em [0,1], a qualquer instante,
+// CONTRA-DOMÍNIO .. as bandas que se pediram, em [0,1], a qualquer instante,
 //                   por bandas(). Zeros enquanto não houver nó.
 // INVARIANTE ...... o nó se acha pela IDENTIDADE e não pelo nome: o cliente do
 //                   PipeWire cujo application.process.id é o nosso getpid(),
@@ -34,15 +34,28 @@
 
 namespace mysong::nucleo {
 
-// QUANTAS bandas a fonte entrega. Vinte e quatro, e a razão é dupla: cabem em
-// oitenta columnas de terminal com folga (uma columna de barra e uma de vão), e
-// dão 2,8 bandas por octava nas 8,6 octavas que vão de 40 Hz a 16 kHz, que é
-// aproximadamente como o ouvido as espaça. Menos apaga o desenho da musica;
-// mais não cabe na tela que esta Casa tem.
+// QUANTAS bandas a fonte entrega A QUEM NADA PEDE. Vinte e quatro, que é o que
+// cabe em oitenta columnas de terminal com folga e dá 2,8 bandas por octava nas
+// 8,6 octavas que vão de 40 Hz a 16 kHz, aproximadamente como o ouvido as
+// espaça. Deixou de ser numero do contracto e passou a ser omissão: quem
+// desenha sabe a largura que tem, e pede as bandas que vae pintar.
 //
 // Vive AQUI, junto do contracto, e não junto da FFT: é numero da INTERFACE, e
 // quem consome bandas não precisa saber que ha transformada por baixo.
 inline constexpr std::size_t QUANTAS_BANDAS = 24;
+
+// Os limites do que se pode pedir. Abaixo de oito não ha fita: sobram columnas
+// grossas que não desenham musica alguma. Acima de cento e vinte e oito não ha
+// raia que chegue, que a janela de 2048 abre 1024 raias e as bandas do baixo já
+// valem uma raia cada; pedir mais seria dar bandas VAZIAS, que na tela são
+// columnas mortas.
+inline constexpr std::size_t BANDAS_MINIMAS = 8;
+inline constexpr std::size_t BANDAS_MAXIMAS = 128;
+
+// O que um pedido VIRA, dito em função pura para que quem pede o possa saber
+// sem construir espectro algum: é assim que o desenho confere se o numero que a
+// largura lhe deu é o mesmo que já está em voo, e não zera o estado á toa.
+std::size_t cinge_bandas(std::size_t quantas) noexcept;
 
 // A FONTE DAS BANDAS, abstracta. É por este ponto de substituição que o tocador
 // serve o espectro sem conhecer FFT nem PipeWire, e que a bateria prova a
@@ -56,13 +69,18 @@ class FonteDeBandas {
   FonteDeBandas(const FonteDeBandas&) = delete;
   FonteDeBandas& operator=(const FonteDeBandas&) = delete;
 
-  // Sempre QUANTAS_BANDAS valores, sempre em [0,1]. Jamais falha: quem não tem
+  // Sempre as bandas que se pediram, sempre em [0,1]. Jamais falha: quem não tem
   // nó lê zeros, e não erro.
   virtual std::vector<float> bandas() const = 0;
 
   // Uma batida do relogio de quem chama. Vazia por omissão, para que o dublê da
   // bateria nada precise implementar: é na carne que o relogio de guarda vive.
   virtual void pulsa() {}
+
+  // O PEDIDO de quem desenha: tantas bandas quantas barras a fita vae pintar.
+  // Vazia por omissão pela mesma razão que pulsa(): o dublê da bateria entrega
+  // o que lhe puserem, e nada tem que recalcular. Cinge-se por cinge_bandas.
+  virtual void quer_bandas(std::size_t quantas) { (void)quantas; }
 
  protected:
   FonteDeBandas() = default;
@@ -92,6 +110,11 @@ class Analisador final : public FonteDeBandas {
   // O nó do mpv morre SEM AVISO, e sem esta batida a ultima janela ficaria
   // congelada na tela para sempre.
   void pulsa() override;
+
+  // O pedido do desenho, repassado ao espectro debaixo da tranca que esta Casa
+  // já tem: o espectro é conta de uma linha só, e mexer-lhe nas bordas fóra da
+  // fechadura seria cruzar-se com o callback de processo a alimentá-lo.
+  void quer_bandas(std::size_t quantas) override;
 
   // O object.serial do nó a que estamos presos, e zero quando nenhum. Serve á
   // prova: é como ella confirma que nos prendemos ao nó do NOSSO processo.

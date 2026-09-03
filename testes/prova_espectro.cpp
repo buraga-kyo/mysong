@@ -104,21 +104,22 @@ constexpr Esperada ESPERADAS_A_48K[] = {
 // pergunta ao examinando não tem oraculo, tem echo. Não repete o aparo de
 // Nyquist, que nas taxas d'esta bateria nunca morde (16 kHz cabe folgado em
 // 44100); se algum dia morder, o oraculo discorda da obra e o caso accusa.
-std::size_t banda_esperada(float hertz, float taxa) {
+std::size_t banda_esperada(float hertz, float taxa,
+                           std::size_t quantas = nu::QUANTAS_BANDAS) {
   const float largura = taxa / static_cast<float>(nu::JANELA_DA_FFT);
   const auto raia = static_cast<std::size_t>(hertz / largura + 0.5f);
-  std::vector<std::size_t> bordas(nu::QUANTAS_BANDAS + 1, 0);
-  for (std::size_t b = 0; b <= nu::QUANTAS_BANDAS; ++b) {
-    const float parte = static_cast<float>(b) / static_cast<float>(nu::QUANTAS_BANDAS);
+  std::vector<std::size_t> bordas(quantas + 1, 0);
+  for (std::size_t b = 0; b <= quantas; ++b) {
+    const float parte = static_cast<float>(b) / static_cast<float>(quantas);
     const float hz = nu::HERTZ_MINIMO *
                      std::pow(nu::HERTZ_MAXIMO / nu::HERTZ_MINIMO, parte);
     bordas[b] = static_cast<std::size_t>(hz / largura + 0.5f);
     if (b > 0 && bordas[b] <= bordas[b - 1]) bordas[b] = bordas[b - 1] + 1;
   }
-  for (std::size_t b = 0; b < nu::QUANTAS_BANDAS; ++b) {
+  for (std::size_t b = 0; b < quantas; ++b) {
     if (raia >= bordas[b] && raia < bordas[b + 1]) return b;
   }
-  return nu::QUANTAS_BANDAS;
+  return quantas;
 }
 
 constexpr float VINTE_DECIBEIS = 1.0f / 3.0f;
@@ -379,4 +380,107 @@ TEST_CASE("os dous oraculos concordam, e o espectro concorda com os dous") {
   // responder a banda do baixo por um agudo que não existe.
   CHECK(espectro.banda_de(20000.0f) == nu::QUANTAS_BANDAS);
   CHECK(espectro.banda_de(1.0f) == nu::QUANTAS_BANDAS);
+}
+
+namespace {
+
+// Os numeros que a issue nomeia: o minimo, a omissão, um do meio e o maximo.
+constexpr std::size_t OS_NUMEROS[] = {8, 24, 48, 128};
+
+}  // namespace
+
+TEST_CASE("o espectro dá as bandas que se lhe pediram, e uma borda a mais") {
+  for (const std::size_t quantas : OS_NUMEROS) {
+    nu::Espectro espectro(48000.0f, 2, quantas);
+    INFO("quantas=" << quantas);
+    CHECK(espectro.quantas_bandas() == quantas);
+    CHECK(espectro.bandas().size() == quantas);
+    const auto& bordas = espectro.bordas();
+    REQUIRE(bordas.size() == quantas + 1);
+    for (std::size_t b = 0; b < quantas; ++b) {
+      // Nenhuma banda VAZIA em numero algum: banda sem raia seria columna morta
+      // na tela, e é no baixo com muitas bandas que ella appareceria primeiro.
+      INFO("banda=" << b << " de " << bordas[b] << " a " << bordas[b + 1]);
+      CHECK(bordas[b + 1] > bordas[b]);
+      CHECK(bordas[b + 1] <= nu::JANELA_DA_FFT / 2);
+    }
+  }
+}
+
+TEST_CASE("o pedido fóra dos limites cinge-se, e não é recusado") {
+  // Cingir e não recusar: quem pede vem da largura de um painel, e painel
+  // estreito é cousa do mundo, não erro de quem chama.
+  CHECK(nu::cinge_bandas(0) == nu::BANDAS_MINIMAS);
+  CHECK(nu::cinge_bandas(nu::BANDAS_MINIMAS - 1) == nu::BANDAS_MINIMAS);
+  CHECK(nu::cinge_bandas(nu::BANDAS_MINIMAS) == nu::BANDAS_MINIMAS);
+  CHECK(nu::cinge_bandas(nu::QUANTAS_BANDAS) == nu::QUANTAS_BANDAS);
+  CHECK(nu::cinge_bandas(nu::BANDAS_MAXIMAS + 1) == nu::BANDAS_MAXIMAS);
+  CHECK(nu::cinge_bandas(100000) == nu::BANDAS_MAXIMAS);
+
+  // E a obra cinge pelo mesmo aparo, na construcção e em voo.
+  nu::Espectro apertado(48000.0f, 2, 1);
+  CHECK(apertado.quantas_bandas() == nu::BANDAS_MINIMAS);
+  apertado.quer_bandas(100000);
+  CHECK(apertado.quantas_bandas() == nu::BANDAS_MAXIMAS);
+  CHECK(apertado.bordas().size() == nu::BANDAS_MAXIMAS + 1);
+}
+
+TEST_CASE("o seno de 1 kHz accende a sua banda em qualquer numero de bandas") {
+  for (const std::size_t quantas : OS_NUMEROS) {
+    nu::Espectro espectro(48000.0f, 2, quantas);
+    // O alvo vem da formula refeita n'esta prova, e afere-se contra a obra
+    // ANTES de a interrogar: perguntando sómente ao examinando, o caso passaria
+    // com o agrupamento trocado por linear, cousa que já se mediu aqui.
+    const std::size_t alvo = banda_esperada(1000.0f, 48000.0f, quantas);
+    INFO("quantas=" << quantas << " alvo=" << alvo);
+    REQUIRE(alvo < quantas);
+    CHECK(espectro.banda_de(1000.0f) == alvo);
+
+    const auto bloco = seno(1000.0f, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT);
+    espectro.alimenta(bloco.data(), bloco.size());
+    const auto bandas = espectro.bandas();
+    REQUIRE(bandas.size() == quantas);
+    CHECK(bandas[alvo] > 0.5f);
+    // E é a MAIOR de todas, visinhas inclusive: com oito bandas a folga de duas
+    // do outro caso engoliria quasi a fita, donde aqui se pede o maximo.
+    for (std::size_t b = 0; b < quantas; ++b) {
+      if (b == alvo) continue;
+      INFO("banda=" << b << " vale " << bandas[b] << " contra " << bandas[alvo]);
+      CHECK(bandas[b] <= bandas[alvo]);
+    }
+  }
+}
+
+TEST_CASE("pedir o mesmo numero não zera o estado, e pedir outro zera") {
+  nu::Espectro espectro(48000.0f, 2);
+  const auto bloco = seno(1000.0f, 0.5f, 48000.0f, 14 * nu::SALTO_DA_FFT);
+  espectro.alimenta(bloco.data(), bloco.size());
+  const auto antes = espectro.bandas();
+  REQUIRE(antes[12] > 0.5f);  // do oraculo: 1000 Hz a 48000 cahe na banda 12
+
+  // O desenho pede a cada quadro, porque a largura pode mudar a qualquer um.
+  // Pedir o que já ha ha de ser mudo: zerar aqui apagaria a suavização quarenta
+  // e seis vezes por segundo, e a fita ficaria a tremer sem musica que o peça.
+  espectro.quer_bandas(nu::QUANTAS_BANDAS);
+  CHECK(espectro.bandas() == antes);
+
+  // Mudando o numero, zera: as bandas velhas eram de outras bordas, e mantê-las
+  // pintaria por um quadro uma musica que não é a que toca.
+  espectro.quer_bandas(48);
+  const auto depois = espectro.bandas();
+  REQUIRE(depois.size() == 48);
+  for (const float valor : depois) CHECK(valor == 0.0f);
+
+  // E volta a accender no logar certo, que é o que faz d'isto zeragem e não
+  // avaria: a banda de 1000 Hz nas bordas novas.
+  espectro.alimenta(bloco.data(), bloco.size());
+  CHECK(espectro.bandas()[espectro.banda_de(1000.0f)] > 0.5f);
+}
+
+TEST_CASE("o dublê da bateria recebe o pedido sem ter que o implementar") {
+  // A omissão vazia é o que deixa esta lavra intacta: a fonte fingida não sabe
+  // de bordas nem de transformada, e ainda assim serve o contracto novo.
+  FonteFingida fonte;
+  fonte.quer_bandas(64);
+  CHECK(fonte.bandas().size() == nu::QUANTAS_BANDAS);
 }

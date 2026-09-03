@@ -38,7 +38,7 @@ float em_decibeis(float magnitude) {
 
 }  // namespace
 
-Espectro::Espectro(float taxa, int canaes) {
+Espectro::Espectro(float taxa, int canaes, std::size_t quantas) {
   // A janela de HANN, computada uma vez. Sem janela alguma (que é a janela
   // rectangular) um seno puro espalha a sua raia por toda a tela, e o aceite de
   // que «o seno de 440 acende a banda de 440 e não as outras» morreria por isso
@@ -57,9 +57,23 @@ Espectro::Espectro(float taxa, int canaes) {
   plano_ = fftwf_plan_dft_r2c_1d(static_cast<int>(JANELA_DA_FFT), entrada_,
                                  reinterpret_cast<fftwf_complex*>(sahida_),
                                  FFTW_MEASURE);
-  bandas_.assign(QUANTAS_BANDAS, 0.0f);
+  bandas_.assign(cinge_bandas(quantas), 0.0f);
   assenta_formato(taxa, canaes);
 }
+
+void Espectro::quer_bandas(std::size_t quantas) {
+  const std::size_t cingida = cinge_bandas(quantas);
+  // Pedir o que já ha é o caso COMMUM, e não o raro: o desenho pede a cada
+  // quadro porque a largura pode mudar a qualquer um. Sahir aqui é o que impede
+  // o estado suavizado de zerar quarenta e seis vezes por segundo.
+  if (cingida == bandas_.size()) return;
+  // E mudando, zera: as bandas velhas eram de outras bordas, e mantê-las seria
+  // pintar por um quadro uma musica que não é a que toca.
+  bandas_.assign(cingida, 0.0f);
+  assenta_bordas();
+}
+
+std::size_t Espectro::quantas_bandas() const noexcept { return bandas_.size(); }
 
 Espectro::~Espectro() {
   if (plano_ != nullptr) fftwf_destroy_plan(plano_);
@@ -86,9 +100,12 @@ void Espectro::assenta_bordas() {
   const float largura_da_raia = taxa_ / static_cast<float>(JANELA_DA_FFT);
   const std::size_t ultima_raia = JANELA_DA_FFT / 2;
   const float razao = HERTZ_MAXIMO / HERTZ_MINIMO;
-  bordas_.assign(QUANTAS_BANDAS + 1, 0);
-  for (std::size_t b = 0; b <= QUANTAS_BANDAS; ++b) {
-    const float parte = static_cast<float>(b) / static_cast<float>(QUANTAS_BANDAS);
+  // O numero de bandas lê-se do proprio estado, e não da constante: é elle a
+  // unica verdade depois que o desenho pode pedir outro.
+  const std::size_t quantas = bandas_.size();
+  bordas_.assign(quantas + 1, 0);
+  for (std::size_t b = 0; b <= quantas; ++b) {
+    const float parte = static_cast<float>(b) / static_cast<float>(quantas);
     const float hertz = HERTZ_MINIMO * std::pow(razao, parte);
     std::size_t raia = static_cast<std::size_t>(hertz / largura_da_raia + 0.5f);
     // Nenhuma banda fica VAZIA no baixo: em 40 Hz duas bordas seguidas cahiriam
@@ -139,8 +156,8 @@ void Espectro::um_quadro() {
   // lado parte isso ao meio. Dividir por ella põe a escala cheia em 1,0, donde
   // um seno de amplitude 0,5 lê seis decibeis abaixo do cheio, como ha de ser.
   const float escala = static_cast<float>(JANELA_DA_FFT) / 4.0f;
-  std::vector<float> alvo(QUANTAS_BANDAS, 0.0f);
-  for (std::size_t b = 0; b < QUANTAS_BANDAS; ++b) {
+  std::vector<float> alvo(bandas_.size(), 0.0f);
+  for (std::size_t b = 0; b < bandas_.size(); ++b) {
     float pico = 0.0f;
     for (std::size_t r = bordas_[b]; r < bordas_[b + 1]; ++r) {
       const float real = sahida_[2 * r];
@@ -158,7 +175,7 @@ void Espectro::um_quadro() {
 void Espectro::suaviza(const std::vector<float>& alvo, double millesimos) {
   const float sobe = coeficiente(TEMPO_DE_ATAQUE_MS, millesimos);
   const float desce = coeficiente(TEMPO_DE_QUEDA_MS, millesimos);
-  for (std::size_t b = 0; b < QUANTAS_BANDAS; ++b) {
+  for (std::size_t b = 0; b < bandas_.size(); ++b) {
     const float agora = bandas_[b];
     const float destino = alvo[b];
     // Dous tempos, e o que decide qual usar é o SENTIDO do movimento: subir é
@@ -177,7 +194,7 @@ void Espectro::esmorece(double millesimos) {
   // O que sobejava é de ANTES do silencio: guardar aquellas amostras faria a
   // barra ressuscitar com som velho quando o nó voltasse.
   sobejo_.clear();
-  const std::vector<float> zero(QUANTAS_BANDAS, 0.0f);
+  const std::vector<float> zero(bandas_.size(), 0.0f);
   suaviza(zero, millesimos);
 }
 
@@ -192,13 +209,13 @@ std::size_t Espectro::banda_de(float hertz) const {
   // obra não podem discordar por arredondamento de meia raia.
   const float largura_da_raia = taxa_ / static_cast<float>(JANELA_DA_FFT);
   const std::size_t raia = static_cast<std::size_t>(hertz / largura_da_raia + 0.5f);
-  for (std::size_t b = 0; b < QUANTAS_BANDAS; ++b) {
+  for (std::size_t b = 0; b < bandas_.size(); ++b) {
     if (raia >= bordas_[b] && raia < bordas_[b + 1]) return b;
   }
-  // Fóra da faixa que se pinta. Devolve QUANTAS_BANDAS, que não é indice
+  // Fóra da faixa que se pinta. Devolve as bandas que ha, que não é indice
   // valido: quem pergunta por 20 kHz ha de topar com isso, e não com zero, que
   // seria a banda do baixo a responder por um agudo que não existe.
-  return QUANTAS_BANDAS;
+  return bandas_.size();
 }
 
 }  // namespace mysong::nucleo
