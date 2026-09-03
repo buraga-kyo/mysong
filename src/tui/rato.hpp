@@ -71,6 +71,11 @@ struct CaixasDaTela {
   // achar a LINHA, que é o que elle quer eleger.
   ftxui::Box pauta = caixa_por_pintar();
   ftxui::Box capa = caixa_por_pintar();
+  // O BLOCO DA LETRA (issue #161). A sala conta a capa pelo TECTO d'ella, e a
+  // capa de 16 por 9 sahe mais baixa: o bloco REAL sobe com ella. É d'esta
+  // caixa, e não do rectangulo da sala, que a chapa tira o canto; medida pela
+  // sala, a imagem cahia mais abaixo do bloco, e o verso apparecia duas vezes.
+  ftxui::Box letra = caixa_por_pintar();
 };
 
 // As PEÇAS que o dedo pode achar. `Nada` não é falha: a orla, o rodapé dos

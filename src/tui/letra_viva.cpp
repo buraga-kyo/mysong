@@ -442,23 +442,24 @@ ftxui::Element elemento_da_letra_parada(
 }
 
 ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linhas,
-                                   int corrente, const Rectangulo& bloco,
+                                   int corrente, const ftxui::Box& caixa,
                                    bool letreiro_de_pe, bool foco_dentro,
                                    bool mostra_letra) {
   ChapaDaLetra ordem;
-  if (!letreiro_de_pe || !foco_dentro || !mostra_letra || bloco.vazio())
+  if (!letreiro_de_pe || !foco_dentro || !mostra_letra || caixa.IsEmpty())
     return ordem;
-  const std::string verso = verso_do_bloco(linhas, corrente, bloco.largura);
+  const std::size_t largura =
+      static_cast<std::size_t>(caixa.x_max - caixa.x_min + 1);
+  const std::string verso = verso_do_bloco(linhas, corrente, largura);
   if (verso.empty()) return ordem;
   const std::size_t mede =
       static_cast<std::size_t>(ftxui::string_width(verso));
   ordem.poe = true;
   ordem.cellulas = mede;
   ordem.collunha =
-      static_cast<int>(bloco.x + (bloco.largura > mede
-                                      ? (bloco.largura - mede) / 2
-                                      : 0));
-  ordem.linha = static_cast<int>(bloco.y + FILEIRA_DO_CORRENTE);
+      caixa.x_min +
+      static_cast<int>(largura > mede ? (largura - mede) / 2 : 0);
+  ordem.linha = caixa.y_min + static_cast<int>(FILEIRA_DO_CORRENTE);
   ordem.verso = verso;
   return ordem;
 }

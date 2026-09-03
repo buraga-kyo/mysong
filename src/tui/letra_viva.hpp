@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/box.hpp>
 
 #include "nucleo/letra.hpp"
 #include "nucleo/letreiro.hpp"  // PedidoDaChapa: a linha corrente em XIROD
@@ -232,11 +233,13 @@ ftxui::Element elemento_do_rio(const Quadro& espectro,
 //
 // Nada se anima aqui: o bloco é funcção da POSIÇÃO e de mais nada, d'onde a
 // mesma posição dá sempre o mesmo bloco, e a bateria o afere sem relogio.
-inline constexpr std::size_t FILEIRAS_DA_LETRA = 4;
+inline constexpr std::size_t FILEIRAS_DA_LETRA = 3;
 
-// Quantas fileiras o verso CORRENTE toma: tres, que é o corpo grande da chapa.
-// A quarta do bloco é do verso SEGUINTE (issue #159), miudo e apagado.
-inline constexpr std::size_t FILEIRAS_DO_VERSO = 3;
+// Quantas fileiras o verso CORRENTE toma: duas, que é o corpo grande da chapa.
+// A terceira do bloco é do verso SEGUINTE (issue #159), miudo e apagado, e é
+// por isso que elle fica LOGO por baixo (issue #161): tres fileiras entre um e
+// outro era vão de mais, e o olho lia-os como duas cousas apartadas.
+inline constexpr std::size_t FILEIRAS_DO_VERSO = 2;
 
 // As duas fileiras que contam: a do que se canta, no alto, e a do que vem.
 inline constexpr std::size_t FILEIRA_DO_CORRENTE = 0;
@@ -261,8 +264,13 @@ std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,
 // condições são as de sempre (letreiro de pé, foco dentro, letra á vista), e a
 // quarta é haver verso. Sem ellas, manda-se TIRAR, que chapa esquecida na tela
 // diria um verso que já passou.
+// A `caixa` é a que o `reflect` pendurou no PROPRIO bloco no quadro anterior, e
+// não o rectangulo da sala: aquelle conta a capa pelo tecto d'ella, e a capa de
+// 16 por 9 sahe mais baixa, d'onde o bloco real sobe e a imagem cahia mais
+// abaixo (issue #161). Caixa por pintar manda TIRAR, que é o que o primeiro
+// quadro pede.
 ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linhas,
-                                   int corrente, const Rectangulo& bloco,
+                                   int corrente, const ftxui::Box& caixa,
                                    bool letreiro_de_pe, bool foco_dentro,
                                    bool mostra_letra);
 
