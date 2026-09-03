@@ -64,6 +64,10 @@ struct Chapa {
   // fim da cadeia o primeiro aviso comprido comia-lhes o logar. Pintam-se logo
   // á direita do texto, e recado algum as empurra.
   std::string encommendas;
+  // O CONSELHO da pauta VAZIA (issue #111): o que falta, e a tecla que o
+  // desfaz. Vem á chapa, e não ao meio da folha, porque conselho pintado onde
+  // as linhas se lêem toma-se por linha da lista, e o dedo tenta elegel-o.
+  std::string conselho;
   std::string recado;  // o aviso da rede, o filtro posto, a varredura
 };
 

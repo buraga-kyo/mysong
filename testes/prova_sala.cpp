@@ -16,6 +16,7 @@
 #include "tui/espectro.hpp"
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
+#include "tui/tokens.hpp"
 
 namespace nu = mysong::nucleo;
 namespace tui = mysong::tui;
@@ -120,6 +121,16 @@ TEST_CASE("a chapa diz onde se está, a conta e a vista, n'uma linha só") {
   CHECK(tui::texto_da_chapa(qual) == "MY SONG, 42 FAIXAS, 1h29, FAIXAS");
   const ftxui::Screen tela = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
   CHECK(linha_de(tela, 0).substr(0, 33) == " MY SONG, 42 FAIXAS, 1h29, FAIXAS");
+  // Tres pesos na mesma linha (issue #111): o ONDE carrega, a conta apaga-se, e
+  // a VISTA sahe em chip, que é a unica das tres que se cycla por tecla.
+  CHECK(tela.PixelAt(2, 0).bold);
+  CHECK(!tela.PixelAt(12, 0).bold);
+  const mysong::tui::tokens::Triade chip =
+      mysong::tui::tokens::rgb(mysong::tui::tokens::raised);
+  CHECK(tela.PixelAt(28, 0).background_color ==
+        ftxui::Color::RGB(chip.r, chip.g, chip.b));
+  CHECK(tela.PixelAt(12, 0).background_color !=
+        ftxui::Color::RGB(chip.r, chip.g, chip.b));
   // O recado vae Á DIREITA, empurrado pelo filler, e a linha fecha a largura.
   qual.recado = "achados na rede";
   const ftxui::Screen com = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
@@ -146,6 +157,25 @@ TEST_CASE("a chapa diz onde se está, a conta e a vista, n'uma linha só") {
   qual.quantas = 1;
   qual.duracao = 0;
   CHECK(tui::texto_da_chapa(qual) == "PLAYLISTS \u25b8 Funk, 1 FAIXA");
+}
+
+TEST_CASE("a chapa da pauta vazia chama pela tecla que a enche") {
+  tui::Chapa qual;
+  qual.onde = "MY SONG";
+  qual.quantas = 0;
+  qual.vista = "FAIXAS";
+  // O conselho vem da tabella, e não d'aqui: uma taboa só, e não duas.
+  qual.conselho = "varra o acervo (r)";
+  const ftxui::Screen tela = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
+  CHECK(linha_de(tela, 0).substr(0, 46) ==
+        " MY SONG, 0 FAIXAS, FAIXAS  varra o acervo (r)");
+  // Em glow_soft, que é o que d'esta Casa CHAMA o dedo. E o espaço do recado
+  // desconta-o: quem monta o recado ha de saber o que o conselho já tomou.
+  const mysong::tui::tokens::Triade chama =
+      mysong::tui::tokens::rgb(mysong::tui::tokens::glow_soft);
+  CHECK(tela.PixelAt(28, 0).foreground_color ==
+        ftxui::Color::RGB(chama.r, chama.g, chama.b));
+  CHECK(tui::espaco_do_recado(qual, 80) == 32);
 }
 
 TEST_CASE("cada secção conta a sua especie") {

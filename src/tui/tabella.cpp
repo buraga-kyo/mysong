@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+#include <ftxui/screen/string.hpp>
+
 #include "tui/rato.hpp"
 #include "tui/tokens.hpp"
 #include "tui/transporte.hpp"
@@ -67,7 +69,229 @@ std::string apara(const std::string& crua, std::size_t largura) {
   return feita;
 }
 
+// As cellas das columnas de largura fixa. A margem de UMA cella de cada lado é
+// o que aparta a pauta da orla e do divisor sem gastar collunha de traço.
+constexpr std::size_t kMargem = 1, kMarcador = 1, kNumero = 3, kVao = 2;
+constexpr std::size_t kRegua = 6, kTempo = 5, kConta = 4;
+// kTituloMinimo — abaixo d'isto o titulo não diz nada, e columna nova que o
+// levasse a menos seria columna que cega a linha para enfeitar a folha.
+constexpr std::size_t kTituloMinimo = 8;
+
+// repete — o glypho tantas vezes. Não vale `std::string(n, c)`: o glypho da
+// régua tem tres octetos, e aquelle constructor repete OCTETO, d'onde sahiria
+// lixo em vez de barra.
+std::string repete(std::string_view glypho, std::size_t quantas) {
+  std::string feita;
+  for (std::size_t i = 0; i < quantas; ++i) feita += glypho;
+  return feita;
+}
+
+// a_direita — o texto encostado á DIREITA da columna. O № e o tempo lêem-se
+// pela ultima cella, e alinhal-os á esquerda faria a vista saltar de linha
+// para linha conforme o numero tivesse um algarismo ou tres.
+std::string a_direita(const std::string& texto, std::size_t collunhas) {
+  const std::size_t mede = static_cast<std::size_t>(ftxui::string_width(texto));
+  if (mede >= collunhas) return apara_collunhas(texto, collunhas);
+  return std::string(collunhas - mede, ' ') + texto;
+}
+
 }  // namespace
+
+Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
+  Medidas medidas;
+  medidas.pela_conta = pela_conta;
+  // A pauta MINIMA: as duas margens e o titulo, e mais nada.
+  if (largura < 2 * kMargem + kMarcador + kTituloMinimo) {
+    medidas.titulo = largura > 2 * kMargem ? largura - 2 * kMargem : largura;
+    return medidas;
+  }
+  medidas.marcador = kMarcador;
+  std::size_t sobra = largura - 2 * kMargem - kMarcador;
+  // O № é numero DE FAIXA: na vista que conta nomes elle não existe, e a conta
+  // d'ella vae na columna da direita.
+  if (!pela_conta && sobra >= kNumero + kVao + kTituloMinimo) {
+    medidas.numero = kNumero;
+    sobra -= kNumero + kVao;
+  }
+  const std::size_t direita = pela_conta ? kConta : kTempo;
+  if (sobra >= direita + 1 + kTituloMinimo) {
+    medidas.conta = direita;
+    sobra -= direita + 1;
+  }
+  if (sobra >= kRegua + kVao + kTituloMinimo) {
+    medidas.regua = kRegua;
+    sobra -= kRegua + kVao;
+  }
+  // DOUS TERÇOS ao titulo e UM ao artista, que é o que a issue #111 pede. O
+  // artista é a primeira a ceder por ser a unica columna que o titulo já
+  // costuma dizer: «97Kickstvr, without you» traz o nome dentro.
+  if (!pela_conta && ha_autor && sobra >= kVao + 3 * kTituloMinimo) {
+    medidas.artista = (sobra - kVao) / 3;
+    sobra -= kVao + medidas.artista;
+  }
+  medidas.titulo = sobra;
+  return medidas;
+}
+
+std::string conselho_do_vazio(Secao secao, bool ha_termo) {
+  switch (secao) {
+    case Secao::Rois: return "lista alguma ainda (c cria uma)";
+    case Secao::NoRol: return "lista vazia (elege uma faixa e tecla a)";
+    case Secao::Rede: return "nada achado (s pergunta outra vez)";
+    case Secao::Lista: return "lista alguma lida (I cola a URL do Spotify)";
+    // Sem TERMO quem está vazio é o acervo, e não a busca (issue #93).
+    case Secao::Busca:
+      if (ha_termo) return "nada casa com esse termo";
+      break;
+    case Secao::Artistas: case Secao::Albuns: case Secao::Faixas: break;
+  }
+  return "varra o acervo (r)";
+}
+
+Medidas medidas_da_fatia(const Navegador& navegador, std::size_t primeira,
+                         std::size_t fim, std::size_t largura, int* maior) {
+  // A vista que CONTA nomes: alli o numero da linha é conta de faixas, e não
+  // numero de faixa, e duração não ha nenhuma.
+  const Secao secao = navegador.secao();
+  const bool pela_conta = secao == Secao::Artistas || secao == Secao::Albuns ||
+                          secao == Secao::Rois;
+  const std::vector<Linha>& vista = navegador.vista();
+  bool ha_autor = false;
+  int maior_da_fatia = 0;
+  for (std::size_t i = primeira; i < fim && i < vista.size(); ++i) {
+    if (!vista[i].autor.empty()) ha_autor = true;
+    maior_da_fatia = std::max(
+        maior_da_fatia, pela_conta ? vista[i].numero : vista[i].duracao);
+  }
+  if (maior != nullptr) *maior = maior_da_fatia;
+  return medidas_da_pauta(largura, ha_autor, pela_conta);
+}
+
+std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas) {
+  if (quanto <= 0 || maior <= 0 || cellas == 0) return 0;
+  const std::size_t medida = static_cast<std::size_t>(quanto);
+  const std::size_t tecto = static_cast<std::size_t>(maior);
+  if (medida >= tecto) return cellas;
+  // O dobro no numerador e no denominador é o arredondamento ao mais proximo
+  // feito em inteiros: sommar meia cella antes de dividir.
+  const std::size_t cheias = (medida * cellas * 2 + tecto) / (tecto * 2);
+  return cheias == 0 ? 1 : cheias;
+}
+
+ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
+                                 bool eleita, bool soa, std::size_t largura) {
+  const std::string_view sobre = soa ? tokens::panel : tokens::v50;
+  std::vector<ftxui::Element> partes;
+  partes.reserve(pedacos.size());
+  for (const PedacoDaPauta& pedaco : pedacos) {
+    ftxui::Element parte = pinta(pedaco.texto, eleita ? sobre : pedaco.tinta);
+    if (pedaco.negrito) parte = parte | ftxui::bold;
+    partes.push_back(std::move(parte));
+  }
+  ftxui::Element linha = ftxui::hbox(std::move(partes));
+  if (eleita) {
+    const tokens::Triade fundo =
+        tokens::rgb(soa ? tokens::glow_core : tokens::v600);
+    linha = linha |
+            ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+  }
+  // O cinge da largura é o que faz o bloco chegar á orla mesmo onde a somma
+  // dos pedaços desse menos: fundo que parasse a meio lê-se como defeito.
+  return linha |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
+}
+
+std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
+                                     const Medidas& medidas, int maior,
+                                     bool soa) {
+  std::vector<PedacoDaPauta> feitos;
+  const auto vao = [&feitos](std::size_t quantas) {
+    if (quantas > 0)
+      feitos.push_back({std::string(quantas, ' '), tokens::text_faint, false});
+  };
+  vao(kMargem);
+  // O «▶» tem cella PROPRIA, e não toma o logar do №: tomando-o, a linha que
+  // sôa perdia o numero d'ella, e o operador que conta pela pauta perdia a
+  // conta justamente na linha que está a ouvir.
+  if (medidas.marcador > 0)
+    feitos.push_back({soa ? "\u25b6" : " ", tokens::glow_core, false});
+  if (medidas.numero > 0) {
+    const std::string numero =
+        linha.numero > 0 ? std::to_string(linha.numero) : std::string();
+    feitos.push_back(
+        {a_direita(numero, medidas.numero), tokens::text_faint, false});
+    vao(kVao);
+  }
+  // O titulo da que SÔA accende sem que o resto da linha accenda: são dous
+  // signaes apartados, e o outro, o da eleita, é o bloco inteiro.
+  feitos.push_back({apara_collunhas(linha.texto, medidas.titulo),
+                    soa ? tokens::glow_soft : tokens::text_primary, true});
+  if (medidas.artista > 0) {
+    vao(kVao);
+    feitos.push_back({apara_collunhas(linha.autor, medidas.artista),
+                      tokens::text_body, false});
+  }
+  // O que a columna da direita diz, e o que a régua mede: na faixa é a duração,
+  // e na vista que conta nomes é a conta de faixas.
+  const int quanto = medidas.pela_conta ? linha.numero : linha.duracao;
+  const std::string direita =
+      quanto <= 0                ? std::string()
+      : medidas.pela_conta       ? std::to_string(quanto)
+                                 : mm_ss(linha.duracao);
+  const auto a_conta = [&](std::size_t vao_antes) {
+    if (medidas.conta == 0) return;
+    vao(vao_antes);
+    feitos.push_back(
+        {a_direita(direita, medidas.conta), tokens::text_muted, false});
+  };
+  // Na vista que conta nomes a conta vem ANTES da régua: é ella que a régua
+  // mede, e ler o desenho antes do numero seria ler a legenda depois do mappa.
+  if (medidas.pela_conta) a_conta(1);
+  if (medidas.regua > 0) {
+    vao(kVao);
+    const std::size_t cheias = cheias_da_regua(quanto, maior, medidas.regua);
+    // Fatia sem medida alguma não leva régua: seis cellas vazias em TODA linha
+    // lêem-se como dado, e alli o dado não existe. É o caso dos artistas e dos
+    // albuns emquanto a bibliotheca não souber contar as faixas d'elles.
+    const std::string_view vazia = maior > 0 ? "\u25b1" : " ";
+    feitos.push_back({repete("\u25b0", cheias), tokens::v700, false});
+    feitos.push_back(
+        {repete(vazia, medidas.regua - cheias), tokens::line_faint, false});
+  }
+  if (!medidas.pela_conta) a_conta(1);
+  vao(kMargem);
+  return feitos;
+}
+
+std::string apara_collunhas(const std::string& crua, std::size_t collunhas) {
+  if (collunhas == 0) return {};
+  if (static_cast<std::size_t>(ftxui::string_width(crua)) <= collunhas) {
+    std::string feita = crua;
+    while (static_cast<std::size_t>(ftxui::string_width(feita)) < collunhas)
+      feita += ' ';
+    return feita;
+  }
+  // O `Utf8ToGlyphs` do FTXUI devolve UM item por CELLA: depois do glypho largo
+  // vem um item VAZIO, que é a segunda cella d'elle. É por elle que se conta, e
+  // não pelos octetos, que é o que faz o corte casar com o que a tela mostra.
+  const std::vector<std::string> glyphos = ftxui::Utf8ToGlyphs(crua);
+  const std::size_t cabem = collunhas - 1;  // uma cella fica para o «…»
+  std::string feita;
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < glyphos.size(); ++i) {
+    if (glyphos[i].empty()) continue;  // a segunda cella do glypho largo
+    const std::size_t mede =
+        i + 1 < glyphos.size() && glyphos[i + 1].empty() ? 2 : 1;
+    if (gastas + mede > cabem) break;
+    feita += glyphos[i];
+    gastas += mede;
+  }
+  feita += "\u2026";
+  // O glypho largo que não coube deixa UMA cella orphã antes da reticencia: ella
+  // enche-se de espaço, que a columna promette largura fixa.
+  while (gastas++ + 1 < collunhas) feita += ' ';
+  return feita;
+}
 
 ftxui::Element caret_do_campo() {
   // Espaço, e não cadeia vazia: o cursor pousa no `x_min` da caixa d'este nó, e
@@ -86,54 +310,18 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   if (caixas != nullptr) caixas->clear();
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
-  if (vista.empty()) {
-    // O recado do vazio é POR SECÇÃO. Um recado só dizia «varra o acervo» dentro de
-    // uma lista de faixas escolhidas á mão, que é conselho que não serve para nada
-    // e manda o operador ao logar errado.
-    const char* recado = "  (nada aqui: varra o acervo, ou baixe uma faixa)";
-    switch (navegador.secao()) {
-      case Secao::Rois:
-        recado = "  (lista alguma ainda: `c` cria uma)";
-        break;
-      case Secao::NoRol:
-        recado = "  (lista vazia: elege uma faixa no acervo e tecla `a`)";
-        break;
-      case Secao::Rede:
-        recado = "  (nada achado: `s` pergunta outra vez)";
-        break;
-      case Secao::Lista:
-        recado = "  (lista alguma lida: `I` cola a URL de uma do Spotify)";
-        break;
-      case Secao::Busca:
-        // As MINHAS MÚSICAS abrem com termo VAZIO (issue #93): não havendo
-        // termo, quem está vazio é o acervo, e culpar o termo mandaria o
-        // operador procurar erro de escripta que elle não commetteu.
-        if (!navegador.termo().empty()) recado = "  (nada casa com esse termo)";
-        break;
-      case Secao::Artistas:
-      case Secao::Albuns:
-      case Secao::Faixas:
-        break;
-    }
-    return pinta(recado, tokens::text_faint);
-  }
+  // A pauta VAZIA fica VAZIA: o conselho sobe á chapa. O cinge da largura fica,
+  // que sem elle a metade esquerda encolhia e o divisor sahia do logar d'elle.
+  if (vista.empty())
+    return ftxui::emptyElement() |
+           ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 
-  // As columnas fixas: numero, tempo, o AUTOR quando ha, e o que sobra para o
-  // titulo. O tempo e o numero são de largura conhecida, e por isso o titulo cede.
-  //
-  // A columna do autor apparece pelo DADO, e não pela secção: havendo linha com
-  // autor na fatia á vista, ella abre-se para todas as linhas d'essa fatia. Por
-  // linha, e não por fatia, ella desalinharia as columnas de baixo com as de cima,
-  // que é o defeito que faz a tabella parecer quebrada.
+  // As columnas e a maior linha da fatia sahem d'uma conta só, que a bateria
+  // interroga sem écran. A pintura d'aqui em diante é traducção, e não decisão.
   const std::size_t fim_da_fatia = std::min(primeira + altura, vista.size());
-  bool ha_autor = false;
-  for (std::size_t i = primeira; i < fim_da_fatia; ++i)
-    if (!vista[i].autor.empty()) ha_autor = true;
-  const std::size_t larg_num = 4, larg_tempo = 7;
-  const std::size_t larg_autor =
-      ha_autor && largura >= 40 ? std::min<std::size_t>(24, largura / 4) : 0;
-  const std::size_t fixas = larg_num + larg_tempo + larg_autor + 2;
-  const std::size_t larg_titulo = largura > fixas ? largura - fixas : 1;
+  int maior = 0;
+  const Medidas medidas =
+      medidas_da_fatia(navegador, primeira, fim_da_fatia, largura, &maior);
 
   std::vector<ftxui::Element> linhas;
   // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
@@ -150,29 +338,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     const bool eleita = i == navegador.eleito();
     // O que SÔA casa-se pela CHAVE, que nas secções de faixa é o caminho do
     // arquivo. Nas outras a chave é nome ou id, e ahi nada casa, que é o que se
-    // quer: album algum «toca». O «▶» toma o logar do numero, e não uma columna
-    // nova: columna nova empurraria o titulo e desalinharia a tabella inteira
-    // sómente porque alguma cousa sôa.
+    // quer: album algum «toca».
     const bool soa = !tocando.empty() && linha.chave == tocando;
-    const std::string numero =
-        soa ? apara(" \u25b6", larg_num)
-        : linha.numero > 0 ? apara(std::to_string(linha.numero), larg_num)
-                           : apara("", larg_num);
-    const std::string tempo =
-        linha.duracao > 0 ? apara(" " + mm_ss(linha.duracao), larg_tempo)
-                          : apara("", larg_tempo);
-    const std::string autor =
-        larg_autor == 0 ? std::string() : apara(" " + linha.autor, larg_autor);
-    ftxui::Element pintada =
-        pinta(numero + apara(linha.texto, larg_titulo) + autor + tempo,
-              soa       ? tokens::glow_core
-              : eleita  ? tokens::text_bright
-                        : tokens::text_muted);
-    if (eleita) {
-      const tokens::Triade fundo = tokens::rgb(tokens::v900);
-      pintada = pintada | ftxui::bgcolor(
-                              ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
-    }
+    ftxui::Element pintada = elemento_da_linha(
+        pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura);
     if (caixas != nullptr)
       pintada = pintada | ftxui::reflect((*caixas)[i - primeira]);
     linhas.push_back(std::move(pintada));

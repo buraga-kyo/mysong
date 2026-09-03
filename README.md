@@ -372,6 +372,41 @@ Abaixo de CEM collunhas o painel some e a pauta toma a tela toda. A capa nunca
 passa de quarenta e cinco por cento da altura do painel, e o espectro toma o
 que ella deixar.
 
+### A pauta
+
+A lista das musicas nao e planilha: e uma folha de leitura. Cada linha traz, da
+esquerda para a direita, a cella do «▶» de quem soa, o numero da faixa (tres
+cellas, encostado a direita), o TITULO, o ARTISTA, a REGUA da duracao, e o tempo
+em MM:SS.
+
+```
+    1  97Kickstvr, without you   97Kickstvr   ▰▰▱▱▱▱ 03:09
+ ▶  2  FUNK ESTRANHO, SUPER SL…  ALXIKE       ▰▰▱▱▱▱ 02:30
+    3  NO FEAR!                  ANDROMEDA    ▰▱▱▱▱▱ 01:49
+```
+
+A ELEITA e um BLOCO: a linha inteira ganha fundo violeta e o texto todo sae
+claro, de orla a orla. Quem toca leva o «▶» e o titulo aceso; sendo a mesma que
+esta eleita, o bloco troca o violeta pelo violeta claro do foco.
+
+A REGUA e textura, e nao relogio: seis cellas, cheias na proporcao da faixa mais
+comprida que se ve. O tempo exacto vae ao lado. Nao havendo o que medir, ella
+fica em branco em vez de mostrar seis cellas vazias.
+
+O titulo e o artista dividem o que sobra em dous tercos e um terco, e cortam com
+«…» contando CELLAS do terminal: nome em japones ou chines toma duas cellas por
+glifo, e a linha nao alarga por isso.
+
+Apertando a tela, as columnas cedem por ordem de servico: primeiro o artista,
+depois a regua, depois o tempo, e por fim o numero. O titulo fica ate ao fim.
+
+Nas vistas de ARTISTAS e de ALBUNS (tecla `o`) as columnas adaptam-se: o nome
+toma a largura, sem numero de faixa e sem tempo.
+
+Com o acervo vazio a pauta fica VAZIA, e e a chapa que diz o que fazer:
+`varra o acervo (r)`. Dentro de uma lista, ou na DOWNLOAD, ella diz a tecla
+d'aquelle logar em vez de mandar varrer.
+
 ### As teclas
 
 | tecla | o que faz |
