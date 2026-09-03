@@ -998,6 +998,31 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       return true;  // dentro do modo, tecla alguma sahe para fóra
     }
 
+    // AS TECLAS DAS ABAS (issue #102) tratam DEPOIS do campo e ANTES da
+    // taboada geral. É a ordem que a barra tinha, e pela mesma razão: com o
+    // campo aberto, o `1` é o algarismo um do termo, e não a aba.
+    //
+    // O ramo Alheio não retorna, e é elle que faz o atalho de sempre valer:
+    // tecla que o cabeçalho não conhece segue ao commando e faz o que sempre
+    // fez, sem que este arquivo repita a taboada de lá.
+    switch (const tui::OrdemDaAba d_ella = tui::ordem_da_aba(tecla);
+            d_ella.gesto) {
+      case tui::GestoDaAba::Vai: vai_para_aba(d_ella.aba); return true;
+      case tui::GestoDaAba::Cycla:
+        vai_para_aba(tui::aba_seguinte(tui::aba_da_secao(navegador.secao())));
+        return true;
+      case tui::GestoDaAba::CyclaVista: {
+        const tui::Secao alvo = tui::vista_seguinte(
+            navegador.secao(), !navegador.vista().empty());
+        // Dos ARTISTAS DESCE-SE no eleito: os albuns que a bibliotheca sabe
+        // listar são os D'ELLE, e `vai_para` recusaria o degrau sem trilha.
+        if (alvo == tui::Secao::Albuns) navegador.entra();
+        else navegador.vai_para(alvo);
+        return true;
+      }
+      case tui::GestoDaAba::Alheio: break;
+    }
+
     // A ordem vem do RATO quando o evento é do rato, e da tecla quando é da
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
