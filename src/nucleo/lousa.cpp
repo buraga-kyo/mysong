@@ -82,8 +82,13 @@ int ergue(int* cano) noexcept {
 }  // namespace
 
 Lousa::Lousa(ModoDaLousa modo) noexcept
-    : parecer_(
-          parecer_da_lousa(modo, ha_display(), !versao_da_lousa().empty())) {
+    // Desligada, NÃO se pergunta ao mundo: os argumentos de uma chamada
+    // avaliam-se todos, e o `versao_da_lousa` ergue processo. Quem escreveu
+    // `lousa = nao` não ha de pagar um fork por isso ao abrir o tocador.
+    : parecer_(modo == ModoDaLousa::Nao
+                   ? parecer_da_lousa(modo, false, false)
+                   : parecer_da_lousa(modo, ha_display(),
+                                      !versao_da_lousa().empty())) {
   if (!parecer_.de_pe) return;
   filho_ = ergue(&cano_);
   if (filho_ < 0) {
