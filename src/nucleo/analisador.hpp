@@ -111,6 +111,11 @@ class Analisador final : public FonteDeBandas {
   // congelada na tela para sempre.
   void pulsa() override;
 
+  // O pedido do desenho, repassado ao espectro debaixo da tranca que esta Casa
+  // já tem: o espectro é conta de uma linha só, e mexer-lhe nas bordas fóra da
+  // fechadura seria cruzar-se com o callback de processo a alimentá-lo.
+  void quer_bandas(std::size_t quantas) override;
+
   // O object.serial do nó a que estamos presos, e zero quando nenhum. Serve á
   // prova: é como ella confirma que nos prendemos ao nó do NOSSO processo.
   unsigned long long no() const noexcept;

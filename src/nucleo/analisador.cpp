@@ -405,6 +405,15 @@ std::vector<float> Analisador::bandas() const {
   return punho_->retracto;
 }
 
+void Analisador::quer_bandas(std::size_t quantas) {
+  std::lock_guard<std::mutex> tranca(punho_->boca);
+  punho_->espectro.quer_bandas(quantas);
+  // O retracto acompanha no MESMO instante. Sem esta linha, quem lesse entre o
+  // pedido e o buffer seguinte receberia o numero velho, e o desenho pintaria
+  // uma largura com as bandas de outra.
+  punho_->retracto = punho_->espectro.bandas();
+}
+
 void Analisador::pulsa() {
   const auto agora = Relogio::now();
   std::lock_guard<std::mutex> tranca(punho_->boca);
