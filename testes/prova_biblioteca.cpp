@@ -16,9 +16,11 @@
 //                   obra devia responder não prova cousa alguma.
 #include <doctest/doctest.h>
 
+#include <sqlite3.h>
 #include <unistd.h>
 
 #include <atomic>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -143,7 +145,7 @@ TEST_CASE("o escriba grava e a bibliotheca conta o que se gravou") {
   CHECK(std::filesystem::exists(cova.banco()));
   const nu::Biblioteca livraria(cova.banco());
   REQUIRE(livraria.aberta());
-  CHECK(livraria.versao() == 1);
+  CHECK(livraria.versao() == nu::kVersaoDoEsquema);
   CHECK(livraria.total() == 4);
 }
 
@@ -358,6 +360,134 @@ TEST_CASE("esquecer tira a faixa do índice, e sómente aquella") {
   // Esquecer o que já se esqueceu é falso, e não segunda baixa na conta.
   CHECK_FALSE(livraria.esquece(qual));
   CHECK(livraria.total() == 3);
+}
+
+// ─── A ORDEM PROPRIA DO ACERVO (issue #152) ─────────────────────────────────
+
+namespace {
+// Lavra á mão um índice do ESQUEMA VELHO, o da versão um, que não tem collunha
+// de ordem. É o unico modo honesto de provar a migração: pedi-lo á obra de hoje
+// daria o esquema de hoje, e a migração não teria o que migrar.
+void banco_de_hontem(const std::filesystem::path& banco,
+                     const std::vector<nu::Faixa>& faixas) {
+  sqlite3* punho = nullptr;
+  REQUIRE(sqlite3_open_v2(banco.c_str(), &punho,
+                          SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+                          nullptr) == SQLITE_OK);
+  REQUIRE(sqlite3_exec(punho,
+                       "CREATE TABLE esquema (versao INTEGER NOT NULL);"
+                       "INSERT INTO esquema VALUES (1);"
+                       "CREATE TABLE faixas (caminho TEXT PRIMARY KEY,"
+                       " raiz TEXT NOT NULL, artista TEXT NOT NULL,"
+                       " album TEXT NOT NULL, titulo TEXT NOT NULL,"
+                       " numero INTEGER NOT NULL, anno INTEGER NOT NULL,"
+                       " duracao INTEGER NOT NULL, modificado INTEGER NOT NULL,"
+                       " tamanho INTEGER NOT NULL, deduzido INTEGER NOT NULL);",
+                       nullptr, nullptr, nullptr) == SQLITE_OK);
+  for (const nu::Faixa& faixa : faixas) {
+    const std::string sql =
+        "INSERT INTO faixas VALUES ('" + faixa.caminho + "','/acervo','" +
+        faixa.artista + "','" + faixa.album + "','" + faixa.titulo + "'," +
+        std::to_string(faixa.numero) + ",0,0,0,0,0);";
+    REQUIRE(sqlite3_exec(punho, sql.c_str(), nullptr, nullptr, nullptr) ==
+            SQLITE_OK);
+  }
+  sqlite3_close(punho);
+}
+
+// As ordens gravadas, na sequencia em que a obra as devolve. Contigua quer dizer
+// que isto sahe 0, 1, 2, ... e o caso escreve o alvo á mão.
+std::vector<std::int64_t> ordens(const nu::Biblioteca& livraria) {
+  std::vector<std::int64_t> quaes;
+  for (const std::string& caminho : livraria.ordem_das_faixas()) {
+    nu::Faixa faixa;
+    if (livraria.acha_por_caminho(caminho, faixa)) quaes.push_back(faixa.ordem);
+  }
+  return quaes;
+}
+}  // namespace
+
+TEST_CASE("o banco de hontem migra e a ordem sahe como hontem se via") {
+  const Cova cova;
+  banco_de_hontem(cova.banco(),
+                  {faz("Bach", "Cravo Bem Temperado", "Fuga", 2),
+                   faz("Ada Lovelace", "Notas de Menabrea", "Traducção", 1),
+                   faz("Ada Lovelace", "Máquina Analítica", "Tear", 3),
+                   faz("Ada Lovelace", "Máquina Analítica", "Nota G", 7)});
+  const nu::Biblioteca livraria(cova.banco());
+  REQUIRE(livraria.aberta());
+  CHECK(livraria.versao() == nu::kVersaoDoEsquema);
+  // Artista, album, numero e titulo: a ordem que a tela mostrava hontem, e que
+  // o acervo de quem já nos usa não ha de ver baralhada ao abrir.
+  const std::vector<std::string> alvo = {
+      "/acervo/Ada Lovelace/Máquina Analítica/Tear.mp3",
+      "/acervo/Ada Lovelace/Máquina Analítica/Nota G.mp3",
+      "/acervo/Ada Lovelace/Notas de Menabrea/Traducção.mp3",
+      "/acervo/Bach/Cravo Bem Temperado/Fuga.mp3"};
+  CHECK(livraria.ordem_das_faixas() == alvo);
+  CHECK(ordens(livraria) == std::vector<std::int64_t>{0, 1, 2, 3});
+}
+
+TEST_CASE("mover ao principio, ao fim e ao meio deixa a ordem contigua") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  const std::vector<std::string> entrada = livraria.ordem_das_faixas();
+  REQUIRE(entrada.size() == 4u);
+  const std::vector<std::int64_t> contigua = {0, 1, 2, 3};
+  const std::string fuga = entrada[3], tear = entrada[0];
+  CHECK(livraria.move_faixa(fuga, 0));
+  CHECK(livraria.ordem_das_faixas()[0] == fuga);
+  CHECK(ordens(livraria) == contigua);
+  CHECK(livraria.move_faixa(fuga, 3));
+  CHECK(livraria.ordem_das_faixas()[3] == fuga);
+  CHECK(ordens(livraria) == contigua);
+  CHECK(livraria.move_faixa(tear, 2));
+  CHECK(livraria.ordem_das_faixas()[2] == tear);
+  CHECK(ordens(livraria) == contigua);
+  // Mover para o logar em que já está é verdadeiro, e não mexe em nada.
+  const std::vector<std::string> parada = livraria.ordem_das_faixas();
+  CHECK(livraria.move_faixa(tear, 2));
+  CHECK(livraria.ordem_das_faixas() == parada);
+  CHECK_FALSE(livraria.move_faixa("/acervo/nunca/entrou.mp3", 0));
+}
+
+TEST_CASE("a faixa nova entra ao fim, a apagada fecha o buraco, e o disco guarda") {
+  const Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca livraria(cova.banco());
+  const std::string fuga = livraria.ordem_das_faixas()[3];
+  REQUIRE(livraria.move_faixa(fuga, 0));
+  // A varredura RECONSTROE o índice: as que já lá estavam entram com o logar
+  // d'ellas, e a que appareceu entra sem logar. É o caminho por onde a faixa
+  // nova ha de cahir no fim sem que quem a grava lh'o diga.
+  std::vector<nu::Faixa> velhas;
+  for (const std::string& caminho : livraria.ordem_das_faixas()) {
+    nu::Faixa d_ella;
+    REQUIRE(livraria.acha_por_caminho(caminho, d_ella));
+    velhas.push_back(d_ella);
+  }
+  {
+    nu::Escriba escriba(cova.banco());
+    REQUIRE(escriba.aberto());
+    for (const nu::Faixa& d_ella : velhas) REQUIRE(escriba.grava(d_ella));
+    REQUIRE(escriba.grava(faz("Zé", "Tarde", "Chegada", 1)));
+    REQUIRE(escriba.conclui());
+  }
+  livraria.reabre();
+  const std::string chegada = "/acervo/Zé/Tarde/Chegada.mp3";
+  CHECK(livraria.ordem_das_faixas()[0] == fuga);
+  CHECK(livraria.ordem_das_faixas()[4] == chegada);
+  CHECK(ordens(livraria) == std::vector<std::int64_t>{0, 1, 2, 3, 4});
+  // A que sae fecha o buraco d'ella, e as de baixo sobem uma.
+  REQUIRE(livraria.esquece(livraria.ordem_das_faixas()[2]));
+  CHECK(livraria.ordem_das_faixas()[0] == fuga);
+  CHECK(livraria.ordem_das_faixas()[3] == chegada);
+  CHECK(ordens(livraria) == std::vector<std::int64_t>{0, 1, 2, 3});
+  // Fechado e reaberto o banco, a arrumação do operador está como elle a deixou.
+  const std::vector<std::string> ficou = livraria.ordem_das_faixas();
+  const nu::Biblioteca outra(cova.banco());
+  CHECK(outra.ordem_das_faixas() == ficou);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

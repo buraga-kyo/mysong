@@ -70,6 +70,10 @@ struct Faixa {
   std::int64_t modificado = 0;
   std::int64_t tamanho = 0;
   unsigned deduzido = kDeduziuNada;
+  // A ORDEM PROPRIA d'esta faixa na vista plana do acervo, explicita e
+  // contigua. Negativa quer dizer «ainda sem logar»: o Escriba dá-lhe o FIM da
+  // fila. É por isso que faixa nova entra no fim sem quem a grava o dizer.
+  std::int64_t ordem = -1;
 };
 
 // A VERSÃO do esquema. Sobe quando o esquema muda de forma, e serve a UMA
@@ -77,7 +81,7 @@ struct Faixa {
 // mysong mais novo o pode ter lavrado, e rebaixá-lo por trás do operador
 // perderia o que a versão nova enche. Versão MENOR é caso normal: nada se
 // reaproveita d'ella, reconstroe-se tudo, e o banco novo sahe nesta versão.
-inline constexpr int kVersaoDoEsquema = 1;
+inline constexpr int kVersaoDoEsquema = 2;
 
 // O DESFECHO de uma escripta. Toda falha tem nome, porque «falhou» não diz a
 // quem chama se ha de tentar outra vez, avisar o operador, ou calar-se.
@@ -146,6 +150,15 @@ class Biblioteca {
   // quando o caminho não está no índice.
   bool acha_por_caminho(std::string_view caminho, Faixa& sahida) const;
 
+  // Os caminhos na ORDEM gravada. É por aqui que a prova lê o que ficou, e é a
+  // unica porta que mostra a ordem propria sem trazer a faixa inteira atraz.
+  std::vector<std::string> ordem_das_faixas() const;
+
+  // Move a faixa para a posição `para` (zero é a primeira), empurrando as
+  // visinhas e conservando a ordem CONTIGUA. Falso quando a faixa não está no
+  // índice; mover para o logar em que já está devolve verdadeiro sem mudar nada.
+  bool move_faixa(std::string_view caminho, std::size_t para);
+
  private:
   // A tranca NÃO é reentrante: porta publica alguma d'esta classe chama outra,
   // e a segunda tomada seria abraço de si mesma. O destructor não a toma, que o
@@ -189,6 +202,9 @@ class Escriba {
   std::filesystem::path banco_;
   std::filesystem::path temporario_;
   sqlite3* punho_ = nullptr;
+  // Quantas faixas entraram SEM logar. Serve para as distinguir umas das outras
+  // no fim da fila, que sem isso ficariam todas na mesma ordem provisoria.
+  std::int64_t ao_cabo_ = 0;
 };
 
 }  // namespace mysong::nucleo
