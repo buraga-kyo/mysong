@@ -397,5 +397,79 @@ TEST_CASE("o botão direito n'uma linha abre o menu, e sómente n'uma linha") {
             .gesto == tui::Gesto::Nada);
 }
 
+// O ARRASTO (issue #153): a máquina que pega, arrasta e larga. Afere-se como
+// valores, sem terminal e sem pauta: o que ella promette é a ORDEM dos gestos.
+TEST_CASE("o arrasto pega n'uma linha, anda, e larga n'outra") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  tui::Arrasto mao;
+  const auto na_linha = [&caixas](int y) {
+    return tui::alvo_do_ponto(caixas, 30, y);
+  };
+  // O botão desce na terceira linha visivel (indice absoluto 22).
+  tui::RespostaDoArrasto d = tui::gesto_do_arrasto(
+      mao, na_linha(5), Mouse::Left, Mouse::Pressed, true);
+  CHECK(d.gesto == tui::GestoDoArrasto::Pega);
+  CHECK(mao.pegou);
+  CHECK(mao.origem == 22);
+  CHECK_FALSE(mao.andou);
+  // A mão anda para a primeira linha visivel (indice 20).
+  d = tui::gesto_do_arrasto(mao, na_linha(3), Mouse::Left, Mouse::Moved, true);
+  CHECK(d.gesto == tui::GestoDoArrasto::Arrasta);
+  CHECK(mao.alvo == 20);
+  CHECK(mao.andou);
+  // E larga alli: ha movimento a cumprir, de 22 para 20.
+  d = tui::gesto_do_arrasto(mao, na_linha(3), Mouse::Left, Mouse::Released, true);
+  CHECK(d.gesto == tui::GestoDoArrasto::Larga);
+  CHECK(d.de == 22);
+  CHECK(d.para == 20);
+  CHECK_FALSE(mao.pegou);  // a mão esvazia-se
+}
+
+TEST_CASE("largar onde se pegou não move nada, e é o clique de sempre") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  tui::Arrasto mao;
+  const tui::Alvo alvo = tui::alvo_do_ponto(caixas, 30, 4);
+  tui::gesto_do_arrasto(mao, alvo, Mouse::Left, Mouse::Pressed, true);
+  const tui::RespostaDoArrasto d =
+      tui::gesto_do_arrasto(mao, alvo, Mouse::Left, Mouse::Released, true);
+  CHECK(d.gesto == tui::GestoDoArrasto::Desiste);
+  CHECK_FALSE(mao.pegou);
+}
+
+TEST_CASE("a vista que não se arruma não deixa pegar, e o botão direito tambem não") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  tui::Arrasto mao;
+  const tui::Alvo alvo = tui::alvo_do_ponto(caixas, 30, 4);
+  // `pode` falso: artistas, albuns e achados da rede.
+  CHECK(tui::gesto_do_arrasto(mao, alvo, Mouse::Left, Mouse::Pressed, false)
+            .gesto == tui::GestoDoArrasto::Nada);
+  CHECK_FALSE(mao.pegou);
+  // O botão DIREITO abre o menu, e não arrasta.
+  CHECK(tui::gesto_do_arrasto(mao, alvo, Mouse::Right, Mouse::Pressed, true)
+            .gesto == tui::GestoDoArrasto::Nada);
+  CHECK_FALSE(mao.pegou);
+  // O botão que desce FÓRA de linha alguma (na fita) não pega, e esvazia a mão.
+  const tui::Alvo fóra = tui::alvo_do_ponto(caixas, 5, 0);
+  CHECK(tui::gesto_do_arrasto(mao, fóra, Mouse::Left, Mouse::Pressed, true)
+            .gesto == tui::GestoDoArrasto::Nada);
+  CHECK_FALSE(mao.pegou);
+}
+
+TEST_CASE("a mão que sae da pauta guarda o alvo que tinha") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  tui::Arrasto mao;
+  tui::gesto_do_arrasto(mao, tui::alvo_do_ponto(caixas, 30, 5), Mouse::Left,
+                        Mouse::Pressed, true);
+  tui::gesto_do_arrasto(mao, tui::alvo_do_ponto(caixas, 30, 3), Mouse::Left,
+                        Mouse::Moved, true);
+  CHECK(mao.alvo == 20);
+  // Passa por cima da capa: alvo algum se lhe conhece, e o que estava FICA.
+  const tui::RespostaDoArrasto d = tui::gesto_do_arrasto(
+      mao, tui::alvo_do_ponto(caixas, 70, 8), Mouse::Left, Mouse::Moved, true);
+  CHECK(d.gesto == tui::GestoDoArrasto::Nada);
+  CHECK(mao.alvo == 20);
+  CHECK(mao.pegou);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
