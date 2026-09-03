@@ -15,6 +15,33 @@
 
 namespace nu = mysong::nucleo;
 
+namespace {
+
+// Um JPEG de cabeçalho só, octeto a octeto: a guarda, um JFIF pelo meio, e o
+// SOF0 com setecentos e vinte por mil duzentos e oitenta. Chamar o ffmpeg aqui
+// seria trocar a prova da medida por uma prova do ffmpeg.
+const std::string& jpeg_de_cabecalho() {
+  static const unsigned char kCrus[] = {
+      0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 'J', 'F',  'I',  'F',  0,   1, 1,
+      0,    0,    1,    0,    1,    0,    0,   0xFF, 0xC0, 0x00, 0x11, 8, 0x02,
+      0xD0, 0x05, 0x00, 3,    1,    0x22, 0,   2,    0x11, 1,    3,   0x11, 1};
+  static const std::string kOctetos(reinterpret_cast<const char*>(kCrus),
+                                    sizeof kCrus);
+  return kOctetos;
+}
+
+// E um PNG de cabeçalho só: a guarda, e o IHDR com quinhentos por quatrocentos.
+const std::string& png_de_cabecalho() {
+  static const unsigned char kCrus[] = {
+      0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13,
+      'I',  'H', 'D', 'R', 0,    0,    0x01, 0xF4, 0, 0, 1, 0x90};
+  static const std::string kOctetos(reinterpret_cast<const char*>(kCrus),
+                                    sizeof kCrus);
+  return kOctetos;
+}
+
+}  // namespace
+
 TEST_CASE("a ordem de pôr traz o rectangulo e o caminho n'uma linha de JSON") {
   CHECK(nu::ordem_de_por("capa", "/tmp/a.jpg", 10, 5, 40, 12) ==
         "{\"action\":\"add\",\"identifier\":\"capa\",\"x\":10,\"y\":5,"
@@ -73,6 +100,24 @@ TEST_CASE("painel de largura zero não pede rectangulo algum") {
       nu::rectangulo_da_capa({1280, 720}, 0, 21, nu::CELLULA_DA_CASA);
   CHECK(qual.collunas == 0);
   CHECK(qual.linhas == 0);
+}
+
+TEST_CASE("a medida do JPEG acha o SOF depois do JFIF") {
+  const nu::Medida qual = nu::medida_da_imagem(jpeg_de_cabecalho());
+  CHECK(qual.largura == 1280);
+  CHECK(qual.altura == 720);
+}
+
+TEST_CASE("a medida do PNG lê-se do IHDR") {
+  const nu::Medida qual = nu::medida_da_imagem(png_de_cabecalho());
+  CHECK(qual.largura == 500);
+  CHECK(qual.altura == 400);
+}
+
+TEST_CASE("octetos que não são imagem medem zero e não lançam") {
+  CHECK(nu::medida_da_imagem("nao e imagem alguma").largura == 0);
+  CHECK(nu::medida_da_imagem("").altura == 0);
+  CHECK(nu::medida_da_imagem("\xFF\xD8truncado").largura == 0);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
