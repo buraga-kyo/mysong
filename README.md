@@ -316,6 +316,10 @@ Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
 «▸» (`PLAYLISTS ▸ Funk lento`). A direita d'ella vao os recados: a lista alvo,
 o filtro posto, a varredura em curso, o andamento das baixas.
 
+No pé, uma linha de dicas com as teclas mais usadas, e a palavra README a
+dizer que o resto esta aqui: a linha cabe em cento e vinte collunhas, e a
+taboada inteira nao cabe em linha alguma.
+
 Abaixo de CEM collunhas o painel some e a pauta toma a tela toda. A capa nunca
 passa de quarenta e cinco por cento da altura do painel, e o espectro toma o
 que ella deixar.
