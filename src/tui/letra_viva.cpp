@@ -56,6 +56,53 @@ std::vector<std::string> glifos_da_linha(std::string_view texto) {
   return saida;
 }
 
+namespace {
+
+// mistura_do_acaso — a mistura de bits do splitmix64. Gerador do systema NÃO ha
+// n'esta obra, e por isso se escreve: `rand()` daria fita differente a cada
+// corrida, e prova alguma se poderia fazer d'ella. Da mesma semente sahe sempre
+// o mesmo numero, e a semente é a POSIÇÃO, que é o que a pureza exige.
+std::uint64_t mistura_do_acaso(std::uint64_t semente) {
+  std::uint64_t x = semente + 0x9e3779b97f4a7c15ull;
+  x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ull;
+  x = (x ^ (x >> 27)) * 0x94d049bb133111ebull;
+  return x ^ (x >> 31);
+}
+
+}  // namespace
+
+std::string embaralha(const std::vector<std::string>& glifos, double resolvida,
+                      std::size_t qual, long long quadro) {
+  const std::size_t quantos = glifos.size();
+  if (quantos == 0) return {};
+  // A FONTE do embaralho são as proprias letras da linha, e sómente ellas: sahe
+  // fita que se lê como a mesma lingua, com os mesmos acentos, e não ruido.
+  std::vector<std::size_t> fonte;
+  for (std::size_t k = 0; k < quantos; ++k)
+    if (!e_branco(glifos[k])) fonte.push_back(k);
+
+  // Os RESOLVIDOS são os do MEIO: a janella abre-se do centro para as pontas, e
+  // é d'ahi que sahe o «ganhar fórma» que a issue pede. Contada das pontas para
+  // o meio, a linha resolver-se-hia pelo fim, que é onde o olho não a lê.
+  const std::size_t resolvidos = static_cast<std::size_t>(std::llround(
+      cingido(resolvida, 0.0, 1.0) * static_cast<double>(quantos)));
+  const std::size_t inicio = (quantos - resolvidos) / 2;
+
+  std::string saida;
+  for (std::size_t k = 0; k < quantos; ++k) {
+    if ((k >= inicio && k < inicio + resolvidos) || fonte.empty() ||
+        e_branco(glifos[k])) {
+      saida += glifos[k];
+      continue;
+    }
+    const std::uint64_t semente =
+        static_cast<std::uint64_t>(qual) * 1000003ull +
+        static_cast<std::uint64_t>(quadro) * 8191ull + k;
+    saida += glifos[fonte[mistura_do_acaso(semente) % fonte.size()]];
+  }
+  return saida;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
