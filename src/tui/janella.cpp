@@ -778,6 +778,37 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                             abaixo.altura, abaixo.largura)
                       : tui::elemento_do_espectro(quadro),
                   sala.painel.largura);
+    // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
+    // pela razão que a composição velha ensinou: por menos, o pé da tela fica
+    // em branco; por mais, o rodapé sahe d'ella.
+    std::vector<ftxui::Element> metades = {ftxui::vbox(
+        {tui::elemento_da_chapa(chapa, sala.chapa.largura),
+         tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
+                                  sala.pauta.largura, retracto.titulo,
+                                  &caixas.linhas)})};
+    if (!sala.painel.vazio()) {
+      metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
+      metades.push_back(std::move(painel));
+    }
+    std::vector<ftxui::Element> tudo = {
+        tui::elemento_do_cabecalho(retracto,
+                                   tui::aba_da_secao(navegador.secao()),
+                                   ficha.titulo, sala.cabecalho.largura,
+                                   &caixas.cabecalho),
+        tui::elemento_do_trilho(retracto, sala.trilho.largura,
+                                &caixas.cabecalho.trilho)};
+    if (!sala.campo.vazio())
+      tudo.push_back(tui::elemento_do_campo(digita, contexto_do_campo,
+                                            termo_em_curso,
+                                            sala.campo.largura));
+    tudo.push_back(
+        ftxui::hbox(std::move(metades)) |
+        ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                    static_cast<int>(sala.pauta.altura +
+                                     (sala.chapa.vazio() ? 0 : 1))));
+    if (!sala.rodape.vazio())
+      tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
+    return ftxui::vbox(std::move(tudo));
   });
 
   // entra_no_alvo — o caminho do Enter na barra, n'um logar só. Sahe do ramo do
