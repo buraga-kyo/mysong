@@ -8,6 +8,8 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cstdlib>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -79,4 +81,43 @@ TEST_CASE("a chave do cache muda com todo campo do pedido") {
   dous.texto = "A";
   dous.tinta = "BC";
   CHECK(nu::chave_do_letreiro(um) != nu::chave_do_letreiro(dous));
+}
+
+TEST_CASE("a chapa mora em letreiro, ao lado das capas") {
+  // O ambiente restaura-se no fim: a bateria corre n'um processo só, e prova
+  // que deixasse a variavel mudada faria a visinha ler outro cache.
+  const char* const antes = std::getenv("XDG_CACHE_HOME");
+  const std::string guardado = antes == nullptr ? std::string() : antes;
+  ::setenv("XDG_CACHE_HOME", "/tmp/cova-do-letreiro", 1);
+  CHECK(nu::caminho_da_chapa_em_cache(da_corrente()) ==
+        std::filesystem::path("/tmp/cova-do-letreiro/mysong/letreiro/" +
+                              nu::chave_do_letreiro(da_corrente()) + ".png"));
+  if (guardado.empty())
+    ::unsetenv("XDG_CACHE_HOME");
+  else
+    ::setenv("XDG_CACHE_HOME", guardado.c_str(), 1);
+}
+
+TEST_CASE("ha letreiro sómente com lousa, com pango-view e com a Xirod") {
+  using nu::ModoDaLousa;
+  const nu::Parecer de_pe =
+      nu::parecer_do_letreiro(ModoDaLousa::Auto, true, true);
+  CHECK(de_pe.de_pe);
+  CHECK(de_pe.razao == "Xirod, pango-view");
+  CHECK(nu::texto_do_letreiro(de_pe) == "\n  letreiro: Xirod, pango-view\n");
+  // Sem o PROGRAMA, e a razão diz o pacote e não a fonte: quem o não tem ha de
+  // ler o remedio que lhe serve.
+  const nu::Parecer sem_pango =
+      nu::parecer_do_letreiro(ModoDaLousa::Auto, false, true);
+  CHECK_FALSE(sem_pango.de_pe);
+  CHECK(sem_pango.razao.find("pango-view") != std::string::npos);
+  // Sem a FONTE, com o programa presente.
+  const nu::Parecer sem_fonte =
+      nu::parecer_do_letreiro(ModoDaLousa::Auto, true, false);
+  CHECK_FALSE(sem_fonte.de_pe);
+  CHECK(sem_fonte.razao.find("Xirod") != std::string::npos);
+  // A alavanca da lousa desliga o letreiro, e o `sim` d'ella não o accende
+  // sem os dous: fonte que não está não se finge por ajuste.
+  CHECK_FALSE(nu::parecer_do_letreiro(ModoDaLousa::Nao, true, true).de_pe);
+  CHECK_FALSE(nu::parecer_do_letreiro(ModoDaLousa::Sim, true, false).de_pe);
 }
