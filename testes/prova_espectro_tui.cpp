@@ -505,6 +505,31 @@ TEST_CASE("o pico cae á metade na meia-vida") {
   CHECK(picos[0] == doctest::Approx(0.25f * std::sqrt(0.5f)));
 }
 
+TEST_CASE("o pico redimensiona-se e ZERA quando as bandas mudão de numero") {
+  std::vector<float> picos = {0.9f, 0.9f, 0.9f};
+  es::avanca_picos(picos, {0.1f, 0.1f}, 0.0);
+  REQUIRE(picos.size() == 2);
+  // Zera, e não conserva os 0,9: aquelles erão de outra colheita, e pico de
+  // banda que já não existe accenderia a batida na columna errada.
+  CHECK(picos[0] == doctest::Approx(0.1f));
+  CHECK(picos[1] == doctest::Approx(0.1f));
+}
+
+// O tempo LIXO, e é a mesma lição do cingido: relogio que recua, quadro que se
+// repete e conta indefinida valem todos a passagem NULLA. Derrubassem o pico,
+// a batida apagava-se por causa do relogio e não por causa da musica.
+TEST_CASE("tempo negativo ou não finito não derruba pico algum") {
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+  for (const double segundos : {-1.0, -1000.0, nan, inf, -inf}) {
+    std::vector<float> picos;
+    es::avanca_picos(picos, {1.0f}, 0.0);
+    es::avanca_picos(picos, {0.0f}, segundos);
+    REQUIRE(picos.size() == 1);
+    CHECK(picos[0] == doctest::Approx(1.0f));
+  }
+}
+
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
 TEST_CASE("o quadro fecha a largura exacta, de uma a duzentas collunhas") {
   const std::vector<float> bandas = bandas_uniformes(0.5f);
