@@ -37,12 +37,6 @@ TEST_CASE("o enum tem oito modos e seis d'elles digitam") {
   CHECK_FALSE(tui::aceita_letra(tui::Modo::Confirma));
 }
 
-TEST_CASE("o topo tem uma linha fechado o campo e duas aberto") {
-  CHECK(tui::linhas_do_topo(tui::Modo::Nada) == 1);
-  for (const tui::Modo modo : kTodos)
-    if (modo != tui::Modo::Nada) CHECK(tui::linhas_do_topo(modo) == 2);
-}
-
 TEST_CASE("a novidade de fundo so assenta com o campo fechado") {
   CHECK(tui::assenta_novidade(tui::Modo::Nada));
   for (const tui::Modo modo : kTodos)
@@ -79,10 +73,9 @@ struct Papel {
   ftxui::Screen::Cursor cursor;
 };
 
-Papel pintar(const std::string& trilha, tui::Modo modo, const std::string& termo,
-             std::size_t largura) {
+Papel pintar(tui::Modo modo, const std::string& termo, std::size_t largura) {
   ftxui::Element quadro =
-      tui::elemento_do_topo(trilha, modo, "YouTube", termo, largura);
+      tui::elemento_do_campo(modo, "YouTube", termo, largura);
   ftxui::Screen ecran =
       ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(largura)),
                             ftxui::Dimension::Fixed(3));
@@ -102,25 +95,21 @@ Papel pintar(const std::string& trilha, tui::Modo modo, const std::string& termo
 }
 }  // namespace
 
-TEST_CASE("a trilha sobrevive a todos os oito modos") {
-  for (const tui::Modo modo : kTodos) {
-    const Papel papel = pintar("ARTISTS > AYMEE > Voce", modo, "jk", 60);
-    CHECK(papel.linhas[0].substr(0, 22) == "ARTISTS > AYMEE > Voce");
-  }
+TEST_CASE("o campo abre em linha propria, e ella é a primeira") {
+  const Papel papel = pintar(tui::Modo::Procura, "jk", 60);
+  CHECK(papel.linhas[0].find("BUSCA NA REDE (YouTube): jk") != std::string::npos);
+  // A linha de baixo fica LIMPA: a sala reserva UMA linha ao campo, e peça que
+  // pintasse duas empurraria a pauta para fóra da conta que a sala lhe deu.
+  CHECK(papel.linhas[1].find_first_not_of(' ') == std::string::npos);
 }
 
-TEST_CASE("o campo abre em linha propria por baixo da trilha") {
-  const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
-  CHECK(papel.linhas[0].substr(0, 7) == "ARTISTS");
-  CHECK(papel.linhas[1].find("BUSCA NA REDE (YouTube): jk") != std::string::npos);
-}
-
-TEST_CASE("o campo tem fundo que a trilha nao tem") {
-  const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
-  CHECK(papel.fundos[0] != papel.fundos[1]);
+TEST_CASE("o campo tem fundo proprio em toda a linha") {
+  const Papel papel = pintar(tui::Modo::Procura, "jk", 60);
+  const Papel fechado = pintar(tui::Modo::Nada, "", 60);
+  CHECK(papel.fundos[0] != fechado.fundos[0]);
   // A primeira cella é a da marca: regressão que pintasse SÓ a marca passaria
-  // por ella. O meio da linha do campo tambem leva o fundo, e a trilha não.
-  CHECK(papel.fundos_meio[0] != papel.fundos_meio[1]);
+  // por ella. O meio da linha do campo leva o fundo tambem.
+  CHECK(papel.fundos_meio[0] != fechado.fundos_meio[0]);
 }
 
 TEST_CASE("o caret pousa logo a seguir ao que se digitou") {
