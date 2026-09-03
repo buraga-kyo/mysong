@@ -40,5 +40,30 @@ namespace tui = mysong::tui;
 namespace nu = mysong::nucleo;
 namespace tk = mysong::tui::tokens;
 
+namespace {
+
+// A LETRA de prova: dous versos, um aos dez segundos e outro aos catorze. Cinco
+// glyphos cada, que é o que faz as contas da fracção resolvida sahirem redondas.
+const std::vector<nu::LinhaDaLetra> kVersos = {{10.0, "abcde"}, {14.0, "fghij"}};
+
+// O painel: vinte por doze. D'ahi a linha de leitura em quatro (doze a dividir
+// por tres) e a base em onze, e o vão da subida de sete. Escrevem-se Á MÃO, que
+// recalculá-los aqui seria perguntar ao oraculo sob exame.
+constexpr std::size_t kLargura = 20;
+constexpr std::size_t kAltura = 12;
+constexpr std::size_t kLeitura = 4;
+constexpr std::size_t kBase = 11;
+
+// d_ella — a linha viva de tal verso, ou nada. Busca-se pelo `qual`, e não pela
+// ordem no vector: quem morre no alto sae do quadro, e o indice deslocava-se.
+const tui::LinhaViva* d_ella(const tui::QuadroDaLetra& quadro,
+                             std::size_t qual) {
+  for (const tui::LinhaViva& viva : quadro.linhas)
+    if (viva.qual == qual) return &viva;
+  return nullptr;
+}
+
+}  // namespace
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
