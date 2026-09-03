@@ -281,6 +281,46 @@ ftxui::Element elemento_do_menu(const MenuDeContexto& menu) {
   return ftxui::hbox({std::move(caixa), caixa_das_listas(menu)});
 }
 
+CantoDoMenu ancora_do_menu(const ftxui::Box& linha, MedidaDoMenu medida,
+                           std::size_t largura_da_tela,
+                           std::size_t altura_da_tela) noexcept {
+  const int larga = static_cast<int>(medida.largura);
+  const int alta = static_cast<int>(medida.altura);
+  const int tela_x = static_cast<int>(largura_da_tela);
+  const int tela_y = static_cast<int>(altura_da_tela);
+  // ABAIXO da linha, que é onde a mão o espera: o menu nasce debaixo do dedo e
+  // não tapa a faixa sobre que se escolhe. Não cabendo abaixo, ACIMA d'ella;
+  // não cabendo em logar algum, cinge-se á borda, que menu meio cortado ainda
+  // se lê e menu fóra da tela não se lê de todo.
+  int y = linha.y_max + 1;
+  if (y + alta > tela_y) y = linha.y_min - alta;
+  if (y < 0) y = tela_y > alta ? tela_y - alta : 0;
+  int x = linha.x_min;
+  if (x + larga > tela_x) x = tela_x - larga;
+  if (x < 0) x = 0;
+  return {x, y};
+}
+
+ftxui::Element flutuante_do_menu(const MenuDeContexto& menu,
+                                 const ftxui::Box& linha,
+                                 std::size_t largura_da_tela,
+                                 std::size_t altura_da_tela) {
+  if (!menu.aberto) return ftxui::emptyElement();
+  const MedidaDoMenu medida = medida_do_menu(menu);
+  const CantoDoMenu canto =
+      ancora_do_menu(linha, medida, largura_da_tela, altura_da_tela);
+  // O vão vae em `emptyElement` com tamanho, e nunca em `text` de espaços: o
+  // `text` PINTA o que leva, e apagaria a pauta em toda a largura acima do
+  // menu. Vazio com tamanho occupa e não pinta, que é o que a camada pede.
+  const auto vao = [](ftxui::WidthOrHeight qual, int quanto) {
+    return ftxui::emptyElement() | ftxui::size(qual, ftxui::EQUAL, quanto);
+  };
+  return ftxui::vbox(
+      {vao(ftxui::HEIGHT, canto.y),
+       ftxui::hbox({vao(ftxui::WIDTH, canto.x), elemento_do_menu(menu)}),
+       ftxui::filler()});
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
