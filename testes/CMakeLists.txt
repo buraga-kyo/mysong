@@ -172,3 +172,6 @@ target_sources(mysong_testes PRIVATE prova_vigilia.cpp)
 
 # ─── Prova do rato (issue #95): por target_sources, a regra ─────────────────
 target_sources(mysong_testes PRIVATE prova_rato.cpp)
+
+# ─── Prova do cabeçalho em abas (issue #102): por target_sources, a regra ────
+target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)
