@@ -979,6 +979,23 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                      navegador.rois());
   };
 
+  // cria_a_lista_com — a lista NOVA já com a faixa eleita dentro, que é o que o
+  // item NOVA LISTA COM ESTA promette (issue #96). Vae pelo roleiro, e não pelo
+  // `cria_rol` do navegador: esse não devolve o id da que nasceu, e sem o id
+  // não ha onde juntar. Passa-se ás listas a seguir, como o `c` já passava:
+  // quem cria uma lista quer vê-la, e vê-la é o modo de conferir que nasceu.
+  const auto cria_a_lista_com = [&](const std::string& nome) {
+    const std::string caminho = navegador.caminho_eleito();
+    const int qual = roleiro.cria(nome);
+    if (qual == 0) {
+      aviso_da_rede = "esse nome já existe, ou é vazio";
+      return;
+    }
+    roleiro.junta(qual, caminho);
+    navegador.mostra_rois();
+    aviso_da_rede = "«" + nome + "» criada com a faixa";
+  };
+
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
@@ -1126,6 +1143,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         } else if (era == Digita::NomeNovo) {
           if (!navegador.cria_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::NomeComEsta) {
+          cria_a_lista_com(termo_em_curso);
         } else if (era == Digita::TituloOutro) {
           const std::string qual = navegador.caminho_eleito();
           aviso_da_rede = renomeia_a_faixa(qual, termo_em_curso, livraria);
