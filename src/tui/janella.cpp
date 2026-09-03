@@ -39,6 +39,7 @@
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/screen/string.hpp>
 #include <ftxui/screen/terminal.hpp>
 #include <ftxui/dom/elements.hpp>
 
@@ -726,35 +727,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                 sala.pauta.altura, primeira_linha);
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
 
-    // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
-    // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: a chapa apara
-    // na borda, e o que se perde é o fim do ultimo, o menos urgente dos que ha.
-    // Chama-se `dito`, e não `recado`: aquelle nome já é do que a colheita do
-    // correio traz do fio da rede, alguns nós acima n'este mesmo lambda.
-    std::string dito;
-    const auto junta = [&dito](const std::string& pedaco) {
-      if (pedaco.empty()) return;
-      if (!dito.empty()) dito += "  ";
-      dito += pedaco;
-    };
-    // A FONTE diz-se na secção da rede, e sempre: a lista pode ser da fonte
-    // anterior por um instante, que a busca é assynchrona.
-    if (navegador.secao() == tui::Secao::Rede)
-      junta(std::string(nucleo::nome_da_fonte(fonte_da_busca)));
-    // A lista ALVO diz-se havendo alguma, e em toda secção: é para onde o `a`
-    // manda a faixa, e o operador não ha de o adivinhar.
-    if (navegador.rol_corrente() != 0 &&
-        navegador.secao() != tui::Secao::NoRol)
-      junta("\ue0b1 " + navegador.nome_corrente());
-    if (!navegador.termo().empty()) junta("[" + navegador.termo() + "]");
-    // A janella do video cala-se por si quando ella morre: é a pergunta ao
-    // processo que o diz, e não bandeira nossa que pudesse ficar a mentir.
-    if (projector.rodando())
-      junta("video: " + projector.faixa().filename().string());
-    if (!varrida.load()) junta("a varrer o acervo...");
-    junta(aviso_da_rede);
-    junta(nucleo::texto_do_andamento(estaleiro.andamento()));
-
     // A letra e a ficha relêem-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
       letra_de_qual = retracto.titulo;
@@ -783,6 +755,51 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     for (const tui::Linha& qual : navegador.vista())
       chapa.duracao += qual.duracao;
     chapa.vista = tui::nome_da_vista(navegador.secao());
+    // As ENCOMMENDAS ganham logar proprio na DOWNLOAD, que é onde a issue as
+    // pede por cima da lista. Nas outras abas ellas descem ao recado, que alli
+    // a linha não é d'ellas e o que importa é a secção em que se está.
+    const std::string andamento =
+        nucleo::texto_do_andamento(estaleiro.andamento());
+    const bool na_baixa =
+        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
+    if (na_baixa) chapa.encommendas = andamento;
+    // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
+    // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: o que não
+    // couber no que a chapa deixa fica de fóra, em vez de se cortar a meio da
+    // palavra. Mediu-se nos dumps, antes d'esta conta: «a rede está vazia:
+    // busca prime», e n'outro o «(s)» perdido, que é a tecla a apertar.
+    const std::size_t sobra = tui::espaco_do_recado(chapa, sala.chapa.largura);
+    std::string dito;
+    const auto junta = [&dito, sobra](const std::string& pedaco) {
+      if (pedaco.empty()) return;
+      const std::size_t pede =
+          static_cast<std::size_t>(ftxui::string_width(dito)) +
+          (dito.empty() ? 0u : 2u) +
+          static_cast<std::size_t>(ftxui::string_width(pedaco));
+      if (pede > sobra) return;
+      if (!dito.empty()) dito += "  ";
+      dito += pedaco;
+    };
+    // A ordem é a da URGENCIA, e é ella que decide quem fica de fóra. O que
+    // está a CORRER vem antes do que já aconteceu: a varredura e as baixas
+    // antes do aviso, que o aviso é desfecho e elles são obra em curso.
+    if (!varrida.load()) junta("a varrer o acervo...");
+    if (!na_baixa) junta(andamento);
+    // A FONTE diz-se na secção da rede, e sempre: a lista pode ser da fonte
+    // anterior por um instante, que a busca é assynchrona.
+    if (navegador.secao() == tui::Secao::Rede)
+      junta(std::string(nucleo::nome_da_fonte(fonte_da_busca)));
+    junta(aviso_da_rede);
+    // A lista ALVO diz-se havendo alguma, e em toda secção: é para onde o `a`
+    // manda a faixa, e o operador não ha de o adivinhar.
+    if (navegador.rol_corrente() != 0 &&
+        navegador.secao() != tui::Secao::NoRol)
+      junta("\ue0b1 " + navegador.nome_corrente());
+    if (!navegador.termo().empty()) junta("[" + navegador.termo() + "]");
+    // A janella do video cala-se por si quando ella morre: é a pergunta ao
+    // processo que o diz, e não bandeira nossa que pudesse ficar a mentir.
+    if (projector.rodando())
+      junta("video: " + projector.faixa().filename().string());
     chapa.recado = dito;
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
