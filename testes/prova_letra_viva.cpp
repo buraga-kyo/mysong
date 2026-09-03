@@ -65,5 +65,30 @@ const tui::LinhaViva* d_ella(const tui::QuadroDaLetra& quadro,
 
 }  // namespace
 
+TEST_CASE("a linha de leitura é o terço do alto") {
+  CHECK(tui::linha_de_leitura(kAltura) == kLeitura);
+  CHECK(tui::linha_de_leitura(30) == 10);
+  CHECK(tui::linha_de_leitura(3) == 1);
+  // Painel de uma linha e painel de nenhuma não estouram: a leitura é o zero, e
+  // com ella o vão da subida fica vazio, que é o que um painel d'esses comporta.
+  CHECK(tui::linha_de_leitura(1) == 0);
+  CHECK(tui::linha_de_leitura(0) == 0);
+}
+
+TEST_CASE("o nascimento é de quatro segundos ou do intervallo menor") {
+  CHECK(tui::nascimento_da_linha(kVersos, 0) == doctest::Approx(4.0));
+  CHECK(tui::nascimento_da_linha(kVersos, 1) == doctest::Approx(4.0));
+  const std::vector<nu::LinhaDaLetra> apertados = {
+      {1.0, "um"}, {2.5, "dous"}, {2.5, "tres"}};
+  // O primeiro conta desde o ZERO da faixa: um segundo, e não quatro.
+  CHECK(tui::nascimento_da_linha(apertados, 0) == doctest::Approx(1.0));
+  CHECK(tui::nascimento_da_linha(apertados, 1) == doctest::Approx(1.5));
+  // Carimbo repetido dá intervallo zero, e o piso guarda a divisão.
+  CHECK(tui::nascimento_da_linha(apertados, 2) ==
+        doctest::Approx(tui::NASCIMENTO_MINIMO));
+  // Indice fóra de limite não lê fóra do vector.
+  CHECK(tui::nascimento_da_linha(apertados, 9) == doctest::Approx(4.0));
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
