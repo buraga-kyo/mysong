@@ -996,6 +996,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     aviso_da_rede = "«" + nome + "» criada com a faixa";
   };
 
+  // junta_na_lista — a faixa eleita na lista de id `qual`, que é a que o submenu
+  // escolheu. Chama o roleiro, e não o `junta_ao_rol` do navegador: esse junta
+  // na lista CORRENTE, e a corrente não é a que se escolheu; mudar a corrente
+  // por um item de menu faria o `a` seguinte juntar n'outra lista sem que
+  // ninguem lh'o tivesse pedido.
+  const auto junta_na_lista = [&](int qual) {
+    const std::string caminho = navegador.caminho_eleito();
+    if (qual == 0 || caminho.empty() || !roleiro.junta(qual, caminho)) {
+      aviso_da_rede = "não se pôde juntar á lista";
+      return;
+    }
+    navegador.recarrega();  // dentro d'ella, a faixa apparece no mesmo quadro
+    for (const nucleo::Rol& rol : menu.listas)
+      if (rol.id == qual) aviso_da_rede = "juntada a «" + rol.nome + "»";
+  };
+
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
@@ -1023,6 +1039,35 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // a sessão inteira, e comia o logar que a conta do recado reservaria ao
     // andamento das baixas, que é obra em curso e não desfecho velho.
     if (tui::eh_tecla_de_gente(tecla)) aviso_da_rede.clear();
+    // O MENU DE CONTEXTO (issue #96) toma TODA tecla emquanto está aberto, e
+    // por isso trata-se ANTES do rato e do modo de digitar. É o mesmo logar em
+    // que o campo já consome, e pela mesma razão: sem elle, a seta andava na
+    // pauta por baixo do menu, e o alvo mudava sem que ninguem o visse.
+    tui::Ordem ordem_do_menu;
+    if (menu.aberto) {
+      const tui::RespostaDoMenu escolha = tui::tecla_no_menu(menu, tecla);
+      switch (escolha.pedido) {
+        case tui::PedidoDoMenu::Nada: return true;  // consumida, e nada mais
+        // Os TRES que a tecla já cumpre desaguam na taboada de sempre, e não
+        // ganham caminho proprio: TOCAR é o Entra da eleita, e os outros dous
+        // são o F2 e o Delete. Dous caminhos para renomear divergiriam na
+        // primeira issue que mexesse n'um d'elles.
+        case tui::PedidoDoMenu::Toca: ordem_do_menu = {tui::Verbo::Entra}; break;
+        case tui::PedidoDoMenu::Renomeia:
+          ordem_do_menu = {tui::Verbo::RenomeiaFaixa};
+          break;
+        case tui::PedidoDoMenu::Apaga:
+          ordem_do_menu = {tui::Verbo::ApagaFaixa};
+          break;
+        case tui::PedidoDoMenu::Junta:
+          junta_na_lista(escolha.lista);
+          return true;
+        case tui::PedidoDoMenu::NovaLista:
+          digita = Digita::NomeComEsta;
+          termo_em_curso.clear();
+          return true;
+      }
+    }
     // O RATO (issue #95) trata-se AQUI, antes do modo de digitar: dentro do modo
     // toda tecla se engole, e o clique nunca chegaria a fechar o campo.
     tui::Ordem ordem_do_rato;
@@ -1244,7 +1289,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
     const tui::Ordem ordem =
-        tecla.is_mouse()
+        ordem_do_menu.verbo != tui::Verbo::Nada ? ordem_do_menu
+        : tecla.is_mouse()
             ? ordem_do_rato
             : tui::ordem_da_tecla(tecla, retracto_do(tocador, projector), false);
     switch (ordem.verbo) {
