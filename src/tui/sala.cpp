@@ -147,25 +147,31 @@ Especie especie_da_secao(Secao secao) {
   return Especie::Faixas;
 }
 
-std::string nome_da_colleccao(Secao secao,
-                              const std::vector<std::string>& trilha,
-                              const std::string& nome_do_catalogo) {
-  // Dentro de alguma cousa, o nome é o do degrau em que se entrou: o artista em
-  // ÁLBUNS, o album em FAIXAS, a lista em NoRol. Fóra, o rotulo da secção. E
-  // degrau de nome VAZIO conta por fóra: o mp3 sem etiqueta de album entra
-  // n'um album que se chama nada, e o cabeçalho sahiria com o titulo em branco.
-  const bool dentro = !trilha.empty() && !trilha.back().empty();
+std::string onde_da_chapa(Secao secao, const std::vector<std::string>& trilha,
+                          const std::string& nome_do_catalogo) {
+  // A palavra da ABA primeiro, e os degraus de dentro depois: a chapa diz o
+  // CAMINHO, e não sómente o ultimo degrau, que era o que o cabeçalho velho
+  // dizia. Quem entrou n'um album por um artista lê os dous, e sabe voltar.
+  //
+  // Degrau de nome VAZIO conta por fóra: o mp3 sem etiqueta de album entra
+  // n'um album que se chama nada, e a chapa sahiria com um «▸» sem palavra.
+  std::string dito;
   switch (secao) {
-    case Secao::Artistas: return "ARTISTAS";
-    case Secao::Albuns: return dentro ? trilha.back() : "ÁLBUNS";
-    case Secao::Faixas: return dentro ? trilha.back() : "FAIXAS";
-    case Secao::Busca: return "MINHAS MÚSICAS";
-    case Secao::Rede: return "REDE";
-    case Secao::Rois: return "LISTAS";
-    case Secao::NoRol: return dentro ? trilha.back() : "LISTAS";
-    case Secao::Lista: break;
+    case Secao::Artistas:
+    case Secao::Albuns:
+    case Secao::Faixas:
+    case Secao::Busca: dito = "MY SONG"; break;
+    case Secao::Rois:
+    case Secao::NoRol: dito = "PLAYLISTS"; break;
+    case Secao::Rede: dito = "DOWNLOAD"; break;
+    case Secao::Lista:
+      dito = "DOWNLOAD \u25b8 SPOTIFY";
+      if (!nome_do_catalogo.empty()) dito += " \u25b8 " + nome_do_catalogo;
+      return dito;
   }
-  return nome_do_catalogo.empty() ? "SPOTIFY" : nome_do_catalogo;
+  for (const std::string& degrau : trilha)
+    if (!degrau.empty()) dito += " \u25b8 " + degrau;
+  return dito;
 }
 
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
