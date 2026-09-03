@@ -396,7 +396,7 @@ que ella deixar.
 | `s` | busca na rede, pelo yt-dlp; Enter no achado baixa-o |
 | `f` | troca a fonte da busca, dentro da lista da rede: YouTube, YouTube Music, Spotify |
 | `b` | baixa por URL |
-| `l` | troca o espectro pela letra |
+| `l` | esconde e mostra a letra sobre o espectro |
 | `r` | varre o acervo outra vez |
 | `P` | as listas |
 | `c` | cria lista (pede o nome) |
@@ -493,6 +493,40 @@ Para ver os quatro grupos lado a lado, com os nomes por baixo de cada um:
 
 ```sh
 ./build/fita_espectro 72 12
+```
+
+### A letra: o rio sobre o espectro
+
+A letra nao se alterna mais com o espectro. Ella mora POR CIMA delle e esta
+sempre a vista, subindo como um rio:
+
+- Cada linha nasce na BASE do painel quatro segundos antes do instante della, ou
+  no intervalo desde a linha anterior quando esse intervalo e menor. Nasce sem
+  forma: os glifos sao embaralhados a partir das PROPRIAS letras da linha, em
+  tom apagado, e os espacos entre as palavras ficam onde estao.
+- Subindo, a linha ganha forma DO MEIO PARA AS PONTAS e ganha luz, e chega a
+  LINHA DE LEITURA (um terco do alto do painel) inteira e em brilho cheio no
+  instante exacto em que a voz a canta.
+- Ali ella fica ate a proxima chegar. Dai sobe uma linha por segundo, apagando,
+  e some na linha zero.
+
+A celula que tem letra pinta a letra com o fundo do painel, escondendo SO a
+celula da barra debaixo della. O espaco entre as palavras deixa passar a barra,
+e por isso o verso parece sair do espectro em vez de assentar numa tarja.
+
+Faixa sem `.lrc` nao mostra letra nenhuma, e nem um aviso: letra alguma se
+inventa. A busca da letra continua a acontecer uma vez so, no download.
+
+O `l` passou a esconder e a mostrar o rio, e nasce MOSTRANDO. O espectro nunca
+some por causa desta tecla.
+
+Para ver o rio sem abrir o tocador, com um espectro armado da propria posicao:
+
+```sh
+./build/fita_letra 72 14 6      # a linha nasce na base, embaralhada
+./build/fita_letra 72 14 10     # subiu, quase resolvida
+./build/fita_letra 72 14 12     # chegou a linha de leitura, e a anterior apaga
+./build/fita_letra 72 14 11 /caminho/da/faixa.lrc   # com a letra de verdade
 ```
 
 ### O video
