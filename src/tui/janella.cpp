@@ -879,6 +879,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // AS CHAPAS DAS ABAS (issue #108), pela MESMA lousa e com a mesma
     // disciplina: a ordem sae do QUADRO, e as caixas são as do quadro
     // anterior, que são as unicas que o `reflect` já encheu.
+    const std::size_t escritas = lousa.escritas();
+    std::filesystem::path ultima_chapa;
     for (const tui::ChapaDaAba& ordem : tui::ordens_das_chapas(
              caixas.cabecalho, tui::aba_da_secao(navegador.secao()),
              lousa.disponivel() && letreiro.disponivel(),
@@ -887,12 +889,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (ordem.poe) chapa = &letreiro.chapa(tui::pedido_da_chapa(ordem));
       // Chapa que não veio TIRA a que estava, e não a deixa: a aba trocou de
       // degrau, e a imagem velha mentiria sobre onde o operador está.
-      if (chapa == nullptr || chapa->empty())
+      if (chapa == nullptr || chapa->empty()) {
         lousa.tira(tui::identidade_da_chapa(ordem.aba));
-      else
-        lousa.poe(tui::identidade_da_chapa(ordem.aba), *chapa, ordem.collunha,
-                  ordem.linha, ordem.largura, 1);
+        continue;
+      }
+      lousa.poe(tui::identidade_da_chapa(ordem.aba), *chapa, ordem.collunha,
+                ordem.linha, ordem.largura, 1);
+      ultima_chapa = *chapa;
     }
+    // O EMPURRÃO, e sómente havendo ordem nova: a chapa tem UMA linha, e a
+    // janella de uma linha do Überzug++ fica preta até que outra ordem chegue.
+    if (!ultima_chapa.empty() && lousa.escritas() != escritas)
+      lousa.empurra(ultima_chapa);
     // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
     // painel, e marcador algum: a janella d'ella chega um quadro depois, e
     // n'esse quadro o operador não ha de ver nota musical por baixo da capa.
