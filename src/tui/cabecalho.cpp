@@ -22,6 +22,7 @@
 #include <ftxui/screen/string.hpp>
 
 #include "tui/arrowline.hpp"
+#include "tui/onda.hpp"
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
@@ -45,10 +46,6 @@ inline constexpr std::string_view kRepetirUma = "\U000f0458";
 inline constexpr std::string_view kSom = "\U000f057e";
 inline constexpr std::string_view kMudo = "\U000f075f";
 inline constexpr std::string_view kAjuda = "\U000f02d7";
-// O trilho: o traço PESADO, que é o que o esboço mostra. Traço leve some no
-// fundo violaceo a esta opacidade, e trilho que se não vê não diz onde a
-// faixa vae.
-inline constexpr std::string_view kTraco = "\u2501";
 
 // Quantas cellas o rotulo põe ADEANTE da palavra e ATRAZ d'ella: o espaço, o
 // glifo e o espaço de um lado, o espaço do outro. Vivem ao pé do
@@ -514,38 +511,26 @@ ContaDaFita conta_da_fita(std::size_t largura, std::size_t fixas,
 
 namespace {
 
-// elemento_do_meio — a ONDA da faixa, ou a barra chata do progresso emquanto
-// onda não ha. Fundo `panel`, que é o da tela por baixo da fita: o meio é a
-// parte da fita que se lê como CHÃO, e as pontas como peças pousadas n'elle.
-// O andado em v600 (glow_core com o foco), e o que falta em line_dim: são as
-// côres que o trilho tinha, e a onda herda-as. A caixa é a do clique que
-// busca: a fracção da collunha em que o dedo pousa é a posição pedida.
-//
-// A onda em si entra pela issue #131 (tui/onda.hpp): até ella aterrar, os
-// pontos não se lêem e a barra sahe chata em toda largura.
+// elemento_do_meio — a ONDA da faixa (issue #131), ou a barra chata do
+// progresso emquanto onda não ha: quem decide é o `elemento_da_onda`, que
+// recebe os pontos e a posição, e pinta o andado em v600 (glow_core com o
+// foco) e o que falta em line_dim, sobre o fundo `panel` que é o da tela por
+// baixo da fita. A caixa é a do clique que busca: a fracção da collunha em
+// que o dedo pousa é a posição pedida. Fita alta: a onda toma a fileira de
+// cima, e o fundo enche as demais.
 ftxui::Element elemento_do_meio(const Retracto& retracto,
-                                const std::vector<float>& /*onda*/,
+                                const std::vector<float>& onda,
                                 std::size_t largura, bool com_foco,
                                 ftxui::Box* caixa, std::size_t altura) {
   if (largura == 0) return ftxui::emptyElement();
-  const std::size_t andadas =
-      enchimento(retracto.posicao, retracto.duracao, largura);
+  ftxui::Element meio = elemento_da_onda(onda, retracto.posicao,
+                                         retracto.duracao, largura, com_foco,
+                                         caixa);
+  if (altura <= 1) return meio;
   const tokens::Triade cama = tokens::rgb(tokens::panel);
-  std::vector<ftxui::Element> cellas;
-  cellas.reserve(largura);
-  for (std::size_t c = 0; c < largura; ++c) {
-    const tokens::Triade tinta = tokens::rgb(
-        c < andadas ? (com_foco ? tokens::glow_core : tokens::v600)
-                    : tokens::line_dim);
-    cellas.push_back(ftxui::text(std::string(kTraco)) |
-                     ftxui::color(ftxui::Color::RGB(tinta.r, tinta.g, tinta.b)));
-  }
-  ftxui::Element meio =
-      ftxui::hbox(std::move(cellas)) |
-      ftxui::bgcolor(ftxui::Color::RGB(cama.r, cama.g, cama.b)) |
-      ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura)) |
-      ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura));
-  return caixa == nullptr ? meio : meio | ftxui::reflect(*caixa);
+  return ftxui::vbox({std::move(meio), ftxui::filler()}) |
+         ftxui::bgcolor(ftxui::Color::RGB(cama.r, cama.g, cama.b)) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura));
 }
 
 }  // namespace
