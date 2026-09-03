@@ -243,6 +243,33 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
   return elemento_da_capa(capa, largura - 2, linhas - 2);
 }
 
+std::string texto_da_chapa(const Chapa& chapa) {
+  std::string dito = chapa.onde;
+  if (!dito.empty()) dito += ", ";
+  dito += texto_da_conta(chapa.quantas, chapa.especie, chapa.duracao);
+  // A VISTA sómente onde ella se cycla: chapa que dissesse «FAIXAS» n'uma
+  // lista de listas prometteria uma tecla que alli não faz cousa alguma.
+  if (!chapa.vista.empty()) dito += ", " + chapa.vista;
+  return dito;
+}
+
+ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
+  if (largura == 0) return ftxui::emptyElement();
+  const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  std::vector<ftxui::Element> partes = {
+      pinta(" " + texto_da_chapa(chapa), tokens::text_heading) | ftxui::bold};
+  // O recado vae á DIREITA, empurrado por um `filler`, e não se apara á mão: o
+  // FTXUI apara-o na borda, e o que se perde é o FIM d'elle, ao passo que
+  // aparar á esquerda perderia o começo, que é onde elle diz o que é.
+  if (!chapa.recado.empty()) {
+    partes.push_back(ftxui::filler());
+    partes.push_back(pinta(chapa.recado + " ", tokens::glow_soft));
+  }
+  return ftxui::hbox(std::move(partes)) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
+}
+
 ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
                                   ftxui::Element baixo, std::size_t largura) {
   if (largura == 0) return ftxui::text("");
