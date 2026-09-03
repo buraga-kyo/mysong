@@ -96,7 +96,9 @@ std::string palavra_da_aba(Aba aba);
 // caixa_da_palavra — as cellas da PALAVRA dentro da caixa do segmento. Tira o
 // flanco que o `rotulo_da_aba` põe adeante (o espaço, o glifo, o espaço) e o
 // espaço que põe atraz; caixa por pintar, ou segmento sem palavra que sobre,
-// responde VAZIA, e ahi o pintor não tem chapa que pôr.
+// responde VAZIA, e ahi o pintor não tem chapa que pôr. A ALTURA sahe INTACTA:
+// na fita do pé (issue #125) o segmento tem DUAS fileiras, e é d'ellas que a
+// chapa em XIROD tira as suas.
 ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept;
 
 // estado_da_aba — o degrau de uma aba, dada a corrente e a peça com foco
@@ -172,6 +174,10 @@ struct ChapaDaAba {
   int collunha = 0;
   int linha = 0;
   std::size_t largura = 0;  // em cellas, e é d'ella que a proporção sahe
+  // As FILEIRAS da caixa da palavra (issue #125): uma na fita rasa, duas na
+  // fita do pé. Vem d'aqui, e não de conta feita á parte por quem rasteriza: a
+  // chapa que tomasse fileira a mais cobriria a linha do trilho.
+  std::size_t linhas = 1;
 };
 
 // identidade_da_chapa — o nome por que a lousa conhece a janella de cada aba.

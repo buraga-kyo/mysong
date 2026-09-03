@@ -353,6 +353,8 @@ std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
       ordem.linha = palavra.y_min;
       ordem.largura =
           static_cast<std::size_t>(palavra.x_max - palavra.x_min + 1);
+      ordem.linhas =
+          static_cast<std::size_t>(palavra.y_max - palavra.y_min + 1);
     }
     ordens.push_back(ordem);
   }
