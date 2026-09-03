@@ -72,6 +72,40 @@ RespostaDoMenu tecla_no_menu(MenuDeContexto& menu, const ftxui::Event& tecla) {
     menu.submenu = false;  // e o menu FICA: quem o fecha é o Escape
     return {};
   }
+  // A seta direita e o Enter abrem o submenu no JUNTAR, e é o MESMO gesto: o
+  // item leva «▸», e quem lê a seta na tela carrega n'ella ou no Enter sem
+  // pensar. Sem lista alguma elle não abre: caixa vazia não é resposta, e a
+  // sahida está na linha de baixo, que cria uma lista já com esta faixa.
+  const bool no_juntar =
+      menu.item == static_cast<std::size_t>(ItemDoMenu::JuntaALista);
+  const bool ha_listas = quantas > 0;
+  if (tecla == ftxui::Event::ArrowRight || tecla == ftxui::Event::Return) {
+    if (no_juntar) {
+      if (ha_listas) {
+        menu.submenu = true;
+        menu.lista = 0;
+      }
+      return {};
+    }
+    if (tecla == ftxui::Event::ArrowRight) return {};  // a direita só abre
+    // ESCOLHEU-SE: o menu fecha ANTES de a janella cumprir. Ficando aberto por
+    // cima da pergunta do apagar, o operador respondia «s» ao menu e não á
+    // pergunta, que é o defeito de quem fecha depois do desfecho.
+    if (menu.submenu) {
+      const int qual = menu.lista < quantas ? menu.listas[menu.lista].id : 0;
+      menu.aberto = false;
+      return {PedidoDoMenu::Junta, qual};
+    }
+    menu.aberto = false;
+    switch (static_cast<ItemDoMenu>(menu.item)) {
+      case ItemDoMenu::Toca: return {PedidoDoMenu::Toca, 0};
+      case ItemDoMenu::NovaLista: return {PedidoDoMenu::NovaLista, 0};
+      case ItemDoMenu::Renomeia: return {PedidoDoMenu::Renomeia, 0};
+      case ItemDoMenu::Apaga: return {PedidoDoMenu::Apaga, 0};
+      case ItemDoMenu::JuntaALista: break;  // tratado acima, e não cae aqui
+    }
+    return {};
+  }
   return {};  // tecla que a taboada não conhece consome-se, e nada mais
 }
 
