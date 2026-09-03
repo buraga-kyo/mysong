@@ -126,6 +126,41 @@ inline constexpr std::size_t LINHAS_POR_DENTE = 3;
 
 // O ESTADO da tela de que a taboada depende, em cópia de valores: assim a
 // bateria arma o caso á mão, sem navegador, sem tocador e sem tela.
+// O ARRASTO (issue #153): o que se pegou com o botão em baixo, e onde ella
+// cahiria se se largasse agora. Valores, e não punho: a bateria arma-o á mão,
+// e o pintor lê-o para dizer ao olho o que vae acontecer.
+struct Arrasto {
+  bool pegou = false;       // ha faixa na mão
+  std::size_t origem = 0;   // o indice ABSOLUTO da vista de onde ella sahiu
+  std::size_t alvo = 0;     // o indice ABSOLUTO em que ella cahiria
+  bool andou = false;       // já sahiu da linha d'onde veio
+};
+
+// O que a máquina do arrasto responde a cada evento do rato.
+enum class GestoDoArrasto {
+  Nada,      // evento que não é do arrasto
+  Pega,      // o botão desceu n'uma linha: ella está na mão
+  Arrasta,   // a mão anda: o alvo mudou, e o pintor ha de o dizer
+  Larga,     // o botão subiu n'outra linha: ha movimento a cumprir
+  Desiste,   // o botão subiu onde não se move nada: a mão esvazia-se
+};
+
+struct RespostaDoArrasto {
+  GestoDoArrasto gesto = GestoDoArrasto::Nada;
+  std::size_t de = 0;    // sómente no Larga
+  std::size_t para = 0;  // sómente no Larga
+};
+
+// gesto_do_arrasto — a máquina, PURA salvo pelo `arrasto` que ella governa.
+// `pode` diz se a vista corrente se deixa arrumar (o acervo e o dentro de uma
+// lista sim; artistas, albuns e achados da rede não, que alli a ordem não é do
+// operador). O botão que desce fóra de linha alguma não pega; o que sobe na
+// MESMA linha desiste, e é assim que o clique simples continua a ser clique.
+RespostaDoArrasto gesto_do_arrasto(Arrasto& arrasto, const Alvo& alvo,
+                                   ftxui::Mouse::Button botao,
+                                   ftxui::Mouse::Motion movimento,
+                                   bool pode) noexcept;
+
 struct EstadoDoRato {
   bool digitando = false;   // ha campo de digitar aberto
   std::size_t eleito = 0;   // a linha eleita, em indice absoluto da vista
