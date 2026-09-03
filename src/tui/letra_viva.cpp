@@ -130,6 +130,47 @@ void posta_na_tela(const std::string& texto, std::size_t largura,
 
 }  // namespace
 
+QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                              double posicao, std::size_t largura,
+                              std::size_t altura) {
+  QuadroDaLetra quadro;
+  quadro.largura = largura;
+  quadro.altura = altura;
+  if (linhas.empty() || largura == 0 || altura == 0) return quadro;
+
+  const std::size_t leitura = linha_de_leitura(altura);
+  const std::size_t base = altura - 1;
+  // A conta do embaralho sahe da POSIÇÃO, e por isso o quadro continua puro: o
+  // fervilhar anda com a musica, e parado com ella.
+  const long long conta = static_cast<long long>(
+      std::floor(posicao * static_cast<double>(QUADROS_DO_EMBARALHO)));
+
+  for (std::size_t i = 0; i < linhas.size(); ++i) {
+    const double instante = linhas[i].tempo;
+    const double nasce = nascimento_da_linha(linhas, i);
+    if (posicao < instante - nasce) continue;  // ainda não assomou
+    if (posicao >= instante) continue;  // a leitura e o apagar vêm depois
+
+    LinhaViva viva;
+    viva.qual = i;
+    // A SUBIDA, linear da base á leitura. Chega ao topo do vão no instante
+    // exacto: é o que faz a linha assentar quando a voz a canta.
+    const double sobe =
+        cingido((posicao - (instante - nasce)) / nasce, 0.0, 1.0);
+    const std::size_t vao = base - leitura;
+    viva.linha_da_tela =
+        base - static_cast<std::size_t>(
+                   std::llround(sobe * static_cast<double>(vao)));
+    viva.resolvida = sobe;
+    viva.tinta = tinta_da_subida(sobe);
+
+    if (linhas[i].texto.empty()) continue;  // o silencio marcado não pinta
+    posta_na_tela(linhas[i].texto, largura, i, conta, &viva);
+    quadro.linhas.push_back(std::move(viva));
+  }
+  return quadro;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
