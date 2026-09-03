@@ -74,6 +74,7 @@
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
 #include "tui/letra_viva.hpp"
+#include "nucleo/onda.hpp"
 #include "tui/ajuda.hpp"
 #include "tui/menu_contexto.hpp"
 #include "tui/navegador.hpp"
@@ -579,6 +580,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // A ONDA da faixa (issue #131), para o meio da fita: vazia emquanto não
   // chega, e ahi o meio mostra a barra chata do progresso.
   std::vector<float> onda_da_faixa;
+  // O correio por onde a onda chega do fio de fundo: o recado é o caminho da
+  // faixa, para que onda de faixa que já sahiu não assente na que entrou.
+  tui::CorreioDe<nucleo::Onda> correio_da_onda;
   // OS PICOS do espectro (issue #132): um por banda, e são o estado de que a
   // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
   // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou.
@@ -804,6 +808,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       // Os PICOS morrem com a faixa (issue #132): o pico da que sahiu accendia
       // a primeira batida da que entra, e na côr da familia errada.
       picos.clear();
+      // A ONDA da faixa (issue #131) colhe-se n'um fio de fundo: o ffmpeg leva
+      // um segundo na primeira vez, e o quadro não espera por elle. Até chegar,
+      // o meio da fita mostra a barra chata.
+      onda_da_faixa.clear();
+      if (!retracto.titulo.empty()) {
+        const std::string caminho = retracto.titulo;
+        ao_fundo.emplace_back([caminho, &correio_da_onda] {
+          std::vector<nucleo::Onda> colhida;
+          colhida.push_back(nucleo::colhe_onda(caminho));
+          correio_da_onda.poe(std::move(colhida), caminho);
+        });
+      }
+    }
+    // A onda que chegou (issue #131) assenta só se for da faixa que AINDA toca:
+    // a que sahiu entretanto morre no correio.
+    {
+      std::vector<nucleo::Onda> chegadas;
+      std::string de_qual;
+      if (correio_da_onda.colhe(&chegadas, &de_qual) &&
+          de_qual == retracto.titulo && !chegadas.empty())
+        onda_da_faixa = std::move(chegadas.front().pontos);
     }
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
@@ -1804,7 +1829,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         const std::string agora = assignatura_do_visivel(
             tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
             mostra_letra.load(), varrida.load(),
-            correio.geracao() + correio_do_catalogo.geracao(),
+            correio.geracao() + correio_do_catalogo.geracao() +
+                correio_da_onda.geracao(),
             projector.rodando());
         if (agora != ultima_assignatura) {
           ultima_assignatura = agora;
