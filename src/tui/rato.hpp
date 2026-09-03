@@ -87,12 +87,13 @@ struct CaixasDaTela {
 // As PEÇAS que o dedo pode achar. `Nada` não é falha: a orla, o rodapé dos
 // atalhos e o espectro não respondem ao rato, e hão de dizer que não respondem.
 enum class Peca {
-  Nada, Degrau, Linha, Capa, Anterior, Pausa, Proxima, Progresso,
+  Nada, Aba, Linha, Capa, Anterior, Pausa, Proxima, Progresso,
+  Embaralhar, Repetir,
 };
 
-// Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é o degrau
-// na barra e o indice ABSOLUTO da vista na tabella; a `fracao` é sómente da
-// barra de progresso, e vae de zero, na primeira collunha, a um, na ultima.
+// Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é a aba no
+// cabeçalho e o indice ABSOLUTO da vista na pauta; a `fracao` é sómente do
+// trilho do progresso, e vae de zero, na primeira collunha, a um, na ultima.
 struct Alvo {
   Peca peca = Peca::Nada;
   std::size_t indice = 0;
@@ -111,13 +112,13 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept;
 // tocador na mão; os demais governam o navegador e o menu.
 enum class Gesto {
   Nada,
-  FechaCampo,     // com campo de digitar aberto, o clique fecha-o e pára ahi
-  EntraNoDegrau,  // o mesmo caminho do Enter na barra, no degrau clicado
-  Elege,          // a linha clicada não era a eleita
-  Toca,           // clicou-se na JÁ eleita: é o duplo clique, sem cronometro
+  FechaCampo,  // com campo de digitar aberto, o clique fecha-o e pára ahi
+  VaiParaAba,  // o mesmo caminho das teclas `1` `2` `3`, na aba clicada
+  Elege,       // a linha clicada não era a eleita
+  Toca,        // clicou-se na JÁ eleita: é o duplo clique, sem cronometro
   Anterior, PausaOuRetoma, Proxima, Busca,
-  RodaSobe, RodaDesce,      // na tabella, LINHAS_POR_DENTE de cada vez
-  DegrauSobe, DegrauDesce,  // sobre a barra, um degrau de cada vez
+  RodaSobe, RodaDesce,   // na pauta, LINHAS_POR_DENTE de cada vez
+  Embaralha, Repete,     // os dous modos, pelo segmento que os mostra
 };
 
 // Tres linhas por dente. Uma seria a roda a arrastar-se; uma tela inteira seria
