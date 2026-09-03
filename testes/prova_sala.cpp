@@ -112,23 +112,25 @@ TEST_CASE("a conta da colleção muda de substantivo com a especie") {
   CHECK(tui::texto_da_conta(9, tui::Especie::Achados, 0) == "9 ACHADOS");
 }
 
-TEST_CASE("o cabeçalho nomeia a colleção pela secção e pela trilha") {
+TEST_CASE("a chapa diz a aba e os degraus de dentro, apartados por seta") {
   const std::vector<std::string> alto;
   const std::vector<std::string> fundo = {"Boards of Canada", "Geogaddi"};
-  CHECK(tui::nome_da_colleccao(tui::Secao::Busca, alto, "") == "MINHAS MÚSICAS");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Artistas, alto, "") == "ARTISTAS");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Albuns, alto, "") == "ÁLBUNS");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Albuns, fundo, "") == "Geogaddi");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Faixas, fundo, "") == "Geogaddi");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Rede, alto, "") == "REDE");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Rois, alto, "") == "LISTAS");
-  CHECK(tui::nome_da_colleccao(tui::Secao::NoRol, fundo, "") == "Geogaddi");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Lista, alto, "") == "SPOTIFY");
-  CHECK(tui::nome_da_colleccao(tui::Secao::Lista, alto, "Verão") == "Verão");
-  // Album sem etiqueta: o degrau existe, mas o nome d'elle é vazio, e ahi vale
-  // o rotulo da secção. Medido n'um acervo de verdade, e não suposto.
-  CHECK(tui::nome_da_colleccao(tui::Secao::Faixas, {"Alan Walker", ""}, "") ==
-        "FAIXAS");
+  CHECK(tui::onde_da_chapa(tui::Secao::Busca, alto, "") == "MY SONG");
+  CHECK(tui::onde_da_chapa(tui::Secao::Artistas, alto, "") == "MY SONG");
+  CHECK(tui::onde_da_chapa(tui::Secao::Albuns, fundo, "") ==
+        "MY SONG \u25b8 Boards of Canada \u25b8 Geogaddi");
+  CHECK(tui::onde_da_chapa(tui::Secao::Rede, alto, "") == "DOWNLOAD");
+  CHECK(tui::onde_da_chapa(tui::Secao::Rois, alto, "") == "PLAYLISTS");
+  CHECK(tui::onde_da_chapa(tui::Secao::NoRol, {"Funk"}, "") ==
+        "PLAYLISTS \u25b8 Funk");
+  CHECK(tui::onde_da_chapa(tui::Secao::Lista, alto, "") ==
+        "DOWNLOAD \u25b8 SPOTIFY");
+  CHECK(tui::onde_da_chapa(tui::Secao::Lista, alto, "Verão") ==
+        "DOWNLOAD \u25b8 SPOTIFY \u25b8 Verão");
+  // Album sem etiqueta: o degrau existe, mas o nome d'elle é vazio, e degrau
+  // sem palavra sahiria como uma seta a apontar para nada.
+  CHECK(tui::onde_da_chapa(tui::Secao::Faixas, {"Alan Walker", ""}, "") ==
+        "MY SONG \u25b8 Alan Walker");
 }
 
 TEST_CASE("cada secção conta a sua especie") {
