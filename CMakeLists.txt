@@ -427,3 +427,10 @@ target_sources(mysong_core PRIVATE src/tui/menu.cpp)
 # pela razão do prompt e do menu: a traducção de coordenada em gesto precisava
 # de se provar, e a janella não se prova.
 target_sources(mysong_core PRIVATE src/tui/rato.cpp)
+
+# ─── A LOUSA DO ÜBERZUG++ (issue #103) ──────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
+# Dependencia nova alguma se cobra: o `ueberzugpp` é PROGRAMA que se chama, e
+# não bibliotheca que se linka; falta d'elle não impede a obra de compilar nem
+# de correr, que a capa cae nos symbolos do chafa.
+target_sources(mysong_core PRIVATE src/nucleo/lousa.cpp)
