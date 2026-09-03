@@ -442,7 +442,9 @@ TEST_CASE("o verso comprido corta-se e é o cortado que se rasteriza") {
   CHECK(pedido.linhas == tui::FILEIRAS_DO_VERSO);
   CHECK(pedido.corpo == nu::corpo_da_altura(tui::FILEIRAS_DO_VERSO));
   CHECK(pedido.cellulas == kLargura);
-  CHECK(pedido.familia == std::string(nu::FAMILIA_DA_MARCA));
+  // A familia da LEITURA (issue #159), e não a da marca: verso inteiro em
+  // XIROD custa a ler.
+  CHECK(pedido.familia == std::string(nu::FAMILIA_DA_LEITURA));
 }
 
 TEST_CASE("a chapa da proxima adianta-se assim que ella nasce na base") {
