@@ -83,6 +83,35 @@ Onda onda_das_amostras(const std::int16_t* amostras, std::size_t quantas,
   return onda;
 }
 
+std::string chave_da_onda(const std::filesystem::path& faixa) {
+  std::error_code erro;
+  const std::filesystem::path absoluto = std::filesystem::absolute(faixa, erro);
+  // Os campos costuram-se com o octeto NULLO, como os do letreiro: sem
+  // costura, caminho «a» de tamanho doze e caminho «a1» de tamanho dous
+  // dariam a mesma somma, e a tela mostraria a fórma de outra faixa.
+  std::string tudo = erro ? faixa.string() : absoluto.string();
+  const std::uintmax_t tamanho = std::filesystem::file_size(faixa, erro);
+  tudo.push_back('\0');
+  tudo += std::to_string(erro ? 0 : tamanho);
+  const std::filesystem::file_time_type quando =
+      std::filesystem::last_write_time(faixa, erro);
+  tudo.push_back('\0');
+  tudo += std::to_string(erro ? 0 : quando.time_since_epoch().count());
+  return somma_dos_octetos(tudo);
+}
+
+std::filesystem::path caminho_da_onda_em_cache(std::string_view chave) {
+  // Chave vazia não dá caminho: sahiria o arquivo escondido «.onda», e duas
+  // faixas sem chave cahiriam n'elle uma por cima da outra.
+  if (chave.empty()) return {};
+  const std::filesystem::path raiz = raiz_do_cache();
+  if (raiz.empty()) return {};
+  // `ondas/` ao lado de `capas/` e de `letreiro/`, e não misturado com ellas:
+  // o que se guarda aqui é fórma de faixa, e apagar uma pasta não ha de levar
+  // a outra pelo caminho.
+  return raiz / "ondas" / (std::string(chave) + ".onda");
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
