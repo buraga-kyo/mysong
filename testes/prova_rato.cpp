@@ -69,47 +69,47 @@ tui::CaixasDaTela tela_de_mentira() {
 
 TEST_CASE("cada peça da tela responde pelo seu ponto") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
-  const tui::Alvo degrau = tui::alvo_do_ponto(caixas, 5, 6);
-  CHECK(degrau.peca == tui::Peca::Degrau);
-  CHECK(degrau.indice == 3);
+  // As tres abas, pela ordem em que a fita as põe.
+  for (int i = 0; i < 3; ++i) {
+    const tui::Alvo aba = tui::alvo_do_ponto(caixas, 5 + 12 * i, 0);
+    CHECK(aba.peca == tui::Peca::Aba);
+    CHECK(aba.indice == static_cast<std::size_t>(i));
+  }
   // A linha sahe em indice ABSOLUTO: a segunda á vista, com vinte de rolagem.
   const tui::Alvo linha = tui::alvo_do_ponto(caixas, 30, 4);
   CHECK(linha.peca == tui::Peca::Linha);
   CHECK(linha.indice == 21);
   CHECK(tui::alvo_do_ponto(caixas, 70, 8).peca == tui::Peca::Capa);
-  CHECK(tui::alvo_do_ponto(caixas, 2, 30).peca == tui::Peca::Pausa);
-  CHECK(tui::alvo_do_ponto(caixas, 5, 30).peca == tui::Peca::Anterior);
-  CHECK(tui::alvo_do_ponto(caixas, 8, 30).peca == tui::Peca::Proxima);
-  // Fóra de tudo: a altura que sobra abaixo da lista, a orla, e o rodapé.
+  CHECK(tui::alvo_do_ponto(caixas, 34, 0).peca == tui::Peca::Pausa);
+  CHECK(tui::alvo_do_ponto(caixas, 37, 0).peca == tui::Peca::Anterior);
+  CHECK(tui::alvo_do_ponto(caixas, 40, 0).peca == tui::Peca::Proxima);
+  CHECK(tui::alvo_do_ponto(caixas, 90, 0).peca == tui::Peca::Embaralhar);
+  CHECK(tui::alvo_do_ponto(caixas, 100, 0).peca == tui::Peca::Repetir);
+  // O nome e o tempo não respondem: elles dizem, e não fazem.
+  CHECK(tui::alvo_do_ponto(caixas, 50, 0).peca == tui::Peca::Nada);
+  CHECK(tui::alvo_do_ponto(caixas, 65, 0).peca == tui::Peca::Nada);
+  // Fóra de tudo: a altura que sobra abaixo da lista, e o rodapé.
   CHECK(tui::alvo_do_ponto(caixas, 30, 9).peca == tui::Peca::Nada);
-  CHECK(tui::alvo_do_ponto(caixas, 0, 0).peca == tui::Peca::Nada);
   CHECK(tui::alvo_do_ponto(caixas, 100, 40).peca == tui::Peca::Nada);
 }
 
-TEST_CASE("a fracção da barra vae de zero na primeira collunha a um na ultima") {
+TEST_CASE("a fracção do trilho vae de zero na primeira collunha a um na ultima") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
-  const tui::Alvo principio = tui::alvo_do_ponto(caixas, 11, 30);
+  const tui::Alvo principio = tui::alvo_do_ponto(caixas, 11, 1);
   CHECK(principio.peca == tui::Peca::Progresso);
   CHECK(principio.fracao == doctest::Approx(0.0));
-  CHECK(tui::alvo_do_ponto(caixas, 30, 30).fracao == doctest::Approx(1.0));
-  CHECK(tui::alvo_do_ponto(caixas, 21, 30).fracao ==
+  CHECK(tui::alvo_do_ponto(caixas, 30, 1).fracao == doctest::Approx(1.0));
+  CHECK(tui::alvo_do_ponto(caixas, 21, 1).fracao ==
         doctest::Approx(10.0 / 19.0));
 }
 
-TEST_CASE("a barra fica inteira com uma das metades por pintar") {
+TEST_CASE("o trilho por pintar não casa com ponto algum") {
+  // O trilho é UM elemento, e não duas metades como a barra do pé: no
+  // principio da faixa nada tem largura zero, e caixa alguma sahe vazia por
+  // isso. Vazia sahe sómente quando a linha se não pintou.
   tui::CaixasDaTela caixas = tela_de_mentira();
-  // Principio da faixa: o cheio tem largura zero, e o FTXUI dá-lhe caixa vazia.
-  caixas.transporte.barra_cheia = tui::caixa_por_pintar();
-  CHECK(tui::alvo_do_ponto(caixas, 21, 30).peca == tui::Peca::Progresso);
-  CHECK(tui::alvo_do_ponto(caixas, 21, 30).fracao == doctest::Approx(0.0));
-  // Fim da faixa: agora é o vazio que se não pintou.
-  caixas = tela_de_mentira();
-  caixas.transporte.barra_vazia = tui::caixa_por_pintar();
-  CHECK(tui::alvo_do_ponto(caixas, 20, 30).peca == tui::Peca::Progresso);
-  CHECK(tui::alvo_do_ponto(caixas, 20, 30).fracao == doctest::Approx(1.0));
-  // As duas por pintar: barra alguma ha, e o ponto não acha cousa alguma.
-  caixas.transporte.barra_cheia = tui::caixa_por_pintar();
-  CHECK(tui::alvo_do_ponto(caixas, 20, 30).peca == tui::Peca::Nada);
+  caixas.cabecalho.trilho = tui::caixa_por_pintar();
+  CHECK(tui::alvo_do_ponto(caixas, 20, 1).peca == tui::Peca::Nada);
 }
 
 TEST_CASE("sómente o botão esquerdo a descer governa alguma cousa") {
