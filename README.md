@@ -388,10 +388,11 @@ que ella deixar.
 | F10 / F11 | volume, por degrau de cinco |
 | `z` | liga e desliga o embaralhar |
 | `x` | cicla o repetir: nenhuma, uma, todas |
-| `j` / `k` ou `↑` / `↓` | anda na lista |
+| `↑` `↓` `←` `→` | anda pelo LAYOUT: leva o foco de peça em peça |
+| `j` / `k` | anda na lista |
 | `g` / `G` ou Home / End | ao principio, ao fim da lista |
-| Enter ou `→` | entra (artista, album, faixa) |
-| Escape, Backspace ou `←` | volta um degrau |
+| Enter ou espaco | aperta a peça com foco; na pauta, Enter entra e espaco pausa |
+| Escape ou Backspace | volta um degrau |
 | `/` | filtra a lista que esta a vista |
 | `s` | busca na rede, pelo yt-dlp; Enter no achado baixa-o |
 | `f` | troca a fonte da busca, dentro da lista da rede: YouTube, YouTube Music, Spotify |
@@ -413,6 +414,37 @@ que ella deixar.
 | Delete | manda a faixa eleita a lixeira do systema (pede confirmacao) |
 | `q` | sahe |
 
+### As setas andam pelo layout
+
+As quatro setas servem a UMA cousa: levar o foco de peça em peça. Ellas nao
+voltam degrau nem entram em degrau algum; voltar e Escape ou Backspace, entrar
+e Enter.
+
+Sao peças focaveis as tres abas, os tres botoes do transporte, o volume, o
+EMBARALHAR, o REPETIR, o trilho do progresso, a pauta e a capa. A peça com foco
+accende: no cabecalho, o segmento veste glow_core com o texto em panel, que e
+par distincto do violeta da aba em que se ESTA; a capa ganha um quadro da mesma
+cor; o trilho accende o que ja andou.
+
+A regra do salto e uma so: a peça mais proxima na direcçao da seta, medida
+entre os centros das caixas, e sómente entre as que cruzam a peça corrente no
+outro eixo. E dahi que a seta anda no seu corredor. Nao havendo candidata na
+direcçao, o foco FICA: a tela nao da a volta, que dar a volta levaria o olho ao
+canto opposto donde elle olhava. Por isso o `←` na pauta nao faz cousa alguma,
+e nomeadamente nao volta degrau algum.
+
+O foco começa na PAUTA. Dentro della o `↑` e o `↓` continuam a andar na lista,
+e sómente no alto o `↑` sobe ao cabecalho; o `→` sae para o painel da direita,
+onde a capa e o botao de pausa e retoma, como no rato. Do cabecalho, o `↓`
+torna ao que cada segmento tem por baixo: os seis da esquerda a pauta, e os
+tres da direita a capa, que mora no painel debaixo delles.
+
+Enter e espaco na peça com foco fazem exactamente o que o clique faria nella, e
+pelo mesmo caminho: Enter em PLAYLISTS abre a lista das listas, Enter no botao
+de tocar pausa, Enter em EMBARALHAR liga o modo, Enter no volume cala a Casa. O
+trilho e a excepçao declarada: o clique nelle leva a collunha em que o dedo
+pousou, e tecla alguma carrega collunha, donde o Enter alli nao busca nada.
+
 As seis de funcção fazem o que o `p`, o espaco, o `n`, o `-` e o `+` ja
 faziam, e desaguam nas mesmas ordens. Sómente o F9 e novo: elle guarda o
 volume, cala o motor, e o segundo F9 devolve EXACTAMENTE o que havia. Emquanto
@@ -431,7 +463,8 @@ tmux 3.4 com `set -g extended-keys on` entrega as seis.
 Clicar n'uma aba do cabecalho vae a ella; clicar n'uma faixa elege-a, e clicar
 na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
 no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
-clique na capa pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
+clique no volume cala a Casa e devolve-lhe o volume inteiro, o clique na capa
+pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
 cabecalho a roda fica muda: n'uma fita de tres abas ella trocaria de seccao por
 acaso, com o dedo a caminho de outra peca. Botao direito nao faz nada ainda.
 Dentro do tmux, isto pede `set -g mouse on`.

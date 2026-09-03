@@ -354,8 +354,9 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // o Enter, o espaço e o `n`/`p`, que dizem o que o F7, o F6 e o F8 já dizem, e
 // sahiu o `o` da vista, que a chapa por cima da pauta annuncia por si.
 constexpr const char* kDicas =
-    "1 2 3 abas · Tab cicla · F6 F7 F8 transporte · F9 mudo"
-    " · F10 F11 volume · F2 renomeia · Del apaga · q sahe · README";
+    "↑↓←→ anda · Enter aperta · 1 2 3 abas · Tab cicla"
+    " · F6 F7 F8 transporte · F9 mudo · F10 F11 volume"
+    " · F2 renomeia · Del apaga · q sahe · README";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
