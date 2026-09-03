@@ -1,11 +1,13 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DO PROMPT — src/tui/prompt.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// A taboada dos modos, e a pintura do topo. O contracto está em prompt.hpp.
+// A taboada dos modos, e a pintura do campo. O contracto está em prompt.hpp.
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/prompt.hpp"
 
 #include <utility>
+
+#include <ftxui/screen/string.hpp>
 
 #include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
@@ -19,43 +21,54 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// rabo — o FIM da cadeia, em `largura` collunhas, contando CODEPOINTS: é o
-// par do `apara` da tabella, que guarda o começo. Aqui guarda-se o fim, que é
-// o que o operador acabou de teclar; e contando bytes, termo acentuado sahiria
-// cortado ao meio de um codepoint.
+// collunhas — a conta de COLLUNHAS, e não de codepoints. O glifo largo (CJK,
+// emoji) vale DUAS, e contá-lo por uma punha o caret uma collunha ALÉM da
+// ultima: o FTXUI conta ahi `dimx - 1 - cursor_.x` e manda `ESC[-1D`, que é
+// escape mal formado a sahir ao terminal do operador. Até a issue #102 a folga
+// de quatro collunhas da orla o engolia; a tela nova não tem orla.
+std::size_t collunhas(const std::string& crua) {
+  const int medida = ftxui::string_width(crua);
+  return medida < 0 ? 0 : static_cast<std::size_t>(medida);
+}
+
+// larga_a_letra — as collunhas do codepoint que começa em `i` e acaba em `fim`.
+std::size_t larga_a_letra(const std::string& crua, std::size_t i,
+                          std::size_t fim) {
+  return collunhas(crua.substr(i, fim - i));
+}
+
+// rabo — o FIM da cadeia, em `largura` COLLUNHAS: é o par do `apara` da
+// tabella, que guarda o começo. Aqui guarda-se o fim, que é o que o operador
+// acabou de teclar.
 std::string rabo(const std::string& crua, std::size_t largura) {
-  std::size_t contadas = 0;
+  std::size_t gastas = 0, fim = crua.size();
   for (std::size_t i = crua.size(); i > 0;) {
     --i;
-    if ((static_cast<unsigned char>(crua[i]) & 0xC0) != 0x80) {
-      if (contadas == largura) return crua.substr(i + 1);
-      ++contadas;
-    }
+    if ((static_cast<unsigned char>(crua[i]) & 0xC0) == 0x80) continue;
+    const std::size_t vale = larga_a_letra(crua, i, fim);
+    if (gastas + vale > largura) return crua.substr(fim);
+    gastas += vale;
+    fim = i;
   }
   return crua;
 }
 
-// cabeca — o COMEÇO da cadeia, nas mesmas collunhas contadas por CODEPOINT: o
-// par do `rabo`, para o rotulo que se apara á direita quando nem elle cabe. Do
-// rotulo é o começo que diz o officio; do termo, o fim é o que se acabou de
-// teclar.
+// cabeca — o COMEÇO da cadeia, nas mesmas COLLUNHAS: o par do rabo, para o
+// rotulo que se apara á direita quando nem elle cabe. Do rotulo é o começo que
+// diz o officio; do termo, o fim é o que se acabou de teclar.
 std::string cabeca(const std::string& crua, std::size_t largura) {
-  std::size_t contadas = 0;
-  for (std::size_t i = 0; i < crua.size(); ++i)
-    if ((static_cast<unsigned char>(crua[i]) & 0xC0) != 0x80) {
-      if (contadas == largura) return crua.substr(0, i);
-      ++contadas;
-    }
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < crua.size();) {
+    std::size_t fim = i + 1;
+    while (fim < crua.size() &&
+           (static_cast<unsigned char>(crua[fim]) & 0xC0) == 0x80)
+      ++fim;
+    const std::size_t vale = larga_a_letra(crua, i, fim);
+    if (gastas + vale > largura) return crua.substr(0, i);
+    gastas += vale;
+    i = fim;
+  }
   return crua;
-}
-
-// codepoints — a conta de collunhas da cadeia, pela regra do rabo e da cabeca:
-// byte que não é continuação UTF-8 conta uma.
-std::size_t codepoints(const std::string& crua) {
-  std::size_t contadas = 0;
-  for (const char c : crua)
-    if ((static_cast<unsigned char>(c) & 0xC0) != 0x80) ++contadas;
-  return contadas;
 }
 
 // O CARET: a cella de UMA collunha onde o cursor do terminal pousa, na posição
@@ -85,10 +98,6 @@ ftxui::Element caret(ftxui::Color fundo) {
 bool aceita_letra(Modo modo) noexcept {
   return modo != Modo::Nada && modo != Modo::Confirma &&
          modo != Modo::ConfirmaFaixa;
-}
-
-std::size_t linhas_do_topo(Modo modo) noexcept {
-  return modo == Modo::Nada ? 1u : 2u;
 }
 
 bool assenta_novidade(Modo modo) noexcept { return modo == Modo::Nada; }
@@ -121,23 +130,19 @@ std::string rotulo_do_prompt(Modo modo, std::string_view contexto) {
   return {};
 }
 
-// O TOPO. Duas linhas havendo prompt, e a trilha não é uma d'ellas por
-// accidente: ella entra e sahe INTACTA. O prompt distingue-se por tres signaes
-// ao mesmo tempo, a marca á esquerda, o fundo proprio e a tinta viva, que a
-// trilha é apagada e sem fundo. Não cabendo tudo, quem perde o começo é o
-// TERMO, e o rotulo mostra-se inteiro: rabo de texto sem nome de campo é o
-// defeito d'esta issue por outra porta. Não cabendo nem o rotulo, apara-se
-// elle á direita e o caret pousa na ultima collunha. Duas collunhas vão para a
-// marca e uma fica de reserva para o caret.
-ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
-                                std::string_view contexto,
-                                const std::string& termo,
-                                std::size_t largura) {
-  ftxui::Element a_trilha = ftxui::text(trilha) | ftxui::dim;
-  if (modo == Modo::Nada) return a_trilha;
+// O CAMPO, n'uma linha. Distingue-se do resto da tela por tres signaes ao mesmo
+// tempo: a marca á esquerda, o fundo proprio e a tinta viva. Não cabendo tudo,
+// quem perde o começo é o TERMO, e o rotulo mostra-se inteiro: rabo de texto
+// sem nome de campo é o defeito da issue #79 por outra porta. Não cabendo nem
+// o rotulo, apara-se elle á direita e o caret pousa na ultima collunha. Duas
+// collunhas vão para a marca e uma fica de reserva para o caret.
+ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
+                                 const std::string& termo,
+                                 std::size_t largura) {
+  if (modo == Modo::Nada) return ftxui::emptyElement();
   const std::string rotulo = rotulo_do_prompt(modo, contexto);
   const std::size_t cabe = largura > 3 ? largura - 3 : 1;
-  const std::size_t do_rotulo = codepoints(rotulo);
+  const std::size_t do_rotulo = collunhas(rotulo);
   const std::string mostra =
       aceita_letra(modo) && do_rotulo + 1 < cabe
           ? rotulo + " " + rabo(termo, cabe - do_rotulo - 1)
@@ -150,10 +155,13 @@ ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
   if (aceita_letra(modo))
     campo.push_back(caret(ftxui::Color::RGB(viva.r, viva.g, viva.b)));
   campo.push_back(ftxui::filler());
-  return ftxui::vbox(
-      {a_trilha, ftxui::hbox(std::move(campo)) |
-                     ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g,
-                                                      fundo.b))});
+  // O CINGE, e é cinto de segurança: o corte por collunhas já guarda o caret
+  // dentro da tela, e este guarda-o no dia em que o corte errar. Caret fóra da
+  // ultima collunha faz o FTXUI mandar deslocamento NEGATIVO ao terminal.
+  return ftxui::hbox(std::move(campo)) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+         ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
+                     static_cast<int>(largura));
 }
 
 }  // namespace mysong::tui

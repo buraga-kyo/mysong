@@ -172,10 +172,6 @@ target_sources(mysong_testes PRIVATE prova_ajustes.cpp)
 # Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
 target_sources(mysong_testes PRIVATE prova_prompt.cpp)
 
-# ─── Prova do menu da barra lateral (issue #80) ─────────────────────────────
-# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa.
-target_sources(mysong_testes PRIVATE prova_menu.cpp)
-
 # ─── Prova da vigilia do desenho (issue #82): por target_sources, a regra ───
 target_sources(mysong_testes PRIVATE prova_vigilia.cpp)
 
@@ -184,3 +180,6 @@ target_sources(mysong_testes PRIVATE prova_rato.cpp)
 
 # ─── Prova da lousa (issue #103): por target_sources, a regra ───────────────
 target_sources(mysong_testes PRIVATE prova_lousa.cpp)
+
+# ─── Prova do cabeçalho em abas (issue #102): por target_sources, a regra ────
+target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)

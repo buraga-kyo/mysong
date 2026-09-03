@@ -7,7 +7,6 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
-#include <cctype>
 #include <cmath>
 #include <limits>
 #include <string>
@@ -19,77 +18,6 @@
 
 namespace tui = mysong::tui;
 namespace nu = mysong::nucleo;
-
-namespace {
-
-// sem_escape — a linha despida do escape e do retorno de carro, que é o que ella
-// MOSTRA. Mesma technica da prova do espectro, e escripta aqui por não ser peça
-// da obra: prova não exporta ajuda para prova.
-std::string sem_escape(const std::string& linha) {
-  std::string limpa;
-  for (std::size_t i = 0; i < linha.size(); ++i) {
-    const unsigned char oct = static_cast<unsigned char>(linha[i]);
-    if (oct == 0x1b) {
-      while (i < linha.size() &&
-             !std::isalpha(static_cast<unsigned char>(linha[i])))
-        ++i;
-      continue;
-    }
-    if (oct == '\r') continue;
-    limpa += linha[i];
-  }
-  return limpa;
-}
-
-std::size_t codepoints(const std::string& cadeia) {
-  std::size_t conta = 0;
-  for (const unsigned char oct : cadeia)
-    if ((oct & 0xC0) != 0x80) ++conta;
-  return conta;
-}
-
-// a_linha_pintada — o transporte pintado em écran de PAPEL, de uma linha só.
-std::string a_linha_pintada(const tui::Retracto& retracto, std::size_t largura) {
-  ftxui::Screen ecran = ftxui::Screen::Create(
-      ftxui::Dimension::Fixed(static_cast<int>(largura)),
-      ftxui::Dimension::Fixed(1));
-  ftxui::Render(ecran, tui::elemento_do_transporte(retracto, largura));
-  return sem_escape(ecran.ToString());
-}
-
-}  // namespace
-
-// A LINHA INTEIRA contra alvo ESCRIPTO Á MÃO. Note-se que contar codepoints do
-// écran de papel NÃO prova nada: o écran preenche sempre a largura que se lhe
-// pediu, e por isso a contagem é egual por construcção. O que prova é a cadeia,
-// que diz posição e contagem n'uma asserção só.
-//
-// A conta, feita á mão: a fita pede VINTE collunhas (tres do primeiro segmento,
-// cinco do segundo, nove do terceiro, e tres setas), mais uma de separação, mais
-// quinze do relogio e nove do volume: quarenta e cinco. Em sessenta, sobram
-// quinze para a barra; dous sobre trinta de quinze é um exacto, donde UMA cheia
-// e quatorze vazias.
-TEST_CASE("a linha do transporte sahe egual á cadeia escripta á mão") {
-  const tui::Retracto retracto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
-  const std::string seta = "\ue0b0";
-  std::string alvo = " \u23f8 " + seta + " \u23ee \u23ed " + seta +
-                     " Tocando " + seta + " \u2588";
-  for (int i = 0; i < 14; ++i) alvo += "\u2591";
-  alvo += " 00:02 / 00:30 vol 100% ";
-  CHECK(a_linha_pintada(retracto, 60) == alvo);
-  CHECK(codepoints(alvo) == 60u);
-}
-
-// E o defeito da collisão, apanhado em toda largura que dê para tudo caber: o
-// relogio nunca se lê collado ao volume.
-TEST_CASE("o relogio nunca se lê collado ao volume") {
-  const tui::Retracto retracto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
-  for (std::size_t largura = 47; largura <= 200; ++largura) {
-    const std::string linha = a_linha_pintada(retracto, largura);
-    REQUIRE(linha.find("00:30vol") == std::string::npos);
-    REQUIRE(linha.find("00:02 / 00:30 vol 100% ") != std::string::npos);
-  }
-}
 
 TEST_CASE("o tempo sahe em MM:SS, e o que não é tempo sahe em traço") {
   CHECK(tui::mm_ss(0.0) == "00:00");
@@ -177,55 +105,3 @@ TEST_CASE("a linha da barra sahe egual á cadeia escripta á mão") {
   const tui::Retracto no_principio{nu::Estado::Parado, 0.0, 100.0, 70, "x", 0, 4};
   CHECK(tui::linha_da_barra(no_principio, 4) == "\u2591\u2591\u2591\u2591");
 }
-
-// A FITA DOS DOUS MODOS (issue #62). Calada com os dous desligados, e é isso que
-// faz o caso da linha escripta á mão, lá em cima, seguir a valer sem se lhe tocar.
-TEST_CASE("a fita cala os dous modos quando desligados") {
-  const tui::Retracto quieto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
-  const std::string linha = a_linha_pintada(quieto, 80);
-  CHECK(linha.find("emb") == std::string::npos);
-  CHECK(linha.find("rep ") == std::string::npos);
-}
-
-TEST_CASE("a fita diz os dous modos quando ligados") {
-  tui::Retracto posto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
-  posto.embaralhado = true;
-  CHECK(a_linha_pintada(posto, 80).find("emb") != std::string::npos);
-  posto.embaralhado = false;
-  posto.repeticao = nu::Repeticao::Uma;
-  CHECK(a_linha_pintada(posto, 80).find("rep uma") != std::string::npos);
-  posto.repeticao = nu::Repeticao::Todas;
-  CHECK(a_linha_pintada(posto, 80).find("rep todas") != std::string::npos);
-  posto.embaralhado = true;
-  CHECK(a_linha_pintada(posto, 80).find("emb rep todas") != std::string::npos);
-}
-
-// O CÓRTE DECLARADO: não cabendo, o segmento sae INTEIRO. As tres bordas vão
-// escriptas á mão, e foram MEDIDAS n'um écran de papel; contá-las aqui pela
-// mesma conta que a obra faz não provaria cousa alguma.
-TEST_CASE("não cabendo, os dous modos cedem o logar inteiros") {
-  tui::Retracto posto{nu::Estado::Tocando, 2.0, 30.0, 100, "x", 0, 1};
-  posto.embaralhado = true;
-  posto.repeticao = nu::Repeticao::Todas;
-  CHECK(a_linha_pintada(posto, 61).find("emb") == std::string::npos);
-  CHECK(a_linha_pintada(posto, 62).find("emb rep todas") != std::string::npos);
-  posto.repeticao = nu::Repeticao::Nenhuma;
-  CHECK(a_linha_pintada(posto, 51).find("emb") == std::string::npos);
-  CHECK(a_linha_pintada(posto, 52).find("emb") != std::string::npos);
-  // E em TODA largura o segmento sae INTEIRO ou não sae: fragmento como «emb r»
-  // é o que a guarda proscreve, e era o que a obra fazia antes d'ella. Afere-se
-  // o CONTEUDO, e não a contagem de codepoints: o écran de papel preenche sempre
-  // a largura que se lhe pediu, donde essa contagem é egual por construcção e
-  // não pode falhar. É a mesma nota que está lá em cima, no primeiro caso.
-  posto.repeticao = nu::Repeticao::Todas;
-  for (std::size_t largura = 1; largura <= 200; ++largura) {
-    const std::string linha = a_linha_pintada(posto, largura);
-    const bool inteiro = linha.find("emb rep todas") != std::string::npos;
-    const bool nenhum = linha.find("emb") == std::string::npos &&
-                        linha.find("rep") == std::string::npos;
-    REQUIRE_MESSAGE((inteiro || nenhum), "o segmento sahiu partido em ", largura);
-  }
-}
-
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
-// ══════════════════════════════════════════════════════════════════════════

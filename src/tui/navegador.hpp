@@ -29,11 +29,12 @@
 
 namespace mysong::tui {
 
-// As secções da barra lateral. A ordem é a do mockup, e é ella que a barra
-// mostra de alto a baixo.
+// As secções por que a navegação passa. Desde a issue #102 ellas não se
+// mostram n'uma collunha: as tres ABAS do cabeçalho abrem tres d'ellas, e as
+// demais são degraus de DENTRO, alcançados por Enter ou pelo `o`.
 // A secção REDE (issue #12) é a unica cujas linhas NÃO vêm da bibliotheca: ellas
-// vêm de fóra, por mostra_rede. Entra no mesmo enum porque a barra lateral é uma, e
-// duas listas de secções fariam a barra depender de qual d'ellas se lesse primeiro.
+// vêm de fóra, por mostra_rede. Entra no mesmo enum porque a navegação é uma, e
+// duas listas de secções fariam a tela depender de qual d'ellas se lesse primeiro.
 // As LISTAS entram como DUAS secções, e não uma: a lista das listas e o dentro de
 // uma lista são vistas differentes, com ordens differentes e teclas differentes.
 // Uma só obrigaria a perguntar «estou dentro ou fóra?» em todo ramo.

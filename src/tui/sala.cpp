@@ -22,17 +22,6 @@
 
 namespace mysong::tui {
 namespace {
-// Os numeros da sala. LIMIAR: 96 collunhas UTEIS, que são as cem da tela do
-// operador menos as quatro da orla; abaixo d'ellas o painel roubaria da
-// tabella, que é onde se navega, para mostrar arte, que é o que enfeita.
-constexpr std::size_t kLimiarDoPainel = 96, kPainelMinimo = 24;
-// O painel tem quatro linhas fixas (o titulo e as tres da ficha) e o espectro
-// não desce de oito: d'onde abaixo de doze linhas de corpo elle não se pinta.
-constexpr std::size_t kFixoDoPainel = 4, kEspectroMinimo = 8, kCapaMinima = 4;
-// O meio não desce de quarenta collunhas, e o cabeçalho (capa pequena e o
-// separador) cede o logar á tabella quando ella ficaria com menos de tres.
-constexpr std::size_t kMeioMinimo = 40, kCabecalho = 6, kTabellaMinima = 3;
-
 // kMarcadorLinhas — a área do marcador. Seis, e não o tecto: a capa de 16 por
 // 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
 // diria «não ha capa» mais alto do que o painel diz a musica.
@@ -56,14 +45,56 @@ const char* substantivo_da(Especie especie, bool um) {
   return um ? "FAIXA" : "FAIXAS";
 }
 
-// chip — o modo aceso ou apagado, e PRESENTE nos dous casos: chip que sommisse
-// mudaria a largura da linha da conta a cada tecla, e a tela saltaria sozinha.
-ftxui::Element chip(const std::string& texto, bool aceso) {
-  if (!aceso) return pinta(texto, tokens::text_faint);
-  const tokens::Triade fundo = tokens::rgb(tokens::v700);
-  return pinta(texto, tokens::text_bright) |
-         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+// Os numeros da sala nova (issue #102). O LIMIAR do painel é de CEM collunhas
+// de TELA, e não de largura util: a tela nova não leva orla, e cem é o numero
+// que a issue diz. Metade de cem é cincoenta, e o painel de trinta com a pauta
+// de quarenta cabem n'ellas com folga.
+constexpr std::size_t kLimiarDoPainel = 100, kPainelMinimo = 30;
+constexpr std::size_t kPautaMinima = 40;
+// O espectro não desce de seis linhas, e a capa cede-lhe o logar antes d'elle
+// encolher: espectro de tres linhas não é serie de dados, é enfeite.
+constexpr std::size_t kEspectroMinimo = 6, kCapaPorCento = 45;
+// A chapa cede o logar á pauta quando ella ficaria com menos de tres linhas: a
+// pauta é onde se navega, e a chapa diz sómente onde se está.
+constexpr std::size_t kPautaLinhasMinimas = 3;
+
+// reparte_o_corpo — as duas metades, dado o alto e a altura que sobraram. Sahe
+// á parte da conta do alto por ser a lavra que a tela ESTREITA muda: abaixo do
+// limiar não ha painel algum, e a pauta toma a tela toda, como hoje.
+void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
+                     std::size_t corpo) {
+  if (corpo == 0) return;
+  std::size_t do_painel = 0;
+  if (largura >= kLimiarDoPainel && corpo >= kEspectroMinimo) {
+    // METADE e METADE, que é o que elle pediu. A collunha do divisor sahe da
+    // esquerda, donde em largura PAR a pauta fica uma mais estreita (a 120
+    // dá 59 e 60) e em largura IMPAR as duas ficam eguaes (a 167 dão 83).
+    do_painel = largura / 2;
+    // As duas guardas são CINTO DE SEGURANÇA, e hoje nenhuma pode correr: com
+    // o limiar em cem, a metade é sempre de cincoenta ou mais, e a pauta de
+    // quarenta e nove ou mais. Ficam para o dia em que o limiar baixar, que
+    // baixá-lo sem ellas poria painel de vinte collunhas na tela.
+    if (do_painel < kPainelMinimo ||
+        largura - do_painel - 1 < kPautaMinima)
+      do_painel = 0;
+  }
+  const std::size_t da_pauta =
+      do_painel == 0 ? largura : largura - do_painel - 1;
+  const bool ha_chapa = corpo >= kPautaLinhasMinimas + 1;
+  if (ha_chapa) sala.chapa = {0, alto, da_pauta, 1};
+  sala.pauta = {0, ha_chapa ? alto + 1 : alto, da_pauta,
+                ha_chapa ? corpo - 1 : corpo};
+  if (do_painel == 0) return;
+  sala.divisor = {da_pauta, alto, 1, corpo};
+  sala.painel = {da_pauta + 1, alto, do_painel, corpo};
+  // O TECTO da capa: quarenta e cinco por cento do painel, e nunca tanto que
+  // deixe o espectro abaixo do minimo d'elle.
+  const std::size_t tecto =
+      std::min(corpo * kCapaPorCento / 100, corpo - kEspectroMinimo);
+  sala.capa = {sala.painel.x, alto, do_painel, tecto};
+  sala.espectro = {sala.painel.x, alto + tecto, do_painel, corpo - tecto};
 }
+
 }  // namespace
 
 std::string texto_da_duracao(int segundos) {
@@ -85,20 +116,6 @@ std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao) {
   return feita;
 }
 
-bool chave_e_caminho(Secao secao) {
-  switch (secao) {
-    case Secao::Faixas:
-    case Secao::Busca:
-    case Secao::NoRol: return true;
-    case Secao::Artistas:
-    case Secao::Albuns:
-    case Secao::Rede:
-    case Secao::Rois:
-    case Secao::Lista: break;
-  }
-  return false;
-}
-
 Especie especie_da_secao(Secao secao) {
   switch (secao) {
     case Secao::Artistas: return Especie::Artistas;
@@ -113,45 +130,61 @@ Especie especie_da_secao(Secao secao) {
   return Especie::Faixas;
 }
 
-std::string nome_da_colleccao(Secao secao,
-                              const std::vector<std::string>& trilha,
-                              const std::string& nome_do_catalogo) {
-  // Dentro de alguma cousa, o nome é o do degrau em que se entrou: o artista em
-  // ÁLBUNS, o album em FAIXAS, a lista em NoRol. Fóra, o rotulo da secção. E
-  // degrau de nome VAZIO conta por fóra: o mp3 sem etiqueta de album entra
-  // n'um album que se chama nada, e o cabeçalho sahiria com o titulo em branco.
-  const bool dentro = !trilha.empty() && !trilha.back().empty();
+std::string onde_da_chapa(Secao secao, const std::vector<std::string>& trilha,
+                          const std::string& nome_do_catalogo) {
+  // A palavra da ABA primeiro, e os degraus de dentro depois: a chapa diz o
+  // CAMINHO, e não sómente o ultimo degrau, que era o que o cabeçalho velho
+  // dizia. Quem entrou n'um album por um artista lê os dous, e sabe voltar.
+  //
+  // Degrau de nome VAZIO conta por fóra: o mp3 sem etiqueta de album entra
+  // n'um album que se chama nada, e a chapa sahiria com um «▸» sem palavra.
+  std::string dito;
   switch (secao) {
-    case Secao::Artistas: return "ARTISTAS";
-    case Secao::Albuns: return dentro ? trilha.back() : "ÁLBUNS";
-    case Secao::Faixas: return dentro ? trilha.back() : "FAIXAS";
-    case Secao::Busca: return "MINHAS MÚSICAS";
-    case Secao::Rede: return "REDE";
-    case Secao::Rois: return "LISTAS";
-    case Secao::NoRol: return dentro ? trilha.back() : "LISTAS";
-    case Secao::Lista: break;
+    case Secao::Artistas:
+    case Secao::Albuns:
+    case Secao::Faixas:
+    case Secao::Busca: dito = "MY SONG"; break;
+    case Secao::Rois:
+    case Secao::NoRol: dito = "PLAYLISTS"; break;
+    case Secao::Rede: dito = "DOWNLOAD"; break;
+    case Secao::Lista:
+      dito = "DOWNLOAD \u25b8 SPOTIFY";
+      if (!nome_do_catalogo.empty()) dito += " \u25b8 " + nome_do_catalogo;
+      return dito;
   }
-  return nome_do_catalogo.empty() ? "SPOTIFY" : nome_do_catalogo;
+  for (const std::string& degrau : trilha)
+    if (!degrau.empty()) dito += " \u25b8 " + degrau;
+  return dito;
 }
 
-Geometria geometria_da_sala(std::size_t largura, std::size_t altura,
-                            std::size_t collunhas_da_barra) {
-  Geometria geo;
-  const std::size_t util =
-      largura > collunhas_da_barra ? largura - collunhas_da_barra : 1;
-  if (largura >= kLimiarDoPainel && altura >= kFixoDoPainel + kEspectroMinimo &&
-      util > kMeioMinimo + kPainelMinimo) {
-    geo.painel = std::max<std::size_t>(kPainelMinimo, largura / 4);
-    geo.painel = std::min(geo.painel, util - kMeioMinimo - 1);
-    geo.livre = altura > kFixoDoPainel ? altura - kFixoDoPainel : 0;
-    // Tecto: o que se PINTA é o que o chafa devolver, guardando a proporção.
-    if (geo.livre >= kEspectroMinimo + kCapaMinima)
-      geo.capa = std::min(geo.painel / 2 + 1, geo.livre - kEspectroMinimo);
+Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
+  Sala sala;
+  if (largura == 0 || altura == 0) return sala;
+  sala.cabecalho = {0, 0, largura, 1};
+  if (altura < 2) return sala;
+  sala.trilho = {0, 1, largura, 1};
+  std::size_t alto = 2;  // a primeira linha ainda por repartir
+  if (campo_aberto && altura > alto) {
+    sala.campo = {0, alto, largura, 1};
+    ++alto;
   }
-  geo.meio = geo.painel == 0 ? util : util - geo.painel - 1;
-  geo.cabecalho = altura >= kCabecalho + kTabellaMinima ? kCabecalho : 0;
-  geo.tabella = altura > geo.cabecalho ? altura - geo.cabecalho : 1;
-  return geo;
+  if (altura <= alto) return sala;
+  // O rodapé cede o logar quando não sobraria linha alguma ao corpo: dizer a
+  // tecla sem mostrar a lista é dar o caminho e fechar a porta.
+  std::size_t baixo = altura;
+  if (altura >= alto + 2) {
+    sala.rodape = {0, altura - 1, largura, 1};
+    baixo = altura - 1;
+  }
+  reparte_o_corpo(sala, largura, alto, baixo - alto);
+  return sala;
+}
+
+Rectangulo espectro_abaixo_da(const Sala& sala, std::size_t linhas_da_capa) {
+  if (sala.painel.vazio()) return {};
+  const std::size_t tomadas = std::min(linhas_da_capa, sala.capa.altura);
+  return {sala.painel.x, sala.painel.y + tomadas, sala.painel.largura,
+          sala.painel.altura - tomadas};
 }
 
 Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
@@ -161,20 +194,6 @@ Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
   if (ficha.titulo.empty())
     ficha.titulo = std::filesystem::path(caminho).stem().string();
   return ficha;
-}
-
-ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
-  if (largura == 0) return ftxui::text("");
-  // As TRES linhas levam o token, e não sómente a primeira: as duas de baixo
-  // estão vazias hoje, e linha vazia sem tinta é a que amanhã ganha texto e
-  // sahe na côr de repouso sem que ninguem repare.
-  if (ficha.titulo.empty())
-    return ftxui::vbox({pinta("(nada toca)", tokens::text_faint),
-                        pinta("", tokens::text_faint),
-                        pinta("", tokens::text_faint)});
-  return ftxui::vbox({pinta(ficha.titulo, tokens::text_bright) | ftxui::bold,
-                      pinta(ficha.artista, tokens::text_primary),
-                      pinta(ficha.album, tokens::text_muted)});
 }
 
 std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto) {
@@ -201,69 +220,78 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
   return elemento_da_capa(capa, largura - 2, linhas - 2);
 }
 
-// linha_da_conta — a conta e os chips. Elles CEDEM O LOGAR quando a linha não
-// cabe, como a fita do transporte: chip aparado come o vão da capa e diz nada.
-ftxui::Element linha_da_conta(const Colleccao& qual, std::size_t largura) {
-  const bool repete = qual.repeticao != nucleo::Repeticao::Nenhuma;
-  const bool uma = qual.repeticao == nucleo::Repeticao::Uma;
-  const std::string conta =
-      texto_da_conta(qual.quantas, qual.especie, qual.duracao);
-  const std::string um = " \u21c4 EMBARALHAR ";
-  const std::string dous = std::string(" \u21bb REPETIR: ") +
-                           (!repete ? "NÃO" : uma ? "UMA" : "TODAS") + " ";
-  std::vector<ftxui::Element> partes = {pinta(conta + "  ", tokens::text_body)};
-  const int pede = ftxui::string_width(conta) + ftxui::string_width(um) +
-                   ftxui::string_width(dous);
-  // O CINCO são os vãos que o texto não conta: DOUS entre a capa pequena e o
-  // que vae á direita d'ella, DOUS depois da conta, e UM entre os chips.
-  if (largura >= kCapaPequena + 5 + static_cast<std::size_t>(pede)) {
-    partes.push_back(chip(um, qual.embaralhado));
-    partes.push_back(ftxui::text(" "));
-    partes.push_back(chip(dous, repete));
+std::string texto_da_chapa(const Chapa& chapa) {
+  std::string dito = chapa.onde;
+  if (!dito.empty()) dito += ", ";
+  dito += texto_da_conta(chapa.quantas, chapa.especie, chapa.duracao);
+  // A VISTA sómente onde ella se cycla: chapa que dissesse «FAIXAS» n'uma
+  // lista de listas prometteria uma tecla que alli não faz cousa alguma.
+  if (!chapa.vista.empty()) dito += ", " + chapa.vista;
+  return dito;
+}
+
+// esquerda_da_chapa — o que se pinta á ESQUERDA: o texto, e as encommendas
+// logo depois d'elle quando as ha. Serve á pintura e á conta do espaço, para
+// que as duas leiam a MESMA cadeia e não divirjam de uma collunha.
+static std::string esquerda_da_chapa(const Chapa& chapa) {
+  std::string dita = " " + texto_da_chapa(chapa);
+  if (!chapa.encommendas.empty()) dita += "  " + chapa.encommendas;
+  return dita;
+}
+
+std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura) {
+  const std::size_t gasto =
+      static_cast<std::size_t>(ftxui::string_width(esquerda_da_chapa(chapa)));
+  // Duas collunhas de folga: uma de vão entre o texto e o recado, e a do
+  // espaço que o recado leva no fim para não encostar na borda.
+  return largura > gasto + 2 ? largura - gasto - 2 : 0;
+}
+
+ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
+  if (largura == 0) return ftxui::emptyElement();
+  const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  std::vector<ftxui::Element> partes = {
+      pinta(" " + texto_da_chapa(chapa), tokens::text_heading) | ftxui::bold};
+  // As ENCOMMENDAS em data2, que é o amarello do Poente Contido: ellas são
+  // ESTADO em curso, e estado é acento. Vão logo á direita do texto, e nunca
+  // no fim: alli o primeiro aviso comprido comia-lhes o logar.
+  if (!chapa.encommendas.empty())
+    partes.push_back(pinta("  " + chapa.encommendas, tokens::data2));
+  const std::size_t sobra = espaco_do_recado(chapa, largura);
+  if (!chapa.recado.empty() && sobra > 0) {
+    partes.push_back(ftxui::filler());
+    partes.push_back(pinta(chapa.recado + " ", tokens::glow_soft) |
+                     ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
+                                 static_cast<int>(sobra + 1)));
   }
-  return ftxui::hbox(std::move(partes));
+  return ftxui::hbox(std::move(partes)) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
-ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
-                                     const nucleo::CapaPintada& capa,
-                                     std::size_t largura) {
-  if (largura == 0) return ftxui::text("");
-  std::string risca;
-  for (std::size_t c = 0; c < largura; ++c) risca += "\u2500";
-  // O que sobra depois da capa pequena e do vão d'ella. O CINGE não é enfeite:
-  // nome comprido punha a sua largura no `min_x` do meio, e o `flex_shrink_x`
-  // do FTXUI nasce zero, d'onde o `hbox` cahe no encolhimento DURO e apara
-  // TODOS os irmãos por egual, a barra e o painel inclusive, apesar de estes
-  // pedirem largura EGUAL. Medido: nome de cento e vinte collunhas em cento e
-  // cincoenta e seis levava a barra de nove a oito e o painel de trinta e nove
-  // a trinta e dous. É a mesma mecanica dos chips, e a mesma cura.
-  const std::size_t sobra =
-      largura > kCapaPequena + 2 ? largura - kCapaPequena - 2 : 1;
-  return ftxui::vbox(
-      {ftxui::hbox({elemento_da_arte(capa, kCapaPequena, kCapaPequenaLinhas),
-                    ftxui::text("  "),
-                    ftxui::vbox({ftxui::text(""),
-                                 pinta(colleccao.nome, tokens::text_heading) |
-                                     ftxui::bold,
-                                 ftxui::text(""),
-                                 linha_da_conta(colleccao, largura),
-                                 ftxui::text("")}) |
-                        ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
-                                    static_cast<int>(sobra))}) |
-           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
-                       static_cast<int>(kCapaPequenaLinhas)),
-       pinta(risca, tokens::line_dim)});
+ftxui::Element elemento_do_divisor(std::size_t altura) {
+  if (altura == 0) return ftxui::emptyElement();
+  // O traço PESADO vertical, e não o `separator` de fabrica: aquelle pinta na
+  // côr herdada, e esta Casa não deixa côr por decretar.
+  std::vector<ftxui::Element> cellas;
+  cellas.reserve(altura);
+  for (std::size_t l = 0; l < altura; ++l)
+    cellas.push_back(pinta("\u2503", tokens::line_dim));
+  return ftxui::vbox(std::move(cellas));
 }
 
-ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
-                                  ftxui::Element baixo, std::size_t largura) {
-  if (largura == 0) return ftxui::text("");
-  // O fundo `panel` veste a collunna inteira, e é elle que a aparta do meio:
-  // orla custaria duas collunhas, que n'este painel sahem da arte.
+ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
+                                  std::size_t largura) {
+  if (largura == 0) return ftxui::emptyElement();
+  // O fundo `panel` veste a collunna inteira, e é elle que a aparta da pauta
+  // por dentro; por fóra aparta-a o divisor, que é collunha propria.
   const tokens::Triade fundo = tokens::rgb(tokens::panel);
-  return ftxui::vbox({pinta("TOCANDO AGORA", tokens::text_heading) | ftxui::bold,
-                      std::move(arte), elemento_da_ficha(ficha, largura),
-                      std::move(baixo)}) |
+  // A ARTE vae CENTRADA, que é o que a issue pede. O chafa guarda a proporção,
+  // d'onde a capa quadrada n'um painel largo sahe mais estreita que elle: sem
+  // o centro ella ficava encostada á esquerda, com o vão todo de um lado só.
+  // O `hcenter` mede o que a arte pediu, e não o que o painel tem, donde a
+  // capa que enche a largura não se desloca de uma collunha.
+  return ftxui::vbox({std::move(arte) | ftxui::hcenter, std::move(baixo)}) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }

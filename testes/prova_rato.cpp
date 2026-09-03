@@ -19,7 +19,7 @@
 #include <system_error>
 
 #include "nucleo/biblioteca.hpp"
-#include "tui/menu.hpp"
+#include "tui/cabecalho.hpp"
 #include "tui/rato.hpp"
 #include "tui/tabella.hpp"
 #include "tui/transporte.hpp"
@@ -41,19 +41,27 @@ TEST_CASE("a caixa por pintar não casa com ponto algum") {
 
 namespace {
 
-// A tela de mentira: sete degraus de nove collunhas á esquerda, cinco linhas de
-// tabella á direita d'elles, a capa n'um quadro, e o transporte no pé. Os
-// numeros são arbitrarios: o que se prova é a geometria, e não a composição.
+// A tela de mentira: o cabeçalho na fileira zero, o trilho na um, cinco linhas
+// de pauta, e a capa n'um quadro á direita. Os numeros são arbitrarios: o que
+// se prova é a geometria, e não a composição.
 tui::CaixasDaTela tela_de_mentira() {
   tui::CaixasDaTela caixas;
-  for (int i = 0; i < 7; ++i) caixas.degraus.push_back({1, 9, 3 + i, 3 + i});
+  tui::CaixasDoCabecalho& alto = caixas.cabecalho;
+  alto.aba_mysong = {0, 9, 0, 0};
+  alto.aba_playlists = {10, 21, 0, 0};
+  alto.aba_download = {22, 32, 0, 0};
+  alto.botao_tocar = {33, 35, 0, 0};
+  alto.botao_anterior = {36, 38, 0, 0};
+  alto.botao_seguinte = {39, 41, 0, 0};
+  alto.nome = {42, 60, 0, 0};
+  alto.tempo = {61, 75, 0, 0};
+  alto.volume = {76, 84, 0, 0};
+  alto.embaralhar = {85, 97, 0, 0};
+  alto.repetir = {98, 107, 0, 0};
+  alto.trilho = {11, 30, 1, 1};
   for (int i = 0; i < 5; ++i) caixas.linhas.push_back({11, 60, 3 + i, 3 + i});
   caixas.primeira_linha = 20;
   caixas.capa = {62, 80, 3, 12};
-  caixas.transporte.pausa = {1, 3, 30, 30};
-  caixas.transporte.saltos = {4, 9, 30, 30};
-  caixas.transporte.barra_cheia = {11, 20, 30, 30};
-  caixas.transporte.barra_vazia = {21, 30, 30, 30};
   return caixas;
 }
 
@@ -61,47 +69,47 @@ tui::CaixasDaTela tela_de_mentira() {
 
 TEST_CASE("cada peça da tela responde pelo seu ponto") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
-  const tui::Alvo degrau = tui::alvo_do_ponto(caixas, 5, 6);
-  CHECK(degrau.peca == tui::Peca::Degrau);
-  CHECK(degrau.indice == 3);
+  // As tres abas, pela ordem em que a fita as põe.
+  for (int i = 0; i < 3; ++i) {
+    const tui::Alvo aba = tui::alvo_do_ponto(caixas, 5 + 12 * i, 0);
+    CHECK(aba.peca == tui::Peca::Aba);
+    CHECK(aba.indice == static_cast<std::size_t>(i));
+  }
   // A linha sahe em indice ABSOLUTO: a segunda á vista, com vinte de rolagem.
   const tui::Alvo linha = tui::alvo_do_ponto(caixas, 30, 4);
   CHECK(linha.peca == tui::Peca::Linha);
   CHECK(linha.indice == 21);
   CHECK(tui::alvo_do_ponto(caixas, 70, 8).peca == tui::Peca::Capa);
-  CHECK(tui::alvo_do_ponto(caixas, 2, 30).peca == tui::Peca::Pausa);
-  CHECK(tui::alvo_do_ponto(caixas, 5, 30).peca == tui::Peca::Anterior);
-  CHECK(tui::alvo_do_ponto(caixas, 8, 30).peca == tui::Peca::Proxima);
-  // Fóra de tudo: a altura que sobra abaixo da lista, a orla, e o rodapé.
+  CHECK(tui::alvo_do_ponto(caixas, 34, 0).peca == tui::Peca::Pausa);
+  CHECK(tui::alvo_do_ponto(caixas, 37, 0).peca == tui::Peca::Anterior);
+  CHECK(tui::alvo_do_ponto(caixas, 40, 0).peca == tui::Peca::Proxima);
+  CHECK(tui::alvo_do_ponto(caixas, 90, 0).peca == tui::Peca::Embaralhar);
+  CHECK(tui::alvo_do_ponto(caixas, 100, 0).peca == tui::Peca::Repetir);
+  // O nome e o tempo não respondem: elles dizem, e não fazem.
+  CHECK(tui::alvo_do_ponto(caixas, 50, 0).peca == tui::Peca::Nada);
+  CHECK(tui::alvo_do_ponto(caixas, 65, 0).peca == tui::Peca::Nada);
+  // Fóra de tudo: a altura que sobra abaixo da lista, e o rodapé.
   CHECK(tui::alvo_do_ponto(caixas, 30, 9).peca == tui::Peca::Nada);
-  CHECK(tui::alvo_do_ponto(caixas, 0, 0).peca == tui::Peca::Nada);
   CHECK(tui::alvo_do_ponto(caixas, 100, 40).peca == tui::Peca::Nada);
 }
 
-TEST_CASE("a fracção da barra vae de zero na primeira collunha a um na ultima") {
+TEST_CASE("a fracção do trilho vae de zero na primeira collunha a um na ultima") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
-  const tui::Alvo principio = tui::alvo_do_ponto(caixas, 11, 30);
+  const tui::Alvo principio = tui::alvo_do_ponto(caixas, 11, 1);
   CHECK(principio.peca == tui::Peca::Progresso);
   CHECK(principio.fracao == doctest::Approx(0.0));
-  CHECK(tui::alvo_do_ponto(caixas, 30, 30).fracao == doctest::Approx(1.0));
-  CHECK(tui::alvo_do_ponto(caixas, 21, 30).fracao ==
+  CHECK(tui::alvo_do_ponto(caixas, 30, 1).fracao == doctest::Approx(1.0));
+  CHECK(tui::alvo_do_ponto(caixas, 21, 1).fracao ==
         doctest::Approx(10.0 / 19.0));
 }
 
-TEST_CASE("a barra fica inteira com uma das metades por pintar") {
+TEST_CASE("o trilho por pintar não casa com ponto algum") {
+  // O trilho é UM elemento, e não duas metades como a barra do pé: no
+  // principio da faixa nada tem largura zero, e caixa alguma sahe vazia por
+  // isso. Vazia sahe sómente quando a linha se não pintou.
   tui::CaixasDaTela caixas = tela_de_mentira();
-  // Principio da faixa: o cheio tem largura zero, e o FTXUI dá-lhe caixa vazia.
-  caixas.transporte.barra_cheia = tui::caixa_por_pintar();
-  CHECK(tui::alvo_do_ponto(caixas, 21, 30).peca == tui::Peca::Progresso);
-  CHECK(tui::alvo_do_ponto(caixas, 21, 30).fracao == doctest::Approx(0.0));
-  // Fim da faixa: agora é o vazio que se não pintou.
-  caixas = tela_de_mentira();
-  caixas.transporte.barra_vazia = tui::caixa_por_pintar();
-  CHECK(tui::alvo_do_ponto(caixas, 20, 30).peca == tui::Peca::Progresso);
-  CHECK(tui::alvo_do_ponto(caixas, 20, 30).fracao == doctest::Approx(1.0));
-  // As duas por pintar: barra alguma ha, e o ponto não acha cousa alguma.
-  caixas.transporte.barra_cheia = tui::caixa_por_pintar();
-  CHECK(tui::alvo_do_ponto(caixas, 20, 30).peca == tui::Peca::Nada);
+  caixas.cabecalho.trilho = tui::caixa_por_pintar();
+  CHECK(tui::alvo_do_ponto(caixas, 20, 1).peca == tui::Peca::Nada);
 }
 
 TEST_CASE("sómente o botão esquerdo a descer governa alguma cousa") {
@@ -136,11 +144,11 @@ tui::GestoDoRato clicou(const tui::CaixasDaTela& caixas, int x, int y,
 TEST_CASE("com o campo aberto o clique fecha-o, e pára ahi") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato digita{true, 21, 40, 200.0};
-  // A linha, o degrau e o botão: TODO alvo dá a mesma cousa, que é o campo a
+  // A linha, a aba e o botão: TODO alvo dá a mesma cousa, que é o campo a
   // fechar-se. A tela não ha de mudar debaixo de quem está a digitar.
-  for (const int y : {4, 6, 30})
-    CHECK(clicou(caixas, y == 6 ? 5 : (y == 30 ? 2 : 30), y, digita).gesto ==
-          tui::Gesto::FechaCampo);
+  CHECK(clicou(caixas, 30, 4, digita).gesto == tui::Gesto::FechaCampo);
+  CHECK(clicou(caixas, 5, 0, digita).gesto == tui::Gesto::FechaCampo);
+  CHECK(clicou(caixas, 34, 0, digita).gesto == tui::Gesto::FechaCampo);
   // E a roda tambem: o rato não escreve no termo por caminho algum.
   CHECK(tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, 30, 4), Mouse::WheelDown,
                            Mouse::Pressed, digita)
@@ -171,38 +179,42 @@ tui::GestoDoRato rodou(const tui::CaixasDaTela& caixas, int x, int y, bool sobe,
 
 }  // namespace
 
-TEST_CASE("a roda anda tres linhas na tabella, e um degrau sobre a barra") {
+TEST_CASE("a roda anda tres linhas na pauta, e fica muda em toda a mais peça") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato estado{false, 21, 40, 200.0};
   const tui::GestoDoRato desce = rodou(caixas, 30, 4, false, estado);
   CHECK(desce.gesto == tui::Gesto::RodaDesce);
   CHECK(desce.indice == tui::LINHAS_POR_DENTE);
   CHECK(rodou(caixas, 30, 4, true, estado).gesto == tui::Gesto::RodaSobe);
-  CHECK(rodou(caixas, 5, 6, false, estado).gesto == tui::Gesto::DegrauDesce);
-  CHECK(rodou(caixas, 5, 6, true, estado).gesto == tui::Gesto::DegrauSobe);
-  // Fóra da lista e da barra a roda não governa cousa alguma: nem volume, nem
-  // busca. Prometter-lhe officio seria prometter o que a issue não pediu.
-  CHECK(rodou(caixas, 2, 30, true, estado).gesto == tui::Gesto::Nada);
+  // Sobre a barra a roda andava um degrau; sobre uma fita de tres abas ella
+  // trocaria de secção por acaso, com o dedo a caminho de outra peça.
+  CHECK(rodou(caixas, 5, 0, true, estado).gesto == tui::Gesto::Nada);
+  CHECK(rodou(caixas, 5, 0, false, estado).gesto == tui::Gesto::Nada);
+  // E fóra da pauta ella não governa cousa alguma: nem volume, nem busca.
+  CHECK(rodou(caixas, 34, 0, true, estado).gesto == tui::Gesto::Nada);
   CHECK(rodou(caixas, 70, 8, true, estado).gesto == tui::Gesto::Nada);
 }
 
-TEST_CASE("o transporte, a capa e a busca dão o gesto que dizem") {
+TEST_CASE("o cabeçalho, a capa e a busca dão o gesto que dizem") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato estado{false, 21, 40, 200.0};
-  CHECK(clicou(caixas, 5, 30, estado).gesto == tui::Gesto::Anterior);
-  CHECK(clicou(caixas, 8, 30, estado).gesto == tui::Gesto::Proxima);
-  CHECK(clicou(caixas, 2, 30, estado).gesto == tui::Gesto::PausaOuRetoma);
-  // A capa é o mesmo gesto do ⏯: quem clica na arte quer calar o que toca.
+  CHECK(clicou(caixas, 37, 0, estado).gesto == tui::Gesto::Anterior);
+  CHECK(clicou(caixas, 40, 0, estado).gesto == tui::Gesto::Proxima);
+  CHECK(clicou(caixas, 34, 0, estado).gesto == tui::Gesto::PausaOuRetoma);
+  CHECK(clicou(caixas, 90, 0, estado).gesto == tui::Gesto::Embaralha);
+  CHECK(clicou(caixas, 100, 0, estado).gesto == tui::Gesto::Repete);
+  // A capa é o mesmo gesto do botão de tocar: quem clica na arte quer calar.
   CHECK(clicou(caixas, 70, 8, estado).gesto == tui::Gesto::PausaOuRetoma);
-  const tui::GestoDoRato busca = clicou(caixas, 21, 30, estado);
+  const tui::GestoDoRato busca = clicou(caixas, 21, 1, estado);
   CHECK(busca.gesto == tui::Gesto::Busca);
   CHECK(busca.alvo == doctest::Approx(200.0 * 10.0 / 19.0));
   // Sem duração não se busca. Zero seria affirmar o principio, e o que ha é a
   // Casa ainda não saber quanto a faixa dura.
   const tui::EstadoDoRato sem{false, 21, 40, 0.0};
-  CHECK(clicou(caixas, 21, 30, sem).gesto == tui::Gesto::Nada);
-  CHECK(clicou(caixas, 5, 6, estado).gesto == tui::Gesto::EntraNoDegrau);
-  CHECK(clicou(caixas, 5, 6, estado).indice == 3);
+  CHECK(clicou(caixas, 21, 1, sem).gesto == tui::Gesto::Nada);
+  const tui::GestoDoRato aba = clicou(caixas, 15, 0, estado);
+  CHECK(aba.gesto == tui::Gesto::VaiParaAba);
+  CHECK(aba.indice == 1);
 }
 
 namespace {
@@ -219,21 +231,29 @@ std::string papel(ftxui::Element quadro, int largura, int altura) {
 
 }  // namespace
 
-TEST_CASE("a caixa não muda um pixel do transporte") {
+TEST_CASE("a caixa não muda um pixel do cabeçalho nem do trilho") {
   tui::Retracto retracto;
   retracto.estado = mysong::nucleo::Estado::Tocando;
   retracto.posicao = 30.0;
   retracto.duracao = 120.0;
-  for (const int largura : {30, 60, 100}) {
+  for (const int largura : {60, 120, 167}) {
     const std::size_t larg = static_cast<std::size_t>(largura);
-    tui::CaixasDoTransporte caixas;
-    CHECK(papel(tui::elemento_do_transporte(retracto, larg), largura, 1) ==
-          papel(tui::elemento_do_transporte(retracto, larg, &caixas), largura, 1));
+    tui::CaixasDoCabecalho caixas;
+    CHECK(papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, "Faded",
+                                           larg),
+                largura, 1) ==
+          papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, "Faded",
+                                           larg, &caixas),
+                largura, 1));
     // E as caixas encheram-se: sem isto, a egualdade valeria tambem para quem
     // se esquecesse de as pôr, e a prova não provaria cousa alguma.
-    CHECK_FALSE(caixas.pausa.IsEmpty());
-    CHECK_FALSE(caixas.saltos.IsEmpty());
-    CHECK_FALSE(caixas.progresso().IsEmpty());
+    CHECK_FALSE(caixas.aba_mysong.IsEmpty());
+    CHECK_FALSE(caixas.botao_tocar.IsEmpty());
+    CHECK_FALSE(caixas.nome.IsEmpty());
+    ftxui::Box trilho;
+    CHECK(papel(tui::elemento_do_trilho(retracto, larg), largura, 1) ==
+          papel(tui::elemento_do_trilho(retracto, larg, &trilho), largura, 1));
+    CHECK_FALSE(trilho.IsEmpty());
   }
 }
 
@@ -251,8 +271,8 @@ TEST_CASE("a caixa não muda um pixel da capa") {
 
 namespace {
 
-// A cova e o índice: a barra e a tabella pedem um Navegador, e elle pede uma
-// Bibliotheca. O acervo fica VAZIO, e a vista põe-se por `mostra_rede`.
+// A cova e o índice: a pauta pede um Navegador, e elle pede uma Bibliotheca.
+// O acervo fica VAZIO, e a vista põe-se por `mostra_rede`.
 class Cova {
  public:
   Cova() {
@@ -272,23 +292,13 @@ class Cova {
 
 }  // namespace
 
-TEST_CASE("a caixa não muda um pixel da barra nem da tabella") {
+TEST_CASE("a caixa não muda um pixel da pauta") {
   Cova cova;
   const mysong::nucleo::Biblioteca livraria(cova.banco());
   mysong::nucleo::Achado um;
   um.titulo = "Toccata";
   tui::Navegador navegador(livraria);  // acervo vasio: a vista vem da rede
   navegador.mostra_rede({um, um, um});
-  std::vector<ftxui::Box> degraus;
-  const int larg_barra = static_cast<int>(tui::LARGURA_DA_BARRA);
-  CHECK(papel(tui::elemento_da_barra(navegador, true, 2), larg_barra, 7) ==
-        papel(tui::elemento_da_barra(navegador, true, 2, 0, &degraus),
-              larg_barra, 7));
-  // Uma caixa por DEGRAU, e sómente por degrau: o titulo e a risca não o são.
-  // Sem roleiro não ha listas, donde a conta é a das minhas musicas mais as
-  // quatro de navegar, que é o que a taboada da barra diz.
-  CHECK(degraus.size() == tui::degraus_da_barra(0));
-  CHECK_FALSE(degraus.back().IsEmpty());
   std::vector<ftxui::Box> linhas;
   CHECK(papel(tui::elemento_da_tabella(navegador, 0, 5, 60), 60, 5) ==
         papel(tui::elemento_da_tabella(navegador, 0, 5, 60, {}, &linhas),
@@ -313,18 +323,18 @@ TEST_CASE("o evento de rato conta por tecla de gente e acorda a vigilia") {
   CHECK(vigilia.acordou());
 }
 
-TEST_CASE("com a janella do video de pé o clique na barra fica inerte") {
+TEST_CASE("com a janella do video de pé o clique no trilho fica inerte") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   // A janella arma o estado com duração ZERO emquanto o video corre: a que o
   // retracto sabe é a do AUDIO pausado, e a janella que corre é a da faixa
   // ELEITA, que nem sempre é a mesma. Buscar por ella seria mandar o video a
   // uma posição contada n'outro arco.
   const tui::EstadoDoRato com_video{false, 21, 40, 0.0};
-  CHECK(clicou(caixas, 11, 30, com_video).gesto == tui::Gesto::Nada);
-  CHECK(clicou(caixas, 21, 30, com_video).gesto == tui::Gesto::Nada);
+  CHECK(clicou(caixas, 11, 1, com_video).gesto == tui::Gesto::Nada);
+  CHECK(clicou(caixas, 21, 1, com_video).gesto == tui::Gesto::Nada);
   // O resto do transporte SEGUE a governar: o `cumprir` rotea-o á janella.
-  CHECK(clicou(caixas, 2, 30, com_video).gesto == tui::Gesto::PausaOuRetoma);
-  CHECK(clicou(caixas, 5, 30, com_video).gesto == tui::Gesto::Anterior);
+  CHECK(clicou(caixas, 34, 0, com_video).gesto == tui::Gesto::PausaOuRetoma);
+  CHECK(clicou(caixas, 37, 0, com_video).gesto == tui::Gesto::Anterior);
 }
 
 TEST_CASE("o botão direito é mudo tambem com o campo de digitar aberto") {

@@ -339,10 +339,46 @@ Sem a ordem, nada se busca: e o operador quem manda na rede d'elle.
 A varredura do acervo corre em fio proprio ao abrir: a tela abre de pronto, com o
 acervo da corrida anterior, e o `r` manda varrer outra vez.
 
+### A tela
+
+Uma linha de CABECALHO no alto, o TRILHO do progresso logo abaixo, e o resto
+partido em duas metades: a pauta das musicas a esquerda, e o painel (capa e
+espectro) a direita. Barra lateral alguma: o menu d'esta Casa e uma fita de
+abas, a maneira da topbar do RADICAL-OS.
+
+```
+ 󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD  󰐊  󰒮  󰒭  Montagem Lunar Celestia  00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃      a capa, e por baixo d'ella o espectro
+```
+
+No cabecalho: a aba corrente em bloco solido, as outras em repouso; os tres
+botoes do transporte; o nome do que soa, cortado com «…» quando nao cabe; e a
+direita o tempo, o volume, o EMBARALHAR e o REPETIR. Apertando a tela, essas
+quatro cedem o logar INTEIRAS, da direita para a esquerda, e as abas ficam
+sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz;
+clicar no trilho busca a posicao.
+
+Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
+(`MY SONG, 42 FAIXAS, 1h29, FAIXAS`), com os degraus de dentro apartados por
+«▸» (`PLAYLISTS ▸ Funk lento`). A direita d'ella vao os recados: a lista alvo,
+o filtro posto, a varredura em curso, o andamento das baixas.
+
+No pé, uma linha de dicas com as teclas mais usadas, e a palavra README a
+dizer que o resto esta aqui: a linha cabe em cento e vinte collunhas, e a
+taboada inteira nao cabe em linha alguma.
+
+Abaixo de CEM collunhas o painel some e a pauta toma a tela toda. A capa nunca
+passa de quarenta e cinco por cento da altura do painel, e o espectro toma o
+que ella deixar.
+
 ### As teclas
 
 | tecla | o que faz |
 |---|---|
+| `1` / `2` / `3` | vae a aba MY SONG, PLAYLISTS, DOWNLOAD |
+| Tab | cicla as tres abas |
+| `o` | dentro das MY SONG, cicla a vista: faixas, artistas, albuns |
 | espaco | pausa tocando, retoma pausado |
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
@@ -376,10 +412,12 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 
 ### O rato
 
-Clicar n'um degrau da barra entra n'elle; clicar n'uma faixa elege-a, e clicar na
-JÁ eleita toca-a. Os botoes do transporte fazem o que dizem, o clique na barra de
-progresso busca a posicao, o clique na capa pausa e retoma, e a roda anda tres
-linhas na lista, ou um degrau sobre a barra. Botao direito nao faz nada ainda.
+Clicar n'uma aba do cabecalho vae a ella; clicar n'uma faixa elege-a, e clicar
+na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
+no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
+clique na capa pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
+cabecalho a roda fica muda: n'uma fita de tres abas ella trocaria de seccao por
+acaso, com o dedo a caminho de outra peca. Botao direito nao faz nada ainda.
 Dentro do tmux, isto pede `set -g mouse on`.
 
 E ha um preco a declarar, que e a primeira cousa que se nota: pedido o modo dos

@@ -41,12 +41,6 @@ TEST_CASE("o enum tem dez modos e sete d'elles digitam") {
   CHECK(tui::aceita_letra(tui::Modo::TituloOutro));
 }
 
-TEST_CASE("o topo tem uma linha fechado o campo e duas aberto") {
-  CHECK(tui::linhas_do_topo(tui::Modo::Nada) == 1);
-  for (const tui::Modo modo : kTodos)
-    if (modo != tui::Modo::Nada) CHECK(tui::linhas_do_topo(modo) == 2);
-}
-
 TEST_CASE("a novidade de fundo so assenta com o campo fechado") {
   CHECK(tui::assenta_novidade(tui::Modo::Nada));
   for (const tui::Modo modo : kTodos)
@@ -88,10 +82,9 @@ struct Papel {
   ftxui::Screen::Cursor cursor;
 };
 
-Papel pintar(const std::string& trilha, tui::Modo modo, const std::string& termo,
-             std::size_t largura) {
+Papel pintar(tui::Modo modo, const std::string& termo, std::size_t largura) {
   ftxui::Element quadro =
-      tui::elemento_do_topo(trilha, modo, "YouTube", termo, largura);
+      tui::elemento_do_campo(modo, "YouTube", termo, largura);
   ftxui::Screen ecran =
       ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(largura)),
                             ftxui::Dimension::Fixed(3));
@@ -111,64 +104,60 @@ Papel pintar(const std::string& trilha, tui::Modo modo, const std::string& termo
 }
 }  // namespace
 
-TEST_CASE("a trilha sobrevive a todos os oito modos") {
-  for (const tui::Modo modo : kTodos) {
-    const Papel papel = pintar("ARTISTS > AYMEE > Voce", modo, "jk", 60);
-    CHECK(papel.linhas[0].substr(0, 22) == "ARTISTS > AYMEE > Voce");
-  }
+TEST_CASE("o campo abre em linha propria, e ella é a primeira") {
+  const Papel papel = pintar(tui::Modo::Procura, "jk", 60);
+  CHECK(papel.linhas[0].find("BUSCA NA REDE (YouTube): jk") != std::string::npos);
+  // A linha de baixo fica LIMPA: a sala reserva UMA linha ao campo, e peça que
+  // pintasse duas empurraria a pauta para fóra da conta que a sala lhe deu.
+  CHECK(papel.linhas[1].find_first_not_of(' ') == std::string::npos);
 }
 
-TEST_CASE("o campo abre em linha propria por baixo da trilha") {
-  const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
-  CHECK(papel.linhas[0].substr(0, 7) == "ARTISTS");
-  CHECK(papel.linhas[1].find("BUSCA NA REDE (YouTube): jk") != std::string::npos);
-}
-
-TEST_CASE("o campo tem fundo que a trilha nao tem") {
-  const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
-  CHECK(papel.fundos[0] != papel.fundos[1]);
+TEST_CASE("o campo tem fundo proprio em toda a linha") {
+  const Papel papel = pintar(tui::Modo::Procura, "jk", 60);
+  const Papel fechado = pintar(tui::Modo::Nada, "", 60);
+  CHECK(papel.fundos[0] != fechado.fundos[0]);
   // A primeira cella é a da marca: regressão que pintasse SÓ a marca passaria
-  // por ella. O meio da linha do campo tambem leva o fundo, e a trilha não.
-  CHECK(papel.fundos_meio[0] != papel.fundos_meio[1]);
+  // por ella. O meio da linha do campo leva o fundo tambem.
+  CHECK(papel.fundos_meio[0] != fechado.fundos_meio[0]);
 }
 
 TEST_CASE("o caret pousa logo a seguir ao que se digitou") {
   // duas collunhas da marca, vinte e quatro do rotulo, uma do espaço e duas do
   // termo: o caret cahe na vigesima nona, e na linha do campo.
-  const Papel papel = pintar("ARTISTS", tui::Modo::Procura, "jk", 60);
+  const Papel papel = pintar(tui::Modo::Procura, "jk", 60);
   CHECK(papel.cursor.x == 29);
-  CHECK(papel.cursor.y == 1);
+  CHECK(papel.cursor.y == 0);
 }
 
 TEST_CASE("o caret e barra quieta e nao a piscar") {
   // A queixa que abriu a issue irmã #78 foi «o meu cursor fica piscando». Caret
   // a piscar aqui responderia á queixa com a propria queixa.
-  const Papel papel = pintar("ARTISTS", tui::Modo::Url, "x", 60);
+  const Papel papel = pintar(tui::Modo::Url, "x", 60);
   CHECK(papel.cursor.shape == ftxui::Screen::Cursor::Bar);
 }
 
-TEST_CASE("fechado o campo o topo tem uma linha so") {
-  const Papel papel = pintar("ARTISTS", tui::Modo::Nada, "", 40);
-  CHECK(papel.linhas[1].find_first_not_of(' ') == std::string::npos);
+TEST_CASE("fechado o campo linha alguma se pinta") {
+  const Papel papel = pintar(tui::Modo::Nada, "", 40);
+  CHECK(papel.linhas[0].find_first_not_of(' ') == std::string::npos);
   CHECK(papel.cursor.shape == ftxui::Screen::Cursor::Hidden);
 }
 
 TEST_CASE("a pergunta do apagar tem linha propria mas nao pede caret") {
-  const Papel papel = pintar("LISTS", tui::Modo::Confirma, "", 40);
-  CHECK(papel.linhas[1].find("apagar") != std::string::npos);
+  const Papel papel = pintar(tui::Modo::Confirma, "", 40);
+  CHECK(papel.linhas[0].find("apagar") != std::string::npos);
   CHECK(papel.cursor.shape == ftxui::Screen::Cursor::Hidden);
 }
 
 TEST_CASE("terminal estreito nao empurra o caret para fora") {
   const Papel papel =
-      pintar("ARTISTS", tui::Modo::Url, std::string(40, 'z'), 20);
+      pintar(tui::Modo::Url, std::string(40, 'z'), 20);
   CHECK(papel.cursor.x < 20);
-  CHECK(papel.linhas[1].find("zz") != std::string::npos);
+  CHECK(papel.linhas[0].find("zz") != std::string::npos);
 }
 
 TEST_CASE("o corte do termo nao parte codepoint ao meio") {
-  const Papel papel = pintar("ARTISTS", tui::Modo::Url, "çãoçãoçãoçãoção", 14);
-  CHECK(papel.linhas[1].find("ção") != std::string::npos);
+  const Papel papel = pintar(tui::Modo::Url, "çãoçãoçãoçãoção", 14);
+  CHECK(papel.linhas[0].find("ção") != std::string::npos);
   CHECK(papel.cursor.x < 14);
 }
 
@@ -178,12 +167,30 @@ TEST_CASE("o rotulo sobrevive ao termo comprido no terminal estreito") {
   // rabo de texto SEM nome de campo, que é parente do defeito que esta issue
   // veio matar. O rotulo mostra-se INTEIRO, e quem perde o começo é o termo.
   const Papel papel =
-      pintar("ARTISTS", tui::Modo::Url, std::string(90, 'w'), 80);
-  CHECK(papel.linhas[1].find("URL: w") != std::string::npos);
+      pintar(tui::Modo::Url, std::string(90, 'w'), 80);
+  CHECK(papel.linhas[0].find("URL: w") != std::string::npos);
   CHECK(papel.cursor.x < 80);
   // E não cabendo nem o rotulo, apara-se ELLE á direita: fica o começo, que é
   // o que diz o officio, e o caret pousa na ultima collunha.
-  const Papel curto = pintar("ARTISTS", tui::Modo::Procura, "abc", 8);
-  CHECK(curto.linhas[1].find("BUSCA") != std::string::npos);
+  const Papel curto = pintar(tui::Modo::Procura, "abc", 8);
+  CHECK(curto.linhas[0].find("BUSCA") != std::string::npos);
   CHECK(curto.cursor.x == 7);
+}
+
+TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da tela") {
+  // O caso que a issue #102 tornou mortal, e que a prova da trilha guardava
+  // até ella morrer. O corte contava CODEPOINTS, e o glifo largo vale DUAS
+  // collunhas: trinta d'elles pediam sessenta n'uma tela de quarenta, e o
+  // caret pousava uma collunha ALÉM da ultima. O FTXUI conta alli
+  // `dimx - 1 - cursor_.x`, que dá menos um, e manda `ESC[-1D` ao terminal do
+  // operador. A folga de quatro collunhas da orla o engolia; a tela nova dá ao
+  // campo a largura INTEIRA, e folga alguma ha.
+  std::string larga;
+  for (int i = 0; i < 30; ++i) larga += "日";
+  const Papel papel = pintar(tui::Modo::Url, larga, 40);
+  CHECK(papel.cursor.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(papel.cursor.x < 40);
+  CHECK(papel.cursor.y == 0);
+  // E o rotulo sahe INTEIRO: quem perde o começo é o termo, como no ASCII.
+  CHECK(papel.linhas[0].find("URL: ") != std::string::npos);
 }

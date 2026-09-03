@@ -17,15 +17,6 @@
 
 namespace mysong::tui {
 
-ftxui::Box CaixasDoTransporte::progresso() const noexcept {
-  // A união das metades, e sómente das que se pintaram. O `Box::Union` com uma
-  // caixa VAZIA arrastaria o canto para a origem, e a barra passaria a cobrir
-  // meia tela; no principio e no fim da faixa é isso que uma das metades é.
-  if (barra_cheia.IsEmpty()) return barra_vazia;
-  if (barra_vazia.IsEmpty()) return barra_cheia;
-  return ftxui::Box::Union(barra_cheia, barra_vazia);
-}
-
 namespace {
 
 // fracao_na — onde, entre zero e um, o ponto cahiu dentro da caixa. A primeira
@@ -46,25 +37,24 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept {
   // A ordem não é preferencia: caixa alguma se sobrepõe a outra, e a primeira
   // que contiver o ponto é a UNICA que o contem. Percorre-se pela ordem em que
   // a tela se lê, do alto para baixo, que é o que torna a lista revisavel.
-  for (std::size_t i = 0; i < caixas.degraus.size(); ++i)
-    if (caixas.degraus[i].Contain(x, y)) return {Peca::Degrau, i, 0.0};
+  const CaixasDoCabecalho& alto = caixas.cabecalho;
+  if (alto.aba_mysong.Contain(x, y)) return {Peca::Aba, 0, 0.0};
+  if (alto.aba_playlists.Contain(x, y)) return {Peca::Aba, 1, 0.0};
+  if (alto.aba_download.Contain(x, y)) return {Peca::Aba, 2, 0.0};
+  if (alto.botao_tocar.Contain(x, y)) return {Peca::Pausa, 0, 0.0};
+  if (alto.botao_anterior.Contain(x, y)) return {Peca::Anterior, 0, 0.0};
+  if (alto.botao_seguinte.Contain(x, y)) return {Peca::Proxima, 0, 0.0};
+  if (alto.embaralhar.Contain(x, y)) return {Peca::Embaralhar, 0, 0.0};
+  if (alto.repetir.Contain(x, y)) return {Peca::Repetir, 0, 0.0};
+  if (alto.trilho.Contain(x, y))
+    return {Peca::Progresso, 0, fracao_na(alto.trilho, x)};
   // O indice sahe ABSOLUTO: a caixa é da linha VISIVEL, e a rolagem somma-se
   // aqui, uma vez só, no logar que sabe quanto ella vale.
   for (std::size_t i = 0; i < caixas.linhas.size(); ++i)
     if (caixas.linhas[i].Contain(x, y))
       return {Peca::Linha, caixas.primeira_linha + i, 0.0};
   if (caixas.capa.Contain(x, y)) return {Peca::Capa, 0, 0.0};
-  const CaixasDoTransporte& baixo = caixas.transporte;
-  if (baixo.pausa.Contain(x, y)) return {Peca::Pausa, 0, 0.0};
-  if (baixo.saltos.Contain(x, y)) {
-    // Ao MEIO: o ⏮ cahe na metade esquerda e o ⏭ na direita, seja qual for a
-    // largura que a fonte deu ao glypho, que esta Casa não mede.
-    const int meio = (baixo.saltos.x_min + baixo.saltos.x_max) / 2;
-    return {x < meio ? Peca::Anterior : Peca::Proxima, 0, 0.0};
-  }
-  const ftxui::Box barra = baixo.progresso();
-  if (barra.Contain(x, y)) return {Peca::Progresso, 0, fracao_na(barra, x)};
-  return {};  // a orla, o rodapé e o espectro não respondem ao rato
+  return {};  // o nome, o tempo, o rodapé e o espectro não respondem ao rato
 }
 
 GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
@@ -81,14 +71,17 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
   if (estado.digitando) return {Gesto::FechaCampo, 0, 0.0};
   const bool sobe = botao == ftxui::Mouse::WheelUp;
   if (roda) {
-    if (alvo.peca == Peca::Degrau)
-      return {sobe ? Gesto::DegrauSobe : Gesto::DegrauDesce, 0, 0.0};
     if (alvo.peca == Peca::Linha)
       return {sobe ? Gesto::RodaSobe : Gesto::RodaDesce, LINHAS_POR_DENTE, 0.0};
-    return {};  // roda fóra da lista e da barra não governa cousa alguma
+    // A roda sobre o cabeçalho fica MUDA. Sobre a barra ella andava um degrau,
+    // que era andar n'uma collunha; sobre uma fita de tres abas seria trocar de
+    // secção por acaso, com o dedo a caminho de outra peça.
+    return {};
   }
   switch (alvo.peca) {
-    case Peca::Degrau: return {Gesto::EntraNoDegrau, alvo.indice, 0.0};
+    case Peca::Aba: return {Gesto::VaiParaAba, alvo.indice, 0.0};
+    case Peca::Embaralhar: return {Gesto::Embaralha, 0, 0.0};
+    case Peca::Repetir: return {Gesto::Repete, 0, 0.0};
     case Peca::Linha:
       // Indice além da vista é o quadro que envelheceu entre a pintura e o
       // clique. Não se elege ás cegas: o quadro seguinte já mostra o certo.

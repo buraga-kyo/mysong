@@ -29,23 +29,23 @@ namespace mysong::tui {
 // `x_min` é o vazio que o FTXUI reconhece, e o `Contain` d'elle recusa tudo.
 inline ftxui::Box caixa_por_pintar() noexcept { return {0, -1, 0, -1}; }
 
-// As caixas do TRANSPORTE. As metades da barra de progresso guardam-se á parte
-// porque o enchimento se pinta em DOUS elementos, o cheio e o vazio: no
-// principio e no fim um d'elles tem largura zero e a caixa d'esse sahe vazia.
-struct CaixasDoTransporte {
-  // Os DOUS saltos vivem n'UM segmento da fita, e a fita não se parte para os
-  // separar: foi MEDIDO que partir muda o desenho, que a trinta collunhas o
-  // FTXUI encolhe a linha e reparte o corte por ELEMENTO, donde dous textos
-  // onde havia um dão « ⏮⏭ » em logar de « ⏮ ⏭». A caixa é pois UMA, e quem a
-  // lê parte-a ao meio.
-  ftxui::Box saltos = caixa_por_pintar();
-  ftxui::Box pausa = caixa_por_pintar();
-  ftxui::Box barra_cheia = caixa_por_pintar();
-  ftxui::Box barra_vazia = caixa_por_pintar();
-
-  // progresso — a barra inteira, união das metades. Não se guarda em campo:
-  // campo seria estado em duplicata, e o `reflect` só enche as metades.
-  ftxui::Box progresso() const noexcept;
+// As caixas do CABEÇALHO (issue #102). Uma por PEÇA e todas nomeadas, e não um
+// vector indexado: as issues irmãs pendem d'esta linha (o letreiro põe imagem
+// sobre a caixa do rotulo, o foco desenha a orla sobre a do botão), e indice
+// n'um vector é endereço que a primeira peça nova desloca em silencio.
+struct CaixasDoCabecalho {
+  ftxui::Box aba_mysong = caixa_por_pintar();
+  ftxui::Box aba_playlists = caixa_por_pintar();
+  ftxui::Box aba_download = caixa_por_pintar();
+  ftxui::Box botao_tocar = caixa_por_pintar();
+  ftxui::Box botao_anterior = caixa_por_pintar();
+  ftxui::Box botao_seguinte = caixa_por_pintar();
+  ftxui::Box nome = caixa_por_pintar();
+  ftxui::Box tempo = caixa_por_pintar();
+  ftxui::Box volume = caixa_por_pintar();
+  ftxui::Box embaralhar = caixa_por_pintar();
+  ftxui::Box repetir = caixa_por_pintar();
+  ftxui::Box trilho = caixa_por_pintar();
 };
 
 // CaixasDaTela — o que o quadro ANTERIOR deixou escripto. Enchem-se DENTRO de
@@ -53,27 +53,28 @@ struct CaixasDoTransporte {
 // paineis não move os cliques, e a assignatura de quem pinta ganha parametro
 // de omissão, que é o que deixa as tarefas irmãs entrar sem quebrar nada.
 struct CaixasDaTela {
-  // Uma por degrau da barra lateral, na ordem em que ella os pinta.
-  std::vector<ftxui::Box> degraus;
-  // Uma por linha VISIVEL da tabella, e sómente por linha que existe: a altura
+  // As doze do cabeçalho (issue #102). Tomaram o logar do vector dos degraus:
+  // a barra lateral já não existe, e com ella se foi o clique no degrau.
+  CaixasDoCabecalho cabecalho;
+  // Uma por linha VISIVEL da pauta, e sómente por linha que existe: a altura
   // que sobra abaixo da lista não é alvo de cousa alguma.
   std::vector<ftxui::Box> linhas;
   // A linha da vista que está no alto: é ella que faz o indice VISIVEL virar o
   // indice ABSOLUTO da vista do navegador, que é o que a eleição consome.
   std::size_t primeira_linha = 0;
   ftxui::Box capa = caixa_por_pintar();
-  CaixasDoTransporte transporte;
 };
 
 // As PEÇAS que o dedo pode achar. `Nada` não é falha: a orla, o rodapé dos
 // atalhos e o espectro não respondem ao rato, e hão de dizer que não respondem.
 enum class Peca {
-  Nada, Degrau, Linha, Capa, Anterior, Pausa, Proxima, Progresso,
+  Nada, Aba, Linha, Capa, Anterior, Pausa, Proxima, Progresso,
+  Embaralhar, Repetir,
 };
 
-// Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é o degrau
-// na barra e o indice ABSOLUTO da vista na tabella; a `fracao` é sómente da
-// barra de progresso, e vae de zero, na primeira collunha, a um, na ultima.
+// Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é a aba no
+// cabeçalho e o indice ABSOLUTO da vista na pauta; a `fracao` é sómente do
+// trilho do progresso, e vae de zero, na primeira collunha, a um, na ultima.
 struct Alvo {
   Peca peca = Peca::Nada;
   std::size_t indice = 0;
@@ -92,13 +93,13 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept;
 // tocador na mão; os demais governam o navegador e o menu.
 enum class Gesto {
   Nada,
-  FechaCampo,     // com campo de digitar aberto, o clique fecha-o e pára ahi
-  EntraNoDegrau,  // o mesmo caminho do Enter na barra, no degrau clicado
-  Elege,          // a linha clicada não era a eleita
-  Toca,           // clicou-se na JÁ eleita: é o duplo clique, sem cronometro
+  FechaCampo,  // com campo de digitar aberto, o clique fecha-o e pára ahi
+  VaiParaAba,  // o mesmo caminho das teclas `1` `2` `3`, na aba clicada
+  Elege,       // a linha clicada não era a eleita
+  Toca,        // clicou-se na JÁ eleita: é o duplo clique, sem cronometro
   Anterior, PausaOuRetoma, Proxima, Busca,
-  RodaSobe, RodaDesce,      // na tabella, LINHAS_POR_DENTE de cada vez
-  DegrauSobe, DegrauDesce,  // sobre a barra, um degrau de cada vez
+  RodaSobe, RodaDesce,   // na pauta, LINHAS_POR_DENTE de cada vez
+  Embaralha, Repete,     // os dous modos, pelo segmento que os mostra
 };
 
 // Tres linhas por dente. Uma seria a roda a arrastar-se; uma tela inteira seria
