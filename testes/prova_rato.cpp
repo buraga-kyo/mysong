@@ -231,21 +231,29 @@ std::string papel(ftxui::Element quadro, int largura, int altura) {
 
 }  // namespace
 
-TEST_CASE("a caixa não muda um pixel do transporte") {
+TEST_CASE("a caixa não muda um pixel do cabeçalho nem do trilho") {
   tui::Retracto retracto;
   retracto.estado = mysong::nucleo::Estado::Tocando;
   retracto.posicao = 30.0;
   retracto.duracao = 120.0;
-  for (const int largura : {30, 60, 100}) {
+  for (const int largura : {60, 120, 167}) {
     const std::size_t larg = static_cast<std::size_t>(largura);
-    tui::CaixasDoTransporte caixas;
-    CHECK(papel(tui::elemento_do_transporte(retracto, larg), largura, 1) ==
-          papel(tui::elemento_do_transporte(retracto, larg, &caixas), largura, 1));
+    tui::CaixasDoCabecalho caixas;
+    CHECK(papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, "Faded",
+                                           larg),
+                largura, 1) ==
+          papel(tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, "Faded",
+                                           larg, &caixas),
+                largura, 1));
     // E as caixas encheram-se: sem isto, a egualdade valeria tambem para quem
     // se esquecesse de as pôr, e a prova não provaria cousa alguma.
-    CHECK_FALSE(caixas.pausa.IsEmpty());
-    CHECK_FALSE(caixas.saltos.IsEmpty());
-    CHECK_FALSE(caixas.progresso().IsEmpty());
+    CHECK_FALSE(caixas.aba_mysong.IsEmpty());
+    CHECK_FALSE(caixas.botao_tocar.IsEmpty());
+    CHECK_FALSE(caixas.nome.IsEmpty());
+    ftxui::Box trilho;
+    CHECK(papel(tui::elemento_do_trilho(retracto, larg), largura, 1) ==
+          papel(tui::elemento_do_trilho(retracto, larg, &trilho), largura, 1));
+    CHECK_FALSE(trilho.IsEmpty());
   }
 }
 
@@ -263,8 +271,8 @@ TEST_CASE("a caixa não muda um pixel da capa") {
 
 namespace {
 
-// A cova e o índice: a barra e a tabella pedem um Navegador, e elle pede uma
-// Bibliotheca. O acervo fica VAZIO, e a vista põe-se por `mostra_rede`.
+// A cova e o índice: a pauta pede um Navegador, e elle pede uma Bibliotheca.
+// O acervo fica VAZIO, e a vista põe-se por `mostra_rede`.
 class Cova {
  public:
   Cova() {
@@ -284,23 +292,13 @@ class Cova {
 
 }  // namespace
 
-TEST_CASE("a caixa não muda um pixel da barra nem da tabella") {
+TEST_CASE("a caixa não muda um pixel da pauta") {
   Cova cova;
   const mysong::nucleo::Biblioteca livraria(cova.banco());
   mysong::nucleo::Achado um;
   um.titulo = "Toccata";
   tui::Navegador navegador(livraria);  // acervo vasio: a vista vem da rede
   navegador.mostra_rede({um, um, um});
-  std::vector<ftxui::Box> degraus;
-  const int larg_barra = static_cast<int>(tui::LARGURA_DA_BARRA);
-  CHECK(papel(tui::elemento_da_barra(navegador, true, 2), larg_barra, 7) ==
-        papel(tui::elemento_da_barra(navegador, true, 2, 0, &degraus),
-              larg_barra, 7));
-  // Uma caixa por DEGRAU, e sómente por degrau: o titulo e a risca não o são.
-  // Sem roleiro não ha listas, donde a conta é a das minhas musicas mais as
-  // quatro de navegar, que é o que a taboada da barra diz.
-  CHECK(degraus.size() == tui::degraus_da_barra(0));
-  CHECK_FALSE(degraus.back().IsEmpty());
   std::vector<ftxui::Box> linhas;
   CHECK(papel(tui::elemento_da_tabella(navegador, 0, 5, 60), 60, 5) ==
         papel(tui::elemento_da_tabella(navegador, 0, 5, 60, {}, &linhas),
@@ -325,18 +323,18 @@ TEST_CASE("o evento de rato conta por tecla de gente e acorda a vigilia") {
   CHECK(vigilia.acordou());
 }
 
-TEST_CASE("com a janella do video de pé o clique na barra fica inerte") {
+TEST_CASE("com a janella do video de pé o clique no trilho fica inerte") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   // A janella arma o estado com duração ZERO emquanto o video corre: a que o
   // retracto sabe é a do AUDIO pausado, e a janella que corre é a da faixa
   // ELEITA, que nem sempre é a mesma. Buscar por ella seria mandar o video a
   // uma posição contada n'outro arco.
   const tui::EstadoDoRato com_video{false, 21, 40, 0.0};
-  CHECK(clicou(caixas, 11, 30, com_video).gesto == tui::Gesto::Nada);
-  CHECK(clicou(caixas, 21, 30, com_video).gesto == tui::Gesto::Nada);
+  CHECK(clicou(caixas, 11, 1, com_video).gesto == tui::Gesto::Nada);
+  CHECK(clicou(caixas, 21, 1, com_video).gesto == tui::Gesto::Nada);
   // O resto do transporte SEGUE a governar: o `cumprir` rotea-o á janella.
-  CHECK(clicou(caixas, 2, 30, com_video).gesto == tui::Gesto::PausaOuRetoma);
-  CHECK(clicou(caixas, 5, 30, com_video).gesto == tui::Gesto::Anterior);
+  CHECK(clicou(caixas, 34, 0, com_video).gesto == tui::Gesto::PausaOuRetoma);
+  CHECK(clicou(caixas, 37, 0, com_video).gesto == tui::Gesto::Anterior);
 }
 
 TEST_CASE("o botão direito é mudo tambem com o campo de digitar aberto") {
