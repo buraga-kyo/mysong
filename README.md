@@ -406,38 +406,46 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 
 A lista das musicas começa na PRIMEIRA linha da tela, e o tocador mora no PE.
 O corpo toma tudo o que sobra, partido em duas metades: a pauta das musicas a
-esquerda, e o painel (capa e espectro) a direita. No pe, de cima para baixo: o
-campo de digitar (sómente com elle aberto), o TRILHO do progresso, a FITA de
-DUAS linhas com o tocador, e o rodape das dicas. Barra lateral alguma: o menu
-d'esta Casa e uma fita de abas, a maneira da topbar do RADICAL-OS.
+esquerda, e o painel a direita, com a FICHA do que soa na primeira linha
+d'elle, a capa por baixo e o espectro por baixo da capa. No pe, de cima para
+baixo: o campo de digitar (sómente com elle aberto), a FITA de uma linha com o
+tocador, e o rodape das dicas. Barra lateral alguma: o menu d'esta Casa e uma
+fita de abas, a maneira da topbar do RADICAL-OS.
 
 ```
- MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃      a capa, e por baixo d'ella o espectro
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- 󰐊  󰒮  󰒭     Montagem Lunar Celestia     󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD     00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR  󰋗 HELP
-                                                           (a segunda linha da fita, com o mesmo fundo)
+ MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃         Montagem Lunar Celestia  ·  Celestia
+                                                          ┃      a capa, e por baixo d'ella o espectro
+ 󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD  󰐊  󰒮  󰒭  ▂▃▅▆▇█▇▅▃▂▁▂▄▆█▇▅▄▂▁▁▂▃▅▆▇▆▅▃  00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR  󰋗 HELP
 ```
 
-A fita le-se em TRES blocos, e cada segmento pinta o fundo d'elle nas DUAS
-linhas, com o rotulo em mono na de cima; estando a lousa de pe, a palavra em
-XIROD toma as duas e fica de facto ao centro da altura. A esquerda os tres
-botoes do transporte e o nome do que soa, cortado com «…» quando nao cabe. Ao
-CENTRO EXACTO o grupo das tres abas, a corrente em bloco solido e as outras
-em repouso: a collunha em que o grupo principia e a largura da fita menos a
-largura d'elle, a dividir por dous, donde elle NAO se move quando a faixa
-muda. A direita o tempo, o volume, o EMBARALHAR, o REPETIR e o HELP.
+A fita le-se da esquerda para a direita, na ordem d'elle: as tres ABAS (a
+corrente em bloco solido, as outras em repouso; a palavra em XIROD quando a
+lousa esta de pe), os tres BOTOES do transporte (tocar ou pausar, anterior,
+seguinte), o MEIO com a ONDA da faixa, e a direita o tempo, o volume, o
+EMBARALHAR, o REPETIR e o HELP. O meio toma tudo o que os outros deixam.
 
-Apertando a tela, quem cede sao as PONTAS, e por esta ordem: primeiro o nome
-corta, depois o HELP (o `?` continua a abri-lo), o REPETIR, o EMBARALHAR e o
-tempo; sómente quando
-nem assim cabe e que o grupo deixa o centro e se encosta. As abas ficam
-sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz,
-e clicar em qualquer cella do segmento vale o mesmo; clicar no trilho busca a
-posicao.
+A ONDA e a envolvente da faixa INTEIRA, a maneira do SoundCloud: uma barra por
+collunha, de um a oito oitavos, com o que ja tocou em violeta e o que falta
+apagado. Ella e o progresso, e e tambem o clique que busca: clicar n'uma
+collunha leva a faixa ao instante d'ella. Emquanto a onda se calcula (ou sem o
+ffmpeg, que a calcula) o meio mostra a barra chata de sempre, com as mesmas
+cores. O trilho que corria por cima da fita morreu: a onda faz o que elle fazia,
+e a lista ganhou a linha.
+
+O NOME do que soa deixou a fita e mora no alto do painel: o titulo em claro e o
+artista a seguir, ao centro, cortados com «…» quando nao cabem (o artista cede
+primeiro). Abaixo de cem collunhas nao ha painel, e o nome mostra-se so pelo «▶»
+da pauta.
+
+Apertando a tela, quem cede e a PONTA DIREITA, do fim para o principio: o HELP
+(o `?` continua a abri-lo), o REPETIR, o EMBARALHAR, o volume e o tempo, emquanto
+o meio tiver menos de doze collunhas. As abas e os botoes ficam sempre. Clicar
+n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz, e clicar em
+qualquer cella do segmento vale o mesmo.
 
 Encolhendo a tela em ALTURA, quem cede e o pe: sae primeiro o rodape das
-dicas, depois o trilho, e o campo de digitar por ultimo. A fita e a que fica.
-Nunca se mostra o tocador sem lista alguma.
+dicas, e o campo de digitar depois. A fita e a que fica. Nunca se mostra o
+tocador sem lista alguma.
 
 Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
 (`MY SONG, 42 FAIXAS, 1h29, FAIXAS`), com os degraus de dentro apartados por
@@ -558,10 +566,10 @@ voltam degrau nem entram em degrau algum; voltar e Escape ou Backspace, entrar
 e Enter.
 
 Sao peças focaveis as tres abas, os tres botoes do transporte, o volume, o
-EMBARALHAR, o REPETIR, o HELP, o trilho do progresso, a pauta e a capa. A peça com foco
+EMBARALHAR, o REPETIR, o HELP, a onda do meio da fita, a pauta e a capa. A peça com foco
 accende: no cabecalho, o segmento veste glow_core com o texto em panel, que e
 par distincto do violeta da aba em que se ESTA; a capa ganha um quadro da mesma
-cor; o trilho accende o que ja andou. Estando a lousa de pe, a chapa em XIROD
+cor; a onda accende o que ja andou. Estando a lousa de pe, a chapa em XIROD
 da aba focada sae desse mesmo par, e nao do violeta da corrente: a imagem e a
 cella debaixo della lêem UM so degrau, e por isso nao se desencontram.
 
@@ -584,8 +592,9 @@ geometria e que virou.
 Enter e espaco na peça com foco fazem exactamente o que o clique faria nella, e
 pelo mesmo caminho: Enter em PLAYLISTS abre a lista das listas, Enter no botao
 de tocar pausa, Enter em EMBARALHAR liga o modo, Enter no volume cala a Casa. O
-trilho e a excepçao declarada: o clique nelle leva a collunha em que o dedo
-pousou, e tecla alguma carrega collunha, donde o Enter alli nao busca nada.
+meio da fita (a onda) e a excepçao declarada: o clique nelle leva a collunha em
+que o dedo pousou, e tecla alguma carrega collunha, donde o Enter alli nao
+busca nada.
 
 As seis de funcção fazem o que o `p`, o espaco, o `n`, o `-` e o `+` ja
 faziam, e desaguam nas mesmas ordens. Sómente o F9 e novo: elle guarda o
@@ -606,7 +615,7 @@ Clicar n'uma aba da fita vae a ella, e a linha de baixo do segmento vale como
 a de cima, que a caixa e de duas e o dedo nao sabe de linhas; clicar n'uma
 faixa elege-a, e clicar
 na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
-no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
+na onda busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
 clique no volume cala a Casa e devolve-lhe o volume inteiro, o clique na capa
 pausa e retoma, o clique no HELP abre a ajuda, e a roda anda tres linhas na
 pauta. Sobre o
