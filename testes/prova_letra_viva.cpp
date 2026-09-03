@@ -90,5 +90,35 @@ TEST_CASE("o nascimento é de quatro segundos ou do intervallo menor") {
   CHECK(tui::nascimento_da_linha(apertados, 9) == doctest::Approx(4.0));
 }
 
+TEST_CASE("a linha nasce na base sobe e chega á leitura no instante d'ella") {
+  // ANTES de nascer não ha rio nenhum.
+  CHECK(tui::quadro_da_letra(kVersos, 5.9, kLargura, kAltura).vazio());
+
+  // AO NASCER, seis segundos, que são os quatro antes dos dez.
+  const tui::QuadroDaLetra nasce =
+      tui::quadro_da_letra(kVersos, 6.0, kLargura, kAltura);
+  REQUIRE(d_ella(nasce, 0) != nullptr);
+  CHECK(d_ella(nasce, 0)->linha_da_tela == kBase);
+  CHECK(d_ella(nasce, 0)->resolvida == doctest::Approx(0.0));
+  CHECK(d_ella(nasce, 0)->tinta == tk::text_faint);
+  CHECK_FALSE(d_ella(nasce, 0)->corrente);
+
+  // A MEIO da subida: metade do vão de sete, que arredonda para quatro.
+  const tui::QuadroDaLetra meio =
+      tui::quadro_da_letra(kVersos, 8.0, kLargura, kAltura);
+  CHECK(d_ella(meio, 0)->linha_da_tela == kBase - 4);
+  CHECK(d_ella(meio, 0)->resolvida == doctest::Approx(0.5));
+  CHECK(d_ella(meio, 0)->tinta == tk::text_body);
+
+  // NO INSTANTE: a linha de leitura, inteira e brilhante.
+  const tui::QuadroDaLetra canta =
+      tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura);
+  CHECK(d_ella(canta, 0)->linha_da_tela == kLeitura);
+  CHECK(d_ella(canta, 0)->resolvida == doctest::Approx(1.0));
+  CHECK(d_ella(canta, 0)->tinta == tk::text_bright);
+  CHECK(d_ella(canta, 0)->corrente);
+  CHECK(d_ella(canta, 0)->texto == "abcde");
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
