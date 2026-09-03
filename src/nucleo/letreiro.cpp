@@ -15,6 +15,9 @@
 
 #include <string>
 
+#include "nucleo/aquisicao.hpp"  // corre(): o exec sem shell
+#include "nucleo/sonda.hpp"      // familia_installada: o fontconfig
+
 namespace mysong::nucleo {
 
 // argumentos_do_letreiro — o `--font` leva a familia e o corpo n'UM argumento,
@@ -76,6 +79,33 @@ std::filesystem::path caminho_da_chapa_em_cache(const Pedido& pedido) {
   const std::filesystem::path raiz = raiz_do_cache();
   if (raiz.empty()) return {};
   return raiz / "letreiro" / (chave_do_letreiro(pedido) + ".png");
+}
+
+Parecer parecer_do_letreiro(ModoDaLousa modo, bool ha_pango,
+                            bool ha_familia) {
+  if (modo == ModoDaLousa::Nao)
+    return {false, "desligado com a lousa: lousa = nao"};
+  // O PROGRAMA antes da FONTE, pela razão do parecer da lousa: quem não tem o
+  // pacote ha de ler o remedio do pacote, e não o da fonte.
+  if (!ha_pango) return {false, "falta o pango-view (pango1.0-tools)"};
+  if (!ha_familia)
+    return {false, "falta a fonte Xirod em ~/.local/share/fonts"};
+  return {true, "Xirod, pango-view"};
+}
+
+bool ha_pango_view() {
+  // Corre-se-lhe o `--version`, pelo molde do `versao_da_lousa`: perguntar ao
+  // PATH á mão daria a mesma resposta por caminho que esta Casa já tem.
+  std::string colhido;
+  return corre({"pango-view", "--version"}, &colhido) == 0;
+}
+
+bool ha_familia_da_marca() { return familia_installada(FAMILIA_DA_MARCA); }
+
+// texto_do_letreiro — a razão vae de pé ou deitado, e é ella a linha inteira:
+// de pé ella diz «Xirod, pango-view», que é o que a issue pede á lettra.
+std::string texto_do_letreiro(const Parecer& parecer) {
+  return "\n  letreiro: " + parecer.razao + "\n";
 }
 
 }  // namespace mysong::nucleo

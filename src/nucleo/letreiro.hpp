@@ -75,6 +75,21 @@ std::string chave_do_letreiro(const Pedido& pedido);
 // Vazio sem XDG_CACHE_HOME e sem HOME, que ahi cache não ha.
 std::filesystem::path caminho_da_chapa_em_cache(const Pedido& pedido);
 
+// parecer_do_letreiro — a decisão, PURA pelo molde do `parecer_da_lousa`: o
+// mundo entra por dous bools, para que o caminho da recusa se observe n'esta
+// machina, que tem os dous. O ajuste da LOUSA manda aqui, e chave propria não
+// se abriu: chapa sem lousa não tem onde se pôr, e duas alavancas para a mesma
+// cousa dariam ao operador dous logares por onde desligar uma só.
+Parecer parecer_do_letreiro(ModoDaLousa modo, bool ha_pango, bool ha_familia);
+
+// As duas perguntas ao MUNDO, á parte do parecer pela razão do `ha_display`.
+bool ha_pango_view();
+bool ha_familia_da_marca();
+
+// texto_do_letreiro — a linha do --sonda, pura pelo precedente do
+// `texto_da_lousa`: escape algum sahe d'aqui.
+std::string texto_do_letreiro(const Parecer& parecer);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
