@@ -13,6 +13,7 @@
 
 #include "nucleo/aquisicao.hpp"  // corre(): o fork e o exec sem shell
 
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <cstdlib>
@@ -36,7 +37,43 @@ std::atomic<int> o_filho{-1};
 
 void mata_o_filho() {
   const int quem = o_filho.exchange(-1);
-  if (quem > 0) ::kill(quem, SIGTERM);
+  // SIGKILL, pela razão do PDEATHSIG: esta funcção só corre com o tocador já a
+  // morrer, e o ueberzugpp APANHA o SIGTERM. O `exchange` de um atomico sem
+  // fechadura é dos poucos que a norma admitte dentro de tratador de signal.
+  if (quem > 0) ::kill(quem, SIGKILL);
+}
+
+// A REDE DOS SIGNAES, e é a terceira porta. Morrendo o tocador pela acção
+// PADRÃO de um signal, o destructor não corre e o `atexit` tambem não: o FTXUI,
+// ao receber HUP, INT ou TERM, repõe o tratador de antes e torna a levantar o
+// signal (app.cpp, RestoreSignalHandlerAndRaise), e a acção padrão mata sem
+// desenrolar cousa alguma. As duas portas da Casa fechavam-se ao mesmo tempo.
+//
+// E o tratador de antes é JUSTAMENTE este: instalado antes do Loop, elle entra
+// na taboa dos «de antes» do FTXUI, e é para elle que o levantar torna. A tela
+// já foi devolvida ao terminal quando isto corre.
+struct sigaction o_de_antes[NSIG];
+
+void mata_e_repassa(int signal) {
+  mata_o_filho();  // um kill() e nada mais: é o que cabe n'um tratador
+  if (signal > 0 && signal < NSIG) {
+    ::sigaction(signal, &o_de_antes[signal], nullptr);
+    ::raise(signal);
+  }
+}
+
+void amarra_os_signaes() {
+  struct sigaction assim;
+  assim.sa_handler = mata_e_repassa;
+  ::sigemptyset(&assim.sa_mask);
+  assim.sa_flags = SA_RESTART;
+  for (const int qual : signaes_da_lousa())
+    ::sigaction(qual, &assim, &o_de_antes[qual]);
+}
+
+void solta_os_signaes() {
+  for (const int qual : signaes_da_lousa())
+    ::sigaction(qual, &o_de_antes[qual], nullptr);
 }
 
 // ergue — o fork com CANO na entrada do filho: devolve o pid, e menos um
@@ -81,9 +118,14 @@ int ergue(int* cano) noexcept {
     // novo. E o fecho guarda-se contra `par[1]` valer zero, que ahi elle
     // fecharia a entrada que se acabou de armar.
     if (par[1] != STDIN_FILENO) ::close(par[1]);
-    // A MORTE PROMETTIDA: cahindo o tocador por signal, o systema manda SIGTERM
-    // a este filho. E pergunta-se pelo pae, que elle pode ter morrido no meio.
-    ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    // A MORTE PROMETTIDA, e agora com SIGKILL. Era SIGTERM, e SIGTERM não
+    // bastava: MEDIDO em 03/09 no /proc d'elle, o ueberzugpp APANHA o SIGHUP,
+    // o SIGINT e o SIGTERM (SigCgt 0x100004003), e signal apanhavel é PEDIDO e
+    // não garantia. Parado ou preso, elle guarda-o pendente (ShdPnd 0x4001) e
+    // vive, reparentado ao gestor da sessão: é o orphão que a irmã viu vinte e
+    // quatro vezes. O SIGKILL alcança o mesmo processo parado, e é a unica
+    // porta que o kernel fecha sem pedir licença a ninguem.
+    ::prctl(PR_SET_PDEATHSIG, SIGKILL);
     // O limite d'esta guarda fica dito: em sessão com sub-reaper (o gestor do
     // utilizador é um), o orphão vae parar a elle e não ao pid um, d'onde ella
     // cala-se. Falha ABERTA, e a corrida que cobre é de microsegundos.
@@ -124,9 +166,13 @@ Lousa::Lousa(ModoDaLousa modo) noexcept
   // encheria a taboa d'elle na bateria que erguesse muitas lousas.
   static const bool registado = std::atexit(mata_o_filho) == 0;
   (void)registado;
+  amarra_os_signaes();
 }
 
 Lousa::~Lousa() noexcept {
+  // Solta-se ANTES de matar: o tratador já não tem filho que valha, e deixál-o
+  // posto faria a lousa seguinte achar a rede d'esta na taboa dos «de antes».
+  if (filho_ > 0) solta_os_signaes();
   tira_tudo();
   // O fim do cano é o pedido de sahir em ordem; o SIGTERM vem depois, para o
   // caso de elle estar preso a redimensionar uma imagem grande.
@@ -212,11 +258,14 @@ bool Lousa::tira(std::string_view identidade) noexcept {
 void Lousa::empurra(const std::filesystem::path& imagem) noexcept {
   if (!disponivel() || imagem.empty()) return;
   empurrao_ = !empurrao_;
-  // Quatro mil célullas á esquerda: terminal algum está a tanto do canto da
-  // tela, d'onde a janella cae inteira fóra d'ella e ninguem a vê. Não entra
-  // nas `postas_` de proposito: não ha o que tirar de janella que se não vê, e
-  // o filho leva-a comsigo ao morrer.
-  escreve(ordem_de_por("empurrao", imagem, empurrao_ ? -4000 : -4001, 0, 1, 1));
+  // Mil e quinhentas célullas á esquerda: terminal algum está a tanto do canto,
+  // d'onde a janella cae inteira fóra da tela e ninguem a vê. Não entra nas
+  // `postas_` de proposito: não ha o que tirar de janella que se não vê, e o
+  // filho leva-a comsigo ao morrer.
+  escreve(ordem_de_por("empurrao", imagem,
+                       empurrao_ ? COLLUNHA_DO_EMPURRAO
+                                 : COLLUNHA_DO_EMPURRAO - 1,
+                       0, LARGURA_DO_EMPURRAO, ALTURA_DO_EMPURRAO));
 }
 
 void Lousa::tira_tudo() noexcept {
@@ -278,6 +327,19 @@ OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
              : OrdemDaCapa::Tira;
 }
 
+// lados_do_empurrao — a reducção do Überzug++ em duas linhas: cabe por dentro,
+// proporção guardada. Escripta aqui, e não sómente confiada, porque é d'ella
+// que se prova que lado algum chega a zero.
+Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept {
+  if (imagem.largura == 0 || imagem.altura == 0) return {};
+  const std::size_t caixa_larga = LARGURA_DO_EMPURRAO * cellula.largura;
+  const std::size_t caixa_alta = ALTURA_DO_EMPURRAO * cellula.altura;
+  // Manda o lado que aperta primeiro, que é o da MENOR razão de reducção.
+  return caixa_larga * imagem.altura <= caixa_alta * imagem.largura
+             ? Medida{caixa_larga, caixa_larga * imagem.altura / imagem.largura}
+             : Medida{caixa_alta * imagem.largura / imagem.altura, caixa_alta};
+}
+
 Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa) {
   if (modo == ModoDaLousa::Nao)
     return {false, "desligada pelo ajuste: lousa = nao"};
@@ -305,6 +367,16 @@ std::string versao_da_lousa() {
   if (fim != std::string::npos) colhido.resize(fim);
   while (!colhido.empty() && colhido.back() == '\r') colhido.pop_back();
   return colhido;
+}
+
+const std::vector<int>& signaes_da_lousa() {
+  static const std::vector<int> kQuaes = {SIGHUP, SIGINT, SIGQUIT, SIGTERM};
+  return kQuaes;
+}
+
+bool signal_amarrado(int signal) noexcept {
+  const std::vector<int>& quaes = signaes_da_lousa();
+  return std::find(quaes.begin(), quaes.end(), signal) != quaes.end();
 }
 
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao) {

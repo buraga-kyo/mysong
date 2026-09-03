@@ -228,6 +228,31 @@ disco e nao memoria. O nome sahe do conteudo, donde duas faixas com a mesma arte
 partilham um arquivo so. Apagar essa pasta nao perde nada: a proxima corrida
 torna a escrever.
 
+#### Um limite MEDIDO: a imagem pode sahir do canto
+
+O `ueberzugpp` nao recebe o canto em pixeis: recebe a CELLA, e mede sozinho onde
+o terminal comeca e quanto vale uma cella. E mede pelo PROCESSO: sobe a arvore
+dos paes ate achar um que tenha terminal, e toma o tamanho D'ESSE.
+
+Aberto o mysong pelo proprio terminal, isso da o terminal certo. Aberto de
+dentro de OUTRA sessao (um script disparado de outra janella, um agente, um
+tmux por baixo de outro), o que elle acha e o terminal do pae, e a conta sahe
+pela medida errada: toda imagem apparece deslocada do mesmo tanto, metade da
+differenca entre as duas medidas.
+
+Medido em 03/09 n'esta machina: mysong n'um Alacritty de 167x67 (1503x1340
+pixeis) aberto de dentro de um paine de 54x64 (486x1280) sahiu com a capa E as
+tres chapas 508 pixeis a direita e 30 abaixo, todas pelo mesmo tanto. A mesma
+janella aberta SOLTA da arvore (`setsid --fork alacritty ...`) leu 167x67 e tudo
+cahiu no logar, ate a cella.
+
+Quem quiser conferir: o `ueberzugpp` escreve em `/tmp/ueberzugpp-$USER.log` a
+linha `ioctl sizes: COLS=... ROWS=...`, e alli se ve que terminal elle mediu.
+
+Do lado do mysong nao ha o que corrigir: o protocolo do `ueberzugpp` so aceita
+a cella, e a conta do canto e d'elle. O remedio e abrir o tocador pelo terminal
+em que se quer ve-lo.
+
 ### As palavras de marca em XIROD, pelo letreiro
 
 Havendo lousa, havendo o `pango-view` e havendo a fonte XIROD installada, as
@@ -453,10 +478,11 @@ d'aquelle logar em vez de mandar varrer.
 | F10 / F11 | volume, por degrau de cinco |
 | `z` | liga e desliga o embaralhar |
 | `x` | cicla o repetir: nenhuma, uma, todas |
-| `j` / `k` ou `↑` / `↓` | anda na lista |
+| `↑` `↓` `←` `→` | anda pelo LAYOUT: leva o foco de peça em peça |
+| `j` / `k` | anda na lista |
 | `g` / `G` ou Home / End | ao principio, ao fim da lista |
-| Enter ou `→` | entra (artista, album, faixa) |
-| Escape, Backspace ou `←` | volta um degrau |
+| Enter ou espaco | aperta a peça com foco; na pauta, Enter entra e espaco pausa |
+| Escape ou Backspace | volta um degrau |
 | `/` | filtra a lista que esta a vista |
 | `s` | busca na rede, pelo yt-dlp; Enter no achado baixa-o |
 | `f` | troca a fonte da busca, dentro da lista da rede: YouTube, YouTube Music, Spotify |
@@ -479,6 +505,39 @@ d'aquelle logar em vez de mandar varrer.
 | `m` | abre o menu de contexto sobre a faixa eleita |
 | `q` | sahe |
 
+### As setas andam pelo layout
+
+As quatro setas servem a UMA cousa: levar o foco de peça em peça. Ellas nao
+voltam degrau nem entram em degrau algum; voltar e Escape ou Backspace, entrar
+e Enter.
+
+Sao peças focaveis as tres abas, os tres botoes do transporte, o volume, o
+EMBARALHAR, o REPETIR, o trilho do progresso, a pauta e a capa. A peça com foco
+accende: no cabecalho, o segmento veste glow_core com o texto em panel, que e
+par distincto do violeta da aba em que se ESTA; a capa ganha um quadro da mesma
+cor; o trilho accende o que ja andou. Estando a lousa de pe, a chapa em XIROD
+da aba focada sae desse mesmo par, e nao do violeta da corrente: a imagem e a
+cella debaixo della lêem UM so degrau, e por isso nao se desencontram.
+
+A regra do salto e uma so: a peça mais proxima na direcçao da seta, medida
+entre os centros das caixas, e sómente entre as que cruzam a peça corrente no
+outro eixo. E dahi que a seta anda no seu corredor. Nao havendo candidata na
+direcçao, o foco FICA: a tela nao da a volta, que dar a volta levaria o olho ao
+canto opposto donde elle olhava. Por isso o `←` na pauta nao faz cousa alguma,
+e nomeadamente nao volta degrau algum.
+
+O foco começa na PAUTA. Dentro della o `↑` e o `↓` continuam a andar na lista,
+e sómente no alto o `↑` sobe ao cabecalho; o `→` sae para o painel da direita,
+onde a capa e o botao de pausa e retoma, como no rato. Do cabecalho, o `↓`
+torna ao que cada segmento tem por baixo: os seis da esquerda a pauta, e os
+tres da direita a capa, que mora no painel debaixo delles.
+
+Enter e espaco na peça com foco fazem exactamente o que o clique faria nella, e
+pelo mesmo caminho: Enter em PLAYLISTS abre a lista das listas, Enter no botao
+de tocar pausa, Enter em EMBARALHAR liga o modo, Enter no volume cala a Casa. O
+trilho e a excepçao declarada: o clique nelle leva a collunha em que o dedo
+pousou, e tecla alguma carrega collunha, donde o Enter alli nao busca nada.
+
 As seis de funcção fazem o que o `p`, o espaco, o `n`, o `-` e o `+` ja
 faziam, e desaguam nas mesmas ordens. Sómente o F9 e novo: elle guarda o
 volume, cala o motor, e o segundo F9 devolve EXACTAMENTE o que havia. Emquanto
@@ -497,7 +556,8 @@ tmux 3.4 com `set -g extended-keys on` entrega as seis.
 Clicar n'uma aba do cabecalho vae a ella; clicar n'uma faixa elege-a, e clicar
 na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
 no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
-clique na capa pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
+clique no volume cala a Casa e devolve-lhe o volume inteiro, o clique na capa
+pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
 cabecalho a roda fica muda: n'uma fita de tres abas ella trocaria de seccao por
 acaso, com o dedo a caminho de outra peca. O botao direito n'uma faixa abre o
 menu de contexto d'ella, que a seccao abaixo descreve. Dentro do tmux, isto pede
@@ -576,6 +636,14 @@ sempre a vista, subindo como um rio:
   instante exacto em que a voz a canta.
 - Ali ella fica ate a proxima chegar. Dai sobe uma linha por segundo, apagando,
   e some na linha zero.
+
+Com a lousa e o letreiro de pe, a linha que esta na linha de leitura CRISTALIZA:
+por cima das celulas della assenta uma chapa da mesma linha em XIROD, em brilho
+cheio sobre o fundo do painel, e a chapa da proxima ja se rasteriza quando ella
+nasce na base, para estar pronta no instante. A chapa sai quando a linha deixa a
+leitura, quando o foco sai da janela, quando o `l` esconde o rio e quando a
+faixa muda; sem lousa ou sem letreiro nada muda, que a linha em mono continua
+pintada por baixo della.
 
 A celula que tem letra pinta a letra com o fundo do painel, escondendo SO a
 celula da barra debaixo della. O espaco entre as palavras deixa passar a barra,

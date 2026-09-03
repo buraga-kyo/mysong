@@ -28,6 +28,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "nucleo/letra.hpp"
+#include "nucleo/letreiro.hpp"  // PedidoDaChapa: a linha corrente em XIROD
 #include "tui/espectro.hpp"
 #include "tui/sala.hpp"
 #include "tui/tokens.hpp"
@@ -66,9 +67,17 @@ struct LinhaViva {
   std::size_t linha_da_tela = 0;  // zero é o TOPO, como no Quadro do espectro
   std::size_t collunha = 0;       // onde o texto assenta, já centrado
   std::string texto;              // cortado á largura, e com o embaralho do instante
+  // O VERSO como se LÊ: cortado á mesma largura, e sem embaralho algum. É elle
+  // que a chapa em XIROD rasteriza (issue #110), e nunca o `texto`: imagem de
+  // glyphos embaralhados seria lixo desenhado com esmero.
+  std::string verso;
   std::string_view tinta = tokens::text_faint;
   double resolvida = 0.0;         // a fracção de glyphos já resolvidos, em [0,1]
   bool corrente = false;          // está na linha de leitura, e é a que se canta
+  // SOBE — nasceu na base e ainda não chegou. UMA sómente em cada quadro, que o
+  // nascimento se cinge ao intervallo desde a anterior: duas a subir juntas não
+  // ha. É por ella que a chapa da PROXIMA se adianta.
+  bool sobe = false;
 };
 
 // O QUADRO DA LETRA: as linhas Á VISTA n'uma posição, e mais nada. Linha que
@@ -122,11 +131,56 @@ QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
 // campo a que se chegue por conta: a issue irmã da letra em XIROD pende d'ella.
 const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro);
 
+// linha_que_sobe_do_rio — a que nasceu na base e ainda sobe, ou nada. Serve á
+// chapa da PROXIMA (issue #110), que se rasteriza ao nascer d'ella para estar
+// prompta no instante em que a voz a canta.
+const LinhaViva* linha_que_sobe_do_rio(const QuadroDaLetra& quadro);
+
 // caixa_da_corrente — o rectangulo que a linha corrente occupa, em coordenadas
 // do RECTANGULO DO ESPECTRO e não da tela: quem a põe na tela somma-lhe o canto
 // do painel, que é o unico que sabe onde o painel começa. Vazio quando não ha
 // linha corrente, e por ahi se sabe que chapa alguma se ha de pôr.
 Rectangulo caixa_da_corrente(const QuadroDaLetra& quadro);
+
+// A IDENTIDADE por que a lousa conhece a janella da chapa em XIROD. FIXA, e uma
+// só: o verso troca, a janella é a mesma, e assim o que sae não deixa fantasma
+// por baixo do que chega.
+inline constexpr std::string_view IDENTIDADE_DA_LETRA = "letra";
+
+// A ORDEM que o pintor dá á lousa quanto á chapa da linha corrente. Sahe UMA de
+// cada quadro, e sempre: quadro sem corrente ha de dizer que chapa não tem,
+// senão a do quadro anterior ficava na tela por cima do verso novo.
+struct ChapaDaLetra {
+  bool poe = false;  // falso é o Tira, e é o que o quadro sem corrente pede
+  int collunha = 0;  // em coordenadas da TELA: o canto do painel já sommado
+  int linha = 0;
+  std::size_t cellulas = 0;  // a largura do verso, e d'ella sae a proporção
+  std::string verso;         // o texto já cortado, tal qual o rio o corta
+  // O que se ADIANTA: o verso da linha que nasceu na base e ainda sobe. Não se
+  // põe; rasteriza-se, para que no instante d'ella a chapa esteja em disco.
+  std::string adiantado;
+  std::size_t cellulas_adiantadas = 0;
+};
+
+// ordem_da_chapa_da_letra — a decisão, PURA pelo molde do `ordens_das_chapas`
+// do cabeçalho: o foco e o `l` entram em TODO quadro, e não sómente no do
+// evento, que o FTXUI desenha logo depois de correr os eventos. O `l` entra POR
+// SI, e não pela via de o rio vir vazio: alavanca do operador é facto do mundo,
+// como o foco, e facto que a bateria não interrogue á parte não se prova.
+//
+// `espectro` é o rectangulo d'elle na TELA (o da Sala, já descontada a capa): é
+// a sommar-lh'o que a caixa do rio vira canto de janella.
+ChapaDaLetra ordem_da_chapa_da_letra(const QuadroDaLetra& rio,
+                                     const Rectangulo& espectro,
+                                     bool letreiro_de_pe, bool foco_dentro,
+                                     bool mostra_letra);
+
+// pedido_da_chapa_da_letra — o que se manda rasterizar: o verso em text_bright
+// sobre o fundo do painel, que é a tinta do brilho cheio da linha de leitura. O
+// verso e as cellas vão SOLTOS, e não a ordem inteira, por a mesma funcção
+// servir á chapa que se põe e á que se adianta.
+nucleo::PedidoDaChapa pedido_da_chapa_da_letra(const std::string& verso,
+                                               std::size_t cellulas);
 
 // Uma CÉLULLA do rio: o espectro por baixo, a letra por cima. `letra` verdadeiro
 // quer dizer que a célulla é de LETRA, e leva o FUNDO DO PAINEL por cama: é assim

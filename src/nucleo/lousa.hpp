@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "nucleo/ajustes.hpp"  // ModoDaLousa: a alavanca do operador
+#include "nucleo/capa.hpp"     // Medida: a chapa mede-se como a capa
 
 namespace mysong::nucleo {
 
@@ -82,6 +83,43 @@ std::string versao_da_lousa();
 // texto_dos_ajustes: escape algum sahe d'aqui.
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 
+// signaes_da_lousa — os signaes de sahida que a lousa AMARRA emquanto está de
+// pé: HUP, INT, QUIT e TERM. São os que matam o processo pela acção padrão
+// d'elles e que se podem apanhar. O SIGKILL e o SIGSTOP não entram, e não por
+// esquecimento: apanhál-os é impossivel, e pedil-o ao systema é um «não» calado
+// que faria esta lista mentir. Contra esses dous a rede é o PR_SET_PDEATHSIG.
+//
+// PURA, e a bateria afere-a sem erguer processo nem instalar tratador algum.
+const std::vector<int>& signaes_da_lousa();
+
+// signal_amarrado — se aquelle numero está na lista acima.
+bool signal_amarrado(int signal) noexcept;
+
+// COLLUNHA_DO_EMPURRAO — onde nasce a janella que nada mostra. Negativa para
+// cahir fóra de todo terminal, e não MAIS negativa por uma razão medida: a
+// coordenada de uma janella do X11 é inteiro de dezasseis bits com signal, e o
+// producto d'esta collunha pela largura da cella tem de caber n'elle. Com
+// quatro mil o producto dava menos trinta e seis mil, transbordava, e a janella
+// nascia a trinta mil pixeis á DIREITA; n'esta tela ficou invisivel por acaso,
+// e em tela mais larga apparecia. Mil e quinhentas cabem de sobra.
+inline constexpr int COLLUNHA_DO_EMPURRAO = -1500;
+
+// A CAIXA do empurrão, em célullas: larga e alta, e nunca de UMA. O Überzug++
+// encolhe guardando a proporção, e chapa de uma linha é muito mais larga que
+// alta: cabendo n'uma cella, a altura arredonda a ZERO e o OpenCV d'elle
+// ABORTA na redimensão (asserção `inv_scale_x > 0`), levando comsigo a capa e
+// as abas. Medido pela lavra da letra em 03/09. Sessenta e quatro por trinta e
+// dous aguentam proporção de mil e cento e cinquenta para um, e a chapa mais
+// larga que esta Casa faz é a da linha inteira, que não passa de setenta e
+// cinco. A janella é invisivel, d'onde o tamanho d'ella nada custa ao olho.
+inline constexpr std::size_t LARGURA_DO_EMPURRAO = 64;
+inline constexpr std::size_t ALTURA_DO_EMPURRAO = 32;
+
+// lados_do_empurrao — quantos pixeis a imagem toma DENTRO d'essa caixa, pela
+// mesma reducção que o Überzug++ faz. PURA, e é o que a bateria afere: lado
+// ZERO é o que o faz abortar, e nenhum dos dous ha de chegar lá.
+Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept;
+
 // A ORDEM que o pintor da a lousa quanto á capa, e as duas unicas que ha.
 enum class OrdemDaCapa { Tira, Poe };
 
@@ -129,9 +167,9 @@ class Lousa {
   // faça redesenhar a tela toda. A de duas linhas desenha-se sósinha; a de uma
   // não, e a chapa do letreiro (issue #108) tem uma linha.
   //
-  // Empurra-se com um `add` MUITO fóra da tela, que o X11 recorta inteiro seja
-  // qual for o canto em que o terminal esteja, e que troca de logar a cada
-  // empurrão para o deduplicador do `poe` o deixar passar.
+  // Empurra-se com um `add` fóra da tela (a COLLUNHA_DO_EMPURRAO), que o X11
+  // recorta inteiro seja qual for o canto em que o terminal esteja, e que troca
+  // de logar a cada empurrão para o deduplicador do `poe` o deixar passar.
   void empurra(const std::filesystem::path& imagem) noexcept;
 
   // escritas — quantas ordens sahiram pelo cano. É por ella que quem chama
