@@ -67,19 +67,23 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
                                  "Montagem Lunar Celestia 1.0 (SLOWED)", 167),
       167);
 
-  // A conta, feita á mão: a fita da esquerda pede 51 collunhas (11 da primeira
-  // aba, 13 da segunda, 12 da terceira, 3 por botão, e as 6 setas), a da
-  // direita pede 52 (a seta de entrada, 15 do tempo, 8 do volume, 14 do
-  // embaralhar, 11 do repetir, e as 3 setas do meio), e o nome toma as 64 que
-  // sobram: 51 mais 64 mais 52 dão 167 em ponto.
-  CHECK(pedaco(tela, 0, 11) == " \U000f075a MY SONG ");
+  // A conta, feita á mão (issue #125): os botões pedem 12 collunhas (3 cada e
+  // as 3 setas), o grupo das abas pede 39 (11, 13 e 12 das palavras e as 3
+  // setas) e a ponta direita pede 52. O grupo principia no CENTRO EXACTO, que
+  // é 167 menos 39 a dividir por dous: a collunha 64. Ao nome ficam as 52 que
+  // vão dos botões ao grupo, e ao vão da outra banda as 12 que sobram.
+  CHECK(pedaco(tela, 0, 3) == " \U000f03e4 ");    // toca: o botão diz PAUSAR
+  CHECK(pedaco(tela, 4, 3) == " \U000f04ae ");    // anterior
+  CHECK(pedaco(tela, 8, 3) == " \U000f04ad ");    // seguinte
   CHECK(pedaco(tela, 11, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 12, 13) == " \U000f0cb8 PLAYLISTS ");
-  CHECK(pedaco(tela, 26, 12) == " \U000f01da DOWNLOAD ");
-  CHECK(pedaco(tela, 39, 3) == " \U000f03e4 ");   // toca: o botão diz PAUSAR
-  CHECK(pedaco(tela, 43, 3) == " \U000f04ae ");   // anterior
-  CHECK(pedaco(tela, 47, 3) == " \U000f04ad ");   // seguinte
-  CHECK(pedaco(tela, 51, 36) == "Montagem Lunar Celestia 1.0 (SLOWED)");
+  // O nome CENTRADO nas 52 collunhas d'elle: 36 de titulo, 8 de cada banda.
+  CHECK(pedaco(tela, 12, 52) ==
+        "        Montagem Lunar Celestia 1.0 (SLOWED)        ");
+  CHECK(pedaco(tela, 64, 11) == " \U000f075a MY SONG ");
+  CHECK(pedaco(tela, 75, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 76, 13) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 90, 12) == " \U000f01da DOWNLOAD ");
+  CHECK(pedaco(tela, 103, 12) == "            ");
   CHECK(pedaco(tela, 115, 1) == "\ue0b2");        // a seta de entrada da direita
   CHECK(pedaco(tela, 116, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(tela, 132, 8) == " \U000f057e 100% ");
