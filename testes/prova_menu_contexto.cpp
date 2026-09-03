@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -47,4 +48,48 @@ TEST_CASE("o menu abre na faixa alvo, no primeiro item e sem submenu") {
   CHECK(menu.titulo == "Montagem Lunar Celestia");
   CHECK(menu.item == 0);
   CHECK_FALSE(menu.submenu);
+}
+
+TEST_CASE("as setas andam pelos cinco itens, e dão a volta") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  for (std::size_t passo = 1; passo < tui::QUANTOS_ITENS; ++passo) {
+    CHECK(tui::tecla_no_menu(menu, ftxui::Event::ArrowDown).pedido ==
+          tui::PedidoDoMenu::Nada);
+    CHECK(menu.item == passo);
+  }
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);  // do ultimo ao primeiro
+  CHECK(menu.item == 0);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowUp);  // e do primeiro ao ultimo
+  CHECK(menu.item == tui::QUANTOS_ITENS - 1);
+  CHECK(menu.aberto);  // andar não fecha
+}
+
+TEST_CASE("a seta direita abre o submenu das listas e a esquerda fecha-o") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowRight);
+  CHECK_FALSE(menu.submenu);  // no TOCAR a direita não abre cousa alguma
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowRight);
+  CHECK(menu.submenu);
+  CHECK(menu.lista == 0);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  CHECK(menu.lista == 1);
+  CHECK(menu.item == 1);  // dentro do submenu a seta anda nas LISTAS
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowLeft);
+  CHECK_FALSE(menu.submenu);
+  CHECK(menu.aberto);  // fechar o submenu não fecha o menu
+}
+
+TEST_CASE("o Escape fecha o menu, e o botão a descer tambem") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  tui::tecla_no_menu(menu, clique(ftxui::Mouse::Left, ftxui::Mouse::Released));
+  CHECK(menu.aberto);  // o soltar do proprio clique que o abriu não o fecha
+  tui::tecla_no_menu(menu, clique(ftxui::Mouse::Left, ftxui::Mouse::Pressed));
+  CHECK_FALSE(menu.aberto);
+  menu = menu_de_pe(tres_listas());
+  tui::tecla_no_menu(menu, ftxui::Event::Escape);
+  CHECK_FALSE(menu.aberto);
+  // E menu fechado consome tecla nenhuma: o pedido sahe Nada, e o estado fica.
+  CHECK(tui::tecla_no_menu(menu, ftxui::Event::Return).pedido ==
+        tui::PedidoDoMenu::Nada);
 }

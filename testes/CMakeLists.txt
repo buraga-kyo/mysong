@@ -183,3 +183,6 @@ target_sources(mysong_testes PRIVATE prova_lousa.cpp)
 
 # ─── Prova do cabeçalho em abas (issue #102): por target_sources, a regra ────
 target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)
+
+# ─── Prova do menu de contexto (issue #96): por target_sources, a regra ─────
+target_sources(mysong_testes PRIVATE prova_menu_contexto.cpp)
