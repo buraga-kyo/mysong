@@ -177,6 +177,37 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
   return feito + "…" + std::string(largura - gastas - 1, ' ');
 }
 
+// pintar_fita — os pedaços em elementos, com a caixa de CADA segmento pendurada
+// pela ORDEM em que a fita o juntou, e não pelo glifo que elle mostra. A irmã
+// do letreiro troca a palavra da aba por uma imagem, e caixa achada por texto
+// perder-se-hia n'essa troca sem que nada o accusasse.
+//
+// O `proprio` é a pintura que o segmento traz de si: nulla, veste-se elle pelo
+// par de côres que a fita já resolveu. É por esta porta que a aba entra com a
+// sua propria pintura sem que a fita deixe de resolver as junções.
+ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
+                           const std::vector<ftxui::Box*>& caixas,
+                           const std::vector<ftxui::Element>& proprios) {
+  std::vector<ftxui::Element> partes;
+  partes.reserve(pedacos.size());
+  std::size_t qual = 0;  // o indice do SEGMENTO, que a junção não adianta
+  for (const Pedaco& pedaco : pedacos) {
+    if (pedaco.juncao) {
+      partes.push_back(vestir(pedaco.texto, pedaco.tinta, pedaco.fundo));
+      continue;
+    }
+    ftxui::Element parte =
+        qual < proprios.size() && proprios[qual] != nullptr
+            ? proprios[qual]
+            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo);
+    if (qual < caixas.size() && caixas[qual] != nullptr)
+      parte = parte | ftxui::reflect(*caixas[qual]);
+    partes.push_back(std::move(parte));
+    ++qual;
+  }
+  return ftxui::hbox(std::move(partes));
+}
+
 }  // namespace
 
 }  // namespace mysong::tui
