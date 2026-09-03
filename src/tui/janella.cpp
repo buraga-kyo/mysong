@@ -338,13 +338,14 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // ellas mudam a cada issue que dá tecla nova, e assim quem as procura sabe
 // onde estão. As tres primeiras são as da issue #102, que são as unicas
 // teclas d'esta tela que ninguem conhece de outra casa.
-// Cabe em CENTO E VINTE collunhas, que é o piso do esboço. Linha que
+// Cabe em CENTO E DEZASEIS collunhas, e o piso do esboço é cento e vinte.
+// Linha que
 // transbordasse aparar-se-hia em silencio, e o que se perderia seria o FIM,
 // onde moram as teclas que menos se usam e que ninguem adivinha; o que não
 // coube está no README, e a linha diz que lá está.
 constexpr const char* kDicas =
     "1 2 3 abas · Tab cicla · o vista · Enter toca · espaço pausa"
-    " · n/p faixa · F2 renomeia · Del apaga · q sahe · resto no README";
+    " · n/p faixa · F2 renomeia · Del apaga · q sahe · README";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
