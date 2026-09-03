@@ -184,6 +184,22 @@ struct Quadro {
 // falsa, d'onde um cingir escripto ingenuamente deixaria o NaN passar ao floor.
 int oitavos(float magnitude, std::size_t altura);
 
+// AS PONTAS da batida (issue #139). A columna que accende na côr do registro
+// deixa de acabar em topo chato: a cella do alto d'ella vira PONTA, e é assim
+// que o olho apanha a batida de relance no meio da fita. Escrevem-se por PONTO
+// DE CODIGO, e não pelo glifo cru, pela regra da Casa; conferidos na
+// JetBrainsMono Nerd Font d'elle, e medidos a UMA collunha pelo
+// `ftxui::string_width`, que é o que faz a conta da fita prestar.
+inline constexpr std::string_view kPontaCheia = "\u25b2";  // ▲, topo cheio
+inline constexpr std::string_view kPontaRasa = "\u25b4";   // ▴, topo parcial
+
+// glifo_da_ponta — a ponta que remata a columna quente. Cheia quando o topo era
+// bloco CHEIO, pequena quando era degrau parcial: a pequena assenta mais baixo
+// na cella, e assim a ponta não mente sobre a altura que a barra tinha. A ponta
+// SUBSTITUE o glifo do topo, e não acrescenta cella: a barra quente e a fria da
+// mesma magnitude hão de ter a mesma altura, senão a côr passaria a crescer.
+std::string_view glifo_da_ponta(int degrau);
+
 // glifo_do_degrau — o bloco de k oitavos, em U+2580 + k. Zero dá a célulla
 // vazia; acima de oito cinge-se a oito, que é o bloco cheio.
 std::string glifo_do_degrau(int degrau);

@@ -108,6 +108,10 @@ void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
   }
 }
 
+std::string_view glifo_da_ponta(int degrau) {
+  return degrau >= DEGRAUS_POR_CELULA ? kPontaCheia : kPontaRasa;
+}
+
 std::vector<float> centros_das_bandas(
     const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia) {
   std::vector<float> centros;
@@ -319,7 +323,13 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              ? 1
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
-      celula.glifo = glifo_do_degrau(degrau);
+      // A PONTA (issue #139) sómente no TOPO da columna QUENTE, e sómente
+      // tendo ella corpo: columna de uma cella é o piso do silencio, e ponta
+      // sem corpo não é barra, é ruido. As frias e a muda ficam de topo chato.
+      const bool no_topo = i + 1 == desenhadas;
+      celula.glifo = quente && !mudo && no_topo && desenhadas >= 2
+                         ? std::string(glifo_da_ponta(degrau))
+                         : glifo_do_degrau(degrau);
       celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura,
                                      quadro.registros[c]);
       celula.pinta = true;
