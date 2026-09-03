@@ -222,21 +222,25 @@ ftxui::Element elemento_do_rio(const Quadro& espectro,
 // esta cantando atualmente, depois aparece a proxima e a proxima, bem cru
 // mesmo, com a fonte XIROD grande e laranja».
 //
-// Logo: UM verso de cada vez, e mais nada. Nem o de cima, nem o de baixo, nem
-// animação alguma. O bloco tem quatro fileiras, que a sala reserva: tres para o
-// verso (que é o corpo grande da chapa em XIROD que a lousa desenha por cima) e
-// uma de respiro. Sem lousa, o mesmo verso sae em mono, na côr do laranja.
+// Logo: nada de animação, e nada do verso que já passou. Ficam DOUS (issue
+// #159): o que se canta, GRANDE e laranja no alto, e o SEGUINTE por baixo,
+// miudo e apagado, para que o olho saiba o que vem. O bloco tem quatro fileiras,
+// que a sala reserva: tres do corrente (que é o corpo grande da chapa que a
+// lousa desenha por cima) e a ultima do seguinte, que cella de terminal já
+// desenha e por isso não vae á lousa. Sem lousa, o corrente sae em mono, na
+// mesma côr.
 //
 // Nada se anima aqui: o bloco é funcção da POSIÇÃO e de mais nada, d'onde a
 // mesma posição dá sempre o mesmo bloco, e a bateria o afere sem relogio.
 inline constexpr std::size_t FILEIRAS_DA_LETRA = 4;
 
-// Quantas fileiras o VERSO toma: tres, que é o corpo grande da chapa em XIROD.
-// A quarta do bloco é respiro entre a lettra e o espectro.
+// Quantas fileiras o verso CORRENTE toma: tres, que é o corpo grande da chapa.
+// A quarta do bloco é do verso SEGUINTE (issue #159), miudo e apagado.
 inline constexpr std::size_t FILEIRAS_DO_VERSO = 3;
 
-// A fileira em que o verso assenta dentro do bloco, contada do alto.
+// As duas fileiras que contam: a do que se canta, no alto, e a do que vem.
 inline constexpr std::size_t FILEIRA_DO_CORRENTE = 0;
+inline constexpr std::size_t FILEIRA_DO_SEGUINTE = FILEIRAS_DA_LETRA - 1;
 
 // elemento_da_letra_parada — o bloco pintado, com UM verso. `corrente` é o que
 // o `nucleo::linha_corrente` devolveu: menos um quer dizer «ainda não começou»,

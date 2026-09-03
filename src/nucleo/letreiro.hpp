@@ -33,6 +33,12 @@ namespace mysong::nucleo {
 // palavra sahe com trinta e sete pixeis de altura, quase o dobro dos vinte da
 // cella, e é d'essa folga que a reducção do Überzug++ tira o traço limpo.
 inline constexpr std::string_view FAMILIA_DA_MARCA = "Xirod";
+
+// A FAMILIA DA LEITURA (issue #159): a mono que o terminal d'esta Casa já usa.
+// A da MARCA é de wordmark e de rotulo curto; verso inteiro n'ella custa a ler,
+// e foi o que elle disse ao vê-la na tela. Quem lê texto lê n'esta.
+inline constexpr std::string_view FAMILIA_DA_LEITURA =
+    "JetBrainsMono Nerd Font Mono";
 inline constexpr int CORPO_DA_MARCA = 22;
 
 // corpo_da_altura — o corpo que a caixa de `linhas` fileiras pede. O corpo da

@@ -255,6 +255,9 @@ nucleo::PedidoDaChapa pedido_da_chapa_da_letra(const std::string& verso,
   // egualdade que a imagem assenta sem se ver emenda.
   // LARANJA (issue #157), que foi o que elle pediu: o `data3` da paleta, que é
   // o laranja do poente do RADICAL-OS. Fundo do painel, que é a cella por baixo.
+  // E a familia da LEITURA (issue #159), e não a da marca: verso inteiro em
+  // XIROD custa a ler, e elle disse-o ao vê-lo na tela.
+  pedido.familia = std::string(nucleo::FAMILIA_DA_LEITURA);
   pedido.tinta = std::string(tokens::data3);
   pedido.fundo = std::string(tokens::panel);
   pedido.cellulas = cellulas;
@@ -417,12 +420,21 @@ ftxui::Element elemento_da_letra_parada(
   std::vector<ftxui::Element> fileiras;
   fileiras.reserve(altura);
   for (std::size_t f = 0; f < altura; ++f) {
-    // UM verso, e mais nada: elle assenta na primeira fileira do bloco, e as
-    // demais ficam em BRANCO. As duas de baixo não são vão perdido: são a caixa
-    // que a chapa em XIROD cobre, e é d'ellas que vem o corpo grande.
-    const bool no_verso = f == FILEIRA_DO_CORRENTE && !linhas.empty();
-    fileiras.push_back(ao_centro(no_verso ? verso_de(linhas, qual) : std::string(),
-                                 tokens::data3, largura, no_verso));
+    // O CORRENTE no alto, GRANDE e laranja: elle assenta na primeira fileira, e
+    // as duas seguintes ficam em branco, que são a caixa que a chapa cobre.
+    if (f == FILEIRA_DO_CORRENTE && !linhas.empty()) {
+      fileiras.push_back(
+          ao_centro(verso_de(linhas, qual), tokens::data3, largura, true));
+      continue;
+    }
+    // O SEGUINTE na ultima (issue #159), miudo e apagado: elle diz o que vem, e
+    // apagado de proposito, que dous versos accesos disputariam o olho. Sendo o
+    // corrente o ultimo da letra, a fileira fica VAZIA: recado algum se inventa.
+    if (f == FILEIRA_DO_SEGUINTE && f != FILEIRA_DO_CORRENTE)
+      fileiras.push_back(ao_centro(verso_de(linhas, qual + 1), tokens::text_muted,
+                                   largura, false));
+    else
+      fileiras.push_back(ao_centro({}, tokens::text_muted, largura, false));
   }
   return ftxui::vbox(std::move(fileiras)) |
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura)) |
