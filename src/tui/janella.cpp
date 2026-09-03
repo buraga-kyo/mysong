@@ -186,14 +186,15 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += ':';
   marca += agora.faixa;
   marca += ':';
-  // As bandas SÓMENTE quando o espectro está á vista. Postas sempre, o painel da letra
-  // pagava a animação que não mostrava: medido em cento e trinta e dous KiB por segundo,
-  // contra dous e sete pausado. Assignatura ha de resumir o que se VÊ, e não o que ha.
-  if (!mostra_letra)
-    for (const float banda : tocador.bandas())
-      marca += static_cast<char>(
-          static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
-                           99.0f) + 32);
+  // As bandas entram SEMPRE, desde a issue #109. Até ella, a letra tomava o logar
+  // do espectro e o painel da letra pagava a animação que não mostrava; agora a
+  // letra mora POR CIMA do espectro, e o espectro está sempre á vista. É tambem
+  // por estas bandas que o rio anda entre um segundo e o seguinte: a posição
+  // entra na marca em segundos inteiros, e sem ellas o rio subiria aos saltos.
+  for (const float banda : tocador.bandas())
+    marca += static_cast<char>(
+        static_cast<int>((banda < 0.0f ? 0.0f : (banda > 1.0f ? 1.0f : banda)) *
+                         99.0f) + 32);
   marca += ':';
   marca += recado;
   marca += mostra_letra ? 'L' : 'e';
