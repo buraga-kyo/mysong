@@ -103,6 +103,7 @@ vez, pela linha do apt mais abaixo, e nao volte aqui a cada tarefa que entra.
 |----------|-------------|--------------------------------------------------|
 | chafa    | 1.19.0      | Desenha a capa do album. Sem elle, nao ha capa; o resto toca igual |
 | yt-dlp   | 2026.08.19  | Busca audio do YouTube. Sem elle, so o disco local |
+| ueberzugpp | 2.9.8     | Desenha a capa NITIDA, em janella de X11 por cima do terminal. Sem elle, a capa fica nos symbolos do chafa |
 
 **Advertencia sobre o yt-dlp, e ella importa**: NAO o instale pelo apt. A
 versao empacotada e velha demais e quebra contra o YouTube, que muda o seu
@@ -131,6 +132,10 @@ nao se desenha por protocolo, e sim por SYMBOLO DE BLOCO, que e o que o chafa
 faz e o que atravessa o tmux inteiro: blocos, meios-blocos e quadrantes, e o
 SEXTANTE quando a sua fonte o tiver. Cada symbolo leva duas cores, a tinta e o
 fundo, donde a celula vale por dous, quatro ou seis pixeis.
+
+Ha um caminho por FORA d'esse limite, e e o que o yazi usa n'esta machina: o
+`ueberzugpp`, que abre uma janella de X11 e a pousa por cima do terminal. Nao
+atravessa o tmux, passa AO LADO d'elle. E a LOUSA, e tem seccao propria abaixo.
 
 ### De onde vem a capa que se desenha
 
