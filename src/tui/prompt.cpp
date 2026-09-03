@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DO PROMPT — src/tui/prompt.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// A taboada dos modos, e a pintura do topo. O contracto está em prompt.hpp.
+// A taboada dos modos, e a pintura do campo. O contracto está em prompt.hpp.
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/prompt.hpp"
 
@@ -86,10 +86,6 @@ bool aceita_letra(Modo modo) noexcept {
   return modo != Modo::Nada && modo != Modo::Confirma;
 }
 
-std::size_t linhas_do_topo(Modo modo) noexcept {
-  return modo == Modo::Nada ? 1u : 2u;
-}
-
 bool assenta_novidade(Modo modo) noexcept { return modo == Modo::Nada; }
 
 // Os ROTULOS. Ficam as palavras que a janella já dizia, e sómente o filtro
@@ -112,20 +108,16 @@ std::string rotulo_do_prompt(Modo modo, std::string_view contexto) {
   return {};
 }
 
-// O TOPO. Duas linhas havendo prompt, e a trilha não é uma d'ellas por
-// accidente: ella entra e sahe INTACTA. O prompt distingue-se por tres signaes
-// ao mesmo tempo, a marca á esquerda, o fundo proprio e a tinta viva, que a
-// trilha é apagada e sem fundo. Não cabendo tudo, quem perde o começo é o
-// TERMO, e o rotulo mostra-se inteiro: rabo de texto sem nome de campo é o
-// defeito d'esta issue por outra porta. Não cabendo nem o rotulo, apara-se
-// elle á direita e o caret pousa na ultima collunha. Duas collunhas vão para a
-// marca e uma fica de reserva para o caret.
-ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
-                                std::string_view contexto,
-                                const std::string& termo,
-                                std::size_t largura) {
-  ftxui::Element a_trilha = ftxui::text(trilha) | ftxui::dim;
-  if (modo == Modo::Nada) return a_trilha;
+// O CAMPO, n'uma linha. Distingue-se do resto da tela por tres signaes ao mesmo
+// tempo: a marca á esquerda, o fundo proprio e a tinta viva. Não cabendo tudo,
+// quem perde o começo é o TERMO, e o rotulo mostra-se inteiro: rabo de texto
+// sem nome de campo é o defeito da issue #79 por outra porta. Não cabendo nem
+// o rotulo, apara-se elle á direita e o caret pousa na ultima collunha. Duas
+// collunhas vão para a marca e uma fica de reserva para o caret.
+ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
+                                 const std::string& termo,
+                                 std::size_t largura) {
+  if (modo == Modo::Nada) return ftxui::emptyElement();
   const std::string rotulo = rotulo_do_prompt(modo, contexto);
   const std::size_t cabe = largura > 3 ? largura - 3 : 1;
   const std::size_t do_rotulo = codepoints(rotulo);
@@ -141,10 +133,8 @@ ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
   if (aceita_letra(modo))
     campo.push_back(caret(ftxui::Color::RGB(viva.r, viva.g, viva.b)));
   campo.push_back(ftxui::filler());
-  return ftxui::vbox(
-      {a_trilha, ftxui::hbox(std::move(campo)) |
-                     ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g,
-                                                      fundo.b))});
+  return ftxui::hbox(std::move(campo)) |
+         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
 }
 
 }  // namespace mysong::tui
