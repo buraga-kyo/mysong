@@ -209,9 +209,15 @@ TEST_CASE("o campo aberto empurra o corpo uma linha para baixo") {
 // issue #102 nomeia. Não se afere numero por numero: afere-se que as peças se
 // fecham sem se sobreporem e sem deixarem fileira por pintar.
 TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposição") {
+  // O PRODUCTO que a issue pede: as cinco larguras por todas as alturas, e não
+  // as cinco n'uma altura e as alturas n'uma largura. São mil e cento e
+  // oitenta salas por corrida, e alvo algum escripto á mão: o que se afere é
+  // que as peças fecham a tela, e isso vale em toda combinação.
+  for (const std::size_t larga : {100, 120, 160, 167, 200})
   for (std::size_t alta = 12; alta <= 70; ++alta) {
     for (const bool campo : {false, true}) {
-      const tui::Sala sala = tui::sala_da_tela(167, alta, campo);
+      const tui::Sala sala = tui::sala_da_tela(larga, alta, campo);
+      CHECK(sala.cabecalho.largura == larga);
       CHECK(sala.cabecalho.altura == 1);
       CHECK(sala.trilho.altura == 1);
       // A pauta começa onde o campo e a chapa acabam, e o rodapé é a ultima.
@@ -220,6 +226,9 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
       CHECK(sala.pauta.y == alto + 1);
       CHECK(sala.rodape.y == alta - 1);
       CHECK(sala.pauta.y + sala.pauta.altura == alta - 1);
+      CHECK(sala.pauta.largura + (sala.painel.vazio() ? 0 : 1) +
+                sala.painel.largura ==
+            larga);
       if (sala.painel.vazio()) continue;
       CHECK(sala.painel.y == alto);
       CHECK(sala.painel.altura == sala.divisor.altura);
