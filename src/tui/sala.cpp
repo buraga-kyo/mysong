@@ -64,6 +64,51 @@ ftxui::Element chip(const std::string& texto, bool aceso) {
   return pinta(texto, tokens::text_bright) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
 }
+// Os numeros da sala nova (issue #102). O LIMIAR do painel é de CEM collunhas
+// de TELA, e não de largura util: a tela nova não leva orla, e cem é o numero
+// que a issue diz. Metade de cem é cincoenta, e o painel de trinta com a pauta
+// de quarenta cabem n'ellas com folga.
+constexpr std::size_t kLimiarDoPainel = 100, kPainelMinimo = 30;
+constexpr std::size_t kPautaMinima = 40;
+// O espectro não desce de seis linhas, e a capa cede-lhe o logar antes d'elle
+// encolher: espectro de tres linhas não é serie de dados, é enfeite.
+constexpr std::size_t kEspectroMinimo = 6, kCapaPorCento = 45;
+// A chapa cede o logar á pauta quando ella ficaria com menos de tres linhas: a
+// pauta é onde se navega, e a chapa diz sómente onde se está.
+constexpr std::size_t kPautaLinhasMinimas = 3;
+
+// reparte_o_corpo — as duas metades, dado o alto e a altura que sobraram. Sahe
+// á parte da conta do alto por ser a lavra que a tela ESTREITA muda: abaixo do
+// limiar não ha painel algum, e a pauta toma a tela toda, como hoje.
+void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
+                     std::size_t corpo) {
+  if (corpo == 0) return;
+  std::size_t do_painel = 0;
+  if (largura >= kLimiarDoPainel && corpo >= kEspectroMinimo) {
+    // METADE e METADE, que é o que elle pediu. A collunha do divisor sahe da
+    // esquerda, donde em largura impar a pauta fica uma mais estreita.
+    do_painel = largura / 2;
+    if (do_painel < kPainelMinimo ||
+        largura - do_painel - 1 < kPautaMinima)
+      do_painel = 0;
+  }
+  const std::size_t da_pauta =
+      do_painel == 0 ? largura : largura - do_painel - 1;
+  const bool ha_chapa = corpo >= kPautaLinhasMinimas + 1;
+  if (ha_chapa) sala.chapa = {0, alto, da_pauta, 1};
+  sala.pauta = {0, ha_chapa ? alto + 1 : alto, da_pauta,
+                ha_chapa ? corpo - 1 : corpo};
+  if (do_painel == 0) return;
+  sala.divisor = {da_pauta, alto, 1, corpo};
+  sala.painel = {da_pauta + 1, alto, do_painel, corpo};
+  // O TECTO da capa: quarenta e cinco por cento do painel, e nunca tanto que
+  // deixe o espectro abaixo do minimo d'elle.
+  const std::size_t tecto =
+      std::min(corpo * kCapaPorCento / 100, corpo - kEspectroMinimo);
+  sala.capa = {sala.painel.x, alto, do_painel, tecto};
+  sala.espectro = {sala.painel.x, alto + tecto, do_painel, corpo - tecto};
+}
+
 }  // namespace
 
 std::string texto_da_duracao(int segundos) {
