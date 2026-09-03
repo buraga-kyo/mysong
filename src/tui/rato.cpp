@@ -71,14 +71,17 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
   if (estado.digitando) return {Gesto::FechaCampo, 0, 0.0};
   const bool sobe = botao == ftxui::Mouse::WheelUp;
   if (roda) {
-    if (alvo.peca == Peca::Degrau)
-      return {sobe ? Gesto::DegrauSobe : Gesto::DegrauDesce, 0, 0.0};
     if (alvo.peca == Peca::Linha)
       return {sobe ? Gesto::RodaSobe : Gesto::RodaDesce, LINHAS_POR_DENTE, 0.0};
-    return {};  // roda fóra da lista e da barra não governa cousa alguma
+    // A roda sobre o cabeçalho fica MUDA. Sobre a barra ella andava um degrau,
+    // que era andar n'uma collunha; sobre uma fita de tres abas seria trocar de
+    // secção por acaso, com o dedo a caminho de outra peça.
+    return {};
   }
   switch (alvo.peca) {
-    case Peca::Degrau: return {Gesto::EntraNoDegrau, alvo.indice, 0.0};
+    case Peca::Aba: return {Gesto::VaiParaAba, alvo.indice, 0.0};
+    case Peca::Embaralhar: return {Gesto::Embaralha, 0, 0.0};
+    case Peca::Repetir: return {Gesto::Repete, 0, 0.0};
     case Peca::Linha:
       // Indice além da vista é o quadro que envelheceu entre a pintura e o
       // clique. Não se elege ás cegas: o quadro seguinte já mostra o certo.
