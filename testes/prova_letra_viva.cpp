@@ -37,6 +37,7 @@
 #include "nucleo/letreiro.hpp"
 #include "tui/espectro.hpp"
 #include "tui/letra_viva.hpp"
+#include "tui/rato.hpp"
 #include "tui/sala.hpp"
 #include "tui/tokens.hpp"
 
@@ -470,6 +471,77 @@ TEST_CASE("a chapa da proxima adianta-se assim que ella nasce na base") {
       tui::quadro_da_letra(kVersos, 14.0, kLargura, kAltura);
   CHECK(tui::linha_que_sobe_do_rio(na_ultima) == nullptr);
   CHECK(da_chapa(na_ultima).adiantado.empty());
+}
+
+// A CHAPA DO BLOCO PARADO (issue #157, corrigida pela #161). O canto sae da
+// CAIXA que o `reflect` pendurou no proprio bloco, e NÃO do rectangulo da sala:
+// aquelle conta a capa pelo tecto d'ella, e a capa de 16 por 9 sahe mais baixa,
+// d'onde o bloco real sobe. Foi este o defeito que punha o verso duas vezes na
+// tela, uma no bloco e outra mais abaixo, e é este caso que o prende.
+TEST_CASE("a chapa do bloco sae da caixa real, e não do rectangulo da sala") {
+  // O bloco REAL: doze collunhas de largura, na fileira vinte da tela. A sala
+  // diria a fileira trinta, que é onde a imagem cahia.
+  const ftxui::Box real{30, 41, 20, 22};
+  const tui::ChapaDaLetra ordem =
+      tui::ordem_da_chapa_parada(kVersos, 0, real, true, true, true);
+  REQUIRE(ordem.poe);
+  CHECK(ordem.verso == "abcde");
+  CHECK(ordem.cellulas == 5);
+  // Centrado nas doze collunhas da caixa: (12 - 5) / 2 = 3, d'onde a 33.
+  CHECK(ordem.collunha == 33);
+  // E na PRIMEIRA fileira da caixa, que é onde o verso corrente assenta.
+  CHECK(ordem.linha == 20);
+
+  // Caixa por pintar manda TIRAR: é o que o primeiro quadro pede, e o que
+  // guarda de se mandar chapa para um canto que ainda não existe.
+  const tui::ChapaDaLetra nenhuma = tui::ordem_da_chapa_parada(
+      kVersos, 0, tui::caixa_por_pintar(), true, true, true);
+  CHECK_FALSE(nenhuma.poe);
+
+  // As tres condições de sempre: sem letreiro, com o foco fóra, e com a letra
+  // escondida, manda-se tirar tambem.
+  CHECK_FALSE(tui::ordem_da_chapa_parada(kVersos, 0, real, false, true, true).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_parada(kVersos, 0, real, true, false, true).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_parada(kVersos, 0, real, true, true, false).poe);
+
+  // Letra vazia não dá chapa alguma: verso que não ha não se rasteriza.
+  CHECK_FALSE(tui::ordem_da_chapa_parada({}, 0, real, true, true, true).poe);
+}
+
+TEST_CASE("o bloco parado tem o corrente no alto e o seguinte logo por baixo") {
+  const auto linha_de = [](const ftxui::Screen& ecran, int y, int largura) {
+    std::string dita;
+    for (int x = 0; x < largura; ++x) dita += ecran.PixelAt(x, y).character;
+    return dita;
+  };
+  ftxui::Screen ecran = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(20),
+      ftxui::Dimension::Fixed(static_cast<int>(tui::FILEIRAS_DA_LETRA)));
+  ftxui::Render(ecran, tui::elemento_da_letra_parada(kVersos, 0, 20,
+                                                     tui::FILEIRAS_DA_LETRA));
+  // O corrente na fileira do alto, centrado; a do meio em branco, que é a
+  // segunda cella da chapa; e o SEGUINTE na ultima, logo por baixo.
+  CHECK(linha_de(ecran, 0, 20) == "       abcde        ");
+  CHECK(linha_de(ecran, 1, 20) == "                    ");
+  CHECK(linha_de(ecran, 2, 20) == "       fghij        ");
+
+  // No ULTIMO verso da letra a fileira de baixo fica vazia: recado algum se
+  // inventa.
+  ftxui::Screen fim = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(20),
+      ftxui::Dimension::Fixed(static_cast<int>(tui::FILEIRAS_DA_LETRA)));
+  ftxui::Render(fim, tui::elemento_da_letra_parada(kVersos, 1, 20,
+                                                   tui::FILEIRAS_DA_LETRA));
+  CHECK(linha_de(fim, 0, 20) == "       fghij        ");
+  CHECK(linha_de(fim, 2, 20) == "                    ");
+
+  // Faixa SEM letra dá bloco em branco, e não recado algum.
+  ftxui::Screen sem = ftxui::Screen::Create(
+      ftxui::Dimension::Fixed(20),
+      ftxui::Dimension::Fixed(static_cast<int>(tui::FILEIRAS_DA_LETRA)));
+  ftxui::Render(sem, tui::elemento_da_letra_parada({}, -1, 20,
+                                                   tui::FILEIRAS_DA_LETRA));
+  CHECK(linha_de(sem, 0, 20) == "                    ");
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒

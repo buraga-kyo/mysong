@@ -240,9 +240,9 @@ TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
   // O BLOCO DA LETRA (issue #157) mora entre a capa e o espectro: cinco
   // fileiras, e o espectro principia debaixo d'elle.
   CHECK(sala.letra.y == 29);
-  CHECK(sala.letra.altura == 4);
-  CHECK(sala.espectro.y == 33);
-  CHECK(sala.espectro.altura == 32);
+  CHECK(sala.letra.altura == 3);
+  CHECK(sala.espectro.y == 32);
+  CHECK(sala.espectro.altura == 33);
 }
 
 TEST_CASE("o campo aberto tira uma linha ao corpo, por cima da fita") {
@@ -294,7 +294,7 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
                                 sala.espectro.altura;
       CHECK(somma == sala.painel.altura);
       CHECK(sala.espectro.altura >= 6);  // o espectro não desce de seis
-      const bool inteira = sala.letra.altura == 4 || sala.letra.altura == 0;
+      const bool inteira = sala.letra.altura == 3 || sala.letra.altura == 0;
       CHECK(inteira);
       const std::size_t sob_a_capa = sala.capa.y + sala.capa.altura;
       if (!sala.letra.vazio()) CHECK(sala.letra.y == sob_a_capa);
@@ -345,13 +345,13 @@ TEST_CASE("o espectro toma o que a capa não gastou") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
   // A conta desconta a ficha, a capa que se gastou DE FACTO e o bloco da letra
   // (issue #157), que mora entre as duas.
-  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 32);
-  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 49);
-  CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.capa.y + 11 + 4);
-  CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura - 1 - 4);
+  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 33);
+  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 50);
+  CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.capa.y + 11 + 3);
+  CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura - 1 - 3);
   // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em
   // std::size_t daria numero enorme, e a peça pintaria bilhões de linhas.
-  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 32);
+  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 33);
   CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).vazio());
 }
 

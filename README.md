@@ -761,7 +761,8 @@ aquela e fonte de marca, e verso inteiro nela custa a ler. Sem a lousa ou sem o
 letreiro, o verso corrente aparece em mono de uma celula, na mesma cor, e por
 isso nada falta.
 
-O bloco tem quatro linhas fixas: tres do verso corrente e uma do seguinte. Painel que nao tenha altura para ele e para o espectro minimo larga o
+O bloco tem tres linhas fixas: duas do verso corrente e uma do seguinte, que
+por isso fica logo por baixo dele. Painel que nao tenha altura para ele e para o espectro minimo larga o
 bloco INTEIRO, que meio verso nao se le. Verso mais comprido que o painel corta
 com «…», e nao quebra em duas linhas.
 
