@@ -250,11 +250,41 @@ TEST_CASE("a caixa não muda um pixel do cabeçalho nem do trilho") {
     // se esquecesse de as pôr, e a prova não provaria cousa alguma.
     CHECK_FALSE(caixas.aba_mysong.IsEmpty());
     CHECK_FALSE(caixas.botao_tocar.IsEmpty());
-    CHECK_FALSE(caixas.nome.IsEmpty());
+    // O NOME sómente onde ha collunha para elle: em 60 o grupo das abas já
+    // encosta aos botões (issue #125), e caixa de largura zero nasce vazia.
+    if (largura > 60) CHECK_FALSE(caixas.nome.IsEmpty());
     ftxui::Box trilho;
     CHECK(papel(tui::elemento_do_trilho(retracto, larg), largura, 1) ==
           papel(tui::elemento_do_trilho(retracto, larg, &trilho), largura, 1));
     CHECK_FALSE(trilho.IsEmpty());
+  }
+}
+
+// O CLIQUE NAS DUAS LINHAS (issue #125). A fita do pé tem duas fileiras, e a
+// caixa de cada segmento tem-nas ambas: o dedo não sabe de linhas, e o clique
+// na de baixo ha de fazer o que o da de cima faz.
+TEST_CASE("o clique em qualquer das duas linhas do segmento faz o mesmo") {
+  tui::Retracto retracto;
+  tui::CaixasDaTela tela;
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(167),
+                                              ftxui::Dimension::Fixed(2));
+  ftxui::Render(ecran, tui::elemento_do_cabecalho(
+                           retracto, tui::Aba::MySong, "Faded", 167,
+                           &tela.cabecalho, tui::Focavel::Pauta, 2));
+  REQUIRE(tela.cabecalho.aba_playlists.y_max -
+              tela.cabecalho.aba_playlists.y_min == 1);
+  for (const int linha : {0, 1}) {
+    const tui::Alvo aba = tui::alvo_do_ponto(tela, 78, linha);
+    CHECK(aba.peca == tui::Peca::Aba);
+    CHECK(aba.indice == 1);
+    CHECK(tui::gesto_do_alvo(aba, Mouse::Left, Mouse::Pressed, {}).gesto ==
+          tui::Gesto::VaiParaAba);
+    // E o botão de tocar responde pelas duas fileiras d'elle tambem.
+    CHECK(tui::alvo_do_ponto(tela, 1, linha).peca == tui::Peca::Pausa);
+    // A roda fica MUDA sobre a fita, nas duas linhas: a caixa é de duas, e a
+    // regra da roda não olha a fileira.
+    CHECK(tui::gesto_do_alvo(aba, Mouse::WheelUp, Mouse::Pressed, {}).gesto ==
+          tui::Gesto::Nada);
   }
 }
 

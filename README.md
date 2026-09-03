@@ -396,23 +396,38 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 
 ### A tela
 
-Uma linha de CABECALHO no alto, o TRILHO do progresso logo abaixo, e o resto
-partido em duas metades: a pauta das musicas a esquerda, e o painel (capa e
-espectro) a direita. Barra lateral alguma: o menu d'esta Casa e uma fita de
-abas, a maneira da topbar do RADICAL-OS.
+A lista das musicas começa na PRIMEIRA linha da tela, e o tocador mora no PE.
+O corpo toma tudo o que sobra, partido em duas metades: a pauta das musicas a
+esquerda, e o painel (capa e espectro) a direita. No pe, de cima para baixo: o
+campo de digitar (sómente com elle aberto), o TRILHO do progresso, a FITA de
+DUAS linhas com o tocador, e o rodape das dicas. Barra lateral alguma: o menu
+d'esta Casa e uma fita de abas, a maneira da topbar do RADICAL-OS.
 
 ```
- 󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD  󰐊  󰒮  󰒭  Montagem Lunar Celestia  00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃      a capa, e por baixo d'ella o espectro
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 󰐊  󰒮  󰒭     Montagem Lunar Celestia     󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD     00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
+                                                           (a segunda linha da fita, com o mesmo fundo)
 ```
 
-No cabecalho: a aba corrente em bloco solido, as outras em repouso; os tres
-botoes do transporte; o nome do que soa, cortado com «…» quando nao cabe; e a
-direita o tempo, o volume, o EMBARALHAR e o REPETIR. Apertando a tela, essas
-quatro cedem o logar INTEIRAS, da direita para a esquerda, e as abas ficam
-sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz;
-clicar no trilho busca a posicao.
+A fita le-se em TRES blocos, e cada segmento pinta o fundo d'elle nas DUAS
+linhas, com o rotulo em mono na de cima. A esquerda os tres botoes do
+transporte e o nome do que soa, cortado com «…» quando nao cabe. Ao CENTRO
+EXACTO o grupo das tres abas, a corrente em bloco solido e as outras em
+repouso: a collunha em que o grupo principia e a largura da fita menos a
+largura d'elle, a dividir por dous, donde elle NAO se move quando a faixa
+muda. A direita o tempo, o volume, o EMBARALHAR e o REPETIR.
+
+Apertando a tela, quem cede sao as PONTAS, e por esta ordem: primeiro o nome
+corta, depois o REPETIR, depois o EMBARALHAR, depois o tempo; sómente quando
+nem assim cabe e que o grupo deixa o centro e se encosta. As abas ficam
+sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz,
+e clicar em QUALQUER das duas linhas do segmento vale o mesmo; clicar no
+trilho busca a posicao.
+
+Encolhendo a tela em ALTURA, quem cede e o pe: sae primeiro o rodape das
+dicas, depois a fita volta a UMA linha, e o trilho e o ultimo. Nunca se mostra
+o tocador sem lista alguma.
 
 Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
 (`MY SONG, 42 FAIXAS, 1h29, FAIXAS`), com os degraus de dentro apartados por
@@ -527,10 +542,13 @@ canto opposto donde elle olhava. Por isso o `←` na pauta nao faz cousa alguma,
 e nomeadamente nao volta degrau algum.
 
 O foco começa na PAUTA. Dentro della o `↑` e o `↓` continuam a andar na lista,
-e sómente no alto o `↑` sobe ao cabecalho; o `→` sae para o painel da direita,
-onde a capa e o botao de pausa e retoma, como no rato. Do cabecalho, o `↓`
-torna ao que cada segmento tem por baixo: os seis da esquerda a pauta, e os
-tres da direita a capa, que mora no painel debaixo delles.
+e sómente no FIM d'ella o `↓` desce a fita, que agora mora no pe; o `→` sae
+para o painel da direita, onde a capa e o botao de pausa e retoma, como no
+rato. Da fita, o `↑` torna ao que cada segmento tem POR CIMA: os tres botoes a
+pauta, os tres da direita a capa, e as tres abas ao TRILHO, que corre a
+largura toda e cae mesmo sobre o grupo, donde um segundo `↑` e que leva a
+lista. Nada d'isto se escreveu na taboada: o salto anda por geometria, e a
+geometria e que virou.
 
 Enter e espaco na peça com foco fazem exactamente o que o clique faria nella, e
 pelo mesmo caminho: Enter em PLAYLISTS abre a lista das listas, Enter no botao
@@ -553,7 +571,9 @@ tmux 3.4 com `set -g extended-keys on` entrega as seis.
 
 ### O rato
 
-Clicar n'uma aba do cabecalho vae a ella; clicar n'uma faixa elege-a, e clicar
+Clicar n'uma aba da fita vae a ella, e a linha de baixo do segmento vale como
+a de cima, que a caixa e de duas e o dedo nao sabe de linhas; clicar n'uma
+faixa elege-a, e clicar
 na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
 no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
 clique no volume cala a Casa e devolve-lhe o volume inteiro, o clique na capa

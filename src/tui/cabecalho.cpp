@@ -144,20 +144,26 @@ OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept {
 
 namespace {
 
-// vestir — o texto com o par de côres do token. Côr crua não entra n'esta obra.
+// vestir — o texto com o par de côres do token, na ALTURA que a fita pedir.
+// Côr crua não entra n'esta obra. O fundo cobre as DUAS linhas e o texto fica
+// na de CIMA sem que se pinte fileira de espaços: medido no FTXUI v7.0.3, o
+// `bgcolor` assenta a côr na caixa INTEIRA antes de descer ao filho, e o `text`
+// escreve sómente na fileira do alto d'ella.
 ftxui::Element vestir(const std::string& texto, std::string_view tinta,
-                      std::string_view fundo) {
+                      std::string_view fundo, std::size_t altura = 1) {
   const tokens::Triade f = tokens::rgb(tinta);
   const tokens::Triade t = tokens::rgb(fundo);
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(f.r, f.g, f.b)) |
-         ftxui::bgcolor(ftxui::Color::RGB(t.r, t.g, t.b));
+         ftxui::bgcolor(ftxui::Color::RGB(t.r, t.g, t.b)) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura));
 }
 
 // aparar_nome — o nome do que sôa, na largura que sobrou. Mede-se em COLLUNHAS
 // pelo `string_width`, e não em pontos de codigo como a fita: o nome vem do
 // acervo d'elle, e ha titulo com kanji e com emoji, que valem duas. Cabendo,
-// enche-se de espaços: o fundo do segmento veste a collunha inteira, e nome
-// curto deixaria buraco no meio da linha. Não cabendo, corta-se com «…».
+// CENTRA-SE (issue #125) e enche-se de espaços dos dous lados: o fundo do
+// segmento veste a collunha inteira, e nome encostado deixava o vão todo de um
+// lado só. Não cabendo, corta-se com «…».
 std::string aparar_nome(const std::string& nome, std::size_t largura) {
   if (largura == 0) return {};
   const std::size_t inteiro =
@@ -165,7 +171,12 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
   // O «…» só entra HAVENDO corte: a collunha d'elle guarda-se depois de se
   // saber que ha corte, e não antes. Guardada sempre, o nome que cabia
   // exactamente sahia cortado na ultima lettra, e a prova em papel accusa-o.
-  if (inteiro <= largura) return nome + std::string(largura - inteiro, ' ');
+  if (inteiro <= largura) {
+    // A collunha impar sobra á DIREITA, que é para onde o olho corre a seguir.
+    const std::size_t antes = (largura - inteiro) / 2;
+    return std::string(antes, ' ') + nome +
+           std::string(largura - inteiro - antes, ' ');
+  }
   std::string feito;
   std::size_t gastas = 0;
   for (std::size_t i = 0; i < nome.size();) {
@@ -186,6 +197,20 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
   return feito + "…" + std::string(largura - gastas - 1, ' ');
 }
 
+// vestir_todas — o texto repetido em TODAS as fileiras, e não sómente na de
+// cima. É o que a junção pede: o `vestir` assenta o fundo na caixa inteira mas
+// escreve o glifo n'uma fileira só, e seta pintada sómente em cima deixaria o
+// fundo do visinho a entrar em quadrado por baixo d'ella, que é a emenda
+// visivel que o tractado da fita proscreve.
+ftxui::Element vestir_todas(const std::string& texto, std::string_view tinta,
+                            std::string_view fundo, std::size_t altura) {
+  std::vector<ftxui::Element> fileiras;
+  fileiras.reserve(altura);
+  for (std::size_t i = 0; i < altura; ++i)
+    fileiras.push_back(vestir(texto, tinta, fundo));
+  return ftxui::vbox(std::move(fileiras));
+}
+
 // pintar_fita — os pedaços em elementos, com a caixa de CADA segmento pendurada
 // pela ORDEM em que a fita o juntou, e não pelo glifo que elle mostra. A irmã
 // do letreiro troca a palavra da aba por uma imagem, e caixa achada por texto
@@ -196,13 +221,15 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
 // sua propria pintura sem que a fita deixe de resolver as junções.
 ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
                            const std::vector<ftxui::Box*>& caixas,
-                           const std::vector<ftxui::Element>& proprios) {
+                           const std::vector<ftxui::Element>& proprios,
+                           std::size_t altura = 1) {
   std::vector<ftxui::Element> partes;
   partes.reserve(pedacos.size());
   std::size_t qual = 0;  // o indice do SEGMENTO, que a junção não adianta
   for (const Pedaco& pedaco : pedacos) {
     if (pedaco.juncao) {
-      partes.push_back(vestir(pedaco.texto, pedaco.tinta, pedaco.fundo));
+      partes.push_back(
+          vestir_todas(pedaco.texto, pedaco.tinta, pedaco.fundo, altura));
       continue;
     }
     // O NEGRITO em todo segmento, e não sómente nas abas: a issue pede os
@@ -212,7 +239,8 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
     ftxui::Element parte =
         qual < proprios.size() && proprios[qual] != nullptr
             ? proprios[qual]
-            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo) | ftxui::bold;
+            : vestir(pedaco.texto, pedaco.tinta, pedaco.fundo, altura) |
+                  ftxui::bold;
     if (qual < caixas.size() && caixas[qual] != nullptr)
       parte = parte | ftxui::reflect(*caixas[qual]);
     partes.push_back(std::move(parte));
@@ -337,6 +365,8 @@ std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
       ordem.linha = palavra.y_min;
       ordem.largura =
           static_cast<std::size_t>(palavra.x_max - palavra.x_min + 1);
+      ordem.linhas =
+          static_cast<std::size_t>(palavra.y_max - palavra.y_min + 1);
     }
     ordens.push_back(ordem);
   }
@@ -381,24 +411,33 @@ std::optional<Aba> aba_com_foco(Focavel foco) noexcept {
   return std::nullopt;
 }
 
-ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado) {
-  return vestir(rotulo_da_aba(aba), tinta_da_aba(estado),
-                fundo_da_aba(estado)) |
+ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
+                               std::size_t altura) {
+  return vestir(rotulo_da_aba(aba), tinta_da_aba(estado), fundo_da_aba(estado),
+                altura) |
          ftxui::bold;
 }
 
 namespace {
 
-// fita_da_esquerda — as tres abas e os tres botões, na ordem d'elle: tocar,
-// anterior, seguinte. Os botões vestem panel_hi com o glifo em glow_core, que
-// é o glow CONTIDO da regra: elle accende no que TOCA, e não no fundo todo.
-Fita fita_da_esquerda(Aba corrente, bool tocando, Focavel foco) {
+// fita_das_abas — o GRUPO das tres abas, apartado dos botões porque é elle, e
+// sómente elle, que se centra na fita (issue #125): n'uma fita só, o bloco
+// cresceria com o nome do que sôa e o centro d'elle andaria com o nome.
+Fita fita_das_abas(Aba corrente, Focavel foco) {
   Fita fita(Sentido::Dextra);
   for (const Aba qual : {Aba::MySong, Aba::Playlists, Aba::Download}) {
     const EstadoDaAba estado = estado_da_aba(qual, corrente, foco);
     fita.junta({rotulo_da_aba(qual), fundo_da_aba(estado),
                 tinta_da_aba(estado)});
   }
+  return fita;
+}
+
+// fita_dos_botoes — os tres do transporte, na ordem d'elle: tocar, anterior,
+// seguinte. Vestem panel_hi com o glifo em glow_core, que é o glow CONTIDO da
+// regra: elle accende no que TOCA, e não no fundo todo.
+Fita fita_dos_botoes(bool tocando, Focavel foco) {
+  Fita fita(Sentido::Dextra);
   // O botão do meio TROCA de glifo com o estado, e não de logar: botão que
   // mudasse de sitio faria o dedo errar a pausa que elle proprio pediu.
   fita.junta(aceso({" " + std::string(tocando ? kPausar : kTocar) + " ",
@@ -474,10 +513,13 @@ constexpr std::size_t kNomeMinimo = 7;
 
 // caixas_da — os punhos das caixas na ORDEM em que a fita junta os segmentos.
 // Punho nullo em toda a lista quer dizer «esta chamada não quer saber».
-std::vector<ftxui::Box*> caixas_da_esquerda(CaixasDoCabecalho* c) {
+std::vector<ftxui::Box*> caixas_das_abas(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
-  return {&c->aba_mysong,   &c->aba_playlists,  &c->aba_download,
-          &c->botao_tocar,  &c->botao_anterior, &c->botao_seguinte};
+  return {&c->aba_mysong, &c->aba_playlists, &c->aba_download};
+}
+std::vector<ftxui::Box*> caixas_dos_botoes(CaixasDoCabecalho* c) {
+  if (c == nullptr) return {};
+  return {&c->botao_tocar, &c->botao_anterior, &c->botao_seguinte};
 }
 std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
@@ -486,44 +528,74 @@ std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
 
 }  // namespace
 
+ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
+                          std::size_t grupo,
+                          const std::vector<std::size_t>& direita) {
+  ContaDaFita conta;
+  conta.comeca = esquerda;
+  // Fita que nem para os botões e as abas chega: o grupo encosta-se, e o `hbox`
+  // apara o que transbordar. É o degenerado, e não o caso que a issue governa.
+  if (direita.empty() || largura < esquerda + grupo) return conta;
+  const std::size_t centro = (largura - grupo) / 2;
+  // A ponta direita cede do FIM para o principio, que é a ordem do menos util
+  // ao mais: o REPETIR primeiro, e o tempo por ultimo.
+  conta.quantas = direita.size() - 1;
+  while (conta.quantas > 0 && centro + grupo + direita[conta.quantas] > largura)
+    --conta.quantas;
+  const std::size_t dir = direita[conta.quantas];
+  // O TECTO é o que a ponta direita consente; o PISO, o que o nome pede.
+  const std::size_t tecto = largura > grupo + dir ? largura - grupo - dir : 0;
+  conta.ao_centro = centro <= tecto && centro >= esquerda + kNomeMinimo;
+  conta.comeca = std::max(esquerda, std::min(centro, tecto));
+  conta.nome = conta.comeca - esquerda;
+  const std::size_t resto = largura - conta.comeca - grupo;
+  conta.depois = resto > dir ? resto - dir : 0;
+  return conta;
+}
+
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,
-                                     CaixasDoCabecalho* caixas, Focavel foco) {
+                                     CaixasDoCabecalho* caixas, Focavel foco,
+                                     std::size_t altura) {
   // Esvaziam-se á entrada, e antes de toda sahida antecipada: linha que se não
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
-  if (largura == 0) return ftxui::text("");
-  const Fita esquerda = fita_da_esquerda(
-      corrente, retracto.estado == nucleo::Estado::Tocando, foco);
-  const std::size_t esq = esquerda.largura_exigida();
+  if (largura == 0 || altura == 0) return ftxui::text("");
+  const Fita abas = fita_das_abas(corrente, foco);
+  const Fita botoes =
+      fita_dos_botoes(retracto.estado == nucleo::Estado::Tocando, foco);
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
-  std::size_t quantas = 4;
-  Fita direita = fita_da_direita(retracto, quantas, foco);
-  while (quantas > 0 &&
-         esq + direita.largura_exigida() + kNomeMinimo > largura) {
-    --quantas;
-    direita = fita_da_direita(retracto, quantas, foco);
-  }
-  const std::size_t dir = direita.largura_exigida();
-  const std::size_t sobra = largura > esq + dir ? largura - esq - dir : 0;
+  std::vector<std::size_t> pede(5, 0);
+  for (std::size_t q = 1; q < pede.size(); ++q)
+    pede[q] = fita_da_direita(retracto, q, foco).largura_exigida();
+  const ContaDaFita conta = conta_da_fita(largura, botoes.largura_exigida(),
+                                          abas.largura_exigida(), pede);
+  const Fita direita = fita_da_direita(retracto, conta.quantas, foco);
   const bool ha = !nome.empty();
   ftxui::Element meio =
-      vestir(aparar_nome(ha ? nome : "(nada toca)", sobra),
-             ha ? tokens::text_bright : tokens::text_muted, tokens::panel);
+      vestir(aparar_nome(ha ? nome : "(nada toca)", conta.nome),
+             ha ? tokens::text_bright : tokens::text_muted, tokens::panel,
+             altura);
   if (caixas != nullptr) meio = meio | ftxui::reflect(caixas->nome);
   return ftxui::hbox(
-      {pintar_fita(
-           esquerda.compor(), caixas_da_esquerda(caixas),
-           {elemento_da_aba(Aba::MySong,
-                            estado_da_aba(Aba::MySong, corrente, foco)),
-            elemento_da_aba(Aba::Playlists,
-                            estado_da_aba(Aba::Playlists, corrente, foco)),
-            elemento_da_aba(Aba::Download,
-                            estado_da_aba(Aba::Download, corrente, foco))}),
+      {pintar_fita(botoes.compor(), caixas_dos_botoes(caixas), {}, altura),
        std::move(meio),
-       pintar_fita(direita.compor(), caixas_da_direita(caixas), {})});
+       pintar_fita(
+           abas.compor(), caixas_das_abas(caixas),
+           {elemento_da_aba(Aba::MySong,
+                            estado_da_aba(Aba::MySong, corrente, foco), altura),
+            elemento_da_aba(Aba::Playlists,
+                            estado_da_aba(Aba::Playlists, corrente, foco),
+                            altura),
+            elemento_da_aba(Aba::Download,
+                            estado_da_aba(Aba::Download, corrente, foco),
+                            altura)},
+           altura),
+       vestir(std::string(conta.depois, ' '), tokens::text_muted, tokens::panel,
+              altura),
+       pintar_fita(direita.compor(), caixas_da_direita(caixas), {}, altura)});
 }
 
 ftxui::Element elemento_do_trilho(const Retracto& retracto,

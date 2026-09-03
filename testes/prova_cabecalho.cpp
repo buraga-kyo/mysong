@@ -9,6 +9,7 @@
 #include <ftxui/dom/node.hpp>
 #include <ftxui/screen/screen.hpp>
 #include <string>
+#include <vector>
 
 #include "tui/cabecalho.hpp"
 #include "tui/tokens.hpp"
@@ -21,9 +22,9 @@ namespace {
 
 // linha_do — o cabeçalho pintado, lido cella a cella. O `ToString` metteria
 // escape no meio dos bytes, e contar bytes seria contar a tinta.
-ftxui::Screen papel(ftxui::Element quadro, int largura) {
+ftxui::Screen papel(ftxui::Element quadro, int largura, int altura = 1) {
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
-                                              ftxui::Dimension::Fixed(1));
+                                              ftxui::Dimension::Fixed(altura));
   ftxui::Render(ecran, quadro);
   return ecran;
 }
@@ -31,10 +32,11 @@ ftxui::Screen papel(ftxui::Element quadro, int largura) {
 // pedaco — as `quantas` cellas a partir da collunha `x`, na fileira zero. Por
 // CELLA, e não por byte: `substr` n'uma cadeia UTF-8 contaria octetos, e o
 // glifo de tres bytes desalinharia todo indice depois do primeiro.
-std::string pedaco(const ftxui::Screen& ecran, int x, int quantas) {
+std::string pedaco(const ftxui::Screen& ecran, int x, int quantas,
+                   int linha = 0) {
   std::string dita;
   for (int i = x; i < x + quantas && i < ecran.dimx(); ++i) {
-    const std::string& glifo = ecran.PixelAt(i, 0).character;
+    const std::string& glifo = ecran.PixelAt(i, linha).character;
     dita += glifo.empty() ? " " : glifo;
   }
   return dita;
@@ -67,19 +69,23 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
                                  "Montagem Lunar Celestia 1.0 (SLOWED)", 167),
       167);
 
-  // A conta, feita á mão: a fita da esquerda pede 51 collunhas (11 da primeira
-  // aba, 13 da segunda, 12 da terceira, 3 por botão, e as 6 setas), a da
-  // direita pede 52 (a seta de entrada, 15 do tempo, 8 do volume, 14 do
-  // embaralhar, 11 do repetir, e as 3 setas do meio), e o nome toma as 64 que
-  // sobram: 51 mais 64 mais 52 dão 167 em ponto.
-  CHECK(pedaco(tela, 0, 11) == " \U000f075a MY SONG ");
+  // A conta, feita á mão (issue #125): os botões pedem 12 collunhas (3 cada e
+  // as 3 setas), o grupo das abas pede 39 (11, 13 e 12 das palavras e as 3
+  // setas) e a ponta direita pede 52. O grupo principia no CENTRO EXACTO, que
+  // é 167 menos 39 a dividir por dous: a collunha 64. Ao nome ficam as 52 que
+  // vão dos botões ao grupo, e ao vão da outra banda as 12 que sobram.
+  CHECK(pedaco(tela, 0, 3) == " \U000f03e4 ");    // toca: o botão diz PAUSAR
+  CHECK(pedaco(tela, 4, 3) == " \U000f04ae ");    // anterior
+  CHECK(pedaco(tela, 8, 3) == " \U000f04ad ");    // seguinte
   CHECK(pedaco(tela, 11, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 12, 13) == " \U000f0cb8 PLAYLISTS ");
-  CHECK(pedaco(tela, 26, 12) == " \U000f01da DOWNLOAD ");
-  CHECK(pedaco(tela, 39, 3) == " \U000f03e4 ");   // toca: o botão diz PAUSAR
-  CHECK(pedaco(tela, 43, 3) == " \U000f04ae ");   // anterior
-  CHECK(pedaco(tela, 47, 3) == " \U000f04ad ");   // seguinte
-  CHECK(pedaco(tela, 51, 36) == "Montagem Lunar Celestia 1.0 (SLOWED)");
+  // O nome CENTRADO nas 52 collunhas d'elle: 36 de titulo, 8 de cada banda.
+  CHECK(pedaco(tela, 12, 52) ==
+        "        Montagem Lunar Celestia 1.0 (SLOWED)        ");
+  CHECK(pedaco(tela, 64, 11) == " \U000f075a MY SONG ");
+  CHECK(pedaco(tela, 75, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 76, 13) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 90, 12) == " \U000f01da DOWNLOAD ");
+  CHECK(pedaco(tela, 103, 12) == "            ");
   CHECK(pedaco(tela, 115, 1) == "\ue0b2");        // a seta de entrada da direita
   CHECK(pedaco(tela, 116, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(tela, 132, 8) == " \U000f057e 100% ");
@@ -98,29 +104,116 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
 }
 
 TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
-  // Em 120 sobram 17 collunhas ao nome: 120 menos as 51 da esquerda e as 52 da
-  // direita. O nome que não cabe corta-se com «…»; o que cabe enche-se.
+  // Em 120 o centro cae na collunha 40, d'onde ao nome ficam as 28 que vão dos
+  // 12 dos botões até elle. O REPETIR cede, que a ponta direita já lá não
+  // cabia; o nome que não cabe corta-se com «…», e o que cabe centra-se.
   const ftxui::Screen larga = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong,
                                  "Montagem Lunar Celestia 1.0 (SLOWED)", 120),
       120);
-  CHECK(pedaco(larga, 51, 17) == "Montagem Lunar C…");
-  CHECK(pedaco(larga, 68, 1) == "\ue0b2");
+  CHECK(pedaco(larga, 12, 28) == "Montagem Lunar Celestia 1.0…");
+  CHECK(pedaco(larga, 40, 11) == " \U000f075a MY SONG ");
+  CHECK(pedaco(larga, 80, 1) == "\ue0b2");
   // Nome curto: o fundo do segmento veste a collunha inteira, e o que sobra
   // enche-se de espaço. Buraco escuro no meio da fita lê-se como emenda.
   const ftxui::Screen curto =
       papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "NO FEAR!",
                                        120),
             120);
-  CHECK(pedaco(curto, 51, 17) == "NO FEAR!         ");
+  CHECK(pedaco(curto, 12, 28) == "          NO FEAR!          ");
+  // E o grupo fica na MESMA collunha com o nome comprido e com o curto: é o
+  // que o centro CONTADO dá, e o que enchimento elastico algum daria.
+  CHECK(pedaco(curto, 40, 11) == " \U000f075a MY SONG ");
   // E nada tocando, o meio DIZ que nada toca, em vez de ficar em branco.
   tui::Retracto parado;
   CHECK(pedaco(papel(tui::elemento_do_cabecalho(parado, tui::Aba::MySong, "",
                                                 120),
                      120),
-               51, 11) == "(nada toca)");
+               20, 11) == "(nada toca)");
 }
 
+
+// A CONTA da fita, interrogada sem se pintar cousa alguma: os doze collunhas
+// dos botões, os trinta e nove do grupo, e as cinco larguras da ponta direita.
+TEST_CASE("a conta da fita cede as pontas antes de o grupo deixar o centro") {
+  const std::vector<std::size_t> direita = {0, 16, 25, 40, 52};
+  const auto conta = [&](std::size_t larga) {
+    return tui::conta_da_fita(larga, 12, 39, direita);
+  };
+  CHECK(conta(167).ao_centro);
+  CHECK(conta(167).comeca == 64);
+  CHECK(conta(167).quantas == 4);
+  CHECK(conta(167).nome == 52);
+  CHECK(conta(167).depois == 12);
+  // A somma FECHA a largura: sem isto, a fita deixaria vão ou transbordaria.
+  for (const std::size_t larga : {70, 88, 100, 118, 142, 166, 167, 200}) {
+    const tui::ContaDaFita c = conta(larga);
+    CHECK(12 + c.nome + 39 + c.depois + direita[c.quantas] == larga);
+  }
+  // A ESCADA: a ponta direita cede do fim para o principio, e o grupo sómente
+  // deixa o centro quando ao nome já não sobram as sete collunhas do minimo.
+  CHECK(conta(141).quantas == 3);
+  CHECK(conta(117).quantas == 2);
+  CHECK(conta(87).quantas == 1);
+  CHECK(conta(69).quantas == 0);
+  CHECK(conta(77).ao_centro);
+  CHECK_FALSE(conta(76).ao_centro);
+}
+
+// O CENTRO EXACTO (issue #125): a collunha do grupo é a largura menos a d'elle,
+// a dividir por dous. Pede-se em largura PAR e IMPAR, com nome curto, comprido
+// e nenhum: é n'isto que o centro CONTADO se aparta do centro por enchimento
+// elastico, que aquelle fica quieto e este segue o nome da faixa.
+TEST_CASE("o grupo das abas fica na mesma collunha, mude ou não o nome") {
+  const auto onde = [](std::size_t larga, const char* nome) {
+    tui::CaixasDoCabecalho caixas;
+    papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, nome, larga,
+                                     &caixas, tui::Focavel::Pauta, 2),
+          static_cast<int>(larga), 2);
+    return caixas.aba_mysong;
+  };
+  // O grupo pede 39 collunhas: em 166 principia na 63, em 167 na 64.
+  for (const std::size_t larga : {166, 167}) {
+    const int comeca = static_cast<int>((larga - 39) / 2);
+    CHECK(onde(larga, "NO FEAR!").x_min == comeca);
+    CHECK(onde(larga, "Montagem Lunar Celestia 1.0 (SLOWED)").x_min == comeca);
+    CHECK(onde(larga, "").x_min == comeca);
+  }
+  // E a caixa do segmento tem DUAS fileiras, d'onde a caixa da palavra tira as
+  // suas: é d'ahi que a chapa em XIROD alta da issue irmã ha de nascer.
+  const ftxui::Box segmento = onde(167, "NO FEAR!");
+  CHECK(segmento.y_min == 0);
+  CHECK(segmento.y_max == 1);
+  const ftxui::Box palavra = tui::caixa_da_palavra(segmento);
+  CHECK(palavra.y_min == 0);
+  CHECK(palavra.y_max == 1);
+  CHECK(palavra.x_min == segmento.x_min + 3);
+}
+
+// A FITA ALTA do pé (issue #125): duas linhas, o fundo de CADA segmento nas
+// duas, e o rotulo em mono na de CIMA. Lê-se em écran de papel de duas
+// fileiras, cella a cella, que é o unico modo de o affirmar sem terminal.
+TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists,
+                                       "NO FEAR!", 167, nullptr,
+                                       tui::Focavel::Pauta, 2),
+            167, 2);
+  CHECK(pedaco(tela, 76, 13, 0) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 76, 13, 1) == "             ");
+  // O FUNDO é o mesmo nas duas fileiras, peça por peça: aba corrente, aba
+  // apagada, botão, nome, vão do outro lado e ponta direita.
+  for (const int x : {78, 66, 1, 30, 110, 145})
+    CHECK(tela.PixelAt(x, 1).background_color ==
+          tela.PixelAt(x, 0).background_color);
+  CHECK(tela.PixelAt(78, 1).background_color == cor(tk::v600));
+  CHECK(tela.PixelAt(1, 1).background_color == cor(tk::panel_hi));
+  // E a seta da junção repete-se em baixo, senão os dous fundos encostavam-se
+  // em quadrado e a emenda via-se.
+  CHECK(pedaco(tela, 75, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 11, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 115, 1, 1) == "\ue0b2");
+}
 
 // AS TINTAS. A aba corrente é BLOCO SOLIDO, v600 com texto v50, que é o gesto do
 // site d'elle onde o que está sob a mão vira bloco cheio; as outras ficam no
@@ -129,17 +222,19 @@ TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, "x", 167),
       167);
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::v600));
-  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::v50));
-  CHECK(tela.PixelAt(4, 0).background_color == cor(tk::raised));
-  CHECK(tela.PixelAt(4, 0).foreground_color == cor(tk::text_primary));
-  CHECK(tela.PixelAt(30, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(78, 0).background_color == cor(tk::v600));
+  CHECK(tela.PixelAt(78, 0).foreground_color == cor(tk::v50));
+  CHECK(tela.PixelAt(66, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(66, 0).foreground_color == cor(tk::text_primary));
+  CHECK(tela.PixelAt(92, 0).background_color == cor(tk::raised));
   // Os botões vestem panel_hi com o glifo em glow_core: é o glow CONTIDO da
   // regra da Casa, que accende no que TOCA e nunca no fundo todo.
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
-  CHECK(tela.PixelAt(40, 0).foreground_color == cor(tk::glow_core));
-  // O nome veste `panel`, que é o degrau de fundo, e não o da fita.
-  CHECK(tela.PixelAt(60, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(1, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(1, 0).foreground_color == cor(tk::glow_core));
+  // O nome veste `panel`, que é o degrau de fundo, e não o da fita; e o vão
+  // da outra banda do grupo veste o mesmo, que a fita ha de ser continua.
+  CHECK(tela.PixelAt(30, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(110, 0).background_color == cor(tk::panel));
 }
 
 
@@ -274,27 +369,29 @@ TEST_CASE("o trilho anda em v600, e o que falta fica em line_dim") {
 }
 
 TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
-  // As fronteiras, contadas á mão: as quatro peças cabem até ás 110 collunhas
-  // (51 da esquerda, 52 da direita, 7 do nome minimo), tres até ás 98, duas até
-  // ás 83, e uma até ás 74. Cedem INTEIRAS, e nunca aparadas: aparar partiria
-  // um par de tinta e fundo ao meio, que é a emenda que o aceite proscreve.
+  // As fronteiras, contadas á mão sobre o centro (issue #125): a ponta direita
+  // cabe inteira do 142 para cima, tres peças do 118, duas do 88, uma do 70.
+  // São mais largas que as da fita antiga, e é o preço do centro: o grupo toma
+  // o meio, e as pontas dividem o que sobra em duas metades eguaes.
+  // Cedem INTEIRAS, e nunca aparadas: aparar partiria um par de tinta e fundo
+  // ao meio, que é a emenda que o aceite proscreve.
   const auto linha_em = [](std::size_t larga) {
     return pedaco(papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong,
                                                    "NO FEAR!", larga),
                         static_cast<int>(larga)),
                   0, static_cast<int>(larga));
   };
-  CHECK(linha_em(110).find("REPETIR") != std::string::npos);
-  CHECK(linha_em(109).find("REPETIR") == std::string::npos);
-  CHECK(linha_em(98).find("EMBARALHAR") != std::string::npos);
-  CHECK(linha_em(97).find("EMBARALHAR") == std::string::npos);
-  CHECK(linha_em(83).find("100%") != std::string::npos);
-  CHECK(linha_em(82).find("100%") == std::string::npos);
-  CHECK(linha_em(74).find("00:19") != std::string::npos);
-  CHECK(linha_em(73).find("00:19") == std::string::npos);
+  CHECK(linha_em(142).find("REPETIR") != std::string::npos);
+  CHECK(linha_em(141).find("REPETIR") == std::string::npos);
+  CHECK(linha_em(118).find("EMBARALHAR") != std::string::npos);
+  CHECK(linha_em(117).find("EMBARALHAR") == std::string::npos);
+  CHECK(linha_em(88).find("100%") != std::string::npos);
+  CHECK(linha_em(87).find("100%") == std::string::npos);
+  CHECK(linha_em(70).find("00:19") != std::string::npos);
+  CHECK(linha_em(69).find("00:19") == std::string::npos);
   // As tres ABAS ficam em toda largura: ellas são a navegação, e navegação que
   // sommisse deixaria o operador sem porta para a secção seguinte.
-  for (const std::size_t larga : {60, 73, 83, 109, 167})
+  for (const std::size_t larga : {60, 69, 88, 141, 167})
     CHECK(linha_em(larga).find("MY SONG") != std::string::npos);
 }
 

@@ -97,9 +97,9 @@ struct Rectangulo {
 // composição sahe d'aqui, e em campo NOMEADO: as issues irmãs pendem d'estes
 // rectangulos, e indice n'um vector desloca-se á primeira peça nova.
 struct Sala {
-  Rectangulo cabecalho;  // UMA linha, no alto, de largura inteira
-  Rectangulo trilho;     // UMA linha, logo abaixo d'elle
-  Rectangulo campo;      // a linha do prompt; vazia com elle fechado
+  Rectangulo cabecalho;  // a FITA, no pé: DUAS linhas, ou UMA em tela baixa
+  Rectangulo trilho;     // UMA linha, logo por CIMA d'ella
+  Rectangulo campo;      // o prompt, por cima do trilho; vazio se fechado
   Rectangulo chapa;      // UMA linha por cima da pauta
   Rectangulo pauta;      // a lista das musicas, á esquerda
   Rectangulo divisor;    // a collunha que aparta as duas metades
@@ -111,7 +111,7 @@ struct Sala {
 
 // sala_da_tela — todos os numeros da composição, n'uma conta só, para que a
 // bateria os interrogue sem terminal. `campo_aberto` é o prompt de digitar, que
-// pede linha propria e empurra o corpo uma para baixo.
+// pede linha propria ao pé e tira-a ao corpo (issue #125).
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
 
 // espectro_abaixo_da — o rectangulo do espectro depois de se saber quantas

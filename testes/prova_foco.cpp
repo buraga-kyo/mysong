@@ -29,28 +29,29 @@ using tui::Focavel;
 
 namespace {
 
-// A TELA D'ELLE, de 167 por 67, em caixas escriptas á mão. As do cabeçalho são
-// as que a prova da linha do alto já afere cella a cella; as do corpo sahem da
-// sala: pauta de 83 collunhas á esquerda, painel de 83 á direita, e a capa
-// centrada n'elle. Numero algum d'aqui se adivinha.
+// A TELA D'ELLE, de 167 por 67, em caixas escriptas á mão. As da fita são as
+// que a prova da linha já afere cella a cella, com a fita no PÉ (issue #125):
+// duas fileiras, a 64 e a 65, e o grupo das abas a principiar na collunha 64.
+// As do corpo sahem da sala: pauta de 83 collunhas á esquerda, painel de 83 á
+// direita, e a capa no alto d'elle. Numero algum d'aqui se adivinha.
 tui::CaixasDaTela tela_d_elle() {
   tui::CaixasDaTela caixas;
-  tui::CaixasDoCabecalho& alto = caixas.cabecalho;
-  alto.aba_mysong = {0, 10, 0, 0};
-  alto.aba_playlists = {12, 24, 0, 0};
-  alto.aba_download = {26, 37, 0, 0};
-  alto.botao_tocar = {39, 41, 0, 0};
-  alto.botao_anterior = {43, 45, 0, 0};
-  alto.botao_seguinte = {47, 49, 0, 0};
-  alto.nome = {51, 114, 0, 0};
-  alto.tempo = {116, 130, 0, 0};
-  alto.volume = {132, 139, 0, 0};
-  alto.embaralhar = {141, 154, 0, 0};
-  alto.repetir = {156, 166, 0, 0};
-  alto.trilho = {0, 166, 1, 1};
-  caixas.pauta = {0, 82, 3, 65};
-  for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 3 + i, 3 + i});
-  caixas.capa = {84, 166, 2, 29};
+  tui::CaixasDoCabecalho& pe = caixas.cabecalho;
+  pe.botao_tocar = {0, 2, 64, 65};
+  pe.botao_anterior = {4, 6, 64, 65};
+  pe.botao_seguinte = {8, 10, 64, 65};
+  pe.nome = {12, 63, 64, 65};
+  pe.aba_mysong = {64, 74, 64, 65};
+  pe.aba_playlists = {76, 88, 64, 65};
+  pe.aba_download = {90, 101, 64, 65};
+  pe.tempo = {116, 130, 64, 65};
+  pe.volume = {132, 139, 64, 65};
+  pe.embaralhar = {141, 154, 64, 65};
+  pe.repetir = {156, 166, 64, 65};
+  pe.trilho = {0, 166, 63, 63};
+  caixas.pauta = {0, 82, 1, 62};
+  for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 1 + i, 1 + i});
+  caixas.capa = {84, 166, 0, 27};
   return caixas;
 }
 
@@ -95,24 +96,24 @@ TEST_CASE("as quatro setas dizem o rumo, e as outras teclas ficam alheias") {
     CHECK(tui::rumo_da_tecla(qual) == Direcao::Nenhuma);
 }
 
-TEST_CASE("o `↑` da pauta sobe ao cabeçalho, e o `←` d'ella não sahe") {
-  // Sobe ao segmento que está POR CIMA d'ella: a pauta toma as 83 primeiras
-  // collunhas, e o centro d'ella cae debaixo do botão de tocar.
-  CHECK(salto_de(Focavel::Pauta, Direcao::Cima) == Focavel::Tocar);
+TEST_CASE("o `↓` da pauta desce á fita, e o `←` d'ella não sahe") {
+  // Desce ao segmento que está POR BAIXO d'ella: a pauta toma as 83 primeiras
+  // collunhas, e o grupo das abas principia na 64, dentro d'ellas.
+  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::AbaMySong);
   // Á esquerda da pauta não ha visinha alguma. É esta linha que diz que a seta
   // esquerda já não volta degrau algum: ella nem sequer move o foco.
   CHECK(salto_de(Focavel::Pauta, Direcao::Esquerda) == Focavel::Pauta);
   // Á direita está o painel, e n'elle a capa, que é o botão de pausa.
   CHECK(salto_de(Focavel::Pauta, Direcao::Dextra) == Focavel::Capa);
-  // Abaixo da pauta não ha peça alguma: o foco FICA. (Na janella, o `↓` alli
+  // Acima da pauta não ha peça alguma: o foco FICA. (Na janella, o `↑` alli
   // anda na LISTA, e nem chega a pedir salto.)
-  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::Pauta);
+  CHECK(salto_de(Focavel::Pauta, Direcao::Cima) == Focavel::Pauta);
 }
 
 TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
   const Focavel fita[9] = {
-      Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
       Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
+      Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
       Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir};
   for (int i = 0; i + 1 < 9; ++i) {
     CHECK(salto_de(fita[i], Direcao::Dextra) == fita[i + 1]);
@@ -120,35 +121,43 @@ TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
   }
   // As duas PONTAS não dão a volta: sem candidata, o foco fica. Dar a volta
   // levaria o olho ao canto opposto d'onde elle olhava.
-  CHECK(salto_de(Focavel::AbaMySong, Direcao::Esquerda) == Focavel::AbaMySong);
+  CHECK(salto_de(Focavel::Tocar, Direcao::Esquerda) == Focavel::Tocar);
   CHECK(salto_de(Focavel::Repetir, Direcao::Dextra) == Focavel::Repetir);
-  // E acima do cabeçalho não ha nada: as nove ficam onde estão.
+  // E abaixo da fita não ha nada, que o rodapé das dicas não recebe foco: as
+  // nove ficam onde estão.
   for (const Focavel qual : fita)
-    CHECK(salto_de(qual, Direcao::Cima) == qual);
+    CHECK(salto_de(qual, Direcao::Baixo) == qual);
 }
 
-TEST_CASE("o `↓` do cabeçalho torna ao corpo que cada segmento tem por baixo") {
-  // Os seis da esquerda têm a PAUTA por baixo, e é a ella que descem.
+TEST_CASE("o `↑` da fita torna ao corpo que cada segmento tem por cima") {
+  // Os tres botões têm a PAUTA por cima, e é a ella que sobem.
   for (const Focavel qual :
-       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
-        Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte})
-    CHECK(salto_de(qual, Direcao::Baixo) == Focavel::Pauta);
-  // Os tres da direita têm a CAPA, que mora no painel debaixo d'elles. Não é
+       {Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte})
+    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Pauta);
+  // As tres ABAS têm o TRILHO: elle corre a largura toda, mora na linha logo
+  // acima d'ellas, e o centro d'elle cae mesmo sobre o grupo. Um segundo `↑`
+  // leva d'elle á pauta, que é onde a lista está.
+  for (const Focavel qual :
+       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload})
+    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Trilho);
+  // Os tres da direita têm a CAPA, que mora no painel por cima d'elles. Não é
   // capricho: a capa está mesmo alli, e mandá-los á pauta faria a seta saltar
   // meia tela por cima do que ella tem em frente.
   for (const Focavel qual :
        {Focavel::Volume, Focavel::Embaralhar, Focavel::Repetir})
-    CHECK(salto_de(qual, Direcao::Baixo) == Focavel::Capa);
-  // E da capa torna-se ao cabeçalho por cima, e á pauta pelo lado.
-  CHECK(salto_de(Focavel::Capa, Direcao::Cima) == Focavel::Volume);
+    CHECK(salto_de(qual, Direcao::Cima) == Focavel::Capa);
+  // E da capa desce-se á fita, e vae-se á pauta pelo lado.
+  CHECK(salto_de(Focavel::Capa, Direcao::Baixo) == Focavel::Volume);
   CHECK(salto_de(Focavel::Capa, Direcao::Esquerda) == Focavel::Pauta);
   CHECK(salto_de(Focavel::Capa, Direcao::Dextra) == Focavel::Capa);
-  CHECK(salto_de(Focavel::Capa, Direcao::Baixo) == Focavel::Capa);
+  CHECK(salto_de(Focavel::Capa, Direcao::Cima) == Focavel::Capa);
 }
 
-TEST_CASE("o trilho anda com o cabeçalho e com o corpo, e não da tela fóra") {
-  CHECK(salto_de(Focavel::Trilho, Direcao::Cima) == Focavel::Seguinte);
-  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::Capa);
+TEST_CASE("o trilho anda entre a pauta e a fita, e não da tela fóra") {
+  CHECK(salto_de(Focavel::Trilho, Direcao::Cima) == Focavel::Pauta);
+  // Para baixo cae na aba do meio, que é a que tem o centro mais perto do
+  // d'elle: o trilho corre a largura toda, e o meio d'ella é o meio do grupo.
+  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::AbaPlaylists);
   // Elle toma a largura INTEIRA: peça alguma lhe fica ao lado.
   CHECK(salto_de(Focavel::Trilho, Direcao::Esquerda) == Focavel::Trilho);
   CHECK(salto_de(Focavel::Trilho, Direcao::Dextra) == Focavel::Trilho);
@@ -230,9 +239,9 @@ TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
   const struct {
     Focavel peca;
     int collunha;
-  } onde[9] = {{Focavel::AbaMySong, 4},   {Focavel::AbaPlaylists, 14},
-               {Focavel::AbaDownload, 30}, {Focavel::Tocar, 40},
-               {Focavel::Anterior, 44},   {Focavel::Seguinte, 48},
+  } onde[9] = {{Focavel::Tocar, 1},       {Focavel::Anterior, 5},
+               {Focavel::Seguinte, 9},    {Focavel::AbaMySong, 66},
+               {Focavel::AbaPlaylists, 78}, {Focavel::AbaDownload, 92},
                {Focavel::Volume, 135},    {Focavel::Embaralhar, 143},
                {Focavel::Repetir, 158}};
   for (const auto& qual : onde) {
@@ -253,11 +262,11 @@ TEST_CASE("o foco na aba corrente ganha da corrente, e as visinhas não mudam") 
             167);
   // A aba é a corrente E tem o foco: pinta-se de FOCO. Quem anda com as setas
   // ha de ver onde a mão está, e onde se ESTÁ di-lo tambem a chapa da pauta.
-  CHECK(tela.PixelAt(4, 0).background_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(66, 0).background_color == cor(tk::glow_core));
   // As outras duas ficam no repouso do chrome, e os botões no panel_hi: o foco
   // accende UMA peça, e nunca a linha toda.
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::raised));
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(78, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(1, 0).background_color == cor(tk::panel_hi));
   // E o estado da aba di-lo sem se pintar cousa alguma: é por este enum que a
   // irmã do letreiro (issue #108) escolhe a chapa em XIROD.
   CHECK(tui::estado_da_aba(tui::Aba::MySong, tui::Aba::MySong,

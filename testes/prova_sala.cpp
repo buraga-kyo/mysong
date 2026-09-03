@@ -218,26 +218,30 @@ TEST_CASE("as duas metades repartem a tela, com a collunha do divisor pelo meio"
 
 TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
-  CHECK(sala.cabecalho.y == 0);
-  CHECK(sala.trilho.y == 1);
+  // O corpo abre na PRIMEIRA linha da tela (issue #125), e o pé toma as
+  // quatro ultimas: o trilho, as duas da fita, e o rodapé.
+  CHECK(sala.chapa.y == 0);
+  CHECK(sala.pauta.y == 1);
+  CHECK(sala.pauta.altura == 62);
   CHECK(sala.campo.vazio());  // sem campo aberto, linha alguma se lhe reserva
-  CHECK(sala.chapa.y == 2);
-  CHECK(sala.pauta.y == 3);
-  CHECK(sala.pauta.altura == 63);
+  CHECK(sala.trilho.y == 63);
+  CHECK(sala.cabecalho.y == 64);
+  CHECK(sala.cabecalho.altura == 2);
   CHECK(sala.rodape.y == 66);
-  // O tecto da capa: quarenta e cinco por cento de sessenta e quatro é vinte e
-  // oito e oito decimos, e a conta inteira trunca em vinte e oito.
+  // O tecto da capa: quarenta e cinco por cento de sessenta e tres trunca em
+  // vinte e oito, e o que sobra pertence ao espectro.
   CHECK(sala.capa.altura == 28);
-  CHECK(sala.espectro.y == 30);
-  CHECK(sala.espectro.altura == 36);
+  CHECK(sala.espectro.y == 28);
+  CHECK(sala.espectro.altura == 35);
 }
 
-TEST_CASE("o campo aberto empurra o corpo uma linha para baixo") {
+TEST_CASE("o campo aberto tira uma linha ao corpo, por cima do trilho") {
   const tui::Sala com = tui::sala_da_tela(167, 67, true);
-  CHECK(com.campo.y == 2);
+  CHECK(com.campo.y == 62);
   CHECK(com.campo.largura == 167);
-  CHECK(com.chapa.y == 3);
-  CHECK(com.pauta.altura == 62);
+  CHECK(com.chapa.y == 0);  // o corpo continua a abrir na primeira linha
+  CHECK(com.pauta.altura == 61);
+  CHECK(com.trilho.y == 63);
   CHECK(com.rodape.y == 66);
 }
 
@@ -254,19 +258,23 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
     for (const bool campo : {false, true}) {
       const tui::Sala sala = tui::sala_da_tela(larga, alta, campo);
       CHECK(sala.cabecalho.largura == larga);
-      CHECK(sala.cabecalho.altura == 1);
+      CHECK(sala.cabecalho.altura == 2);  // a fita alta da issue #125
       CHECK(sala.trilho.altura == 1);
-      // A pauta começa onde o campo e a chapa acabam, e o rodapé é a ultima.
-      const std::size_t alto = 2 + (campo ? 1u : 0u);
-      CHECK(sala.chapa.y == alto);
-      CHECK(sala.pauta.y == alto + 1);
+      // O corpo abre na PRIMEIRA linha; o pé toma as ultimas, e o campo é a
+      // mais alta d'ellas quando está aberto.
+      const std::size_t pe = 4 + (campo ? 1u : 0u);
+      CHECK(sala.chapa.y == 0);
+      CHECK(sala.pauta.y == 1);
       CHECK(sala.rodape.y == alta - 1);
-      CHECK(sala.pauta.y + sala.pauta.altura == alta - 1);
+      CHECK(sala.cabecalho.y == alta - 3);
+      CHECK(sala.trilho.y == alta - 4);
+      if (campo) CHECK(sala.campo.y == alta - 5);
+      CHECK(sala.pauta.y + sala.pauta.altura == alta - pe);
       CHECK(sala.pauta.largura + (sala.painel.vazio() ? 0 : 1) +
                 sala.painel.largura ==
             larga);
       if (sala.painel.vazio()) continue;
-      CHECK(sala.painel.y == alto);
+      CHECK(sala.painel.y == 0);
       CHECK(sala.painel.altura == sala.divisor.altura);
       CHECK(sala.capa.altura + sala.espectro.altura == sala.painel.altura);
       CHECK(sala.espectro.altura >= 6);  // o espectro não desce de seis
@@ -275,17 +283,41 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
   }
 }
 
+// A ESCADA de quem cede em tela baixa (issue #125). Afere-se altura a altura,
+// que o que a issue promette é a ORDEM por que se cede.
+TEST_CASE("em tela baixa cede o rodapé, e sómente depois a segunda da fita") {
+  const tui::Sala cinco = tui::sala_da_tela(167, 5, false);
+  CHECK(cinco.cabecalho.altura == 2);
+  CHECK(cinco.rodape.y == 4);
+  CHECK(cinco.pauta.altura == 1);
+  // Quatro linhas: o rodapé sae, e a fita guarda as duas d'ella.
+  const tui::Sala quatro = tui::sala_da_tela(167, 4, false);
+  CHECK(quatro.rodape.vazio());
+  CHECK(quatro.cabecalho.altura == 2);
+  CHECK(quatro.pauta.altura == 1);
+  // Tres: a fita volta a UMA linha, e o corpo continua a ter a d'elle.
+  const tui::Sala tres = tui::sala_da_tela(167, 3, false);
+  CHECK(tres.cabecalho.altura == 1);
+  CHECK(tres.trilho.y == 1);
+  CHECK(tres.pauta.altura == 1);
+  // E de tres a onze linhas a lista NUNCA somme, com campo ou sem elle: é a
+  // promessa do aceite, e é ella que faz o trilho ceder tambem.
+  for (std::size_t alta = 3; alta <= 11; ++alta)
+    for (const bool campo : {false, true})
+      CHECK(tui::sala_da_tela(167, alta, campo).pauta.altura >= 1);
+}
+
 // A SOBRA do espectro depois de se saber quanto a capa tomou DE FACTO. O
 // rectangulo da capa é TECTO, e a de 16 por 9 sahe mais baixa que elle.
 TEST_CASE("o espectro toma o que a capa não gastou") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
-  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 36);
-  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 53);
+  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 35);
+  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 52);
   CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.painel.y + 11);
   CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura);
   // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em
   // std::size_t daria numero enorme, e a peça pintaria bilhões de linhas.
-  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 36);
+  CHECK(tui::espectro_abaixo_da(sala, 99).altura == 35);
   CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).vazio());
 }
 

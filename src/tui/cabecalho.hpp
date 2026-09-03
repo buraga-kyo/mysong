@@ -96,7 +96,9 @@ std::string palavra_da_aba(Aba aba);
 // caixa_da_palavra — as cellas da PALAVRA dentro da caixa do segmento. Tira o
 // flanco que o `rotulo_da_aba` põe adeante (o espaço, o glifo, o espaço) e o
 // espaço que põe atraz; caixa por pintar, ou segmento sem palavra que sobre,
-// responde VAZIA, e ahi o pintor não tem chapa que pôr.
+// responde VAZIA, e ahi o pintor não tem chapa que pôr. A ALTURA sahe INTACTA:
+// na fita do pé (issue #125) o segmento tem DUAS fileiras, e é d'ellas que a
+// chapa em XIROD tira as suas.
 ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept;
 
 // estado_da_aba — o degrau de uma aba, dada a corrente e a peça com foco
@@ -118,7 +120,32 @@ std::string rotulo_da_aba(Aba aba);
 // elemento_da_aba — a palavra JÁ PINTADA, corrente ou não. Vive apartada da
 // fita pela mesma razão: quem puzer imagem por cima da cella troca aqui, e a
 // composição da linha não muda uma linha.
-ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado);
+ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
+                               std::size_t altura = 1);
+
+// A REPARTIÇÃO da fita em TRES blocos (issue #125): á esquerda os botões do
+// transporte e o nome do que sôa; ao CENTRO EXACTO o grupo das tres abas; á
+// direita o tempo, o volume e os dous modos.
+struct ContaDaFita {
+  std::size_t nome = 0;     // collunhas do nome, entre os botões e o grupo
+  std::size_t comeca = 0;   // a collunha em que o grupo das abas principia
+  std::size_t depois = 0;   // o enchimento entre o grupo e a ponta direita
+  std::size_t quantas = 0;  // quantos segmentos da ponta direita ficaram
+  bool ao_centro = false;   // o grupo ficou no centro EXACTO da fita
+};
+
+// conta_da_fita — o centro EXACTO, e quem cede quando elle não cabe. A collunha
+// do grupo é a largura menos a d'elle, a dividir por dous, e NÃO um `filler`:
+// aquelle centra no que SOBRA, e o grupo saltaria de logar a cada nome de
+// faixa. Não cabendo, cedem as pontas por esta ordem: o nome corta com «…»,
+// depois o REPETIR, o EMBARALHAR e o tempo; sómente quando nem assim cabe é
+// que o grupo deixa o centro e se encosta ao nome cingido ao minimo d'elle.
+// `direita` traz a largura da ponta direita com zero, um, dous, tres e quatro
+// segmentos, n'essa ordem: a conta não conhece rotulo algum, e assim a bateria
+// arma-a á mão.
+ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
+                          std::size_t grupo,
+                          const std::vector<std::size_t>& direita);
 
 // elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
@@ -134,7 +161,8 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas = nullptr,
-                                     Focavel foco = Focavel::Pauta);
+                                     Focavel foco = Focavel::Pauta,
+                                     std::size_t altura = 1);
 
 // A ORDEM que o pintor dá á lousa quanto á chapa de UMA aba. Sahem TRES de
 // cada quadro, uma por aba e na ordem da fita, e nunca menos: aba que não tem
@@ -146,6 +174,10 @@ struct ChapaDaAba {
   int collunha = 0;
   int linha = 0;
   std::size_t largura = 0;  // em cellas, e é d'ella que a proporção sahe
+  // As FILEIRAS da caixa da palavra (issue #125): uma na fita rasa, duas na
+  // fita do pé. Vem d'aqui, e não de conta feita á parte por quem rasteriza: a
+  // chapa que tomasse fileira a mais cobriria a linha do trilho.
+  std::size_t linhas = 1;
 };
 
 // identidade_da_chapa — o nome por que a lousa conhece a janella de cada aba.

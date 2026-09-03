@@ -1044,23 +1044,28 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
       metades.push_back(std::move(painel));
     }
+    // A FITA compõe-se ANTES do trilho, ainda que se pinte DEPOIS d'elle: ella
+    // esvazia as caixas do cabeçalho á entrada, e a do trilho mora entre ellas.
+    // Composta depois, apagaria a caixa que o trilho acabou de pendurar.
+    ftxui::Element fita = tui::elemento_do_cabecalho(
+        retracto, tui::aba_da_secao(navegador.secao()), ficha.titulo,
+        sala.cabecalho.largura, &caixas.cabecalho, foco, sala.cabecalho.altura);
+    // A ORDEM da tela nova (issue #125): o corpo abre na PRIMEIRA linha, e o pé
+    // toma as ultimas, de cima para baixo o campo, o trilho, a fita e as dicas.
     std::vector<ftxui::Element> tudo = {
-        tui::elemento_do_cabecalho(retracto,
-                                   tui::aba_da_secao(navegador.secao()),
-                                   ficha.titulo, sala.cabecalho.largura,
-                                   &caixas.cabecalho, foco),
-        tui::elemento_do_trilho(retracto, sala.trilho.largura,
-                                &caixas.cabecalho.trilho,
-                                foco == tui::Focavel::Trilho)};
+        ftxui::hbox(std::move(metades)) |
+        ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                    static_cast<int>(sala.pauta.altura +
+                                     (sala.chapa.vazio() ? 0 : 1)))};
     if (!sala.campo.vazio())
       tudo.push_back(tui::elemento_do_campo(digita, contexto_do_campo,
                                             termo_em_curso,
                                             sala.campo.largura));
-    tudo.push_back(
-        ftxui::hbox(std::move(metades)) |
-        ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
-                    static_cast<int>(sala.pauta.altura +
-                                     (sala.chapa.vazio() ? 0 : 1))));
+    if (!sala.trilho.vazio())
+      tudo.push_back(tui::elemento_do_trilho(retracto, sala.trilho.largura,
+                                             &caixas.cabecalho.trilho,
+                                             foco == tui::Focavel::Trilho));
+    tudo.push_back(std::move(fita));
     if (!sala.rodape.vazio())
       tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
     ftxui::Element corpo = ftxui::vbox(std::move(tudo));
