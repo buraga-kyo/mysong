@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <string>
 
+#include "nucleo/ajustes.hpp"
 #include "nucleo/capa.hpp"
 #include "nucleo/lousa.hpp"
 
@@ -40,6 +41,18 @@ const std::string& png_de_cabecalho() {
   static const std::string kOctetos(reinterpret_cast<const char*>(kCrus),
                                     sizeof kCrus);
   return kOctetos;
+}
+
+
+// resolvido — o arquivo e o ambiente pela escada de precedencia, sem disco
+// algum. É o arranjo do prova_ajustes, repetido aqui para que a chave da lousa
+// se prove ao lado da lousa e não no meio de uma prova alheia.
+nu::Ajustes resolvido(std::string_view arquivo, nu::Degraus degraus) {
+  nu::Ajustes ajustes;
+  degraus.arquivo = nu::ler_pares(arquivo, &ajustes);
+  nu::resolver(degraus, "/padrao", [](const std::filesystem::path&) { return true; },
+               &ajustes);
+  return ajustes;
 }
 
 }  // namespace
@@ -178,6 +191,29 @@ TEST_CASE("a linha do diagnostico diz a versão de pé e a razão deitada") {
       nu::parecer_da_lousa(nu::ModoDaLousa::Nao, true, true);
   CHECK(nu::texto_da_lousa(deitada, "ueberzugpp 2.9.8") ==
         "\n  lousa: desligada pelo ajuste: lousa = nao\n");
+}
+
+TEST_CASE("a chave lousa lê-se do arquivo e o ambiente ganha d'ella") {
+  CHECK(nu::chave_da_lousa(nu::ModoDaLousa::Nao) == "nao");
+  CHECK(resolvido("lousa = nao\n", {}).lousa.valor == nu::ModoDaLousa::Nao);
+  nu::Degraus degraus;
+  degraus.lousa_do_ambiente = "sim";
+  const nu::Ajustes ganhou = resolvido("lousa = nao\n", degraus);
+  CHECK(ganhou.lousa.valor == nu::ModoDaLousa::Sim);
+  CHECK(ganhou.lousa.origem == nu::Origem::Ambiente);
+  CHECK(nu::texto_dos_ajustes(ganhou).find("lousa") != std::string::npos);
+}
+
+TEST_CASE("palavra torta na chave lousa queixa-se e não tranca a porta") {
+  const nu::Ajustes doente = resolvido("lousa = talvez\n", {});
+  CHECK(doente.lousa.valor == nu::ModoDaLousa::Auto);
+  REQUIRE(doente.queixas.size() == 1u);
+  CHECK(doente.queixas.front().find("lousa") != std::string::npos);
+  nu::Degraus tortos;
+  tortos.lousa_do_ambiente = "talvez";
+  const nu::Ajustes ambiente = resolvido("", tortos);
+  REQUIRE(ambiente.queixas.size() == 1u);
+  CHECK(ambiente.queixas.front().find("MYSONG_LOUSA") != std::string::npos);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
