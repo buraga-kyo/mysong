@@ -8,12 +8,54 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <unistd.h>
+
 #include <ctime>
+#include <filesystem>
+#include <fstream>
 #include <string>
+#include <system_error>
 
 #include "nucleo/lixeira.hpp"
 
 namespace nu = mysong::nucleo;
+
+namespace {
+
+// A COVA da prova: um acervo de rascunho, e uma raiz de dados ao lado d'elle,
+// que é onde a lixeira nasce. Nem o acervo do operador nem a lixeira d'elle se
+// tocam, que é o que a raiz por parâmetro veio dar.
+class Cova {
+ public:
+  Cova() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-lixeira-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++semente_));
+    std::filesystem::create_directories(caminho_ / "acervo");
+  }
+  ~Cova() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+  std::filesystem::path lixeira() const { return caminho_ / "dados" / "Trash"; }
+  // Cada arquivo leva conteudo proprio, que é como se sabe depois qual d'elles
+  // foi parar onde: dous arquivos vazios não se distinguem em `files`.
+  std::filesystem::path poe(const std::string& nome, const std::string& dentro) {
+    const std::filesystem::path qual = caminho_ / "acervo" / nome;
+    std::ofstream(qual, std::ios::binary) << dentro;
+    return qual;
+  }
+
+ private:
+  std::filesystem::path caminho_;
+  static int semente_;
+};
+
+int Cova::semente_ = 0;
+
+}  // namespace
 
 TEST_CASE("o caminho do bilhete escapa o espaço e o acento, e guarda a barra") {
   // O acervo d'elle é todo de espaço e acento: sem o escape, o bilhete sahia
