@@ -7,8 +7,13 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
 
+#include <unistd.h>
+
+#include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -106,4 +111,48 @@ TEST_CASE("sem se pedir conta, a onda sahe com os mil e vinte e quatro pontos") 
     CHECK(ponto >= 0.0f);
     CHECK(ponto <= 1.0f);
   }
+}
+
+namespace {
+
+// A COVA: um directorio temporario proprio, que morre com o caso. A bateria
+// não escreve no acervo nem no cache do operador, e é esta classe que o
+// garante: a prova da capa e a da lousa usam a mesma.
+class Cova {
+ public:
+  Cova() {
+    caminho_ = std::filesystem::temp_directory_path() /
+               ("mysong-onda-" + std::to_string(::getpid()) + "-" +
+                std::to_string(++semente_));
+    std::filesystem::create_directories(caminho_);
+  }
+  ~Cova() {
+    std::error_code erro;
+    std::filesystem::remove_all(caminho_, erro);
+  }
+  Cova(const Cova&) = delete;
+  Cova& operator=(const Cova&) = delete;
+  const std::filesystem::path& raiz() const { return caminho_; }
+
+ private:
+  std::filesystem::path caminho_;
+  static int semente_;
+};
+
+int Cova::semente_ = 0;
+
+}  // namespace
+
+// O mtime entra na chave porque o operador troca faixa no mesmo nome quando
+// torna a baixar uma que sahiu cortada. Sem elle, a Casa mostraria para sempre
+// a fórma da gravação velha.
+TEST_CASE("a chave da onda muda quando o mtime muda") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "faixa.mp3";
+  std::ofstream(faixa) << "isto não é mp3, mas tem tamanho e mtime";
+  const std::string antes = nu::chave_da_onda(faixa);
+  CHECK(antes.size() == 16);
+  std::filesystem::last_write_time(
+      faixa, std::filesystem::last_write_time(faixa) + std::chrono::hours(1));
+  CHECK(nu::chave_da_onda(faixa) != antes);
 }
