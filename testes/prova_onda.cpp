@@ -451,4 +451,27 @@ TEST_CASE("com um mp3 de verdade, a onda nasce em cache e dispensa o ffmpeg") {
   const std::filesystem::path guardada =
       nu::caminho_da_onda_em_cache(nu::chave_da_onda(faixa));
   CHECK(std::filesystem::is_regular_file(guardada));
+
+  // A PROVA de que a segunda colheita não corre o ffmpeg, e não é o relogio
+  // que a dá: tira-se o programa do PATH. Vindo a onda á mesma, ella veio do
+  // cache, que é o unico logar que sobrou. A tolerancia é a da escala em que
+  // o cache guarda, um octeto por ponto: a primeira vem da conta em float, a
+  // segunda vem do arquivo, e egualdade exacta seria promessa falsa.
+  const std::string caminho_de_antes =
+      std::getenv("PATH") != nullptr ? std::getenv("PATH") : "";
+  ::setenv("PATH", (cova.raiz() / "sem-programa").c_str(), 1);
+  const nu::Onda segunda = nu::colhe_onda(faixa, &razao);
+  ::setenv("PATH", caminho_de_antes.c_str(), 1);
+  REQUIRE(segunda.pronta());
+  CHECK(razao.empty());
+  REQUIRE(segunda.pontos.size() == primeira.pontos.size());
+  for (std::size_t p = 0; p < primeira.pontos.size(); ++p)
+    CHECK(segunda.pontos[p] == doctest::Approx(primeira.pontos[p]).epsilon(0.004));
+
+  if (posto == nullptr || posto[0] == '\0') return;
+  // O DUMP da linha a oitenta collunhas, cru, com os escapes dentro: é o que o
+  // olho ha de julgar, e o que a limpeza por `sed` torna legivel.
+  const ftxui::Screen tela =
+      papel(tui::elemento_da_onda(segunda.pontos, 19.0, 189.0, 80, false), 80);
+  std::ofstream(std::filesystem::path(posto) / "onda-80.cru") << tela.ToString();
 }
