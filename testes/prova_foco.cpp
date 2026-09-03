@@ -1,0 +1,296 @@
+// ══════════════════════════════════════════════════════════════════════════
+//   PROVA DO FOCO — testes/prova_foco.cpp
+// ══════════════════════════════════════════════════════════════════════════
+// A taboada das setas (issue #107) sobre uma geometria FIXA: as caixas são as
+// da tela d'elle, de 167 por 67, escriptas á mão. Prova-se cada seta de cada
+// peça, inclusive a que não tem candidata; que o Enter aperta o MESMO gesto
+// que o clique; e, em écran de papel, que a peça com foco accende.
+// ══════════════════════════════════════════════════════════════════════════
+#include <doctest/doctest.h>
+
+#include <ftxui/component/mouse.hpp>
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/pixel.hpp>
+#include <ftxui/screen/screen.hpp>
+
+#include <string>
+
+#include "tui/cabecalho.hpp"
+#include "tui/foco.hpp"
+#include "tui/rato.hpp"
+#include "tui/tokens.hpp"
+
+namespace tk = mysong::tui::tokens;
+namespace tui = mysong::tui;
+using tui::Direcao;
+using tui::Focavel;
+
+namespace {
+
+// A TELA D'ELLE, de 167 por 67, em caixas escriptas á mão. As do cabeçalho são
+// as que a prova da linha do alto já afere cella a cella; as do corpo sahem da
+// sala: pauta de 83 collunhas á esquerda, painel de 83 á direita, e a capa
+// centrada n'elle. Numero algum d'aqui se adivinha.
+tui::CaixasDaTela tela_d_elle() {
+  tui::CaixasDaTela caixas;
+  tui::CaixasDoCabecalho& alto = caixas.cabecalho;
+  alto.aba_mysong = {0, 10, 0, 0};
+  alto.aba_playlists = {12, 24, 0, 0};
+  alto.aba_download = {26, 37, 0, 0};
+  alto.botao_tocar = {39, 41, 0, 0};
+  alto.botao_anterior = {43, 45, 0, 0};
+  alto.botao_seguinte = {47, 49, 0, 0};
+  alto.nome = {51, 114, 0, 0};
+  alto.tempo = {116, 130, 0, 0};
+  alto.volume = {132, 139, 0, 0};
+  alto.embaralhar = {141, 154, 0, 0};
+  alto.repetir = {156, 166, 0, 0};
+  alto.trilho = {0, 166, 1, 1};
+  caixas.pauta = {0, 82, 3, 65};
+  for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 3 + i, 3 + i});
+  caixas.capa = {84, 166, 2, 29};
+  return caixas;
+}
+
+// salto_de — o atalho que faz a taboada caber n'uma linha por caso.
+Focavel salto_de(Focavel d_onde, Direcao rumo) {
+  return tui::salto(tela_d_elle(), d_onde, rumo);
+}
+
+ftxui::Screen papel(ftxui::Element quadro, int largura, int altura = 1) {
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
+                                              ftxui::Dimension::Fixed(altura));
+  ftxui::Render(ecran, quadro);
+  return ecran;
+}
+
+ftxui::Color cor(std::string_view token) {
+  const tk::Triade c = tk::rgb(token);
+  return ftxui::Color::RGB(c.r, c.g, c.b);
+}
+
+tui::Retracto tocando() {
+  tui::Retracto d_ella;
+  d_ella.estado = mysong::nucleo::Estado::Tocando;
+  d_ella.posicao = 19.0;
+  d_ella.duracao = 189.0;
+  d_ella.volume = 100;
+  return d_ella;
+}
+
+}  // namespace
+
+TEST_CASE("as quatro setas dizem o rumo, e as outras teclas ficam alheias") {
+  CHECK(tui::rumo_da_tecla(ftxui::Event::ArrowUp) == Direcao::Cima);
+  CHECK(tui::rumo_da_tecla(ftxui::Event::ArrowDown) == Direcao::Baixo);
+  CHECK(tui::rumo_da_tecla(ftxui::Event::ArrowLeft) == Direcao::Esquerda);
+  CHECK(tui::rumo_da_tecla(ftxui::Event::ArrowRight) == Direcao::Dextra);
+  // O `j` e o `k` NÃO são setas: elles andam na lista, e quem os cumpre é a
+  // taboada do commando. Alheio aqui é o que os deixa seguir para lá.
+  for (const ftxui::Event& qual :
+       {ftxui::Event::Character('j'), ftxui::Event::Character('k'),
+        ftxui::Event::Return, ftxui::Event::Escape, ftxui::Event::Tab})
+    CHECK(tui::rumo_da_tecla(qual) == Direcao::Nenhuma);
+}
+
+TEST_CASE("o `↑` da pauta sobe ao cabeçalho, e o `←` d'ella não sahe") {
+  // Sobe ao segmento que está POR CIMA d'ella: a pauta toma as 83 primeiras
+  // collunhas, e o centro d'ella cae debaixo do botão de tocar.
+  CHECK(salto_de(Focavel::Pauta, Direcao::Cima) == Focavel::Tocar);
+  // Á esquerda da pauta não ha visinha alguma. É esta linha que diz que a seta
+  // esquerda já não volta degrau algum: ella nem sequer move o foco.
+  CHECK(salto_de(Focavel::Pauta, Direcao::Esquerda) == Focavel::Pauta);
+  // Á direita está o painel, e n'elle a capa, que é o botão de pausa.
+  CHECK(salto_de(Focavel::Pauta, Direcao::Dextra) == Focavel::Capa);
+  // Abaixo da pauta não ha peça alguma: o foco FICA. (Na janella, o `↓` alli
+  // anda na LISTA, e nem chega a pedir salto.)
+  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::Pauta);
+}
+
+TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
+  const Focavel fita[9] = {
+      Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
+      Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
+      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir};
+  for (int i = 0; i + 1 < 9; ++i) {
+    CHECK(salto_de(fita[i], Direcao::Dextra) == fita[i + 1]);
+    CHECK(salto_de(fita[i + 1], Direcao::Esquerda) == fita[i]);
+  }
+  // As duas PONTAS não dão a volta: sem candidata, o foco fica. Dar a volta
+  // levaria o olho ao canto opposto d'onde elle olhava.
+  CHECK(salto_de(Focavel::AbaMySong, Direcao::Esquerda) == Focavel::AbaMySong);
+  CHECK(salto_de(Focavel::Repetir, Direcao::Dextra) == Focavel::Repetir);
+  // E acima do cabeçalho não ha nada: as nove ficam onde estão.
+  for (const Focavel qual : fita)
+    CHECK(salto_de(qual, Direcao::Cima) == qual);
+}
+
+TEST_CASE("o `↓` do cabeçalho torna ao corpo que cada segmento tem por baixo") {
+  // Os seis da esquerda têm a PAUTA por baixo, e é a ella que descem.
+  for (const Focavel qual :
+       {Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
+        Focavel::Tocar, Focavel::Anterior, Focavel::Seguinte})
+    CHECK(salto_de(qual, Direcao::Baixo) == Focavel::Pauta);
+  // Os tres da direita têm a CAPA, que mora no painel debaixo d'elles. Não é
+  // capricho: a capa está mesmo alli, e mandá-los á pauta faria a seta saltar
+  // meia tela por cima do que ella tem em frente.
+  for (const Focavel qual :
+       {Focavel::Volume, Focavel::Embaralhar, Focavel::Repetir})
+    CHECK(salto_de(qual, Direcao::Baixo) == Focavel::Capa);
+  // E da capa torna-se ao cabeçalho por cima, e á pauta pelo lado.
+  CHECK(salto_de(Focavel::Capa, Direcao::Cima) == Focavel::Volume);
+  CHECK(salto_de(Focavel::Capa, Direcao::Esquerda) == Focavel::Pauta);
+  CHECK(salto_de(Focavel::Capa, Direcao::Dextra) == Focavel::Capa);
+  CHECK(salto_de(Focavel::Capa, Direcao::Baixo) == Focavel::Capa);
+}
+
+TEST_CASE("o trilho anda com o cabeçalho e com o corpo, e não da tela fóra") {
+  CHECK(salto_de(Focavel::Trilho, Direcao::Cima) == Focavel::Seguinte);
+  CHECK(salto_de(Focavel::Trilho, Direcao::Baixo) == Focavel::Capa);
+  // Elle toma a largura INTEIRA: peça alguma lhe fica ao lado.
+  CHECK(salto_de(Focavel::Trilho, Direcao::Esquerda) == Focavel::Trilho);
+  CHECK(salto_de(Focavel::Trilho, Direcao::Dextra) == Focavel::Trilho);
+}
+
+TEST_CASE("peça por pintar não recebe foco nem o dá") {
+  // Tela de nascença: caixa alguma se pintou. Seta alguma move o foco, e é
+  // estructural: caixa vazia não é candidata, e a corrente vazia nem procura.
+  const tui::CaixasDaTela nascida;
+  for (const Direcao rumo :
+       {Direcao::Cima, Direcao::Baixo, Direcao::Esquerda, Direcao::Dextra})
+    CHECK(tui::salto(nascida, Focavel::Pauta, rumo) == Focavel::Pauta);
+  // Tela ESTREITA: sem painel não ha capa, e o `→` da pauta fica onde está.
+  tui::CaixasDaTela sem_painel = tela_d_elle();
+  sem_painel.capa = tui::caixa_por_pintar();
+  CHECK(tui::salto(sem_painel, Focavel::Pauta, Direcao::Dextra) ==
+        Focavel::Pauta);
+  // E rumo nenhum não mexe em cousa alguma.
+  CHECK(salto_de(Focavel::Tocar, Direcao::Nenhuma) == Focavel::Tocar);
+}
+
+TEST_CASE("cada peça com foco aperta o mesmo alvo que o clique n'ella") {
+  const tui::CaixasDaTela caixas = tela_d_elle();
+  const Focavel botoes[9] = {
+      Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
+      Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
+      Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir};
+  for (const Focavel qual : botoes) {
+    const ftxui::Box d_ella = tui::caixa_da_peca(caixas, qual);
+    const tui::Alvo pelo_dedo =
+        tui::alvo_do_ponto(caixas, d_ella.x_min, d_ella.y_min);
+    const tui::Alvo pela_tecla = tui::alvo_do_foco(qual);
+    CHECK(pela_tecla.peca == pelo_dedo.peca);
+    CHECK(pela_tecla.indice == pelo_dedo.indice);
+  }
+  // A CAPA é o botão de pausa e retoma, como no rato.
+  CHECK(tui::alvo_do_foco(Focavel::Capa).peca == tui::Peca::Capa);
+  CHECK(tui::alvo_do_ponto(caixas, 100, 10).peca == tui::Peca::Capa);
+  // As DUAS que a tecla não aperta. A pauta tem taboada propria (Enter toca,
+  // Espaço pausa); e o trilho pede a collunha em que o dedo pousou, que tecla
+  // alguma carrega: buscar o segundo zero seria affirmar o principio da faixa
+  // por um Enter que ninguem pediu.
+  CHECK(tui::alvo_do_foco(Focavel::Pauta).peca == tui::Peca::Nada);
+  CHECK(tui::alvo_do_foco(Focavel::Trilho).peca == tui::Peca::Nada);
+}
+
+TEST_CASE("o Enter na peça com foco desagua no gesto do clique") {
+  const tui::EstadoDoRato estado{false, 3, 42, 189.0};
+  const auto gesto = [&estado](Focavel qual) {
+    return tui::gesto_do_alvo(tui::alvo_do_foco(qual), ftxui::Mouse::Left,
+                              ftxui::Mouse::Pressed, estado)
+        .gesto;
+  };
+  CHECK(gesto(Focavel::AbaMySong) == tui::Gesto::VaiParaAba);
+  CHECK(gesto(Focavel::AbaPlaylists) == tui::Gesto::VaiParaAba);
+  CHECK(tui::gesto_do_alvo(tui::alvo_do_foco(Focavel::AbaPlaylists),
+                           ftxui::Mouse::Left, ftxui::Mouse::Pressed, estado)
+            .indice == 1);
+  CHECK(gesto(Focavel::AbaDownload) == tui::Gesto::VaiParaAba);
+  CHECK(gesto(Focavel::Tocar) == tui::Gesto::PausaOuRetoma);
+  CHECK(gesto(Focavel::Capa) == tui::Gesto::PausaOuRetoma);
+  CHECK(gesto(Focavel::Anterior) == tui::Gesto::Anterior);
+  CHECK(gesto(Focavel::Seguinte) == tui::Gesto::Proxima);
+  CHECK(gesto(Focavel::Volume) == tui::Gesto::Muda);
+  CHECK(gesto(Focavel::Embaralhar) == tui::Gesto::Embaralha);
+  CHECK(gesto(Focavel::Repetir) == tui::Gesto::Repete);
+  CHECK(gesto(Focavel::Pauta) == tui::Gesto::Nada);
+  CHECK(gesto(Focavel::Trilho) == tui::Gesto::Nada);
+}
+
+TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
+  // Uma collunha DE DENTRO de cada segmento, na linha do alto. São as mesmas
+  // que a prova da linha do alto já afere, e por isso não se adivinham.
+  const struct {
+    Focavel peca;
+    int collunha;
+  } onde[9] = {{Focavel::AbaMySong, 4},   {Focavel::AbaPlaylists, 14},
+               {Focavel::AbaDownload, 30}, {Focavel::Tocar, 40},
+               {Focavel::Anterior, 44},   {Focavel::Seguinte, 48},
+               {Focavel::Volume, 135},    {Focavel::Embaralhar, 143},
+               {Focavel::Repetir, 158}};
+  for (const auto& qual : onde) {
+    const ftxui::Screen tela =
+        papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "x", 167,
+                                         nullptr, qual.peca),
+              167);
+    const ftxui::Pixel& cella = tela.PixelAt(qual.collunha, 0);
+    CHECK(cella.background_color == cor(tk::glow_core));
+    CHECK(cella.foreground_color == cor(tk::panel));
+  }
+}
+
+TEST_CASE("o foco na aba corrente ganha da corrente, e as visinhas não mudam") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "x", 167,
+                                       nullptr, Focavel::AbaMySong),
+            167);
+  // A aba é a corrente E tem o foco: pinta-se de FOCO. Quem anda com as setas
+  // ha de ver onde a mão está, e onde se ESTÁ di-lo tambem a chapa da pauta.
+  CHECK(tela.PixelAt(4, 0).background_color == cor(tk::glow_core));
+  // As outras duas ficam no repouso do chrome, e os botões no panel_hi: o foco
+  // accende UMA peça, e nunca a linha toda.
+  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
+  // E o estado da aba di-lo sem se pintar cousa alguma: é por este enum que a
+  // irmã do letreiro (issue #108) escolhe a chapa em XIROD.
+  CHECK(tui::estado_da_aba(tui::Aba::MySong, tui::Aba::MySong,
+                           Focavel::AbaMySong) == tui::EstadoDaAba::ComFoco);
+  CHECK(tui::estado_da_aba(tui::Aba::MySong, tui::Aba::MySong,
+                           Focavel::Pauta) == tui::EstadoDaAba::Corrente);
+  CHECK(tui::estado_da_aba(tui::Aba::Download, tui::Aba::MySong,
+                           Focavel::Pauta) == tui::EstadoDaAba::Apagada);
+}
+
+TEST_CASE("o trilho com foco accende o andado, e o que falta fica quieto") {
+  tui::Retracto meio = tocando();
+  meio.posicao = 94.5;  // metade de 189: dez collunhas de vinte
+  const ftxui::Screen quieto =
+      papel(tui::elemento_do_trilho(meio, 20, nullptr, false), 20);
+  const ftxui::Screen aceso =
+      papel(tui::elemento_do_trilho(meio, 20, nullptr, true), 20);
+  CHECK(quieto.PixelAt(0, 0).foreground_color == cor(tk::v600));
+  CHECK(aceso.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
+  // O que FALTA não accende: linha inteira em glow deixaria de dizer por onde
+  // a faixa vae, que é o officio do trilho.
+  CHECK(aceso.PixelAt(19, 0).foreground_color == cor(tk::line_dim));
+}
+
+TEST_CASE("a capa com foco ganha orla de glow_core") {
+  const ftxui::Screen tela =
+      papel(tui::orla_do_foco(ftxui::text("arte") |
+                              ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 4) |
+                              ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 1)),
+            6, 3);
+  // Os quatro cantos do quadro, e a tinta d'elles.
+  CHECK(tela.PixelAt(0, 0).character == "╭");
+  CHECK(tela.PixelAt(5, 0).character == "╮");
+  CHECK(tela.PixelAt(0, 2).character == "╰");
+  CHECK(tela.PixelAt(5, 2).character == "╯");
+  CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(3, 0).foreground_color == cor(tk::glow_core));
+  // E o que a orla guarda fica INTACTO por dentro d'ella.
+  CHECK(tela.PixelAt(1, 1).character == "a");
+}
+
+//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+// ══════════════════════════════════════════════════════════════════════════

@@ -181,5 +181,10 @@ target_sources(mysong_testes PRIVATE prova_rato.cpp)
 # ─── Prova da lousa (issue #103): por target_sources, a regra ───────────────
 target_sources(mysong_testes PRIVATE prova_lousa.cpp)
 
+# ─── Prova do foco e das setas (issue #107): por target_sources, a regra ────
+# A geometria entra á mão, e não da sala: o que se afere é o SALTO, e sala que
+# mudasse de repartição mudaria a prova sem mudar a taboada.
+target_sources(mysong_testes PRIVATE prova_foco.cpp)
+
 # ─── Prova do cabeçalho em abas (issue #102): por target_sources, a regra ────
 target_sources(mysong_testes PRIVATE prova_cabecalho.cpp)
