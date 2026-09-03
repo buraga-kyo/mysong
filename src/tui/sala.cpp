@@ -45,14 +45,6 @@ const char* substantivo_da(Especie especie, bool um) {
   return um ? "FAIXA" : "FAIXAS";
 }
 
-// chip — o modo aceso ou apagado, e PRESENTE nos dous casos: chip que sommisse
-// mudaria a largura da linha da conta a cada tecla, e a tela saltaria sozinha.
-ftxui::Element chip(const std::string& texto, bool aceso) {
-  if (!aceso) return pinta(texto, tokens::text_faint);
-  const tokens::Triade fundo = tokens::rgb(tokens::v700);
-  return pinta(texto, tokens::text_bright) |
-         ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
-}
 // Os numeros da sala nova (issue #102). O LIMIAR do painel é de CEM collunhas
 // de TELA, e não de largura util: a tela nova não leva orla, e cem é o numero
 // que a issue diz. Metade de cem é cincoenta, e o painel de trinta com a pauta
@@ -249,29 +241,6 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
                        static_cast<int>(linhas));
   if (largura <= 2 || linhas <= 2) return ftxui::emptyElement();
   return elemento_da_capa(capa, largura - 2, linhas - 2);
-}
-
-// linha_da_conta — a conta e os chips. Elles CEDEM O LOGAR quando a linha não
-// cabe, como a fita do transporte: chip aparado come o vão da capa e diz nada.
-ftxui::Element linha_da_conta(const Colleccao& qual, std::size_t largura) {
-  const bool repete = qual.repeticao != nucleo::Repeticao::Nenhuma;
-  const bool uma = qual.repeticao == nucleo::Repeticao::Uma;
-  const std::string conta =
-      texto_da_conta(qual.quantas, qual.especie, qual.duracao);
-  const std::string um = " \u21c4 EMBARALHAR ";
-  const std::string dous = std::string(" \u21bb REPETIR: ") +
-                           (!repete ? "NÃO" : uma ? "UMA" : "TODAS") + " ";
-  std::vector<ftxui::Element> partes = {pinta(conta + "  ", tokens::text_body)};
-  const int pede = ftxui::string_width(conta) + ftxui::string_width(um) +
-                   ftxui::string_width(dous);
-  // O CINCO são os vãos que o texto não conta: DOUS entre a capa pequena e o
-  // que vae á direita d'ella, DOUS depois da conta, e UM entre os chips.
-  if (largura >= kCapaPequena + 5 + static_cast<std::size_t>(pede)) {
-    partes.push_back(chip(um, qual.embaralhado));
-    partes.push_back(ftxui::text(" "));
-    partes.push_back(chip(dous, repete));
-  }
-  return ftxui::hbox(std::move(partes));
 }
 
 ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
