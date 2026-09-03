@@ -44,6 +44,55 @@ struct Onda {
 std::vector<std::string> linha_de_commando_da_onda(
     const std::filesystem::path& faixa);
 
+// onda_das_amostras — a envolvente das amostras cruas. RMS por balde, e não o
+// pico: o pico de faixa comprimida sahe chapado no tecto do principio ao fim,
+// e onda chapada não diz onde mora o refrão. Normaliza-se ao MÁXIMO da faixa,
+// d'onde a gravação baixinha se vê tão bem como a alta; máximo zero dá zeros.
+//
+// Devolve SEMPRE `pontos` valores havendo amostra alguma que seja: havendo
+// MENOS amostras que baldes, reparte-se o que ha e o balde sem amostra propria
+// repete a do vizinho de traz. Zero amostras dá a Onda vazia.
+Onda onda_das_amostras(const std::int16_t* amostras, std::size_t quantas,
+                       std::size_t pontos = PONTOS_DA_ONDA);
+
+// chave_da_onda — o caminho ABSOLUTO, o tamanho e o mtime, sommados como a
+// capa somma. O caminho, e não a pasta como alli: capa é do album, onda é da
+// faixa. O mtime entra porque arquivo reescripto no mesmo nome é outra musica,
+// e a onda de antes mentiria a fórma d'ella para sempre.
+std::string chave_da_onda(const std::filesystem::path& faixa);
+
+// caminho_da_onda_em_cache — `$XDG_CACHE_HOME/mysong/ondas/<chave>.onda`, e
+// sem a variavel `~/.cache/mysong/ondas/`. Vazio sem HOME, e vazio sem chave.
+// Directorio algum se cria aqui: quem escreve é quem cria, e esta funcção
+// sómente diz ONDE, pelo precedente exacto do caminho_da_capa_em_cache.
+std::filesystem::path caminho_da_onda_em_cache(std::string_view chave);
+
+// escreve_onda — a onda em TEXTO, por temporario e rename. Duas linhas: o
+// cabeçalho `mysong-onda 1 <N>`, e os N valores em zero a duzentos e cincoenta
+// e cinco. Texto, para que o operador possa olhar o cache d'elle sem
+// ferramenta alguma; um octeto por ponto, porque a cella do terminal tem oito
+// degraus e guardar float seria guardar precisão que a tela deita fóra. Onda
+// vazia RECUSA-SE: guardar o nada faria a falha pegajosa.
+bool escreve_onda(const std::filesystem::path& onde, const Onda& onda);
+
+// le_onda — o espelho da escripta. Recusa cabeçalho que não conheça, e conta
+// que não bata com a que o cabeçalho declara: arquivo cortado ao meio por
+// queda ou por disco cheio ha de sahir como ausencia, e nunca como onda pela
+// metade. A VERSÃO é o que deixa o formato mudar sem que o cache velho
+// envenene a tela.
+bool le_onda(const std::filesystem::path& onde, Onda* onda);
+
+// ── E AGORA O QUE TOCA O MUNDO.
+
+// colhe_onda — o acto inteiro: o cache, senão o ffmpeg, senão a onda vazia com
+// a `razao` em texto (falta o ffmpeg, faixa que não ha, ffmpeg que sahiu com
+// erro, faixa sem amostra alguma). O que se colheu vae ao cache.
+//
+// BLOQUEANTE, e de proposito: decodificar a faixa inteira leva o tempo que
+// leva, e esconder isso n'um fio aqui dentro seria decidir pela janella. Quem
+// chama põe-na n'um fio, e é o que a fita faz quando a faixa muda.
+Onda colhe_onda(const std::filesystem::path& faixa, std::string* razao = nullptr);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
