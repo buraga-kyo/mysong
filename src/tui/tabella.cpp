@@ -69,7 +69,51 @@ std::string apara(const std::string& crua, std::size_t largura) {
   return feita;
 }
 
+// As cellas das columnas de largura fixa. A margem de UMA cella de cada lado é
+// o que aparta a pauta da orla e do divisor sem gastar collunha de traço.
+constexpr std::size_t kMargem = 1, kMarcador = 1, kNumero = 3, kVao = 2;
+constexpr std::size_t kRegua = 6, kTempo = 5, kConta = 4;
+// kTituloMinimo — abaixo d'isto o titulo não diz nada, e columna nova que o
+// levasse a menos seria columna que cega a linha para enfeitar a folha.
+constexpr std::size_t kTituloMinimo = 8;
+
 }  // namespace
+
+Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
+  Medidas medidas;
+  medidas.pela_conta = pela_conta;
+  // A pauta MINIMA: as duas margens e o titulo, e mais nada.
+  if (largura < 2 * kMargem + kMarcador + kTituloMinimo) {
+    medidas.titulo = largura > 2 * kMargem ? largura - 2 * kMargem : largura;
+    return medidas;
+  }
+  medidas.marcador = kMarcador;
+  std::size_t sobra = largura - 2 * kMargem - kMarcador;
+  // O № é numero DE FAIXA: na vista que conta nomes elle não existe, e a conta
+  // d'ella vae na columna da direita.
+  if (!pela_conta && sobra >= kNumero + kVao + kTituloMinimo) {
+    medidas.numero = kNumero;
+    sobra -= kNumero + kVao;
+  }
+  const std::size_t direita = pela_conta ? kConta : kTempo;
+  if (sobra >= direita + 1 + kTituloMinimo) {
+    medidas.conta = direita;
+    sobra -= direita + 1;
+  }
+  if (sobra >= kRegua + kVao + kTituloMinimo) {
+    medidas.regua = kRegua;
+    sobra -= kRegua + kVao;
+  }
+  // DOUS TERÇOS ao titulo e UM ao artista, que é o que a issue #111 pede. O
+  // artista é a primeira a ceder por ser a unica columna que o titulo já
+  // costuma dizer: «97Kickstvr, without you» traz o nome dentro.
+  if (!pela_conta && ha_autor && sobra >= kVao + 3 * kTituloMinimo) {
+    medidas.artista = (sobra - kVao) / 3;
+    sobra -= kVao + medidas.artista;
+  }
+  medidas.titulo = sobra;
+  return medidas;
+}
 
 std::string apara_collunhas(const std::string& crua, std::size_t collunhas) {
   if (collunhas == 0) return {};
