@@ -262,6 +262,13 @@ target_link_libraries(mysong_core PRIVATE PkgConfig::CURL)
 # o yt-dlp da #11.
 target_sources(mysong_core PRIVATE src/nucleo/capa.cpp)
 
+# ─── A ONDA DA FAIXA (issue #131) ───────────────────────────────────────────
+# Dependencia nova alguma se cobra: o ffmpeg corre por fork, como o chafa da
+# #16 e o yt-dlp da #11, e o cache é o mesmo da capa. Linha PROPRIA ao lado
+# d'ella, e não alteração da d'ella: a issue #132 lavra neste arquivo agora, e
+# linha nova não collide onde linha alterada collidiria.
+target_sources(mysong_core PRIVATE src/nucleo/onda.cpp)
+
 # ─── O MPRIS (issue #29) ────────────────────────────────────────────────────
 # As unidades vão em arquivo PROPRIO e sem libdbus, para se provarem em machina surda.
 # O `grep dbus src/api/unidades.cpp` sahe vazio, e é o que faz a promessa verificavel.
