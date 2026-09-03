@@ -431,6 +431,49 @@ bool Biblioteca::esquece(std::string_view caminho) {
   return havia;
 }
 
+// Acha o logar d'ella, empurra as visinhas para o vão que ella deixa, e
+// assenta-a. Sem sentinella, e não é descuido: aqui a ordem NÃO é chave, ao
+// contrario do (rol, ordem) das listas, donde dous logares eguaes a meio da
+// transacção não collidem com cousa alguma.
+bool Biblioteca::move_faixa(std::string_view caminho, std::size_t para) {
+  const std::lock_guard<std::mutex> chave(tranca_);
+  sqlite3* punho = abre_para_escrever(banco_);
+  if (punho == nullptr) return false;
+  sqlite3_exec(punho, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
+  long long de = -1, quantas = 0;
+  corre(punho, "SELECT ordem FROM faixas WHERE caminho = ?1;", {caminho},
+        [&de](sqlite3_stmt* passo) { de = sqlite3_column_int64(passo, 0); });
+  corre(punho, "SELECT COUNT(*) FROM faixas;", {},
+        [&quantas](sqlite3_stmt* passo) {
+          quantas = sqlite3_column_int64(passo, 0);
+        });
+  if (de < 0) {
+    sqlite3_exec(punho, "ROLLBACK;", nullptr, nullptr, nullptr);
+    sqlite3_close(punho);
+    return false;
+  }
+  // Pedido para além do fim assenta no ultimo logar: arrastar para baixo do
+  // ultimo quer dizer «ao fim», e não «erro».
+  long long ate = static_cast<long long>(para);
+  if (ate >= quantas) ate = quantas - 1;
+  if (ate != de) {
+    char sql[176] = {0};
+    std::snprintf(sql, sizeof(sql),
+                  ate < de ? "UPDATE faixas SET ordem = ordem + 1 WHERE ordem"
+                             " >= %lld AND ordem < %lld;"
+                           : "UPDATE faixas SET ordem = ordem - 1 WHERE ordem"
+                             " > %lld AND ordem <= %lld;",
+                  ate < de ? ate : de, ate < de ? de : ate);
+    sqlite3_exec(punho, sql, nullptr, nullptr, nullptr);
+    std::snprintf(sql, sizeof(sql),
+                  "UPDATE faixas SET ordem = %lld WHERE caminho = ?1;", ate);
+    corre(punho, sql, {caminho}, nullptr);
+  }
+  sqlite3_exec(punho, "COMMIT;", nullptr, nullptr, nullptr);
+  sqlite3_close(punho);
+  return true;
+}
+
 Escriba::Escriba(std::filesystem::path banco, long limite_de_paginas)
     : banco_(std::move(banco)), temporario_(banco_.string() + ".tmp") {
   std::error_code erro;

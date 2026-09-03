@@ -154,6 +154,11 @@ class Biblioteca {
   // unica porta que mostra a ordem propria sem trazer a faixa inteira atraz.
   std::vector<std::string> ordem_das_faixas() const;
 
+  // Move a faixa para a posição `para` (zero é a primeira), empurrando as
+  // visinhas e conservando a ordem CONTIGUA. Falso quando a faixa não está no
+  // índice; mover para o logar em que já está devolve verdadeiro sem mudar nada.
+  bool move_faixa(std::string_view caminho, std::size_t para);
+
  private:
   // A tranca NÃO é reentrante: porta publica alguma d'esta classe chama outra,
   // e a segunda tomada seria abraço de si mesma. O destructor não a toma, que o
