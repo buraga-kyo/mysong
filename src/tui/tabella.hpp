@@ -80,13 +80,18 @@ Medidas medidas_da_fatia(const Navegador& navegador, std::size_t primeira,
 std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas);
 
 // Um PEDAÇO da linha da pauta: o texto já aparado á cella, e a tinta com que se
-// pinta. A linha sahe em pedaços, e não n'uma cadeia só, porque as columnas não
-// levam a mesma tinta: o titulo da que sôa accende, e o resto da linha não.
+// pinta. O nome leva a pauta dentro porque `Pedaco` sem sobrenome já é da fita
+// arrowline, n'este mesmo namespace: dous d'esse nome compilam (cada um no seu
+// arquivo) e o ligador mistura-os, d'onde a fita lia o pedaço da pauta com a
+// fórma d'ella e cahia. Medido n'um pty, com o cabeçalho a estourar.
+//
+// A linha sahe em pedaços, e não n'uma cadeia só, porque as columnas não levam
+// a mesma tinta: o titulo da que sôa accende, e o resto da linha não.
 //
 // Os vãos e as margens tambem são pedaços. Assim a somma das larguras É a
 // largura da pauta, e a bateria cobra-a sem écran algum; e o bloco da eleita,
 // que veste a linha de orla a orla, não tem vão por onde o fundo escape.
-struct Pedaco {
+struct PedacoDaPauta {
   std::string texto;
   std::string_view tinta;
   bool negrito = false;
@@ -96,8 +101,9 @@ struct Pedaco {
 // pinta. `maior` é o que mede a maior da fatia á vista, que é o que dá a régua;
 // `soa` diz se é esta a faixa que o motor toca, que lhe põe o «▶» e lhe accende
 // o titulo. A ELEITA não entra aqui: ella é tinta, e não texto.
-std::vector<Pedaco> pedacos_da_linha(const Linha& linha, const Medidas& medidas,
-                                     int maior, bool soa);
+std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
+                                            const Medidas& medidas, int maior,
+                                            bool soa);
 
 // elemento_da_linha — os pedaços vestidos de tinta. A ELEITA vira BLOCO: fundo
 // de orla a orla, e TODO o texto n'uma tinta só. É o gesto do sitio do Plano
@@ -106,8 +112,8 @@ std::vector<Pedaco> pedacos_da_linha(const Linha& linha, const Medidas& medidas,
 //
 // Eleita que TAMBEM sôa troca o violeta pelo glow_core: dous signaes na mesma
 // linha hão de dar um bloco só, e não dous fundos a brigar pela mesma cella.
-ftxui::Element elemento_da_linha(const std::vector<Pedaco>& pedacos, bool eleita,
-                                 bool soa, std::size_t largura);
+ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
+                                 bool eleita, bool soa, std::size_t largura);
 
 // conselho_do_vazio — o que se diz quando a pauta não tem linha alguma, e a
 // TECLA que o desfaz. É POR SECÇÃO: um conselho só dizia «varra o acervo»

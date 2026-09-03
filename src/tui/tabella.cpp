@@ -178,12 +178,12 @@ std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas) {
   return cheias == 0 ? 1 : cheias;
 }
 
-ftxui::Element elemento_da_linha(const std::vector<Pedaco>& pedacos,
+ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
                                  bool eleita, bool soa, std::size_t largura) {
   const std::string_view sobre = soa ? tokens::panel : tokens::v50;
   std::vector<ftxui::Element> partes;
   partes.reserve(pedacos.size());
-  for (const Pedaco& pedaco : pedacos) {
+  for (const PedacoDaPauta& pedaco : pedacos) {
     ftxui::Element parte = pinta(pedaco.texto, eleita ? sobre : pedaco.tinta);
     if (pedaco.negrito) parte = parte | ftxui::bold;
     partes.push_back(std::move(parte));
@@ -201,10 +201,10 @@ ftxui::Element elemento_da_linha(const std::vector<Pedaco>& pedacos,
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
-std::vector<Pedaco> pedacos_da_linha(const Linha& linha,
+std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
                                      const Medidas& medidas, int maior,
                                      bool soa) {
-  std::vector<Pedaco> feitos;
+  std::vector<PedacoDaPauta> feitos;
   const auto vao = [&feitos](std::size_t quantas) {
     if (quantas > 0)
       feitos.push_back({std::string(quantas, ' '), tokens::text_faint, false});

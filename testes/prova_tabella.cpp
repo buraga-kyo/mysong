@@ -127,16 +127,16 @@ namespace {
 
 // cellas_dos — a somma das larguras dos pedaços. É o invariante da pauta: os
 // vãos e as margens tambem são pedaços, d'onde a somma HA DE dar a largura.
-std::size_t cellas_dos(const std::vector<tui::Pedaco>& pedacos) {
+std::size_t cellas_dos(const std::vector<tui::PedacoDaPauta>& pedacos) {
   std::size_t total = 0;
-  for (const tui::Pedaco& pedaco : pedacos)
+  for (const tui::PedacoDaPauta& pedaco : pedacos)
     total += static_cast<std::size_t>(ftxui::string_width(pedaco.texto));
   return total;
 }
 
-std::string dito(const std::vector<tui::Pedaco>& pedacos) {
+std::string dito(const std::vector<tui::PedacoDaPauta>& pedacos) {
   std::string feita;
-  for (const tui::Pedaco& pedaco : pedacos) feita += pedaco.texto;
+  for (const tui::PedacoDaPauta& pedaco : pedacos) feita += pedaco.texto;
   return feita;
 }
 
@@ -183,11 +183,11 @@ TEST_CASE("a linha da pauta diz numero, titulo, artista, régua e tempo") {
   CHECK(linha.find("\u25b0\u25b0\u25b1\u25b1\u25b1\u25b1") != std::string::npos);
   CHECK(linha.find("01:36") != std::string::npos);
   // A que SÔA leva o «▶» na cella d'elle, e NÃO perde o numero.
-  const std::vector<tui::Pedaco> soando =
+  const std::vector<tui::PedacoDaPauta> soando =
       tui::pedacos_da_linha(qual, medidas, 267, true);
   CHECK(dito(soando).substr(0, 7) == " \u25b6  4");
   namespace tk = mysong::tui::tokens;
-  for (const tui::Pedaco& pedaco : soando)
+  for (const tui::PedacoDaPauta& pedaco : soando)
     if (pedaco.negrito) CHECK(pedaco.tinta == tk::glow_soft);
   // A vista que CONTA nomes: o nome, a conta de faixas, e a régua pela conta.
   const tui::Medidas nomes = tui::medidas_da_pauta(40, false, true);
