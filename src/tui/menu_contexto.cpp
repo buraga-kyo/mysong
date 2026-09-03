@@ -133,6 +133,26 @@ ftxui::Element linha_da_base(std::size_t largura) {
                tokens::panel);
 }
 
+// linha_do_item — a orla, o rotulo, a marca do submenu, e a orla. O ELEITO é um
+// BLOCO v600 de tinta v50, que é o `menu-selected-style` do tmux d'elle byte a
+// byte. A orla NÃO entra no bloco: ella é do chrome, e não do item. E a `marca`
+// vazia tira a collunha d'ella, que a caixa das listas não tem marca alguma.
+ftxui::Element linha_do_item(std::string_view rotulo, std::size_t campo,
+                             std::string_view marca, bool eleito,
+                             bool apagado) {
+  const std::string texto =
+      " " + apara(rotulo, campo) + " " +
+      (marca.empty() ? std::string() : std::string(marca) + " ");
+  return ftxui::hbox(
+      {pinta("│", tokens::line_base, tokens::panel),
+       pinta(texto,
+             eleito    ? tokens::v50
+             : apagado ? tokens::text_faint
+                       : tokens::text_primary,
+             eleito ? tokens::v600 : tokens::panel),
+       pinta("│", tokens::line_base, tokens::panel)});
+}
+
 }  // namespace
 
 void abre_o_menu(MenuDeContexto& menu, std::size_t faixa, std::string titulo,
@@ -227,13 +247,17 @@ MedidaDoMenu medida_do_menu(const MenuDeContexto& menu) {
 }
 
 ftxui::Element elemento_do_menu(const MenuDeContexto& menu) {
-  const std::size_t largura = medida_do_menu(menu).largura;
+  const std::size_t campo = campo_dos_itens(), largura = campo + 6;
   std::vector<ftxui::Element> linhas;
   linhas.push_back(orla_com_titulo(menu.titulo, largura));
   for (std::size_t qual = 0; qual < QUANTOS_ITENS; ++qual) {
     if (qual == kFileteAntesDe) linhas.push_back(linha_do_filete(largura));
-    linhas.push_back(pinta("│ " + apara(kRotulos[qual], largura - 4) + " │",
-                           tokens::text_primary, tokens::panel));
+    // O JUNTAR leva «▸», e sahe APAGADO não havendo lista alguma: item que
+    // parecesse vivo e não abrisse cousa alguma seria tecla a mentir.
+    const bool junta = qual == static_cast<std::size_t>(ItemDoMenu::JuntaALista);
+    linhas.push_back(linha_do_item(kRotulos[qual], campo, junta ? "▸" : " ",
+                                   qual == menu.item,
+                                   junta && menu.listas.empty()));
   }
   linhas.push_back(linha_da_base(largura));
   return ftxui::vbox(std::move(linhas));
