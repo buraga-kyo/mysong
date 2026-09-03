@@ -59,6 +59,31 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
          "x" + std::to_string(linhas);
 }
 
+namespace {
+
+// de_dous e de_quatro — inteiros GRANDES-PRIMEIRO, que é a ordem do JPEG e a do
+// PNG. Sem guarda de tamanho: os dous chamadores conferem-no antes.
+std::size_t de_dous(std::string_view octetos, std::size_t onde) {
+  return (static_cast<std::size_t>(static_cast<unsigned char>(octetos[onde]))
+          << 8) |
+         static_cast<unsigned char>(octetos[onde + 1]);
+}
+
+std::size_t de_quatro(std::string_view octetos, std::size_t onde) {
+  return (de_dous(octetos, onde) << 16) | de_dous(octetos, onde + 2);
+}
+
+}  // namespace
+
+Medida medida_da_imagem(std::string_view octetos) {
+  // O PNG diz o quadro no IHDR, que a norma manda ser o PRIMEIRO pedaço: a
+  // largura no octeto dezaseis e a altura no vinte, contando da guarda.
+  if (octetos.size() >= 24 && octetos.compare(0, 8, "\x89PNG\r\n\x1a\n") == 0 &&
+      octetos.compare(12, 4, "IHDR") == 0)
+    return {de_quatro(octetos, 16), de_quatro(octetos, 20)};
+  return {};  // WebP e o mais: quem chama toma isto por «não sei»
+}
+
 // O SEXTANTE, e a classe de fonte que o desenha. Medido n'esta machina:
 // `fc-list ':charset=1fb00'` acha sómente a Noto Sans Symbols2, que Nerd Font
 // não é; a JetBrainsMono NF tem os quadrantes (U+2596) e não tem os sextantes.

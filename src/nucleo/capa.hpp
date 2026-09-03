@@ -72,6 +72,19 @@ bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos);
 std::string chave_do_cache(const std::filesystem::path& faixa,
                            std::size_t collunas, std::size_t linhas);
 
+// A MEDIDA de uma imagem, em PIXEIS. Serve tambem á célulla do terminal, que é
+// rectangulo com largura e altura como qualquer outro.
+struct Medida {
+  std::size_t largura = 0, altura = 0;
+};
+
+// medida_da_imagem — a largura e a altura lidas do CABEÇALHO dos octetos, sem
+// se decodificar imagem alguma. Conhece o JPEG e o PNG, que são os dous que o
+// APIC d'este acervo traz e os que a Casa embute; de todo o mais devolve zero,
+// e quem chama toma isso por «não sei» e não por «vazia». PURA, e é d'ahi que
+// a bateria a afere contra cabeçalhos escriptos á mão, sem imagem no disco.
+Medida medida_da_imagem(std::string_view octetos);
+
 // ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
 // (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
 // degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a
