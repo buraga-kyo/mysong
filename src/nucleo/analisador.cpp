@@ -44,6 +44,16 @@ double millesimos_entre(Relogio::time_point antes, Relogio::time_point depois) {
 
 }  // namespace
 
+std::size_t cinge_bandas(std::size_t quantas) noexcept {
+  // Cingir, e não recusar: quem pede vem da LARGURA de um painel, e painel
+  // estreito é cousa legitima do mundo. Devolver erro poria o desenho a tratar
+  // excepção por causa de uma janella apertada; cingir dá-lhe sempre um numero
+  // que se pinta.
+  if (quantas < BANDAS_MINIMAS) return BANDAS_MINIMAS;
+  if (quantas > BANDAS_MAXIMAS) return BANDAS_MAXIMAS;
+  return quantas;
+}
+
 // O PUNHO: todo o PipeWire d'esta Casa cabe aqui dentro, e nada d'elle sahe pelo
 // cabeçalho. Os callbacks são methodos estaticos por necessidade: elles hão de
 // nomear este typo, que é privado do Analisador, e função livre não poderia.
