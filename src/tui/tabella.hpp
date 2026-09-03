@@ -45,7 +45,6 @@ std::string apara_collunhas(const std::string& crua, std::size_t collunhas);
 // sala. Zero quer dizer «esta columna não se abre n'esta largura».
 struct Medidas {
   std::size_t marcador = 0;  // a cella do «▶» da que sôa
-  std::size_t numero = 0;    // o № á direita, tres cellas
   std::size_t titulo = 0;    // o titulo, ou o nome; toma o que sobra
   std::size_t artista = 0;   // um terço do que sobra ao titulo
   std::size_t regua = 0;     // a régua da duração, seis cellas
@@ -128,7 +127,7 @@ std::string conselho_do_vazio(Secao secao, bool ha_termo);
 // guarde estado de rolagem que pudesse divergir da vista.
 //
 // `tocando` é o CAMINHO da faixa que o motor toca (issue #92). A linha cuja
-// chave casar com elle accende em glow_core, com «▶» no logar do numero: são
+// chave casar com elle accende em glow_core, com «▶» na cella d'elle: são
 // DOUS signaes, que a eleita (o v900) diz onde o dedo está e este diz o que
 // sôa. Cadeia vazia, que é o padrão, pinta a tabella de sempre byte por byte,
 // e a prova que já existe o afere.
