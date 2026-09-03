@@ -9,6 +9,10 @@
 #include <doctest/doctest.h>
 
 #include <cstdlib>
+
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
+
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -30,6 +34,20 @@ nu::PedidoDaChapa da_corrente() {
   pedido.fundo = "#7c3aed";
   pedido.cellulas = 7;
   return pedido;
+}
+
+// O cabeçalho pintado em PAPEL, com as caixas enchidas pelo `reflect`: é o
+// unico modo de a prova ter as caixas que o pintor terá, e não caixas
+// escriptas á mão que poderiam mentir sobre onde a palavra cae.
+ftxui::Screen papel(tui::CaixasDoCabecalho* caixas, tui::Aba corrente) {
+  tui::Retracto retracto;
+  retracto.volume = 100;
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(167),
+                                              ftxui::Dimension::Fixed(1));
+  ftxui::Element linha = tui::elemento_do_cabecalho(
+      retracto, corrente, "uma faixa qualquer", 167, caixas);
+  ftxui::Render(ecran, linha);
+  return ecran;
 }
 
 }  // namespace
@@ -120,4 +138,28 @@ TEST_CASE("ha letreiro sómente com lousa, com pango-view e com a Xirod") {
   // sem os dous: fonte que não está não se finge por ajuste.
   CHECK_FALSE(nu::parecer_do_letreiro(ModoDaLousa::Nao, true, true).de_pe);
   CHECK_FALSE(nu::parecer_do_letreiro(ModoDaLousa::Sim, true, false).de_pe);
+}
+
+TEST_CASE("a caixa da palavra cae exactamente sobre a palavra") {
+  tui::CaixasDoCabecalho caixas;
+  const ftxui::Screen ecran = papel(&caixas, tui::Aba::MySong);
+  for (const tui::Aba aba :
+       {tui::Aba::MySong, tui::Aba::Playlists, tui::Aba::Download}) {
+    const ftxui::Box segmento =
+        aba == tui::Aba::MySong     ? caixas.aba_mysong
+        : aba == tui::Aba::Playlists ? caixas.aba_playlists
+                                     : caixas.aba_download;
+    const ftxui::Box palavra = tui::caixa_da_palavra(segmento);
+    std::string dita;
+    for (int x = palavra.x_min; x <= palavra.x_max; ++x)
+      dita += ecran.PixelAt(x, 0).character;
+    CHECK(dita == tui::palavra_da_aba(aba));
+  }
+  // A primeira aba abre a fita, d'onde a palavra d'ella começa na cella tres:
+  // o espaço, o glifo e o espaço da guarnição.
+  CHECK(tui::caixa_da_palavra(caixas.aba_mysong).x_min == 3);
+  // Caixa por pintar não dá palavra alguma, e é o que guarda o primeiro quadro
+  // de mandar chapa para um canto que ainda não existe.
+  const ftxui::Box nenhuma = tui::caixa_da_palavra(tui::caixa_por_pintar());
+  CHECK(nenhuma.x_max < nenhuma.x_min);
 }
