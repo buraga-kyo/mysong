@@ -522,6 +522,12 @@ Com o acervo vazio a pauta fica VAZIA, e e a chapa que diz o que fazer:
 `varra o acervo (r)`. Dentro de uma lista, ou na DOWNLOAD, ella diz a tecla
 d'aquelle logar em vez de mandar varrer.
 
+Acabada a faixa, a SEGUINTE entra sozinha: a lista anda sem que se toque em
+nada. Quem decide qual e o modo de repetir: com REPETIR UMA a mesma torna a
+comecar, com REPETIR TODAS a lista gira, e sem repeticao a lista corre ate ao
+fim e o tocador para. Faixa que o motor recuse nao encadeia outra, para que uma
+lista quebrada nao corra inteira em silencio.
+
 ### As teclas
 
 | tecla | o que faz |
@@ -538,7 +544,7 @@ d'aquelle logar em vez de mandar varrer.
 | F10 / F11 | volume, por degrau de cinco |
 | `?` ou F1 | abre e fecha o HELP: a janella com todos os atalhos e a legenda do espectro |
 | `z` | liga e desliga o embaralhar |
-| `x` | cicla o repetir: nenhuma, uma, todas |
+| `x` | cicla o repetir: nenhuma, uma, todas (e e elle que governa o fim da faixa) |
 | `↑` `↓` `←` `→` | anda pelo LAYOUT: leva o foco de peça em peça |
 | `j` / `k` | anda na lista |
 | `g` / `G` ou Home / End | ao principio, ao fim da lista |
