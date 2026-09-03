@@ -64,6 +64,7 @@
 #include "nucleo/tocador.hpp"
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
+#include "tui/cabecalho.hpp"
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
@@ -691,11 +692,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
     // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: a chapa apara
     // na borda, e o que se perde é o fim do ultimo, o menos urgente dos que ha.
-    std::string recado;
-    const auto junta = [&recado](const std::string& dito) {
-      if (dito.empty()) return;
-      if (!recado.empty()) recado += "  ";
-      recado += dito;
+    // Chama-se `dito`, e não `recado`: aquelle nome já é do que a colheita do
+    // correio traz do fio da rede, alguns nós acima n'este mesmo lambda.
+    std::string dito;
+    const auto junta = [&dito](const std::string& pedaco) {
+      if (pedaco.empty()) return;
+      if (!dito.empty()) dito += "  ";
+      dito += pedaco;
     };
     // A FONTE diz-se na secção da rede, e sempre: a lista pode ser da fonte
     // anterior por um instante, que a busca é assynchrona.
@@ -742,7 +745,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     for (const tui::Linha& qual : navegador.vista())
       chapa.duracao += qual.duracao;
     chapa.vista = tui::nome_da_vista(navegador.secao());
-    chapa.recado = recado;
+    chapa.recado = dito;
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
     const nucleo::CapaPintada& arte =
