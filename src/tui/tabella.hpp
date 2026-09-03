@@ -71,6 +71,26 @@ Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta);
 // medida (zero ou negativo), porém, ella sahe vazia de proposito.
 std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas);
 
+// Um PEDAÇO da linha da pauta: o texto já aparado á cella, e a tinta com que se
+// pinta. A linha sahe em pedaços, e não n'uma cadeia só, porque as columnas não
+// levam a mesma tinta: o titulo da que sôa accende, e o resto da linha não.
+//
+// Os vãos e as margens tambem são pedaços. Assim a somma das larguras É a
+// largura da pauta, e a bateria cobra-a sem écran algum; e o bloco da eleita,
+// que veste a linha de orla a orla, não tem vão por onde o fundo escape.
+struct Pedaco {
+  std::string texto;
+  std::string_view tinta;
+  bool negrito = false;
+};
+
+// pedacos_da_linha — a linha inteira, columna a columna, na ordem em que se
+// pinta. `maior` é o que mede a maior da fatia á vista, que é o que dá a régua;
+// `soa` diz se é esta a faixa que o motor toca, que lhe põe o «▶» e lhe accende
+// o titulo. A ELEITA não entra aqui: ella é tinta, e não texto.
+std::vector<Pedaco> pedacos_da_linha(const Linha& linha, const Medidas& medidas,
+                                     int maior, bool soa);
+
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.
