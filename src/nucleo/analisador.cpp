@@ -44,6 +44,16 @@ double millesimos_entre(Relogio::time_point antes, Relogio::time_point depois) {
 
 }  // namespace
 
+std::size_t cinge_bandas(std::size_t quantas) noexcept {
+  // Cingir, e não recusar: quem pede vem da LARGURA de um painel, e painel
+  // estreito é cousa legitima do mundo. Devolver erro poria o desenho a tratar
+  // excepção por causa de uma janella apertada; cingir dá-lhe sempre um numero
+  // que se pinta.
+  if (quantas < BANDAS_MINIMAS) return BANDAS_MINIMAS;
+  if (quantas > BANDAS_MAXIMAS) return BANDAS_MAXIMAS;
+  return quantas;
+}
+
 // O PUNHO: todo o PipeWire d'esta Casa cabe aqui dentro, e nada d'elle sahe pelo
 // cabeçalho. Os callbacks são methodos estaticos por necessidade: elles hão de
 // nomear este typo, que é privado do Analisador, e função livre não poderia.
@@ -393,6 +403,15 @@ std::vector<float> Analisador::bandas() const {
   // pode, no pior caso, esperar por um quadro de amostras.
   std::lock_guard<std::mutex> tranca(punho_->boca);
   return punho_->retracto;
+}
+
+void Analisador::quer_bandas(std::size_t quantas) {
+  std::lock_guard<std::mutex> tranca(punho_->boca);
+  punho_->espectro.quer_bandas(quantas);
+  // O retracto acompanha no MESMO instante. Sem esta linha, quem lesse entre o
+  // pedido e o buffer seguinte receberia o numero velho, e o desenho pintaria
+  // uma largura com as bandas de outra.
+  punho_->retracto = punho_->espectro.bandas();
 }
 
 void Analisador::pulsa() {
