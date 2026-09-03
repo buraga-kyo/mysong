@@ -54,7 +54,19 @@ int main(int argc, char** argv) {
                  " <segundos>\n");
     return 2;
   }
-  const double espera = std::strtod(argv[4], nullptr);
+  char* resto = nullptr;
+  const double espera = std::strtod(argv[4], &resto);
+  // Afere-se como o par: «oito» dá zero e «-8» dá negativo, e nos dous casos a
+  // imagem piscava e sumia, e quem olhasse concluiria que a lousa está quebrada.
+  if (resto == nullptr || *resto != '\0' || !(espera > 0.0)) {
+    std::fprintf(stderr, "fita_lousa: «%s» não é numero de segundos\n", argv[4]);
+    return 2;
+  }
+  // A tela LIMPA-SE, e o cursor vae ao canto: a regua conta-se do cursor para
+  // baixo e o Überzug++ conta do canto ABSOLUTO. Havendo prompt por cima, a
+  // linha rotulada zero não era a linha zero, e a prova do olho confirmava
+  // posição errada com ar de certeza.
+  std::fputs("\x1b[2J\x1b[H", stdout);
   // A REGUA, para que a prova do olho conte em vez de estimar: uma linha por
   // fileira, numerada de zero, com marca de dez em dez collunhas.
   for (int i = 0; i < static_cast<int>(linha + altura + 2); ++i) {
