@@ -112,6 +112,11 @@ constexpr const char* kCinco = "\u2585";  // cinco oitavos
 constexpr const char* kUm = "\u2581";     // um oitavo, o piso do silencio
 constexpr const char* kVazio = " ";
 
+// cor — a tríade em côr do FTXUI, que é como a tela a guarda. Recebe TRÍADE e
+// não token porque os degraus do meio da rampa nascem de tokens::mistura, e
+// nome na paleta não têm.
+ftxui::Color cor(tk::Triade c) { return ftxui::Color::RGB(c.r, c.g, c.b); }
+
 }  // namespace
 
 // ── C2 · os blocos empilhados, e o parcial NO TOPO ──────────────────────────
@@ -583,6 +588,38 @@ TEST_CASE("o mudo vence a côr da batida do registro") {
   REQUIRE(quadro.em(2, 0).pinta);
   CHECK(es::mesma_tinta(quadro.em(2, 0).tinta, tk::rgb(tk::text_faint)));
   CHECK_FALSE(es::mesma_tinta(quadro.em(2, 0).tinta, tk::rgb(tk::data3)));
+}
+
+// ── C16 · as quatro côres da batida na TELA ────────────────────────────────
+// Oito columnas, uma banda por columna, e as familias aos pares: a de indice
+// par bate, a impar ao lado d'ella fica fria. Assim afere-se n'uma composição só
+// que a côr é da COLUMNA e da familia d'ella, e não da fita. Lê-se por PixelAt,
+// que é o que o terminal receberia: a côr prova-se depois de atravessar o
+// elemento, e não sómente no quadro.
+//
+// Painel de duas: teto 16, e 0,95 dá 15 degraus, um cheio e resto sete, d'onde
+// as DUAS célullas; 0,30 dá 4 degraus, que é uma célulla, na base.
+TEST_CASE("as quatro batidas sahem nas quatro côres, e a vizinha fria não") {
+  const std::vector<float> bandas = {0.95f, 0.30f, 0.95f, 0.30f,
+                                     0.95f, 0.30f, 0.95f, 0.30f};
+  const std::vector<float> centros = {100.0f,  100.0f,  500.0f,  500.0f,
+                                      2000.0f, 2000.0f, 8000.0f, 8000.0f};
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(8),
+                                              ftxui::Dimension::Fixed(2));
+  ftxui::Render(ecran, es::elemento_do_espectro(
+                           es::compor(bandas, 8, 2, false, centros)));
+
+  // Os tokens escriptos Á MÃO, na ordem em que o ouvido sobe.
+  const std::string_view batidas[] = {tk::glow_hot, tk::data5, tk::data3,
+                                      tk::data2};
+  for (int f = 0; f < 4; ++f) {
+    // A columna QUENTE veste a batida da familia d'ella, da base ao topo.
+    CHECK(ecran.PixelAt(2 * f, 1).foreground_color == cor(tk::rgb(batidas[f])));
+    CHECK(ecran.PixelAt(2 * f, 0).foreground_color == cor(tk::rgb(batidas[f])));
+    // E a vizinha FRIA veste a rampa, que é a mesma nas quatro familias.
+    CHECK(ecran.PixelAt(2 * f + 1, 1).foreground_color ==
+          cor(tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+  }
 }
 
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
