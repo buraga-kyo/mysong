@@ -80,7 +80,11 @@ RespostaDoMenu tecla_no_menu(MenuDeContexto& menu, const ftxui::Event& tecla) {
       menu.item == static_cast<std::size_t>(ItemDoMenu::JuntaALista);
   const bool ha_listas = quantas > 0;
   if (tecla == ftxui::Event::ArrowRight || tecla == ftxui::Event::Return) {
-    if (no_juntar) {
+    // A guarda do submenu vem ANTES da do item, e não depois: com o submenu de
+    // pé o item eleito CONTINUA a ser o JUNTAR, e olhando primeiro o item o
+    // Enter tornava a abrir o que já estava aberto. A lista escolhida nunca
+    // chegava a sahir, e o menu ficava a comer Enters sem dizer porque.
+    if (!menu.submenu && no_juntar) {
       if (ha_listas) {
         menu.submenu = true;
         menu.lista = 0;
