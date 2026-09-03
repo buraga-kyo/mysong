@@ -13,13 +13,53 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/menu_contexto.hpp"
 
+#include <algorithm>
+#include <string_view>
 #include <utility>
 
 #include <ftxui/component/mouse.hpp>
+#include <ftxui/screen/string.hpp>
+
+#include "tui/tokens.hpp"
 
 namespace mysong::tui {
 
 namespace {
+
+// Os rotulos, na ordem do enum. CAIXA ALTA, que é a regra dos rotulos d'esta
+// Casa; o «▸» do JUNTAR pinta-se á parte, encostado á orla da direita.
+constexpr std::string_view kRotulos[QUANTOS_ITENS] = {
+    "TOCAR", "JUNTAR À LISTA", "NOVA LISTA COM ESTA", "RENOMEAR", "APAGAR"};
+
+// O item ANTES do qual corre o filete. Elle aparta o que ESTRAGA cousa gravada
+// do que a não estraga: acima toca-se e junta-se, abaixo renomeia-se e apaga-se.
+constexpr std::size_t kFileteAntesDe = 3;
+
+// Os limites do nome de lista no submenu, em collunhas. O minimo é o que o
+// rotulo «LISTAS» pede na orla de cima; o maximo é o que impede que uma lista
+// de nome comprido faça o menu sahir da metade da pauta.
+constexpr std::size_t kNomeMinimo = 7, kNomeMaximo = 24;
+
+// collunhas — as que a cadeia toma na tela. Pergunta-se ao FTXUI, e não se
+// contam bytes nem codepoints: o acento do portuguez toma dous bytes e uma
+// collunha só, e a orla da direita sahiria torta em toda faixa acentuada.
+std::size_t collunhas(std::string_view crua) {
+  return static_cast<std::size_t>(ftxui::string_width(std::string(crua)));
+}
+
+std::size_t campo_dos_itens() {
+  std::size_t maior = 0;
+  for (const std::string_view rotulo : kRotulos)
+    maior = std::max(maior, collunhas(rotulo));
+  return maior;
+}
+
+std::size_t campo_das_listas(const MenuDeContexto& menu) {
+  std::size_t maior = kNomeMinimo;
+  for (const nucleo::Rol& rol : menu.listas)
+    maior = std::max(maior, collunhas(rol.nome));
+  return std::min(maior, kNomeMaximo);
+}
 
 // anda — o eleito uma casa, EM RODA. A volta ao principio é o que o menu do
 // tmux d'elle faz, e é o que poupa á mão sete setas para tornar ao alto de uma
@@ -111,6 +151,16 @@ RespostaDoMenu tecla_no_menu(MenuDeContexto& menu, const ftxui::Event& tecla) {
     return {};
   }
   return {};  // tecla que a taboada não conhece consome-se, e nada mais
+}
+
+MedidaDoMenu medida_do_menu(const MenuDeContexto& menu) {
+  // A linha do item é « ROTULO ▸ », e a orla põe uma collunha de cada lado; a
+  // altura são as cinco linhas, o filete, e as duas da orla.
+  MedidaDoMenu medida{campo_dos_itens() + 6, QUANTOS_ITENS + 3};
+  if (!menu.submenu) return medida;
+  medida.largura += campo_das_listas(menu) + 4;
+  medida.altura = std::max(medida.altura, menu.listas.size() + 2);
+  return medida;
 }
 
 }  // namespace mysong::tui
