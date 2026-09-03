@@ -121,6 +121,16 @@ TEST_CASE("a chapa diz onde se está, a conta e a vista, n'uma linha só") {
   CHECK(tui::texto_da_chapa(qual) == "MY SONG, 42 FAIXAS, 1h29, FAIXAS");
   const ftxui::Screen tela = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
   CHECK(linha_de(tela, 0).substr(0, 33) == " MY SONG, 42 FAIXAS, 1h29, FAIXAS");
+  // Tres pesos na mesma linha (issue #111): o ONDE carrega, a conta apaga-se, e
+  // a VISTA sahe em chip, que é a unica das tres que se cycla por tecla.
+  CHECK(tela.PixelAt(2, 0).bold);
+  CHECK(!tela.PixelAt(12, 0).bold);
+  const mysong::tui::tokens::Triade chip =
+      mysong::tui::tokens::rgb(mysong::tui::tokens::raised);
+  CHECK(tela.PixelAt(28, 0).background_color ==
+        ftxui::Color::RGB(chip.r, chip.g, chip.b));
+  CHECK(tela.PixelAt(12, 0).background_color !=
+        ftxui::Color::RGB(chip.r, chip.g, chip.b));
   // O recado vae Á DIREITA, empurrado pelo filler, e a linha fecha a largura.
   qual.recado = "achados na rede";
   const ftxui::Screen com = papel(tui::elemento_da_chapa(qual, 80), 80, 1);

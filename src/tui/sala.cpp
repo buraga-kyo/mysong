@@ -251,8 +251,24 @@ std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura) {
 ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  // A chapa lê-se em TRES pesos, e não n'um: ONDE se está carrega, a conta
+  // apaga-se, e a VISTA sahe em chip, que é o que d'ella se cycla. Os bytes são
+  // os do `texto_da_chapa`, cella por cella: quem conta o espaço do recado lê
+  // aquelle, e um espaço a mais aqui poria o recado uma collunha adiante.
+  const std::string vista = chapa.vista.empty() ? "" : " " + chapa.vista;
   std::vector<ftxui::Element> partes = {
-      pinta(" " + texto_da_chapa(chapa), tokens::text_heading) | ftxui::bold};
+      pinta(" " + chapa.onde + (chapa.onde.empty() ? "" : ","),
+            tokens::text_heading) |
+      ftxui::bold,
+      pinta((chapa.onde.empty() ? "" : " ") +
+                texto_da_conta(chapa.quantas, chapa.especie, chapa.duracao) +
+                (vista.empty() ? "" : ","),
+            tokens::text_muted)};
+  if (!vista.empty()) {
+    const tokens::Triade chip = tokens::rgb(tokens::raised);
+    partes.push_back(pinta(vista, tokens::text_primary) |
+                     ftxui::bgcolor(ftxui::Color::RGB(chip.r, chip.g, chip.b)));
+  }
   // O CONSELHO em glow_soft, logo depois da conta: a pauta vazia é o unico
   // estado em que a chapa tem de CHAMAR o dedo, e o glow é d'esta Casa o que
   // chama. Vae antes das encommendas, que ellas correm com a lista cheia.
