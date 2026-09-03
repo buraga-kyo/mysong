@@ -13,6 +13,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <system_error>
 
@@ -55,7 +56,31 @@ class Cova {
 
 int Cova::semente_ = 0;
 
+std::string texto_de(const std::filesystem::path& qual) {
+  std::ifstream fonte(qual, std::ios::binary);
+  return std::string(std::istreambuf_iterator<char>(fonte), {});
+}
+
 }  // namespace
+
+TEST_CASE("mandar á lixeira põe o arquivo em files e o bilhete em info") {
+  Cova cova;
+  const std::filesystem::path faixa = cova.poe("Á vista.mp3", "som");
+  const nu::DaLixeira desfecho = nu::manda_a_lixeira(faixa, cova.lixeira());
+  CHECK(desfecho.feita);
+  CHECK(desfecho.razao.empty());
+  CHECK(desfecho.nome == "Á vista.mp3");
+  CHECK_FALSE(std::filesystem::exists(faixa));
+  CHECK(texto_de(cova.lixeira() / "files" / desfecho.nome) == "som");
+  // O bilhete leva o nome do arquivo mais a extensão da norma, e diz d'onde a
+  // faixa veio: sem essa linha, a lixeira mostra a faixa e não a restaura.
+  const std::string bilhete =
+      texto_de(cova.lixeira() / "info" / "Á vista.mp3.trashinfo");
+  CHECK(bilhete.rfind("[Trash Info]\n", 0) == 0);
+  CHECK(bilhete.find("\nPath=" + nu::escapa_o_caminho(faixa.string()) + "\n") !=
+        std::string::npos);
+  CHECK(bilhete.find("\nDeletionDate=20") != std::string::npos);
+}
 
 TEST_CASE("o caminho do bilhete escapa o espaço e o acento, e guarda a barra") {
   // O acervo d'elle é todo de espaço e acento: sem o escape, o bilhete sahia
