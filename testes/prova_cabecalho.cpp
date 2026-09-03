@@ -132,6 +132,36 @@ TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
 }
 
 
+// O CENTRO EXACTO (issue #125): a collunha do grupo é a largura menos a d'elle,
+// a dividir por dous. Pede-se em largura PAR e IMPAR, com nome curto, comprido
+// e nenhum: é n'isto que o centro CONTADO se aparta do centro por enchimento
+// elastico, que aquelle fica quieto e este segue o nome da faixa.
+TEST_CASE("o grupo das abas fica na mesma collunha, mude ou não o nome") {
+  const auto onde = [](std::size_t larga, const char* nome) {
+    tui::CaixasDoCabecalho caixas;
+    papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, nome, larga,
+                                     &caixas, tui::Focavel::Pauta, 2),
+          static_cast<int>(larga), 2);
+    return caixas.aba_mysong;
+  };
+  // O grupo pede 39 collunhas: em 166 principia na 63, em 167 na 64.
+  for (const std::size_t larga : {166, 167}) {
+    const int comeca = static_cast<int>((larga - 39) / 2);
+    CHECK(onde(larga, "NO FEAR!").x_min == comeca);
+    CHECK(onde(larga, "Montagem Lunar Celestia 1.0 (SLOWED)").x_min == comeca);
+    CHECK(onde(larga, "").x_min == comeca);
+  }
+  // E a caixa do segmento tem DUAS fileiras, d'onde a caixa da palavra tira as
+  // suas: é d'ahi que a chapa em XIROD alta da issue irmã ha de nascer.
+  const ftxui::Box segmento = onde(167, "NO FEAR!");
+  CHECK(segmento.y_min == 0);
+  CHECK(segmento.y_max == 1);
+  const ftxui::Box palavra = tui::caixa_da_palavra(segmento);
+  CHECK(palavra.y_min == 0);
+  CHECK(palavra.y_max == 1);
+  CHECK(palavra.x_min == segmento.x_min + 3);
+}
+
 // A FITA ALTA do pé (issue #125): duas linhas, o fundo de CADA segmento nas
 // duas, e o rotulo em mono na de CIMA. Lê-se em écran de papel de duas
 // fileiras, cella a cella, que é o unico modo de o affirmar sem terminal.
