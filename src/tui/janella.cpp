@@ -812,6 +812,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       // Os PICOS morrem com a faixa (issue #132): o pico da que sahiu accendia
       // a primeira batida da que entra, e na côr da familia errada.
       picos.clear();
+      // A CHAPA DO PRIMEIRO VERSO (issue #161) rasteriza-se assim que a faixa
+      // muda, e não quando elle chega: o pango-view corre duas vezes na
+      // primeira chamada, e esperá-lo com a musica já a andar é o que fazia a
+      // primeira fala chegar tarde. As seguintes já se adiantavam.
+      if (!letra.empty() && !sala.letra.vazio())
+        letreiro.chapa(tui::pedido_da_chapa_da_letra(
+            tui::verso_do_bloco(letra, -1, sala.letra.largura),
+            static_cast<std::size_t>(ftxui::string_width(
+                tui::verso_do_bloco(letra, -1, sala.letra.largura)))));
       // A ONDA da faixa (issue #131) colhe-se n'um fio de fundo: o ffmpeg leva
       // um segundo na primeira vez, e o quadro não espera por elle. Até chegar,
       // o meio da fita mostra a barra chata.
@@ -1027,8 +1036,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A CHAPA DA LINHA CORRENTE (issue #110), ao lado das das abas e pela mesma
     // lousa: o verso que se canta cristaliza em XIROD sobre as cellas d'elle. O
     // mono continua pintado por baixo, e por isso sem lousa nada falta.
+    // A caixa do bloco vem do quadro ANTERIOR (issue #161): é a unica que diz
+    // onde elle está DE FACTO, que a sala conta a capa pelo tecto e a de 16 por
+    // 9 sahe mais baixa. Medida pela sala, a imagem cahia abaixo do bloco, e o
+    // verso apparecia duas vezes.
     const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_parada(
-        letra, verso_corrente, sala.letra,
+        letra, verso_corrente, caixas.letra,
         lousa.disponivel() && letreiro.disponivel(), vigilia.pede_batida(),
         mostra_letra.load());
     const std::filesystem::path* cristal = nullptr;
@@ -1105,7 +1118,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                             ? letra
                                             : std::vector<nucleo::LinhaDaLetra>(),
                                         verso_corrente, sala.letra.largura,
-                                        sala.letra.altura),
+                                        sala.letra.altura) |
+                                        ftxui::reflect(caixas.letra),
                                     tui::elemento_do_espectro(quadro)}),
                        sala.painel.largura)});
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,

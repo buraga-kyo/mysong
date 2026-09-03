@@ -54,12 +54,12 @@ constexpr std::size_t kPautaMinima = 40;
 // O espectro não desce de seis linhas, e a capa cede-lhe o logar antes d'elle
 // encolher: espectro de tres linhas não é serie de dados, é enfeite.
 constexpr std::size_t kEspectroMinimo = 6, kCapaPorCento = 45;
-// O BLOCO DA LETRA (issue #157), quieto debaixo da capa: UM verso, e mais nada.
-// Tres fileiras para elle (que é o corpo grande da chapa em XIROD que a lousa
-// desenha por cima) e uma de respiro. Quatro ao todo, e são fixas: bloco que
-// crescesse com o painel faria o verso saltar de logar a cada redimensionamento,
-// e o que se pede é justamente que elle fique QUIETO.
-constexpr std::size_t kLetraLinhas = 4;
+// O BLOCO DA LETRA (issue #157, apertado pela #161), quieto debaixo da capa:
+// DUAS fileiras do verso corrente (que é o corpo grande da chapa que a lousa
+// desenha por cima) e uma do seguinte, logo por baixo d'elle. Tres ao todo, e
+// são fixas: bloco que crescesse com o painel faria o verso saltar de logar a
+// cada redimensionamento, e o que se pede é justamente que elle fique QUIETO.
+constexpr std::size_t kLetraLinhas = 3;
 // A chapa cede o logar á pauta quando ella ficaria com menos de tres linhas: a
 // pauta é onde se navega, e a chapa diz sómente onde se está.
 constexpr std::size_t kPautaLinhasMinimas = 3;
