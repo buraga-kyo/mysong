@@ -72,16 +72,16 @@ struct CaixasDoTransporte {
 // paineis não move os cliques, e a assignatura de quem pinta ganha parametro
 // de omissão, que é o que deixa as tarefas irmãs entrar sem quebrar nada.
 struct CaixasDaTela {
-  // Uma por degrau da barra lateral, na ordem em que ella os pinta.
-  std::vector<ftxui::Box> degraus;
-  // Uma por linha VISIVEL da tabella, e sómente por linha que existe: a altura
+  // As doze do cabeçalho (issue #102). Tomaram o logar do vector dos degraus:
+  // a barra lateral já não existe, e com ella se foi o clique no degrau.
+  CaixasDoCabecalho cabecalho;
+  // Uma por linha VISIVEL da pauta, e sómente por linha que existe: a altura
   // que sobra abaixo da lista não é alvo de cousa alguma.
   std::vector<ftxui::Box> linhas;
   // A linha da vista que está no alto: é ella que faz o indice VISIVEL virar o
   // indice ABSOLUTO da vista do navegador, que é o que a eleição consome.
   std::size_t primeira_linha = 0;
   ftxui::Box capa = caixa_por_pintar();
-  CaixasDoTransporte transporte;
 };
 
 // As PEÇAS que o dedo pode achar. `Nada` não é falha: a orla, o rodapé dos
