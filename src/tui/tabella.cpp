@@ -77,6 +77,24 @@ constexpr std::size_t kRegua = 6, kTempo = 5, kConta = 4;
 // levasse a menos seria columna que cega a linha para enfeitar a folha.
 constexpr std::size_t kTituloMinimo = 8;
 
+// repete — o glypho tantas vezes. Não vale `std::string(n, c)`: o glypho da
+// régua tem tres octetos, e aquelle constructor repete OCTETO, d'onde sahiria
+// lixo em vez de barra.
+std::string repete(std::string_view glypho, std::size_t quantas) {
+  std::string feita;
+  for (std::size_t i = 0; i < quantas; ++i) feita += glypho;
+  return feita;
+}
+
+// a_direita — o texto encostado á DIREITA da columna. O № e o tempo lêem-se
+// pela ultima cella, e alinhal-os á esquerda faria a vista saltar de linha
+// para linha conforme o numero tivesse um algarismo ou tres.
+std::string a_direita(const std::string& texto, std::size_t collunhas) {
+  const std::size_t mede = static_cast<std::size_t>(ftxui::string_width(texto));
+  if (mede >= collunhas) return apara_collunhas(texto, collunhas);
+  return std::string(collunhas - mede, ' ') + texto;
+}
+
 }  // namespace
 
 Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
@@ -124,6 +142,64 @@ std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas) {
   // feito em inteiros: sommar meia cella antes de dividir.
   const std::size_t cheias = (medida * cellas * 2 + tecto) / (tecto * 2);
   return cheias == 0 ? 1 : cheias;
+}
+
+std::vector<Pedaco> pedacos_da_linha(const Linha& linha,
+                                     const Medidas& medidas, int maior,
+                                     bool soa) {
+  std::vector<Pedaco> feitos;
+  const auto vao = [&feitos](std::size_t quantas) {
+    if (quantas > 0)
+      feitos.push_back({std::string(quantas, ' '), tokens::text_faint, false});
+  };
+  vao(kMargem);
+  // O «▶» tem cella PROPRIA, e não toma o logar do №: tomando-o, a linha que
+  // sôa perdia o numero d'ella, e o operador que conta pela pauta perdia a
+  // conta justamente na linha que está a ouvir.
+  if (medidas.marcador > 0)
+    feitos.push_back({soa ? "\u25b6" : " ", tokens::glow_core, false});
+  if (medidas.numero > 0) {
+    const std::string numero =
+        linha.numero > 0 ? std::to_string(linha.numero) : std::string();
+    feitos.push_back(
+        {a_direita(numero, medidas.numero), tokens::text_faint, false});
+    vao(kVao);
+  }
+  // O titulo da que SÔA accende sem que o resto da linha accenda: são dous
+  // signaes apartados, e o outro, o da eleita, é o bloco inteiro.
+  feitos.push_back({apara_collunhas(linha.texto, medidas.titulo),
+                    soa ? tokens::glow_soft : tokens::text_primary, true});
+  if (medidas.artista > 0) {
+    vao(kVao);
+    feitos.push_back({apara_collunhas(linha.autor, medidas.artista),
+                      tokens::text_body, false});
+  }
+  // O que a columna da direita diz, e o que a régua mede: na faixa é a duração,
+  // e na vista que conta nomes é a conta de faixas.
+  const int quanto = medidas.pela_conta ? linha.numero : linha.duracao;
+  const std::string direita =
+      quanto <= 0                ? std::string()
+      : medidas.pela_conta       ? std::to_string(quanto)
+                                 : mm_ss(linha.duracao);
+  const auto a_conta = [&](std::size_t vao_antes) {
+    if (medidas.conta == 0) return;
+    vao(vao_antes);
+    feitos.push_back(
+        {a_direita(direita, medidas.conta), tokens::text_muted, false});
+  };
+  // Na vista que conta nomes a conta vem ANTES da régua: é ella que a régua
+  // mede, e ler o desenho antes do numero seria ler a legenda depois do mappa.
+  if (medidas.pela_conta) a_conta(1);
+  if (medidas.regua > 0) {
+    vao(kVao);
+    const std::size_t cheias = cheias_da_regua(quanto, maior, medidas.regua);
+    feitos.push_back({repete("\u25b0", cheias), tokens::v700, false});
+    feitos.push_back(
+        {repete("\u25b1", medidas.regua - cheias), tokens::line_faint, false});
+  }
+  if (!medidas.pela_conta) a_conta(1);
+  vao(kMargem);
+  return feitos;
 }
 
 std::string apara_collunhas(const std::string& crua, std::size_t collunhas) {
