@@ -192,7 +192,32 @@ CapaPintada pinta_imagem(const std::filesystem::path& imagem,
                          std::size_t collunas, std::size_t linhas,
                          bool com_sextante);
 
+// O ARQUIVO de capa de uma faixa: o caminho que a lousa ha de abrir, e a medida
+// d'elle em pixeis. Caminho vazio quer dizer «esta faixa não tem capa alguma».
+struct ArquivoDaCapa {
+  std::filesystem::path caminho;
+  Medida medida;
+};
+
 // ── E AGORA O QUE TOCA O MUNDO.
+
+// O ARQUIVARIO: o arquivo de capa de cada faixa, achado uma vez. Existe porque
+// a lousa quer CAMINHO e não octetos (o Überzug++ lê disco), e porque procurar
+// no disco a cada quadro seriam vinte aberturas por segundo.
+//
+// Guarda por FAIXA, e não por pasta como a Galeria: aquella guarda o RENDER,
+// que é caro e é do album; este guarda o caminho, e a arte embutida é de cada
+// arquivo. Acervo de pasta unica teria uma capa só se a chave fosse a pasta.
+class Arquivario {
+ public:
+  const ArquivoDaCapa& de(const std::filesystem::path& faixa);
+
+  std::size_t quantos_escriptos() const noexcept;  // serve á prova do cache
+
+ private:
+  std::map<std::filesystem::path, ArquivoDaCapa> guardados_;
+  std::size_t escriptos_ = 0;
+};
 
 // A GALERIA: guarda os renders já feitos, para que converter aconteça uma vez por
 // album e por tamanho. Não é optimização gratuita: o chafa leva dezenas de
