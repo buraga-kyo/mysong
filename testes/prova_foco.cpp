@@ -239,9 +239,9 @@ TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
   const struct {
     Focavel peca;
     int collunha;
-  } onde[9] = {{Focavel::AbaMySong, 4},   {Focavel::AbaPlaylists, 14},
-               {Focavel::AbaDownload, 30}, {Focavel::Tocar, 40},
-               {Focavel::Anterior, 44},   {Focavel::Seguinte, 48},
+  } onde[9] = {{Focavel::Tocar, 1},       {Focavel::Anterior, 5},
+               {Focavel::Seguinte, 9},    {Focavel::AbaMySong, 66},
+               {Focavel::AbaPlaylists, 78}, {Focavel::AbaDownload, 92},
                {Focavel::Volume, 135},    {Focavel::Embaralhar, 143},
                {Focavel::Repetir, 158}};
   for (const auto& qual : onde) {
@@ -262,11 +262,11 @@ TEST_CASE("o foco na aba corrente ganha da corrente, e as visinhas não mudam") 
             167);
   // A aba é a corrente E tem o foco: pinta-se de FOCO. Quem anda com as setas
   // ha de ver onde a mão está, e onde se ESTÁ di-lo tambem a chapa da pauta.
-  CHECK(tela.PixelAt(4, 0).background_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(66, 0).background_color == cor(tk::glow_core));
   // As outras duas ficam no repouso do chrome, e os botões no panel_hi: o foco
   // accende UMA peça, e nunca a linha toda.
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::raised));
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(78, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(1, 0).background_color == cor(tk::panel_hi));
   // E o estado da aba di-lo sem se pintar cousa alguma: é por este enum que a
   // irmã do letreiro (issue #108) escolhe a chapa em XIROD.
   CHECK(tui::estado_da_aba(tui::Aba::MySong, tui::Aba::MySong,
