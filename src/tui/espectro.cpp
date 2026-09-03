@@ -206,6 +206,22 @@ Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
       centros[faixa.principio + (faixa.fim - faixa.principio - 1) / 2]);
 }
 
+// columna_quente — A BATIDA d'esta columna, e são DOUS regimes.
+//   Sem picos, o tecto ABSOLUTO de sempre. É o que conserva verdadeiro quanto
+//   se affirmou antes da issue #132, e serve a quem não guarda estado algum.
+//   Com picos, RELATIVO ao pico recente da columna: noventa por cento D'ELLE, e
+//   não do tecto. É o que faz o agudo accender, que elle bate alto para si e
+//   baixo para a fita. O PISO corta o silencio e a passagem baixa, onde o pico
+//   já cahiu e todo sussurro chegaria aos noventa por cento.
+// O pico da columna toma-se pela MESMA repartição do valor: quem funde bandas
+// funde tambem os picos d'ellas, d'onde os dous fallam da mesma columna.
+bool columna_quente(const std::vector<float>& picos, float valor, std::size_t c,
+                    std::size_t largura) {
+  if (picos.empty()) return valor >= LIMIAR_QUENTE;
+  if (valor < PISO_DO_QUENTE) return false;
+  return valor >= LIMIAR_QUENTE * valor_da_columna(picos, c, largura);
+}
+
 }  // namespace
 
 tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
@@ -251,11 +267,12 @@ namespace {
 // Note-se que sómente o ramo 4 consulta a linha, e sómente os ramos 1 a 3
 // consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
 // pode depender da magnitude nem por descuido.
-tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
-                               std::size_t altura, Registro registro) {
+tokens::Triade tinta_da_celula(float valor, bool mudo, bool quente,
+                               std::size_t desde_a_base, std::size_t altura,
+                               Registro registro) {
   if (mudo) return tokens::rgb(tokens::text_faint);
   if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
-  if (valor >= LIMIAR_QUENTE) return tokens::rgb(tinta_do_registro(registro));
+  if (quente) return tokens::rgb(tinta_do_registro(registro));
   return tinta_da_linha(desde_a_base, altura);
 }
 
@@ -263,7 +280,8 @@ tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
 
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
               std::size_t altura, bool mudo,
-              const std::vector<float>& centros_em_hertz) {
+              const std::vector<float>& centros_em_hertz,
+              const std::vector<float>& picos) {
   Quadro quadro;
   quadro.largura = largura;
   quadro.altura = altura;
@@ -282,6 +300,7 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
   for (std::size_t c = 0; c < largura; ++c) {
     quadro.registros[c] = registro_da_columna(centros, c, largura);
     const float valor = valor_da_columna(bandas, c, largura);
+    const bool quente = columna_quente(picos, valor, c, largura);
     const int degraus = oitavos(valor, altura);
     const std::size_t cheias =
         static_cast<std::size_t>(degraus / DEGRAUS_POR_CELULA);
@@ -301,8 +320,8 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
                              : (i < cheias ? DEGRAUS_POR_CELULA : resto);
       Celula celula;
       celula.glifo = glifo_do_degrau(degrau);
-      celula.tinta =
-          tinta_da_celula(valor, mudo, i, altura, quadro.registros[c]);
+      celula.tinta = tinta_da_celula(valor, mudo, quente, i, altura,
+                                     quadro.registros[c]);
       celula.pinta = true;
       // A INVERSÃO, e é a linha mais perigosa d'este manuscripto. `i` conta da
       // BASE para cima, que é como os blocos crescem; a linha do quadro conta do

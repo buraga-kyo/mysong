@@ -226,9 +226,14 @@ std::vector<float> centros_da_escala(std::size_t quantas);
 // veste a columna. VAZIOS, deduzem-se da posição relativa da banda pela escala
 // nominal do analisador: é approximação declarada, e não silencio. Quem passa os
 // centros do proprio nucleo::Espectro resolve a fronteira pelas bordas REAES.
+//
+// Os `picos` são os que avanca_picos guarda, e governão a BATIDA. VAZIOS, vale o
+// tecto ABSOLUTO de sempre (valor maior ou egual a LIMIAR_QUENTE), e é de
+// propósito: quem chama sem guardar estado continua a ver o que sempre viu.
 Quadro compor(const std::vector<float>& bandas, std::size_t largura,
               std::size_t altura, bool mudo = false,
-              const std::vector<float>& centros_em_hertz = {});
+              const std::vector<float>& centros_em_hertz = {},
+              const std::vector<float>& picos = {});
 
 // sequencia_da_celula — os BYTES da célulla: a tinta imediatamente antes do
 // glifo, sem repouso pelo meio, ou a ordem de repouso quando não se pinta. Mora
