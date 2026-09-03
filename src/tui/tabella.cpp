@@ -67,23 +67,6 @@ std::string apara(const std::string& crua, std::size_t largura) {
   return feita;
 }
 
-// reticencias — o corte com «…» no fim, para o nome que não cabe na barra. A
-// conta é por CODEPOINT, como a do `cortar`, e o «…» só entra havendo corte:
-// nome que cabe sahe intacto, que ponto a mais em nome inteiro seria mentira.
-std::string reticencias(const std::string& crua, std::size_t largura) {
-  const std::string cortada = cortar(crua, largura);
-  return cortada.size() < crua.size() ? cortada + "…" : cortada;
-}
-
-// risca — a linha de separar o grupo das listas dos degraus de navegar, da
-// largura da barra. Concatena-se em laço porque «─» leva tres octetos, e o
-// std::string de repetir só sabe repetir octeto.
-ftxui::Element risca() {
-  std::string feita;
-  for (std::size_t i = 0; i < LARGURA_DA_BARRA; ++i) feita += "─";
-  return pinta(feita, tokens::line_dim);
-}
-
 }  // namespace
 
 ftxui::Element caret_do_campo() {

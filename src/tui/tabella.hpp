@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DA TABELLA — src/tui/tabella.hpp
 // ══════════════════════════════════════════════════════════════════════════
-// Pinta o que o Navegador diz: a barra lateral, a tabella do meio com a fatia
-// que a rolagem elegeu, e a trilha por titulo. Não decide nada; a decisão toda
-// vive no navegador, e é lá que se prova.
+// Pinta o que o Navegador diz: a pauta com a fatia que a rolagem elegeu, a
+// letra e a capa. Não decide nada; a decisão toda vive no navegador, e é lá
+// que se prova.
 //
 // DOMÍNIO ......... o Navegador (por leitura), e a largura e a altura em
 //                   collunhas e linhas.
@@ -27,12 +27,6 @@
 #include "tui/navegador.hpp"
 
 namespace mysong::tui {
-
-// A LARGURA da barra, em collunhas, e FIXA. Até aqui ella crescia com o rotulo
-// mais largo; com o nome das listas dentro (issue #93), uma lista de sessenta
-// letras comeria a tabella. Vinte cabe «MINHAS MÚSICAS» com folga, deixa dezoito
-// ao nome, e o que não couber corta-se em vez de alargar a barra.
-inline constexpr std::size_t LARGURA_DA_BARRA = 20;
 
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
