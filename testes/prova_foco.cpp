@@ -96,24 +96,24 @@ TEST_CASE("as quatro setas dizem o rumo, e as outras teclas ficam alheias") {
     CHECK(tui::rumo_da_tecla(qual) == Direcao::Nenhuma);
 }
 
-TEST_CASE("o `↑` da pauta sobe ao cabeçalho, e o `←` d'ella não sahe") {
-  // Sobe ao segmento que está POR CIMA d'ella: a pauta toma as 83 primeiras
-  // collunhas, e o centro d'ella cae debaixo do botão de tocar.
-  CHECK(salto_de(Focavel::Pauta, Direcao::Cima) == Focavel::Tocar);
+TEST_CASE("o `↓` da pauta desce á fita, e o `←` d'ella não sahe") {
+  // Desce ao segmento que está POR BAIXO d'ella: a pauta toma as 83 primeiras
+  // collunhas, e o grupo das abas principia na 64, dentro d'ellas.
+  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::AbaMySong);
   // Á esquerda da pauta não ha visinha alguma. É esta linha que diz que a seta
   // esquerda já não volta degrau algum: ella nem sequer move o foco.
   CHECK(salto_de(Focavel::Pauta, Direcao::Esquerda) == Focavel::Pauta);
   // Á direita está o painel, e n'elle a capa, que é o botão de pausa.
   CHECK(salto_de(Focavel::Pauta, Direcao::Dextra) == Focavel::Capa);
-  // Abaixo da pauta não ha peça alguma: o foco FICA. (Na janella, o `↓` alli
+  // Acima da pauta não ha peça alguma: o foco FICA. (Na janella, o `↑` alli
   // anda na LISTA, e nem chega a pedir salto.)
-  CHECK(salto_de(Focavel::Pauta, Direcao::Baixo) == Focavel::Pauta);
+  CHECK(salto_de(Focavel::Pauta, Direcao::Cima) == Focavel::Pauta);
 }
 
 TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
   const Focavel fita[9] = {
-      Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
       Focavel::Tocar,     Focavel::Anterior,     Focavel::Seguinte,
+      Focavel::AbaMySong, Focavel::AbaPlaylists, Focavel::AbaDownload,
       Focavel::Volume,    Focavel::Embaralhar,   Focavel::Repetir};
   for (int i = 0; i + 1 < 9; ++i) {
     CHECK(salto_de(fita[i], Direcao::Dextra) == fita[i + 1]);
@@ -121,11 +121,12 @@ TEST_CASE("as setas de lado percorrem o cabeçalho de ponta a ponta") {
   }
   // As duas PONTAS não dão a volta: sem candidata, o foco fica. Dar a volta
   // levaria o olho ao canto opposto d'onde elle olhava.
-  CHECK(salto_de(Focavel::AbaMySong, Direcao::Esquerda) == Focavel::AbaMySong);
+  CHECK(salto_de(Focavel::Tocar, Direcao::Esquerda) == Focavel::Tocar);
   CHECK(salto_de(Focavel::Repetir, Direcao::Dextra) == Focavel::Repetir);
-  // E acima do cabeçalho não ha nada: as nove ficam onde estão.
+  // E abaixo da fita não ha nada, que o rodapé das dicas não recebe foco: as
+  // nove ficam onde estão.
   for (const Focavel qual : fita)
-    CHECK(salto_de(qual, Direcao::Cima) == qual);
+    CHECK(salto_de(qual, Direcao::Baixo) == qual);
 }
 
 TEST_CASE("o `↓` do cabeçalho torna ao corpo que cada segmento tem por baixo") {
