@@ -501,6 +501,14 @@ TEST_CASE("o pico veste a côr do registro, e o mudo text_faint por cima") {
       es::compor(bandas_uniformes(0.0f), 6, 4, false, centros);
 
   for (std::size_t c = 0; c < 6; ++c) {
+    // Seis collunhas dão duas barras, e as collunhas 2 e 5 são os vãos: elles
+    // não pintam em quadro algum dos trez, nem calado nem em silencio.
+    if (no_vao(c)) {
+      CHECK(quente.em(3, c).pinta == false);
+      CHECK(calado.em(3, c).pinta == false);
+      CHECK(silencio.em(3, c).pinta == false);
+      continue;
+    }
     // A base (linha 3) em todos os tres, que é a célulla que toda barra tem.
     REQUIRE(quente.em(3, c).pinta);
     CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
@@ -543,8 +551,10 @@ TEST_CASE("com as bordas reaes a fita reparte-se nas quatro familias") {
   const std::vector<float> centros = es::centros_das_bandas(
       espectro.bordas(),
       48000.0f / static_cast<float>(mysong::nucleo::JANELA_DA_FFT));
-  const es::Quadro quadro = es::compor(
-      bandas_uniformes(0.5f), mysong::nucleo::QUANTAS_BANDAS, 4, false, centros);
+  // Setenta e uma collunhas: uma BARRA por banda (issue #144), de sorte que a
+  // banda b mora nas collunhas 3b e 3b+1, e o vão 3b+2 herda o registro d'ella.
+  const es::Quadro quadro =
+      es::compor(bandas_uniformes(0.5f), kUmaBarraPorBanda, 4, false, centros);
 
   struct Faixa {
     std::size_t ultima;
@@ -555,16 +565,24 @@ TEST_CASE("com as bordas reaes a fita reparte-se nas quatro familias") {
                           {12, es::Registro::MediosGraves, tk::data5},
                           {17, es::Registro::MediosAgudos, tk::data3},
                           {23, es::Registro::Agudos, tk::data2}};
-  REQUIRE(quadro.registros.size() == mysong::nucleo::QUANTAS_BANDAS);
+  REQUIRE(quadro.registros.size() == kUmaBarraPorBanda);
   std::size_t b = 0;
   for (const Faixa& faixa : faixas)
     for (; b <= faixa.ultima; ++b) {
-      CHECK(quadro.registros[b] == faixa.registro);
+      // A PRIMEIRA collunha da barra da banda b, que é 3b: é ella que se afere,
+      // e não mais a collunha b, que desde a issue #144 pertence a outra banda.
+      const es::Barra sua = es::collunhas_da_barra(b, quadro.largura);
+      REQUIRE(sua.primeira == 3 * b);
+      CHECK(quadro.registros[sua.primeira] == faixa.registro);
       // A base veste a RAMPA, egual em toda familia; o que muda de familia para
       // familia é a côr da batida, que aqui não se accende (0,5 é frio).
-      CHECK(es::mesma_tinta(quadro.em(3, b).tinta,
+      CHECK(es::mesma_tinta(quadro.em(3, sua.primeira).tinta,
                             tk::mistura(tk::v500, tk::panel_hi, 0.55)));
       CHECK(es::tinta_do_registro(faixa.registro) == faixa.batida);
+      // E o VÃO que segue a barra não pinta, ainda que herde o registro d'ella.
+      // A ultima barra da fita não tem vão: depois d'ella não ha o que apartar.
+      if (sua.primeira + 2 < quadro.largura)
+        CHECK(quadro.em(3, sua.primeira + 2).pinta == false);
     }
   CHECK(b == mysong::nucleo::QUANTAS_BANDAS);  // a taboada cobre a fita inteira
 }
