@@ -100,6 +100,34 @@ std::vector<std::string> glifos_da_linha(std::string_view texto);
 std::string embaralha(const std::vector<std::string>& glifos, double resolvida,
                       std::size_t qual, long long quadro);
 
+// Os QUADROS DO EMBARALHO por segundo. Oito, que é o bastante para o olho ler
+// fervura e não pisca-pisca. Sahe da POSIÇÃO, e nunca de contador proprio: fosse
+// contador, a mesma posição daria fitas differentes e a pureza cahia.
+inline constexpr int QUADROS_DO_EMBARALHO = 8;
+
+// quadro_da_letra — o rio n'uma posição. A linha `i` nasce na base
+// `nascimento_da_linha` segundos antes do instante d'ella e sobe LINEARMENTE até
+// a linha de leitura, onde chega no instante exacto; ahi fica em text_bright até
+// que a seguinte chegue, e d'ahi sobe UMA linha por segundo, em text_muted e
+// depois em text_faint, até sumir na linha zero.
+//
+// Linha de texto VAZIO não pinta nada, e é de proposito: é assim que o LRCLIB
+// marca o silencio entre estrophes, e o carimbo d'ella continua a valer para
+// expulsar a anterior da linha de leitura na hora certa.
+QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                              double posicao, std::size_t largura,
+                              std::size_t altura);
+
+// linha_corrente_do_rio — a linha que se canta, ou nada. Funcção NOMEADA, e não
+// campo a que se chegue por conta: a issue irmã da letra em XIROD pende d'ella.
+const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro);
+
+// caixa_da_corrente — o rectangulo que a linha corrente occupa, em coordenadas
+// do RECTANGULO DO ESPECTRO e não da tela: quem a põe na tela somma-lhe o canto
+// do painel, que é o unico que sabe onde o painel começa. Vazio quando não ha
+// linha corrente, e por ahi se sabe que chapa alguma se ha de pôr.
+Rectangulo caixa_da_corrente(const QuadroDaLetra& quadro);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
