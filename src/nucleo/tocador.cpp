@@ -85,7 +85,9 @@ bool Tocador::tocar_corrente_trancado() {
     return false;
   }
   ultima_posicao_ = 0.0;
-  motor_.volume(volume_);
+  // A faixa nova nasce CALADA se a Casa está muda: o volume guardado é o do
+  // operador, e mandá-lo cru faria o F8 desfazer o F9 sem ninguem lh'o pedir.
+  motor_.volume(mudo_ ? 0 : volume_);
   assenta_estado(Estado::Tocando);
   annuncia(Aviso::FaixaMudou);
   return true;
@@ -129,10 +131,31 @@ bool Tocador::buscar(double segundos) {
 
 // O volume guarda-se aqui, e não sómente no motor: é elle que a faixa seguinte
 // ha de herdar. E é do MOTOR, nunca do systema.
+//
+// Pedir volume DESMUDA (issue #106). Quem mexe no som quer ouvi-lo, e sem esta
+// linha o F11 sobre o mudo assentava um numero que o motor não sôa: a fita
+// subia e a Casa continuava calada, que é a tecla a mentir.
 bool Tocador::volume(int porcento) {
   std::lock_guard<std::mutex> chave(tranca_);
   volume_ = aparar_volume(porcento);
+  mudo_ = false;
   return motor_.volume(volume_);
+}
+
+// O MUDO. Alterna de UMA tomada, como o embaralhar: fosse o chamador a ler e
+// depois escrever, o socket ou o barramento caberiam no meio. O volume não se
+// toca, donde desmudar devolve EXACTAMENTE o que havia; o que vae e torna do
+// zero é o motor.
+bool Tocador::alterna_mudo() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  mudo_ = !mudo_;
+  motor_.volume(mudo_ ? 0 : volume_);
+  return mudo_;
+}
+
+bool Tocador::mudo() const noexcept {
+  std::lock_guard<std::mutex> chave(tranca_);
+  return mudo_;
 }
 
 Estado Tocador::estado() const noexcept {
@@ -165,6 +188,7 @@ Retracto Tocador::retracto() const {
   obra.posicao = motor_.posicao();
   obra.duracao = motor_.duracao();
   obra.volume = volume_;
+  obra.mudo = mudo_;
   obra.indice = fila_.vazia() ? 0 : fila_.indice();
   obra.tamanho = fila_.tamanho();
   obra.embaralhado = fila_.embaralhado();

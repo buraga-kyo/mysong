@@ -8,7 +8,7 @@
 //
 // DOMÍNIO ......... um Motor, qualquer que seja a sua carne, e ordens de
 //                   operador: tocar, proxima, anterior, pausar, retomar,
-//                   buscar, volume.
+//                   buscar, volume, mudo.
 // CONTRA-DOMÍNIO .. booleano a cada ordem, o estado, e o pregão aos ouvintes.
 // INVARIANTE ...... o tocador guarda REFERENCIA ao motor, e não a sua
 //                   propriedade: quem o construiu ha de manter o motor vivo
@@ -43,6 +43,10 @@ struct Retracto {
   double posicao = 0.0;   // em segundos, contados do inicio da faixa
   double duracao = 0.0;
   int volume = 100;
+  // O MUDO (issue #106) não é volume zero: é o volume GUARDADO com o motor
+  // calado. Quem pinta a fita precisa de os distinguir, que zero por escolha
+  // do operador mostra o numero e mudo mostra a palavra.
+  bool mudo = false;
   std::size_t indice = 0;  // 0 tambem em fila vazia: pergunte-se ao tamanho
   std::size_t tamanho = 0;
   bool embaralhado = false;
@@ -93,6 +97,15 @@ class Tocador {
   bool buscar(double segundos);
   bool volume(int porcento);
 
+  // ── O MUDO (issue #106). Alternar de UMA tomada, como os dous modos: o
+  // volume GUARDA-SE onde já estava, e o que vae a zero é o motor. Guardá-lo
+  // n'um segundo campo seria estado em duplicata, e dous numeros que se podem
+  // desencontrar não devolvem «exactamente o que havia». Pedir volume DESMUDA:
+  // quem carrega no F11 calado quer ouvir, e é assim que a tecla desmuda e
+  // sobe sem caminho proprio.
+  bool alterna_mudo();
+  bool mudo() const noexcept;
+
   Estado estado() const noexcept;
   int volume() const noexcept;
   double posicao() const;
@@ -128,6 +141,7 @@ class Tocador {
   std::vector<Ouvinte> ouvintes_;
   Estado estado_ = Estado::Parado;
   int volume_ = 100;
+  bool mudo_ = false;
   double ultima_posicao_ = 0.0;
   FonteDeBandas* fonte_ = nullptr;  // emprestada, e nullo é caso legitimo
 };

@@ -147,6 +147,25 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
   if (tecla == ftxui::Event::F2) return {Verbo::RenomeiaFaixa, 0.0};
   if (tecla == ftxui::Event::Delete) return {Verbo::ApagaFaixa, 0.0};
 
+  // ── AS SEIS DE FUNCÇÃO (issue #106) ─────────────────────────────────────
+  // Desaguam nas ordens de SEMPRE, e não em caminho proprio: o F6 é o `p`, o
+  // F8 é o `n`, o F10 e o F11 são o `-` e o `+`, e o F7 é o espaço, que se
+  // chama aqui de volta em vez de se copiar o seu estado para segundo logar.
+  // Copiado, a guarda da janella do video valia n'um ramo e não no outro.
+  // Sómente o mudo é verbo novo. Medido: o Alacritty d'elle não prende o F10
+  // nem o F11, e o tmux com `extended-keys on` entrega as seis.
+  if (tecla == ftxui::Event::F6) return {Verbo::Anterior, 0.0};
+  if (tecla == ftxui::Event::F7)
+    return ordem_da_tecla(ftxui::Event::Character(' '), retracto, false);
+  if (tecla == ftxui::Event::F8) return {Verbo::Proxima, 0.0};
+  if (tecla == ftxui::Event::F9) return {Verbo::Mudo, 0.0};
+  if (tecla == ftxui::Event::F10 || tecla == ftxui::Event::F11) {
+    const int degrau =
+        tecla == ftxui::Event::F11 ? DEGRAU_DO_VOLUME : -DEGRAU_DO_VOLUME;
+    return {Verbo::Volume,
+            static_cast<double>(aparar_volume(retracto.volume + degrau))};
+  }
+
   return {Verbo::Nada, 0.0};
 }
 

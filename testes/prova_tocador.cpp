@@ -232,6 +232,46 @@ TEST_CASE("o volume apara-se, e a faixa nova o herda") {
   CHECK(duble.volume_recebido == 0);  // a faixa nova herdou o volume corrente
 }
 
+// ── O MUDO (issue #106) ─────────────────────────────────────────────────────
+// Cala o MOTOR, e não o volume: é d'ahi que desmudar devolve EXACTAMENTE o que
+// havia, e não um numero que se lhe aproxime. A prova interroga o dublê, que é
+// quem sabe o que se mandou, e não sómente o que o tocador devolve.
+TEST_CASE("o mudo cala o motor, e desmudar devolve o volume exacto") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.junta("uma.wav");
+  CHECK(tocador.volume(37));
+
+  CHECK(tocador.alterna_mudo());
+  CHECK(tocador.mudo());
+  CHECK(tocador.retracto().mudo);
+  CHECK(duble.volume_recebido == 0);  // o motor cala-se
+  CHECK(tocador.volume() == 37);      // e o volume fica onde estava
+
+  // A faixa nova nasce CALADA: sem isto, o F8 desfazia o F9 sem ninguem lh'o
+  // pedir, e o operador ouvia a seguinte no volume que mandara calar.
+  duble.volume_recebido = -1;
+  CHECK(tocador.tocar_corrente());
+  CHECK(duble.volume_recebido == 0);
+
+  CHECK_FALSE(tocador.alterna_mudo());
+  CHECK_FALSE(tocador.retracto().mudo);
+  CHECK(duble.volume_recebido == 37);
+}
+
+// O F11 SOBRE O MUDO: pedir volume DESMUDA, e é isto que faz a tecla desmudar e
+// subir sem ramo proprio na taboada da tela.
+TEST_CASE("pedir volume desmuda, que é o F11 sobre o mudo") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  CHECK(tocador.volume(60));
+  CHECK(tocador.alterna_mudo());
+  CHECK(tocador.volume(65));  // o degrau de cinco que a taboada da tela conta
+  CHECK_FALSE(tocador.mudo());
+  CHECK(tocador.volume() == 65);
+  CHECK(duble.volume_recebido == 65);
+}
+
 TEST_CASE("buscar apara-se pela duração, e recusa-se parado") {
   MotorDuble duble;
   duble.duracao_dita = 5.0;

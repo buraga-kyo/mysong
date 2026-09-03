@@ -272,7 +272,12 @@ Fita fita_da_esquerda(Aba corrente, bool tocando) {
 // fundo, que é a emenda visivel que o aceite proscreve.
 Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
   const bool repete = retracto.repeticao != nucleo::Repeticao::Nenhuma;
-  const bool mudo = retracto.volume == 0;
+  // A Casa CALADA por ordem (issue #106) não é o volume zero por escolha:
+  // aquella diz a palavra, e este mostra o numero como todo outro volume. As
+  // duas medem as MESMAS oito collunhas, donde a fita não anda quando o
+  // operador cala o som.
+  const bool calado = retracto.mudo;
+  const bool no_zero = retracto.volume == 0;
   const std::string tempo =
       " " + mm_ss(retracto.posicao) + " / " + mm_ss(retracto.duracao) + " ";
   // O volume vae a TRES algarismos, enchido á esquerda. Sem o enchimento, cada
@@ -280,10 +285,11 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
   // direita, e com ellas o nome da faixa: a fita andava debaixo do olho de
   // quem só queria baixar o som.
   const std::string conta = std::to_string(retracto.volume);
-  const std::string som = " " + std::string(mudo ? kMudo : kSom) + " " +
-                          std::string(3 - std::min<std::size_t>(3, conta.size()),
-                                      ' ') +
-                          conta + "% ";
+  const std::string som =
+      calado ? " " + std::string(kMudo) + " MUDO "
+             : " " + std::string(no_zero ? kMudo : kSom) + " " +
+                   std::string(3 - std::min<std::size_t>(3, conta.size()), ' ') +
+                   conta + "% ";
   const std::string baralha = " " + std::string(kEmbaralhar) + " EMBARALHAR ";
   const std::string torna =
       " " +
@@ -296,7 +302,9 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
   // nome da faixa saltaria de logar debaixo do olho.
   const Segmento todos[4] = {
       {tempo, tokens::raised, tokens::text_bright},
-      {som, tokens::raised, mudo ? tokens::text_muted : tokens::text_primary},
+      {som, tokens::raised,
+       calado ? tokens::glow_hot
+              : (no_zero ? tokens::text_muted : tokens::text_primary)},
       {baralha, tokens::raised,
        retracto.embaralhado ? tokens::glow_core : tokens::text_muted},
       {torna, tokens::raised, repete ? tokens::glow_core : tokens::text_muted}};

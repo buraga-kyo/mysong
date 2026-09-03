@@ -383,6 +383,9 @@ que ella deixar.
 | `n` / `p` | faixa seguinte, faixa anterior |
 | `.` / `,` | busca cinco segundos no som, para deante ou para tras |
 | `+` / `-` | volume, por degrau de cinco |
+| F6 / F7 / F8 | faixa anterior, pausa e retoma, faixa seguinte |
+| F9 | cala o som e devolve-o com o volume que havia |
+| F10 / F11 | volume, por degrau de cinco |
 | `z` | liga e desliga o embaralhar |
 | `x` | cicla o repetir: nenhuma, uma, todas |
 | `j` / `k` ou `↑` / `↓` | anda na lista |
@@ -409,6 +412,19 @@ que ella deixar.
 | F2 | renomeia a faixa eleita: o campo abre com o titulo corrente |
 | Delete | manda a faixa eleita a lixeira do systema (pede confirmacao) |
 | `q` | sahe |
+
+As seis de funcção fazem o que o `p`, o espaco, o `n`, o `-` e o `+` ja
+faziam, e desaguam nas mesmas ordens. Sómente o F9 e novo: elle guarda o
+volume, cala o motor, e o segundo F9 devolve EXACTAMENTE o que havia. Emquanto
+a Casa esta calada, o cabecalho troca o numero pela palavra MUDO, e o MPRIS diz
+Volume zero; ao desmudar, o volume guardado. Sobre o mudo, o F11 desmuda e
+sobe, que pedir volume desmuda sempre.
+
+Terminal que PRENDA o F10 ou o F11 nao os entrega ao mysong, e ahi as duas
+teclas nao fazem nada: o GNOME Terminal prende o F10 para o menu, e solta-se em
+Preferencias, Geral, «Activar a tecla de menu». Medido n'esta machina: o
+Alacritty nao prende nem o F10 nem o F11 (so o Alt+Enter faz tela cheia), e o
+tmux 3.4 com `set -g extended-keys on` entrega as seis.
 
 ### O rato
 
