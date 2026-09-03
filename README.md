@@ -396,15 +396,18 @@ acervo da corrida anterior, e o `r` manda varrer outra vez.
 
 ### A tela
 
-Uma linha de CABECALHO no alto, o TRILHO do progresso logo abaixo, e o resto
-partido em duas metades: a pauta das musicas a esquerda, e o painel (capa e
-espectro) a direita. Barra lateral alguma: o menu d'esta Casa e uma fita de
-abas, a maneira da topbar do RADICAL-OS.
+A lista das musicas começa na PRIMEIRA linha da tela, e o tocador mora no PE.
+O corpo toma tudo o que sobra, partido em duas metades: a pauta das musicas a
+esquerda, e o painel (capa e espectro) a direita. No pe, de cima para baixo: o
+campo de digitar (sómente com elle aberto), o TRILHO do progresso, a FITA de
+DUAS linhas com o tocador, e o rodape das dicas. Barra lateral alguma: o menu
+d'esta Casa e uma fita de abas, a maneira da topbar do RADICAL-OS.
 
 ```
- 󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD  󰐊  󰒮  󰒭  Montagem Lunar Celestia  00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  MY SONG, 42 FAIXAS, 1h29, FAIXAS                        ┃      a capa, e por baixo d'ella o espectro
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 󰐊  󰒮  󰒭     Montagem Lunar Celestia     󰝚 MY SONG  󰲸 PLAYLISTS  󰇚 DOWNLOAD     00:19 / 03:09  󰕾 100%  󰒟 EMBARALHAR  󰑖 REPETIR
+                                                           (a segunda linha da fita, com o mesmo fundo)
 ```
 
 No cabecalho: a aba corrente em bloco solido, as outras em repouso; os tres
