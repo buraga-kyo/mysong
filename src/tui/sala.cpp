@@ -242,14 +242,20 @@ std::string texto_da_chapa(const Chapa& chapa) {
 ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  const std::string dito = " " + texto_da_chapa(chapa);
   std::vector<ftxui::Element> partes = {
-      pinta(" " + texto_da_chapa(chapa), tokens::text_heading) | ftxui::bold};
-  // O recado vae á DIREITA, empurrado por um `filler`, e não se apara á mão: o
-  // FTXUI apara-o na borda, e o que se perde é o FIM d'elle, ao passo que
-  // aparar á esquerda perderia o começo, que é onde elle diz o que é.
-  if (!chapa.recado.empty()) {
+      pinta(dito, tokens::text_heading) | ftxui::bold};
+  // O recado vae á DIREITA, empurrado por um `filler`, e CINGE-SE ao que sobra
+  // depois do texto. Sem o cinge, os dous juntos pediam mais do que ha, o
+  // `flex_shrink_x` nascia zero, e o hbox aparava por egual os DOUS: media-se
+  // n'um pty de cento e sessenta e sete que a chapa perdia o «S» de FAIXAS.
+  const std::size_t gasto =
+      static_cast<std::size_t>(ftxui::string_width(dito));
+  if (!chapa.recado.empty() && largura > gasto + 2) {
     partes.push_back(ftxui::filler());
-    partes.push_back(pinta(chapa.recado + " ", tokens::glow_soft));
+    partes.push_back(pinta(chapa.recado + " ", tokens::glow_soft) |
+                     ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
+                                 static_cast<int>(largura - gasto - 1)));
   }
   return ftxui::hbox(std::move(partes)) |
          ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |

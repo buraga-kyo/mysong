@@ -118,6 +118,12 @@ TEST_CASE("a chapa diz onde se está, a conta e a vista, n'uma linha só") {
   qual.recado = "achados na rede";
   const ftxui::Screen com = papel(tui::elemento_da_chapa(qual, 80), 80, 1);
   CHECK(linha_de(com, 0).substr(64, 16) == "achados na rede ");
+  // Recado comprido CINGE-SE ao que sobra, e o texto sahe INTEIRO: medido n'um
+  // pty, sem o cinge os dous juntos pediam mais do que ha, e o hbox aparava por
+  // egual os dous, d'onde a chapa perdia o «S» de FAIXAS.
+  qual.recado = std::string(90, 'R');
+  CHECK(linha_de(papel(tui::elemento_da_chapa(qual, 80), 80, 1), 0).substr(0, 33) ==
+        " MY SONG, 42 FAIXAS, 1h29, FAIXAS");
   // Fóra das MY SONG a vista cala-se, e a chapa diz sómente onde e quanto.
   qual.vista.clear();
   qual.recado.clear();
