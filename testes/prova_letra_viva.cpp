@@ -32,8 +32,10 @@
 #include <ftxui/screen/screen.hpp>
 
 #include "nucleo/letra.hpp"
+#include "nucleo/letreiro.hpp"
 #include "tui/espectro.hpp"
 #include "tui/letra_viva.hpp"
+#include "tui/sala.hpp"
 #include "tui/tokens.hpp"
 
 namespace tui = mysong::tui;
@@ -356,6 +358,50 @@ TEST_CASE("a sequencia crua veste o fundo sómente na célulla da letra") {
   // A célulla da barra não escreve fundo algum.
   const std::string da_barra = tui::sequencia_do_rio(tapete[kLeitura * kLargura]);
   CHECK(da_barra.find(tk::sgr(48, tom)) == std::string::npos);
+}
+
+namespace {
+
+// O rectangulo do espectro na TELA, escripto á mão: o canto em (84, 2) e a
+// medida do rio de prova. Serve aos casos em que o que se afere é a DECISÃO; a
+// geometria da sala de verdade prova-se em caso proprio, adeante.
+const tui::Rectangulo kPainel = {84, 2, kLargura, kAltura};
+
+// da_chapa — a ordem com o letreiro de pé, o foco dentro e o `l` a mostrar, que
+// é o estado em que a chapa se põe. Os tres bools ficam soltos nos casos que
+// provam justamente a falta de cada um d'elles.
+tui::ChapaDaLetra da_chapa(const tui::QuadroDaLetra& rio) {
+  return tui::ordem_da_chapa_da_letra(rio, kPainel, true, true, true);
+}
+
+}  // namespace
+
+TEST_CASE("a chapa põe-se na linha de leitura e nunca antes nem depois") {
+  // ANTES a linha ainda sobe e chapa alguma se põe; DEPOIS a chapa é a da
+  // SEGUINTE, que é quem tomou a linha de leitura.
+  CHECK_FALSE(da_chapa(tui::quadro_da_letra(kVersos, 8.0, kLargura, kAltura)).poe);
+  const tui::ChapaDaLetra no_instante =
+      da_chapa(tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura));
+  CHECK(no_instante.poe);
+  CHECK(no_instante.verso == "abcde");
+  CHECK(no_instante.cellulas == 5);
+  const tui::ChapaDaLetra depois =
+      da_chapa(tui::quadro_da_letra(kVersos, 14.0, kLargura, kAltura));
+  CHECK(depois.poe);
+  CHECK(depois.verso == "fghij");
+  // Faixa SEM letra alguma não tem chapa que pôr.
+  CHECK_FALSE(da_chapa(tui::quadro_da_letra({}, 10.0, kLargura, kAltura)).poe);
+}
+
+TEST_CASE("sem letreiro ou sem foco ou com a letra escondida não ha chapa") {
+  const tui::QuadroDaLetra canta =
+      tui::quadro_da_letra(kVersos, 10.0, kLargura, kAltura);
+  REQUIRE(da_chapa(canta).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, kPainel, false, true, true).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, kPainel, true, false, true).poe);
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, kPainel, true, true, false).poe);
+  // E painel por pintar tambem não: rectangulo vazio não tem canto onde a pôr.
+  CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, {}, true, true, true).poe);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
