@@ -120,5 +120,35 @@ TEST_CASE("a linha nasce na base sobe e chega á leitura no instante d'ella") {
   CHECK(d_ella(canta, 0)->texto == "abcde");
 }
 
+TEST_CASE("a linha fica na leitura até a proxima chegar e depois apaga") {
+  // Ainda corrente um decimo antes do instante da seguinte.
+  const tui::QuadroDaLetra ainda =
+      tui::quadro_da_letra(kVersos, 13.9, kLargura, kAltura);
+  CHECK(d_ella(ainda, 0)->linha_da_tela == kLeitura);
+  CHECK(d_ella(ainda, 0)->corrente);
+
+  // NO INSTANTE DA SEGUINTE sae, que é a seguinte que toma o logar: uma linha
+  // acima, em text_muted, e a corrente passa a ser a outra.
+  const tui::QuadroDaLetra sae =
+      tui::quadro_da_letra(kVersos, 14.0, kLargura, kAltura);
+  CHECK(d_ella(sae, 0)->linha_da_tela == kLeitura - 1);
+  CHECK(d_ella(sae, 0)->tinta == tk::text_muted);
+  CHECK_FALSE(d_ella(sae, 0)->corrente);
+  CHECK(d_ella(sae, 1)->linha_da_tela == kLeitura);
+  CHECK(d_ella(sae, 1)->corrente);
+
+  // Uma linha por segundo, e do segundo degrau em deante em text_faint.
+  const tui::QuadroDaLetra dous =
+      tui::quadro_da_letra(kVersos, 15.0, kLargura, kAltura);
+  CHECK(d_ella(dous, 0)->linha_da_tela == kLeitura - 2);
+  CHECK(d_ella(dous, 0)->tinta == tk::text_faint);
+
+  // SOME NA LINHA ZERO: no quarto degrau ainda se vê, no quinto já não.
+  CHECK(d_ella(tui::quadro_da_letra(kVersos, 17.0, kLargura, kAltura), 0)
+            ->linha_da_tela == 0);
+  CHECK(d_ella(tui::quadro_da_letra(kVersos, 18.0, kLargura, kAltura), 0) ==
+        nullptr);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
