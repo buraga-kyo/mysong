@@ -114,6 +114,26 @@ Lousa::~Lousa() noexcept {
   }
 }
 
+bool Lousa::disponivel() const noexcept { return vivo_ && cano_ >= 0; }
+
+bool Lousa::escreve(const std::string& ordem) noexcept {
+  if (!disponivel()) return false;
+  const ::ssize_t postos =
+      ::send(cano_, ordem.data(), ordem.size(), MSG_NOSIGNAL);
+  if (postos == static_cast<::ssize_t>(ordem.size())) return true;
+  ++descartadas_;
+  // Cano cheio é passageiro, e a ordem descarta-se INTEIRA: meia linha de JSON
+  // seria peor que linha nenhuma, que o filho lê por linha e a seguinte
+  // emendaria n'ella. Toda outra falha, e a escripta PARTIDA ao meio, matam a
+  // lousa: d'ahi em diante o filho já não entende o que vem. E mata-se elle
+  // junto, que deixál-o com a janella de pé poria imagem velha por cima dos
+  // symbolos do chafa que o painel volta a pintar.
+  if (postos < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return false;
+  vivo_ = false;
+  if (filho_ > 0) ::kill(filho_, SIGTERM);
+  return false;
+}
+
 std::vector<std::string> argumentos_da_lousa() {
   return {"ueberzugpp", "layer", "--silent", "-o", "x11"};
 }
