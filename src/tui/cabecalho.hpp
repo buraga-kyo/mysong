@@ -194,7 +194,8 @@ std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
                                           const Aba* com_foco = nullptr);
 
 // pedido_da_chapa — o que se manda rasterizar: a palavra, as côres do degrau,
-// e a largura em cellas. Aqui se casam a tinta da chapa e a da cella.
+// e a CAIXA em cellas, larga e alta. Aqui se casam a tinta da chapa e a da
+// cella, e aqui se casam tambem a altura da caixa e o corpo da palavra.
 nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem);
 
 // elemento_do_trilho — a linha do progresso, de largura inteira, logo abaixo

@@ -380,6 +380,11 @@ nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem) {
   pedido.tinta = std::string(pintura.tinta);
   pedido.fundo = std::string(pintura.fundo);
   pedido.cellulas = ordem.largura;
+  // As duas medidas da caixa, e não sómente a largura (issue #126): é d'ellas
+  // que sahe a proporção da chapa, e é da ALTURA que sahe o corpo em que a
+  // palavra se desenha. Pedidas á mão em dous logares, divergiriam.
+  pedido.linhas = ordem.linhas;
+  pedido.corpo = nucleo::corpo_da_altura(ordem.linhas);
   return pedido;
 }
 
