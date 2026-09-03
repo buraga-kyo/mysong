@@ -589,6 +589,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::vector<float> picos;
   std::chrono::steady_clock::time_point quadro_anterior =
       std::chrono::steady_clock::now();
+  // QUANTAS BANDAS a fita pediu por ultimo (issue #144). Uma banda por BARRA,
+  // e as barras sahem da largura do painel: assim duas barras visinhas nunca
+  // sahem eguaes por serem a mesma banda repartida. Guarda-se o pedido para
+  // sómente se pedir quando MUDA: o espectro zera o estado suavizado a cada
+  // pedido novo, e pedir a cada quadro apagaria a suavização quarenta e seis
+  // vezes por segundo. Os centros em hertz seguem o numero, que são elles que
+  // dizem em que registro cada barra sôa.
+  std::size_t bandas_pedidas = nucleo::QUANTAS_BANDAS;
+  std::vector<float> centros_em_hertz =
+      tui::centros_da_escala(bandas_pedidas);
   // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
   // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
   // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
@@ -925,11 +935,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const bool capa_com_foco = foco == tui::Focavel::Capa;
     const tui::Rectangulo abaixo =
         tui::espectro_abaixo_da(sala, alt_arte + (capa_com_foco ? 2 : 0));
-    // Os centros em hertz (issue #104), colhidos UMA vez: a escala é do
-    // contracto do analisador, e o punho d'elle não abre as bordas que o
-    // nucleo assentou.
-    static const std::vector<float> centros_em_hertz =
-        tui::centros_da_escala(nucleo::QUANTAS_BANDAS);
+    // AS BANDAS QUE A FITA QUER (issue #144): uma por barra, e as barras sahem
+    // da largura do painel. Pede-se sómente quando o numero muda, pela razão
+    // dita na declaração; e com ellas vão os centros em hertz (issue #104), que
+    // são a escala do contracto e não as bordas que o nucleo assentou.
+    if (const std::size_t quer =
+            nucleo::cinge_bandas(tui::quantas_barras(abaixo.largura));
+        quer != bandas_pedidas && !abaixo.vazio()) {
+      analisador.quer_bandas(quer);
+      bandas_pedidas = quer;
+      centros_em_hertz = tui::centros_da_escala(quer);
+      picos.clear();  // pico de banda que já não existe accenderia a errada
+    }
     // O TEMPO REAL do quadro (issue #132), e não os cincoenta milesimos do
     // compasso: quadro que se atrasa derrubaria o pico de menos, e a meia-vida
     // é conta de segundos. Calado, os picos zerão-se, que batida não ha no que
