@@ -21,6 +21,8 @@
 #include <vector>
 
 #include <ftxui/component/event.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/box.hpp>
 
 #include "nucleo/rol.hpp"
 
@@ -73,6 +75,40 @@ void abre_o_menu(MenuDeContexto& menu, std::size_t faixa, std::string titulo,
 // tambem: o botão a DESCER fecha o menu, e o a subir não, que o modo 1000 manda
 // sempre o soltar e o menu fechava no mesmo clique que o abriu.
 RespostaDoMenu tecla_no_menu(MenuDeContexto& menu, const ftxui::Event& tecla);
+
+// A MEDIDA do menu em collunhas e linhas, ORLA INCLUIDA. Sahe á parte da
+// pintura porque a ancora precisa d'ella antes de se pintar cousa alguma: onde
+// o menu cabe sómente se sabe depois de se saber quanto elle toma.
+struct MedidaDoMenu {
+  std::size_t largura = 0, altura = 0;
+};
+MedidaDoMenu medida_do_menu(const MenuDeContexto& menu);
+
+// O CANTO alto-esquerdo em que o menu pousa, contado da TELA INTEIRA, como os
+// rectangulos da sala: canto contado de dentro de peça alguma obrigaria quem o
+// lê a sommar por fóra o que a peça come.
+struct CantoDoMenu {
+  int x = 0, y = 0;
+};
+
+// ancora_do_menu — ABAIXO da linha da faixa, que é onde a mão o espera; não
+// cabendo abaixo, ACIMA d'ella; e nunca, em caso algum, fóra da tela.
+CantoDoMenu ancora_do_menu(const ftxui::Box& linha, MedidaDoMenu medida,
+                           std::size_t largura_da_tela,
+                           std::size_t altura_da_tela) noexcept;
+
+// elemento_do_menu — a CAIXA, e sómente ella: o chrome do RADICAL, com o fundo
+// panel, a orla line_base de cantos angulares, o titulo com o nome da faixa e o
+// item eleito em bloco v600 de tinta v50.
+ftxui::Element elemento_do_menu(const MenuDeContexto& menu);
+
+// flutuante_do_menu — a CAMADA da tela inteira, com a caixa no canto que a
+// ancora deu e o resto vazio. Vae no `dbox` por cima do corpo da sala: assim a
+// composição de baixo não sabe do menu, e o menu não lhe rouba linha alguma.
+ftxui::Element flutuante_do_menu(const MenuDeContexto& menu,
+                                 const ftxui::Box& linha,
+                                 std::size_t largura_da_tela,
+                                 std::size_t altura_da_tela);
 
 }  // namespace mysong::tui
 
