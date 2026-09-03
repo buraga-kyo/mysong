@@ -476,3 +476,5 @@ target_link_libraries(fita_letra PRIVATE mysong_core)
 # pela razão do rato: o estado do menu e a taboada de dentro d'elle precisam de
 # se provar cella a cella, e a janella não se prova.
 target_sources(mysong_core PRIVATE src/tui/menu_contexto.cpp)
+# O HELP (issue #133): a janella da ajuda, em linha propria pela mesma regra.
+target_sources(mysong_core PRIVATE src/tui/ajuda.cpp)
