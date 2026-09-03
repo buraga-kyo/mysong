@@ -38,7 +38,7 @@ float em_decibeis(float magnitude) {
 
 }  // namespace
 
-Espectro::Espectro(float taxa, int canaes) {
+Espectro::Espectro(float taxa, int canaes, std::size_t quantas) {
   // A janela de HANN, computada uma vez. Sem janela alguma (que é a janela
   // rectangular) um seno puro espalha a sua raia por toda a tela, e o aceite de
   // que «o seno de 440 acende a banda de 440 e não as outras» morreria por isso
@@ -57,9 +57,23 @@ Espectro::Espectro(float taxa, int canaes) {
   plano_ = fftwf_plan_dft_r2c_1d(static_cast<int>(JANELA_DA_FFT), entrada_,
                                  reinterpret_cast<fftwf_complex*>(sahida_),
                                  FFTW_MEASURE);
-  bandas_.assign(QUANTAS_BANDAS, 0.0f);
+  bandas_.assign(cinge_bandas(quantas), 0.0f);
   assenta_formato(taxa, canaes);
 }
+
+void Espectro::quer_bandas(std::size_t quantas) {
+  const std::size_t cingida = cinge_bandas(quantas);
+  // Pedir o que já ha é o caso COMMUM, e não o raro: o desenho pede a cada
+  // quadro porque a largura pode mudar a qualquer um. Sahir aqui é o que impede
+  // o estado suavizado de zerar quarenta e seis vezes por segundo.
+  if (cingida == bandas_.size()) return;
+  // E mudando, zera: as bandas velhas eram de outras bordas, e mantê-las seria
+  // pintar por um quadro uma musica que não é a que toca.
+  bandas_.assign(cingida, 0.0f);
+  assenta_bordas();
+}
+
+std::size_t Espectro::quantas_bandas() const noexcept { return bandas_.size(); }
 
 Espectro::~Espectro() {
   if (plano_ != nullptr) fftwf_destroy_plan(plano_);

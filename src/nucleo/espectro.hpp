@@ -115,7 +115,8 @@ inline constexpr double PRAZO_DE_SILENCIO_MS = 120.0;
 // execução, e é justamente por isso que ella se prova.
 class Espectro {
  public:
-  explicit Espectro(float taxa = TAXA_PRESUMIDA, int canaes = 2);
+  explicit Espectro(float taxa = TAXA_PRESUMIDA, int canaes = 2,
+                    std::size_t quantas = QUANTAS_BANDAS);
   ~Espectro();
 
   Espectro(const Espectro&) = delete;
@@ -129,6 +130,14 @@ class Espectro {
   // quadros. Bloco de tamanho qualquer, inclusive zero e inclusive maior que a
   // janela; o que não completa quadro fica de sobejo para o bloco seguinte.
   void alimenta(const float* amostras, std::size_t quantas);
+
+  // O PEDIDO de quem desenha: recalcula as bordas e redimensiona o estado. O
+  // numero cinge-se por cinge_bandas, e o estado ZERA quando elle MUDA:
+  // interpolar bandas velhas em bordas novas mentiria por um quadro, e um
+  // quadro são 22 millesimos. Pedir o MESMO numero nada faz, e é o que permitte
+  // ao desenho pedir a cada quadro sem zerar quarenta e seis vezes por segundo.
+  void quer_bandas(std::size_t quantas);
+  std::size_t quantas_bandas() const noexcept;
 
   // Esmorece as bandas pelo tempo passado, sem amostra alguma. É o que o relogio
   // de guarda chama quando o nó morre.
