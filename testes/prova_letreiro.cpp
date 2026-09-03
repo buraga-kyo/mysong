@@ -81,16 +81,44 @@ TEST_CASE("a margem casa a proporção da chapa com a da caixa") {
   CHECK(nu::margem_da_chapa({200, 37}, 7, 0, nu::CELLULA_DA_CASA) == 0);
 }
 
+TEST_CASE("a caixa de duas fileiras mede-se pelas duas") {
+  // A palavra ao DOBRO do corpo, medida n'esta machina: quatrocentos pixeis
+  // por setenta e quatro, em sete cellas de largura. A caixa da fita do pé é
+  // 63 por 40, d'onde a chapa ha de ficar com 253 de altura.
+  CHECK(nu::margem_da_chapa({400, 74}, 7, 2, nu::CELLULA_DA_CASA) == 89);
+  // Contada por UMA fileira, a folga sahia menos de um terço d'esta, e a chapa
+  // pararia a meia altura do segmento com o mono a espreitar por baixo.
+  CHECK(nu::margem_da_chapa({400, 74}, 7, 1, nu::CELLULA_DA_CASA) == 26);
+  // E a folga posta enche a caixa: com ella, a chapa é ao menos tão larga
+  // quanto a caixa pede, d'onde é a LARGURA que manda na reducção.
+  const std::size_t alta =
+      74 + 2 * nu::margem_da_chapa({400, 74}, 7, 2, nu::CELLULA_DA_CASA);
+  CHECK(400 * 2 * nu::CELLULA_DA_CASA.altura >=
+        alta * 7 * nu::CELLULA_DA_CASA.largura);
+}
+
+TEST_CASE("o corpo da chapa sahe da altura da caixa") {
+  // Vinte e dous pontos por cella de vinte pixeis foi o que se mediu; a caixa
+  // de duas cellas tem quarenta, e pede pois o dobro do corpo.
+  CHECK(nu::corpo_da_altura(1) == nu::CORPO_DA_MARCA);
+  CHECK(nu::corpo_da_altura(2) == 2 * nu::CORPO_DA_MARCA);
+  // Caixa por pintar não pede palavra sem tamanho.
+  CHECK(nu::corpo_da_altura(0) == nu::CORPO_DA_MARCA);
+}
+
 TEST_CASE("a chave do cache muda com todo campo do pedido") {
   const std::string base = nu::chave_do_letreiro(da_corrente());
   CHECK(base.size() == 16);
   CHECK(nu::chave_do_letreiro(da_corrente()) == base);
-  for (int qual = 0; qual < 4; ++qual) {
+  for (int qual = 0; qual < 5; ++qual) {
     nu::PedidoDaChapa outro = da_corrente();
     if (qual == 0) outro.cellulas = 9;
     if (qual == 1) outro.tinta = "#cbb6ff";
     if (qual == 2) outro.corpo = 18;
     if (qual == 3) outro.familia = "JetBrainsMono Nerd Font";
+    // As FILEIRAS (issue #126): chapa de uma linha e chapa de duas não são a
+    // mesma imagem, e a de uma servida no logar da de duas sahiria esmagada.
+    if (qual == 4) outro.linhas = 2;
     CHECK(nu::chave_do_letreiro(outro) != base);
   }
   // A COSTURA: sem o octeto nullo entre os campos, estes dous dariam a mesma
