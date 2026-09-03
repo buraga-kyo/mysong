@@ -253,9 +253,15 @@ nucleo::PedidoDaChapa pedido_da_chapa_da_letra(const std::string& verso,
   // O BRILHO CHEIO da linha de leitura, e o fundo do painel por cama: são as
   // duas côres com que a linha em mono já se pinta debaixo d'ella, e é d'essa
   // egualdade que a imagem assenta sem se ver emenda.
-  pedido.tinta = std::string(tokens::text_bright);
+  // LARANJA (issue #157), que foi o que elle pediu: o `data3` da paleta, que é
+  // o laranja do poente do RADICAL-OS. Fundo do painel, que é a cella por baixo.
+  pedido.tinta = std::string(tokens::data3);
   pedido.fundo = std::string(tokens::panel);
   pedido.cellulas = cellulas;
+  // TRES fileiras de cella, que é o corpo GRANDE d'ella: a sala reserva-as, e é
+  // d'aqui que sae o tamanho da lettra.
+  pedido.linhas = FILEIRAS_DO_VERSO;
+  pedido.corpo = nucleo::corpo_da_altura(FILEIRAS_DO_VERSO);
   return pedido;
 }
 
@@ -340,6 +346,109 @@ ftxui::Element elemento_do_rio(const Quadro& espectro,
     pintadas.push_back(ftxui::hbox(std::move(corridas)));
   }
   return ftxui::vbox(std::move(pintadas));
+}
+
+namespace {
+
+// aparado — o verso cortado á largura, com «…» a fechar, medido em COLLUNHAS do
+// terminal: ha letra com kanji e com emoji, e aquellas valem duas.
+std::string aparado(const std::string& verso, std::size_t largura) {
+  if (largura == 0) return {};
+  if (static_cast<std::size_t>(ftxui::string_width(verso)) <= largura)
+    return verso;
+  std::string feito;
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < verso.size();) {
+    std::size_t fim = i + 1;
+    while (fim < verso.size() &&
+           (static_cast<unsigned char>(verso[fim]) & 0xC0) == 0x80)
+      ++fim;
+    const std::string letra = verso.substr(i, fim - i);
+    const std::size_t vale =
+        static_cast<std::size_t>(ftxui::string_width(letra));
+    if (gastas + vale > largura - 1) break;
+    feito += letra;
+    gastas += vale;
+    i = fim;
+  }
+  return feito + "\u2026";
+}
+
+// ao_centro — o verso centrado na largura, com o fundo do painel de um lado ao
+// outro: verso encostado á esquerda leria-se como lista, e isto não é lista.
+ftxui::Element ao_centro(const std::string& verso, std::string_view tinta,
+                         std::size_t largura, bool forte) {
+  const std::string cortado = aparado(verso, largura);
+  const std::size_t mede =
+      static_cast<std::size_t>(ftxui::string_width(cortado));
+  const std::size_t antes = mede < largura ? (largura - mede) / 2 : 0;
+  const std::size_t depois =
+      mede + antes < largura ? largura - mede - antes : 0;
+  const tokens::Triade c = tokens::rgb(tinta);
+  ftxui::Element feito =
+      ftxui::text(std::string(antes, ' ') + cortado + std::string(depois, ' ')) |
+      ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
+  return forte ? std::move(feito) | ftxui::bold : feito;
+}
+
+// verso_de — o texto de um indice que pode não existir. Fóra da letra dá vazio,
+// e a fileira sahe em branco: é o que se vê no principio e no fim da musica.
+std::string verso_de(const std::vector<nucleo::LinhaDaLetra>& linhas, int qual) {
+  if (qual < 0 || static_cast<std::size_t>(qual) >= linhas.size()) return {};
+  return linhas[static_cast<std::size_t>(qual)].texto;
+}
+
+}  // namespace
+
+std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                           int corrente, std::size_t largura) {
+  if (linhas.empty() || largura == 0) return {};
+  // ANTES do primeiro verso mostra-se o PRIMEIRO, que é o que vem a caminho: o
+  // bloco em branco no principio da musica leria-se como faixa sem letra.
+  const int qual = corrente < 0 ? 0 : corrente;
+  return aparado(verso_de(linhas, qual), largura);
+}
+
+ftxui::Element elemento_da_letra_parada(
+    const std::vector<nucleo::LinhaDaLetra>& linhas, int corrente,
+    std::size_t largura, std::size_t altura) {
+  if (largura == 0 || altura == 0) return ftxui::emptyElement();
+  const int qual = corrente < 0 ? 0 : corrente;
+  std::vector<ftxui::Element> fileiras;
+  fileiras.reserve(altura);
+  for (std::size_t f = 0; f < altura; ++f) {
+    // UM verso, e mais nada: elle assenta na primeira fileira do bloco, e as
+    // demais ficam em BRANCO. As duas de baixo não são vão perdido: são a caixa
+    // que a chapa em XIROD cobre, e é d'ellas que vem o corpo grande.
+    const bool no_verso = f == FILEIRA_DO_CORRENTE && !linhas.empty();
+    fileiras.push_back(ao_centro(no_verso ? verso_de(linhas, qual) : std::string(),
+                                 tokens::data3, largura, no_verso));
+  }
+  return ftxui::vbox(std::move(fileiras)) |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura)) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura));
+}
+
+ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                                   int corrente, const Rectangulo& bloco,
+                                   bool letreiro_de_pe, bool foco_dentro,
+                                   bool mostra_letra) {
+  ChapaDaLetra ordem;
+  if (!letreiro_de_pe || !foco_dentro || !mostra_letra || bloco.vazio())
+    return ordem;
+  const std::string verso = verso_do_bloco(linhas, corrente, bloco.largura);
+  if (verso.empty()) return ordem;
+  const std::size_t mede =
+      static_cast<std::size_t>(ftxui::string_width(verso));
+  ordem.poe = true;
+  ordem.cellulas = mede;
+  ordem.collunha =
+      static_cast<int>(bloco.x + (bloco.largura > mede
+                                      ? (bloco.largura - mede) / 2
+                                      : 0));
+  ordem.linha = static_cast<int>(bloco.y + FILEIRA_DO_CORRENTE);
+  ordem.verso = verso;
+  return ordem;
 }
 
 }  // namespace mysong::tui

@@ -217,6 +217,51 @@ std::string sequencia_do_rio(const CelulaDoRio& celula);
 ftxui::Element elemento_do_rio(const Quadro& espectro,
                                const QuadroDaLetra& letra);
 
+// ── A LETRA PARADA (issue #157). Elle olhou o rio a subir e disse que o effeito
+// era feio, e depois disse o que quer, letra por lettra: «apenas a Frase que
+// esta cantando atualmente, depois aparece a proxima e a proxima, bem cru
+// mesmo, com a fonte XIROD grande e laranja».
+//
+// Logo: UM verso de cada vez, e mais nada. Nem o de cima, nem o de baixo, nem
+// animação alguma. O bloco tem quatro fileiras, que a sala reserva: tres para o
+// verso (que é o corpo grande da chapa em XIROD que a lousa desenha por cima) e
+// uma de respiro. Sem lousa, o mesmo verso sae em mono, na côr do laranja.
+//
+// Nada se anima aqui: o bloco é funcção da POSIÇÃO e de mais nada, d'onde a
+// mesma posição dá sempre o mesmo bloco, e a bateria o afere sem relogio.
+inline constexpr std::size_t FILEIRAS_DA_LETRA = 4;
+
+// Quantas fileiras o VERSO toma: tres, que é o corpo grande da chapa em XIROD.
+// A quarta do bloco é respiro entre a lettra e o espectro.
+inline constexpr std::size_t FILEIRAS_DO_VERSO = 3;
+
+// A fileira em que o verso assenta dentro do bloco, contada do alto.
+inline constexpr std::size_t FILEIRA_DO_CORRENTE = 0;
+
+// elemento_da_letra_parada — o bloco pintado, com UM verso. `corrente` é o que
+// o `nucleo::linha_corrente` devolveu: menos um quer dizer «ainda não começou»,
+// e ahi mostra-se o PRIMEIRO, que é o que vem a caminho. Faixa sem letra dá
+// bloco VAZIO (fileiras em branco), e não recado algum: letra que não ha não se
+// annuncia, que o painel não é logar de aviso.
+ftxui::Element elemento_da_letra_parada(
+    const std::vector<nucleo::LinhaDaLetra>& linhas, int corrente,
+    std::size_t largura, std::size_t altura);
+
+// verso_do_bloco — o texto do verso corrente, já cortado á largura, que é o que
+// a lousa manda rasterizar. Vazio quando não ha verso a mostrar.
+std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                           int corrente, std::size_t largura);
+
+// ordem_da_chapa_parada — a ordem que a lousa recebe para o bloco: a chapa do
+// verso corrente, de DUAS fileiras, centrada na largura do bloco. As tres
+// condições são as de sempre (letreiro de pé, foco dentro, letra á vista), e a
+// quarta é haver verso. Sem ellas, manda-se TIRAR, que chapa esquecida na tela
+// diria um verso que já passou.
+ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linhas,
+                                   int corrente, const Rectangulo& bloco,
+                                   bool letreiro_de_pe, bool foco_dentro,
+                                   bool mostra_letra);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
