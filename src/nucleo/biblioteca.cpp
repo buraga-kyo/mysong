@@ -414,10 +414,21 @@ bool Biblioteca::muda_o_titulo(std::string_view caminho,
                         {caminho, limpo});
 }
 
+// A faixa que sae FECHA o buraco d'ella, e na MESMA transacção em que sae: sem
+// isso o disco teria, entre as duas escriptas, uma ordem com buraco, e mover
+// para o logar de um buraco passaria a adivinhar quem é o visinho.
 bool Biblioteca::esquece(std::string_view caminho) {
   const std::lock_guard<std::mutex> chave(tranca_);
-  return muda_uma_linha(banco_, "DELETE FROM faixas WHERE caminho = ?1;",
-                        {caminho});
+  sqlite3* punho = abre_para_escrever(banco_);
+  if (punho == nullptr) return false;
+  sqlite3_exec(punho, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
+  corre(punho, "DELETE FROM faixas WHERE caminho = ?1;", {caminho}, nullptr);
+  const bool havia = sqlite3_changes(punho) > 0;
+  if (havia) sqlite3_exec(punho, kRenumera, nullptr, nullptr, nullptr);
+  sqlite3_exec(punho, havia ? "COMMIT;" : "ROLLBACK;", nullptr, nullptr,
+               nullptr);
+  sqlite3_close(punho);
+  return havia;
 }
 
 Escriba::Escriba(std::filesystem::path banco, long limite_de_paginas)
