@@ -176,3 +176,21 @@ TEST_CASE("o rotulo sobrevive ao termo comprido no terminal estreito") {
   CHECK(curto.linhas[0].find("BUSCA") != std::string::npos);
   CHECK(curto.cursor.x == 7);
 }
+
+TEST_CASE("o glypho de duas collunhas não leva o caret para fóra da tela") {
+  // O caso que a issue #102 tornou mortal, e que a prova da trilha guardava
+  // até ella morrer. O corte contava CODEPOINTS, e o glifo largo vale DUAS
+  // collunhas: trinta d'elles pediam sessenta n'uma tela de quarenta, e o
+  // caret pousava uma collunha ALÉM da ultima. O FTXUI conta alli
+  // `dimx - 1 - cursor_.x`, que dá menos um, e manda `ESC[-1D` ao terminal do
+  // operador. A folga de quatro collunhas da orla o engolia; a tela nova dá ao
+  // campo a largura INTEIRA, e folga alguma ha.
+  std::string larga;
+  for (int i = 0; i < 30; ++i) larga += "日";
+  const Papel papel = pintar(tui::Modo::Url, larga, 40);
+  CHECK(papel.cursor.shape == ftxui::Screen::Cursor::Shape::Bar);
+  CHECK(papel.cursor.x < 40);
+  CHECK(papel.cursor.y == 0);
+  // E o rotulo sahe INTEIRO: quem perde o começo é o termo, como no ASCII.
+  CHECK(papel.linhas[0].find("URL: ") != std::string::npos);
+}
