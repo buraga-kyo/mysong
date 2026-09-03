@@ -623,13 +623,21 @@ volta.
 
 ### O espectro por registros
 
-As barras do espectro deixaram de ser um violeta so. A cor de cada barra diz em
-que REGISTRO ella soa, isto e, em que faixa de frequencia, e vae da esquerda
-para a direita como o ouvido sobe:
+A barra do espectro e violeta, escura no pe e viva no topo, e a rampa e a mesma
+em toda a largura: a altura da coluna diz o nivel, e a cor nunca o repete nem o
+contradiz.
 
-| registro | faixa | cor | o que costuma morar ali |
+Quando uma banda da a sua batida mais forte, a coluna inteira acende na cor do
+REGISTRO dela, isto e, na cor da faixa de frequencia em que ella soa. Batida
+forte quer dizer duas coisas ao mesmo tempo: a banda chegou a noventa por cento
+do pico recente dela, e passou de meio. Esse pico cai a metade em um segundo e
+meio, donde pouco depois de a batida passar a coluna ja voltou ao violeta. E por
+ser relativa ao pico de cada banda que o agudo acende no prato, em vez de ficar
+apagado so por nunca chegar ao teto da fita.
+
+| registro | faixa | cor da batida | o que costuma morar ali |
 |---|---|---|---|
-| GRAVES | 40 a 250 Hz | violeta | bumbo, baixo |
+| GRAVES | 40 a 250 Hz | rosa | bumbo, baixo |
 | MEDIOS-GRAVES | 250 Hz a 1 kHz | cyan | caixa, guitarra, o corpo da voz |
 | MEDIOS-AGUDOS | 1 a 4 kHz | laranja | voz, presenca, teclados |
 | AGUDOS | 4 a 16 kHz | amarelo | pratos, chimbal, o ar |
