@@ -19,6 +19,7 @@
 #include <taglib/mpegfile.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <cctype>
@@ -203,6 +204,30 @@ std::vector<std::string> argumentos_do_chafa(
           "--colors=full",
           "--",
           imagem.string()};
+}
+
+std::string somma_dos_octetos(std::string_view octetos) {
+  // A semente e o primo são os da norma do FNV-1a de 64 bits.
+  std::uint64_t somma = 14695981039346656037ULL;
+  for (const char letra : octetos) {
+    somma ^= static_cast<unsigned char>(letra);
+    somma *= 1099511628211ULL;
+  }
+  std::string hexadecimal(16, '0');
+  for (std::size_t i = 16; i > 0; --i) {
+    hexadecimal[i - 1] = "0123456789abcdef"[somma & 0xF];
+    somma >>= 4;
+  }
+  return hexadecimal;
+}
+
+std::string_view extensao_da_capa(std::string_view octetos) {
+  if (octetos.size() > 3 && static_cast<unsigned char>(octetos[0]) == 0xFF &&
+      static_cast<unsigned char>(octetos[1]) == 0xD8)
+    return "jpg";
+  if (octetos.size() > 8 && octetos.compare(0, 8, "\x89PNG\r\n\x1a\n") == 0)
+    return "png";
+  return {};
 }
 
 std::string arte_embutida(const std::filesystem::path& faixa) {

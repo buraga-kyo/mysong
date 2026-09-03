@@ -107,6 +107,17 @@ inline constexpr Medida CELLULA_DA_CASA{9, 20};
 Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
                              std::size_t tecto_linhas, Medida cellula);
 
+// somma_dos_octetos — o FNV-1a de sessenta e quatro bits, em hexadecimal. Não é
+// criptographia e não precisa de ser: o que se quer é que duas capas
+// differentes não caiam no mesmo arquivo do cache. Vae aqui, e não em
+// bibliotheca, porque nenhuma d'esta Casa o traz e são seis linhas.
+std::string somma_dos_octetos(std::string_view octetos);
+
+// extensao_da_capa — «jpg» ou «png», pelo CONTEUDO e por extensão nenhuma, pela
+// regra do embute_arte: o APIC declara um mime que ninguem afere. Vazio de todo
+// o mais, e ahi a capa não vae ao cache.
+std::string_view extensao_da_capa(std::string_view octetos);
+
 // ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
 // (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
 // degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a
