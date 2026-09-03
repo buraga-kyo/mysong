@@ -328,32 +328,35 @@ TEST_CASE("a fronteira do registro decide-se pelo centro em hertz") {
   CHECK(es::registro_da_banda(-1.0f) == es::Registro::Graves);
 }
 
-// ── C12 · as quatro côres, no topo e na base ────────────────────────────────
+// ── C12 · as quatro côres da BATIDA, e a rampa que não as usa ───────────────
 // Um caso por familia, com o centro posto no MEIO da faixa d'ella e não junto da
 // fronteira: aqui afere-se a CÔR, e a fronteira tem caso proprio.
-TEST_CASE("cada registro veste a sua côr no topo e a sua base no pé") {
+TEST_CASE("cada registro tem a sua côr de batida, e a rampa é a mesma") {
   struct Caso {
     float hertz;
-    std::string_view cor;
+    std::string_view batida;
   };
-  // Os hertz e os tokens escriptos Á MÃO, que é a taboada da issue #104:
-  // violeta v500 nos graves, cyan data5 nos medios-graves, laranja data3 nos
+  // Os hertz e os tokens escriptos Á MÃO, que é a taboada da issue #132: rosa
+  // glow_hot nos graves, cyan data5 nos medios-graves, laranja data3 nos
   // medios-agudos e amarello data2 nos agudos.
-  const Caso casos[] = {{100.0f, tk::v500},
+  const Caso casos[] = {{100.0f, tk::glow_hot},
                         {500.0f, tk::data5},
                         {2000.0f, tk::data3},
                         {8000.0f, tk::data2}};
   for (const Caso& caso : casos) {
-    CHECK(es::tinta_do_registro(es::registro_da_banda(caso.hertz)) == caso.cor);
+    CHECK(es::tinta_do_registro(es::registro_da_banda(caso.hertz)) ==
+          caso.batida);
     // 0,899 pinta as CINCO célullas d'um painel de cinco, pela conta do caso da
-    // rampa: teto 40, floor de 35,96 dá 35, quatro cheios e resto tres.
+    // rampa: teto 40, floor de 35,96 dá 35, quatro cheios e resto tres. E a
+    // banda FRIA veste a rampa, que é v500 em toda familia: a côr da batida não
+    // lhe toca, e é justamente o que a issue #132 restituiu.
     const es::Quadro quadro =
         es::compor(bandas_uniformes(0.899f), 6, 5, false, centros_em(caso.hertz));
     for (std::size_t c = 0; c < quadro.largura; ++c) {
       REQUIRE(quadro.em(0, c).pinta);
-      CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(caso.cor)));
+      CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v500)));
       CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
-                            tk::mistura(caso.cor, tk::panel_hi, 0.55)));
+                            tk::mistura(tk::v500, tk::panel_hi, 0.55)));
     }
   }
 }
@@ -382,11 +385,11 @@ TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
                         tk::mistura(tk::data5, tk::panel_hi, 0.55)));
 }
 
-// A PRECEDENCIA da côr não se mexe com o registro. Arma-se n'uma familia que NÃO
-// é a violeta, de propósito: uma obra que esquecesse o ramo do quente e cahisse
-// na rampa denuncia-se pelo amarello, ao passo que armada nos graves a mesma
-// falha daria côr parecida de mais com a de antes.
-TEST_CASE("o pico veste glow_hot e o mudo text_faint em qualquer registro") {
+// A PRECEDENCIA da côr não se mexe com o registro. Arma-se nos AGUDOS de
+// propósito: a batida d'elles é amarella, e uma obra que esquecesse o ramo do
+// quente e cahisse na rampa denuncia-se pelo violeta, ao passo que armada nos
+// graves a mesma falha daria côr parecida de mais com o rosa da batida.
+TEST_CASE("o pico veste a côr do registro, e o mudo text_faint por cima") {
   const std::vector<float> centros = centros_em(8000.0f);  // agudos, o amarello
   const es::Quadro quente =
       es::compor(bandas_uniformes(0.95f), 6, 4, false, centros);
@@ -398,8 +401,8 @@ TEST_CASE("o pico veste glow_hot e o mudo text_faint em qualquer registro") {
   for (std::size_t c = 0; c < 6; ++c) {
     // A base (linha 3) em todos os tres, que é a célulla que toda barra tem.
     REQUIRE(quente.em(3, c).pinta);
-    CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::glow_hot)));
-    CHECK_FALSE(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
+    CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
+    CHECK_FALSE(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::glow_hot)));
     CHECK(es::mesma_tinta(calado.em(3, c).tinta, tk::rgb(tk::text_faint)));
     CHECK(es::mesma_tinta(silencio.em(3, c).tinta, tk::rgb(tk::text_faint)));
   }
