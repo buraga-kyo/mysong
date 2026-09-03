@@ -1,12 +1,13 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DA SALA — src/tui/sala.hpp
 // ══════════════════════════════════════════════════════════════════════════
-// A sala em tres paineis: a bibliotheca á esquerda, a colleção aberta no meio,
-// e o TOCANDO AGORA á direita. Aqui moram as peças do meio e da direita, e os
-// numeros da composição. Funcções PURAS de VALORES: nem Tocador, nem janella.
+// A sala em DUAS METADES (issue #102): a pauta á esquerda, o painel á direita,
+// e o cabeçalho e o trilho por cima das duas. Aqui moram a chapa, o divisor, o
+// painel, e os numeros da composição toda. Funcções PURAS de VALORES: nem
+// Tocador, nem janella.
 //
-// DOMÍNIO ......... retractos (a colleção á vista, a ficha do que toca) e a
-//                   geometria em collunhas e linhas.
+// DOMÍNIO ......... a chapa, a ficha do que toca, e a tela em collunhas e
+//                   linhas.
 // CONTRA-DOMÍNIO .. cadeias e `ftxui::Element`.
 // INVARIANTE ...... numero algum da composição mora no pintor: sahem todos
 //                   d'uma funcção só, que a bateria interroga sem terminal.
