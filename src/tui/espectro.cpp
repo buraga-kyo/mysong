@@ -90,6 +90,24 @@ std::string glifo_do_degrau(int degrau) {
   return std::string{'\xe2', '\x96', static_cast<char>('\x80' + k)};
 }
 
+void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
+                  double segundos) {
+  // Tamanho differente ZERA, e não conserva o que havia: colheita de outro
+  // tamanho é de outro contracto, e pico velho mentiria sobre banda nova.
+  if (picos.size() != bandas.size()) picos.assign(bandas.size(), 0.0f);
+  // Tempo que não anda não derruba pico: quadro repetido, relogio a recuar e
+  // NaN valem todos a passagem NULLA, que deixa o pico onde estava.
+  const double passou =
+      (std::isfinite(segundos) && segundos > 0.0) ? segundos : 0.0;
+  // Decaimento CONTINUO, e não um degrau por quadro: assim o pico cae o mesmo
+  // em um segundo, corra a fita a vinte quadros por segundo ou a cinco.
+  const double resto = std::pow(0.5, passou / MEIA_VIDA_DO_PICO_S);
+  for (std::size_t b = 0; b < bandas.size(); ++b) {
+    const float cahido = static_cast<float>(cingido(picos[b]) * resto);
+    picos[b] = std::max(cingido(bandas[b]), cahido);
+  }
+}
+
 std::vector<float> centros_das_bandas(
     const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia) {
   std::vector<float> centros;

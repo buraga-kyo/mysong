@@ -72,6 +72,28 @@ namespace mysong::tui {
 // pertence ao quente, e a prova afere os dous lados d'elle.
 inline constexpr float LIMIAR_QUENTE = 0.90f;
 
+// A MEIA-VIDA DO PICO recente, em segundos. Segundo e meio: mais curto e a
+// batida apaga-se antes de o olho a apanhar; mais longo e a passagem seguinte
+// herda o pico da anterior, e o agudo nunca mais accende.
+inline constexpr double MEIA_VIDA_DO_PICO_S = 1.5;
+
+// O PISO DO QUENTE. Abaixo de meio não ha batida alguma, por alto que o valor
+// esteja em relação ao proprio pico: no silencio e na passagem baixa o pico já
+// cahiu, d'onde todo sussurro chegaria aos noventa por cento d'elle, e a fita
+// piscaria justamente onde não ha o que mostrar.
+inline constexpr float PISO_DO_QUENTE = 0.5f;
+
+// avanca_picos — o PICO RECENTE de cada banda, que é o UNICO estado d'esta obra
+// e mora no CHAMADOR: `compor` fica pura, e o quadro continua a repetir-se.
+//   picos[b] = max(bandas[b], picos[b] * pow(0,5, segundos / MEIA_VIDA)).
+// Sobe de IMMEDIATO ao valor corrente, que é o que faz a batida ser batida, e
+// cae por decaimento CONTINUO, que não depende do compasso com que se chama.
+// Tamanho differente do das bandas redimensiona e ZERA, que pico de outra
+// colheita apontaria para banda que não é a sua. Segundos negativo ou não
+// finito vale zero: relogio que recua não derruba pico algum.
+void avanca_picos(std::vector<float>& picos, const std::vector<float>& bandas,
+                  double segundos);
+
 // ── OS REGISTROS. Quatro familias, e a côr diz QUAL d'ellas sôa. Diga-se com
 // honestidade o que é: a côr vem do REGISTRO, que é a faixa de hertz onde a
 // familia mora, e NÃO de instrumento reconhecido. Separar instrumentos de
