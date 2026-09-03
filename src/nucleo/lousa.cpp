@@ -134,6 +134,40 @@ bool Lousa::escreve(const std::string& ordem) noexcept {
   return false;
 }
 
+bool Lousa::poe(std::string_view identidade, const std::filesystem::path& imagem,
+                int collunha, int linha, std::size_t largura,
+                std::size_t altura) noexcept {
+  if (!disponivel() || imagem.empty() || largura == 0 || altura == 0)
+    return false;
+  const std::string ordem =
+      ordem_de_por(identidade, imagem, collunha, linha, largura, altura);
+  // A MESMA ordem não se torna a mandar, e não é economia de bytes: o
+  // Überzug++ redimensiona a imagem a cada `add`, e o pintor pediria vinte
+  // redimensionamentos por segundo de uma capa que não mudou.
+  const std::string chave(identidade);
+  const auto assento = postas_.find(chave);
+  if (assento != postas_.end() && assento->second == ordem) return true;
+  if (!escreve(ordem)) return false;
+  postas_[chave] = ordem;
+  return true;
+}
+
+bool Lousa::tira(std::string_view identidade) noexcept {
+  const std::string chave(identidade);
+  // O que não está posto não se tira: mandar `remove` de uma identidade que
+  // nunca se poz seria uma linha por quadro na faixa sem capa alguma.
+  if (postas_.erase(chave) == 0) return true;
+  return escreve(ordem_de_tirar(identidade));
+}
+
+void Lousa::tira_tudo() noexcept {
+  // As chaves copiam-se ANTES: o tira() muta a taboa, e apagar dentro do laço
+  // que a percorre invalidaria o proprio percurso.
+  std::vector<std::string> quaes;
+  for (const auto& posta : postas_) quaes.push_back(posta.first);
+  for (const std::string& qual : quaes) tira(qual);
+}
+
 std::vector<std::string> argumentos_da_lousa() {
   return {"ueberzugpp", "layer", "--silent", "-o", "x11"};
 }
