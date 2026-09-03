@@ -38,6 +38,24 @@ double nascimento_da_linha(const std::vector<nucleo::LinhaDaLetra>& linhas,
                  NASCIMENTO_MAXIMO);
 }
 
+std::vector<std::string> glifos_da_linha(std::string_view texto) {
+  std::vector<std::string> saida;
+  for (std::size_t i = 0; i < texto.size();) {
+    const unsigned char oct = static_cast<unsigned char>(texto[i]);
+    // A continuação SOLTA (o octeto 10xxxxxx sem cabeça) vale por um glypho de
+    // um octeto: cadeia mal fórmada não ha de fazer o laço andar para traz nem
+    // ler fóra do fim, e letra que veio rota mostra-se rota.
+    std::size_t quantos = 1;
+    if (oct >= 0xf0) quantos = 4;
+    else if (oct >= 0xe0) quantos = 3;
+    else if (oct >= 0xc0) quantos = 2;
+    if (i + quantos > texto.size()) quantos = 1;
+    saida.emplace_back(texto.substr(i, quantos));
+    i += quantos;
+  }
+  return saida;
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
