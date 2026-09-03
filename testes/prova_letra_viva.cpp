@@ -255,5 +255,51 @@ TEST_CASE("a mesma posição dá o mesmo quadro") {
   }
 }
 
+namespace {
+
+// barras — o quadro do espectro com TODAS as bandas cheias, donde toda célulla
+// é bloco cheio. É contra este chão que se lê o que o rio esconde.
+tui::Quadro barras() {
+  return tui::compor(std::vector<float>(24, 1.0f), kLargura, kAltura);
+}
+
+// papel — o écran de papel, que é como esta Casa prova desenho sem terminal.
+ftxui::Screen papel(ftxui::Element quadro) {
+  ftxui::Screen ecran =
+      ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(kLargura)),
+                            ftxui::Dimension::Fixed(static_cast<int>(kAltura)));
+  ftxui::Render(ecran, quadro);
+  return ecran;
+}
+
+// kComVao — um verso com vão no meio, para se aferir que o branco entre as
+// palavras deixa passar a barra e não vira tarja.
+const std::vector<nu::LinhaDaLetra> kComVao = {{10.0, "ab cd"}};
+
+}  // namespace
+
+TEST_CASE("a célulla com letra esconde a barra e o vão deixa-a passar") {
+  const tui::Quadro espectro = barras();
+  REQUIRE(espectro.em(kLeitura, 0).glifo == "█");
+  const tui::QuadroDaLetra rio =
+      tui::quadro_da_letra(kComVao, 10.0, kLargura, kAltura);
+  REQUIRE(rio.linhas.size() == 1);
+  const std::size_t x = rio.linhas[0].collunha;
+  const std::vector<tui::CelulaDoRio> tapete = tui::tapete_do_rio(espectro, rio);
+  const auto em = [&](std::size_t l, std::size_t c) -> const tui::CelulaDoRio& {
+    return tapete[l * kLargura + c];
+  };
+  CHECK(em(kLeitura, x).glifo == "a");
+  CHECK(em(kLeitura, x).letra);
+  CHECK(tui::mesma_tinta(em(kLeitura, x).tinta, tk::rgb(tk::text_bright)));
+  // O VÃO entre as palavras deixa passar a barra.
+  CHECK(em(kLeitura, x + 2).glifo == "█");
+  CHECK_FALSE(em(kLeitura, x + 2).letra);
+  // E as célullas ao lado da linha, e a linha de cima, ficam com as barras.
+  CHECK(em(kLeitura, 0).glifo == "█");
+  CHECK_FALSE(em(kLeitura, 0).letra);
+  CHECK(em(kLeitura - 1, x).glifo == "█");
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
