@@ -140,8 +140,8 @@ struct ContaDaFita {
 // faixa. Não cabendo, cedem as pontas por esta ordem: o nome corta com «…»,
 // depois o REPETIR, o EMBARALHAR e o tempo; sómente quando nem assim cabe é
 // que o grupo deixa o centro e se encosta ao nome cingido ao minimo d'elle.
-// `direita` traz a largura da ponta direita com zero, um, dous, tres e quatro
-// segmentos, n'essa ordem: a conta não conhece rotulo algum, e assim a bateria
+// `direita` traz a largura da ponta direita com zero, um, dous, tres, quatro
+// e cinco segmentos (o quinto é o HELP da issue #133), n'essa ordem: a conta não conhece rotulo algum, e assim a bateria
 // arma-a á mão.
 ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
                           std::size_t grupo,

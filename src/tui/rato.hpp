@@ -45,6 +45,8 @@ struct CaixasDoCabecalho {
   ftxui::Box volume = caixa_por_pintar();
   ftxui::Box embaralhar = caixa_por_pintar();
   ftxui::Box repetir = caixa_por_pintar();
+  // O HELP (issue #133), na ponta direita, depois do REPETIR.
+  ftxui::Box ajuda = caixa_por_pintar();
   ftxui::Box trilho = caixa_por_pintar();
 };
 
@@ -79,6 +81,9 @@ enum class Peca {
   // issue pede que todo botão aceite o clique do teclado, e peça que o teclado
   // aperta e o dedo não seriam duas verdades sobre o mesmo segmento.
   Volume,
+  // O HELP (issue #133): o segmento que abre a janella da ajuda. Peça como
+  // as outras, para que o Enter com o foco n'elle e o clique sejam um gesto só.
+  Ajuda,
 };
 
 // Um ALVO: a peça, e o que ella precisa de dizer a mais. O `indice` é a aba no
@@ -111,6 +116,7 @@ enum class Gesto {
   Embaralha, Repete,     // os dous modos, pelo segmento que os mostra
   Muda,                  // o segmento do volume cala a Casa e devolve-a
   AbreMenu,              // o botão direito n'uma linha: o menu de contexto
+  Ajuda,                 // o segmento HELP: abre e fecha a janella da ajuda
 };
 
 // Tres linhas por dente. Uma seria a roda a arrastar-se; uma tela inteira seria
