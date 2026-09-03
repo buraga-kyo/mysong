@@ -80,6 +80,27 @@ std::string nome_da_vista(Secao secao) {
   return {};
 }
 
+// ordem_da_aba — a taboada das teclas. Os algarismos e o `o` estavam livres, e
+// o Tab vagou com a barra: era elle que a abria. Tecla que não está aqui é
+// Alheia, e Alheio NÃO é queda de taboada: é o que faz o atalho de sempre
+// continuar a valer sem se repetir n'este arquivo.
+OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept {
+  namespace f = ftxui;
+  if (tecla == f::Event::Character('1')) return {GestoDaAba::Vai, Aba::MySong};
+  if (tecla == f::Event::Character('2'))
+    return {GestoDaAba::Vai, Aba::Playlists};
+  if (tecla == f::Event::Character('3'))
+    return {GestoDaAba::Vai, Aba::Download};
+  // O Shift+Tab cycla com o Tab, e não para traz: havendo tres abas, andar ao
+  // contrario poupa um toque n'uma d'ellas, e tecla morta é peor que atalho
+  // que se repete. É a mesma razão por que elles abriam juntos a barra.
+  if (tecla == f::Event::Tab || tecla == f::Event::TabReverse)
+    return {GestoDaAba::Cycla, Aba::MySong};
+  if (tecla == f::Event::Character('o'))
+    return {GestoDaAba::CyclaVista, Aba::MySong};
+  return {};
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
