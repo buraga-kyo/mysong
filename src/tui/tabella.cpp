@@ -224,7 +224,7 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
   if (capa.achada) {
     // Cada corrida vira UM elemento com a sua tinta. Não se passa a cadeia crua do
     // chafa: o FTXUI contaria os octetos do escape como LARGURA, e a capa esmagaria a
-    // barra lateral e a tabella. Medi-o, e está registrado no tractado da capa.
+    // pauta e o painel. Medi-o, e está registrado no tractado da capa.
     std::vector<ftxui::Element> pintadas;
     pintadas.reserve(capa.linhas.size());
     for (const std::vector<nucleo::Corrida>& linha : capa.linhas) {

@@ -67,8 +67,13 @@ void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
   std::size_t do_painel = 0;
   if (largura >= kLimiarDoPainel && corpo >= kEspectroMinimo) {
     // METADE e METADE, que é o que elle pediu. A collunha do divisor sahe da
-    // esquerda, donde em largura impar a pauta fica uma mais estreita.
+    // esquerda, donde em largura PAR a pauta fica uma mais estreita (a 120
+    // dá 59 e 60) e em largura IMPAR as duas ficam eguaes (a 167 dão 83).
     do_painel = largura / 2;
+    // As duas guardas são CINTO DE SEGURANÇA, e hoje nenhuma pode correr: com
+    // o limiar em cem, a metade é sempre de cincoenta ou mais, e a pauta de
+    // quarenta e nove ou mais. Ficam para o dia em que o limiar baixar, que
+    // baixá-lo sem ellas poria painel de vinte collunhas na tela.
     if (do_painel < kPainelMinimo ||
         largura - do_painel - 1 < kPautaMinima)
       do_painel = 0;

@@ -39,7 +39,7 @@ std::string texto_da_duracao(int segundos);
 // texto_da_conta — «4 FAIXAS, 14min». Um sahe no singular e sem o `s`.
 std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao);
 
-// especie_da_secao — o que se conta em cada secção da barra lateral.
+// especie_da_secao — o que se conta em cada secção da aba corrente.
 Especie especie_da_secao(Secao secao);
 
 // onde_da_chapa — ONDE se está, na palavra da aba e nos degraus de dentro,
