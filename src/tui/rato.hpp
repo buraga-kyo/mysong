@@ -100,6 +100,7 @@ enum class Gesto {
   Anterior, PausaOuRetoma, Proxima, Busca,
   RodaSobe, RodaDesce,   // na pauta, LINHAS_POR_DENTE de cada vez
   Embaralha, Repete,     // os dous modos, pelo segmento que os mostra
+  AbreMenu,              // o botão direito n'uma linha: o menu de contexto
 };
 
 // Tres linhas por dente. Uma seria a roda a arrastar-se; uma tela inteira seria
@@ -127,8 +128,9 @@ struct GestoDoRato {
 // gesto_do_alvo — a taboada. SÓMENTE `Pressed` conta: o soltar chega sempre, que
 // o modo 1000 manda o `m` do SGR, e a mexida não chega, que o 1003 se não liga;
 // ignoram-se os dous, e o segundo por não depender de o terminal se comportar.
-// Botão direito e do meio não fazem nada: o direito é o menu de contexto da
-// issue #96, e prometter aqui seria prometter a mesma cousa duas vezes.
+// O botão DIREITO abre o menu (issue #96), e sómente sobre uma linha da pauta:
+// no cabeçalho e na capa não ha faixa alguma de que o menu fosse. O do meio
+// continua mudo, que verbo algum d'esta obra o reclama.
 GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
                           ftxui::Mouse::Motion movimento,
                           const EstadoDoRato& estado) noexcept;

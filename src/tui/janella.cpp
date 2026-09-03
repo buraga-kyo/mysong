@@ -71,6 +71,7 @@
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
+#include "tui/menu_contexto.hpp"
 #include "tui/navegador.hpp"
 #include "tui/prompt.hpp"
 #include "tui/rato.hpp"
@@ -539,6 +540,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
   // pintura.
   tui::CaixasDaTela caixas;
+  // O MENU DE CONTEXTO (issue #96). Vive n'esta pilha, ao lado das caixas: o
+  // tratador muta-o e o pintor lê-o, e os dous correm no fio da tela.
+  tui::MenuDeContexto menu;
   // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
   // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
   // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
@@ -950,6 +954,31 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
   };
 
+  // abre_o_menu_na — o menu sobre a faixa de indice `qual`, que se ELEGE
+  // primeiro. Eleger ao abrir é o que o gerenciador de arquivos d'elle faz com
+  // o botão direito, e é o que deixa o menu chamar as ordens que já existem:
+  // ellas trabalham todas sobre a ELEITA, e menu que abrisse n'outra faixa
+  // pediria um segundo caminho para cada uma d'ellas.
+  const auto abre_o_menu_na = [&](std::size_t qual) {
+    while (navegador.eleito() != qual) {
+      const std::size_t antes = navegador.eleito();
+      antes < qual ? navegador.desce() : navegador.sobe();
+      if (navegador.eleito() == antes) break;  // saturou: acabou a lista
+    }
+    const std::string caminho = navegador.caminho_eleito();
+    if (caminho.empty()) {
+      aviso_da_rede = "o menu é da faixa: elege uma primeiro";
+      return;
+    }
+    nucleo::Faixa d_ella;
+    livraria.acha_por_caminho(caminho, d_ella);
+    tui::abre_o_menu(menu, navegador.eleito(),
+                     tui::ficha_da_faixa(caminho, d_ella.titulo, d_ella.artista,
+                                         d_ella.album)
+                         .titulo,
+                     navegador.rois());
+  };
+
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
@@ -1038,6 +1067,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // punhos do tocador, e não «ler o retracto e depois escrever»: entre a
         // leitura e a escripta caberia o socket, e o clique assentaria o
         // contrario do que se viu.
+        case tui::Gesto::AbreMenu: abre_o_menu_na(gesto.indice); return true;
         case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
         case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
         // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
