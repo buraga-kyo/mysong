@@ -235,12 +235,13 @@ TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
   CHECK(sala.espectro.altura == 35);
 }
 
-TEST_CASE("o campo aberto empurra o corpo uma linha para baixo") {
+TEST_CASE("o campo aberto tira uma linha ao corpo, por cima do trilho") {
   const tui::Sala com = tui::sala_da_tela(167, 67, true);
-  CHECK(com.campo.y == 2);
+  CHECK(com.campo.y == 62);
   CHECK(com.campo.largura == 167);
-  CHECK(com.chapa.y == 3);
-  CHECK(com.pauta.altura == 62);
+  CHECK(com.chapa.y == 0);  // o corpo continua a abrir na primeira linha
+  CHECK(com.pauta.altura == 61);
+  CHECK(com.trilho.y == 63);
   CHECK(com.rodape.y == 66);
 }
 
@@ -257,19 +258,23 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
     for (const bool campo : {false, true}) {
       const tui::Sala sala = tui::sala_da_tela(larga, alta, campo);
       CHECK(sala.cabecalho.largura == larga);
-      CHECK(sala.cabecalho.altura == 1);
+      CHECK(sala.cabecalho.altura == 2);  // a fita alta da issue #125
       CHECK(sala.trilho.altura == 1);
-      // A pauta começa onde o campo e a chapa acabam, e o rodapé é a ultima.
-      const std::size_t alto = 2 + (campo ? 1u : 0u);
-      CHECK(sala.chapa.y == alto);
-      CHECK(sala.pauta.y == alto + 1);
+      // O corpo abre na PRIMEIRA linha; o pé toma as ultimas, e o campo é a
+      // mais alta d'ellas quando está aberto.
+      const std::size_t pe = 4 + (campo ? 1u : 0u);
+      CHECK(sala.chapa.y == 0);
+      CHECK(sala.pauta.y == 1);
       CHECK(sala.rodape.y == alta - 1);
-      CHECK(sala.pauta.y + sala.pauta.altura == alta - 1);
+      CHECK(sala.cabecalho.y == alta - 3);
+      CHECK(sala.trilho.y == alta - 4);
+      if (campo) CHECK(sala.campo.y == alta - 5);
+      CHECK(sala.pauta.y + sala.pauta.altura == alta - pe);
       CHECK(sala.pauta.largura + (sala.painel.vazio() ? 0 : 1) +
                 sala.painel.largura ==
             larga);
       if (sala.painel.vazio()) continue;
-      CHECK(sala.painel.y == alto);
+      CHECK(sala.painel.y == 0);
       CHECK(sala.painel.altura == sala.divisor.altura);
       CHECK(sala.capa.altura + sala.espectro.altura == sala.painel.altura);
       CHECK(sala.espectro.altura >= 6);  // o espectro não desce de seis
