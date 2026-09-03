@@ -66,18 +66,19 @@ TEST_CASE("a margem casa a proporção da chapa com a da caixa") {
   // A palavra MEDIDA n'esta machina: duzentos pixeis por trinta e sete, em
   // sete cellas de nove por vinte. A caixa é 63 por 20, d'onde a chapa ha de
   // ficar com 63 de altura, e a folga é treze de cada lado.
-  CHECK(nu::margem_da_chapa({200, 37}, 7, nu::CELLULA_DA_CASA) == 13);
+  CHECK(nu::margem_da_chapa({200, 37}, 7, 1, nu::CELLULA_DA_CASA) == 13);
   // E a folga NUNCA transborda: arredondada para baixo, a chapa fica sempre ao
   // menos tão larga quanto a caixa pede, d'onde é a LARGURA que manda na
   // reducção e a altura cabe na linha.
   const std::size_t alta =
-      37 + 2 * nu::margem_da_chapa({200, 37}, 7, nu::CELLULA_DA_CASA);
+      37 + 2 * nu::margem_da_chapa({200, 37}, 7, 1, nu::CELLULA_DA_CASA);
   CHECK(200 * nu::CELLULA_DA_CASA.altura >= alta * 7 * nu::CELLULA_DA_CASA.largura);
   // Chapa JÁ mais alta que a caixa não pede folga; nem a medida que se não
   // leu, nem a caixa de largura nenhuma.
-  CHECK(nu::margem_da_chapa({200, 200}, 7, nu::CELLULA_DA_CASA) == 0);
-  CHECK(nu::margem_da_chapa({0, 0}, 7, nu::CELLULA_DA_CASA) == 0);
-  CHECK(nu::margem_da_chapa({200, 37}, 0, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({200, 200}, 7, 1, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({0, 0}, 7, 1, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({200, 37}, 0, 1, nu::CELLULA_DA_CASA) == 0);
+  CHECK(nu::margem_da_chapa({200, 37}, 7, 0, nu::CELLULA_DA_CASA) == 0);
 }
 
 TEST_CASE("a chave do cache muda com todo campo do pedido") {

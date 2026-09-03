@@ -43,6 +43,10 @@ struct PedidoDaChapa {
   std::string tinta;
   std::string fundo;
   std::size_t cellulas = 0;
+  // As FILEIRAS da caixa (issue #126): uma na fita rasa, duas na fita do pé.
+  // A proporção sahe das duas medidas, e não sómente das célullas: chapa que
+  // se fizesse por a largura sósinha sahiria chata na caixa alta.
+  std::size_t linhas = 1;
   int corpo = CORPO_DA_MARCA;
 };
 
@@ -58,13 +62,17 @@ std::vector<std::string> argumentos_do_letreiro(
 
 // margem_da_chapa — a folga, em pixeis, que casa a proporção da chapa com a
 // da CAIXA. Sem ella o Überzug++, que encolhe guardando a proporção, deixaria
-// a chapa mais chata que a linha: a palavra em XIROD é larga, e a caixa da
-// aba é uma cella de altura, d'onde a largura manda na conta e a chapa
+// a chapa mais chata que a caixa: a palavra em XIROD é larga, e a caixa da
+// aba mede POUCAS cellas de altura, d'onde a largura manda na conta e a chapa
 // pararia a meia altura, com o mono de baixo a espreitar por fóra.
+//
+// As FILEIRAS entram por parametro ao lado das célullas: na fita do pé a caixa
+// tem duas, e contá-la por uma daria metade da folga que a palavra pede.
 //
 // PURA, e sem parametro de omissão pela razão do `rectangulo_da_capa`: a
 // cella entra por parametro, e trocando elle o corpo da fonte é UM numero.
-std::size_t margem_da_chapa(Medida crua, std::size_t cellulas, Medida cellula);
+std::size_t margem_da_chapa(Medida crua, std::size_t cellulas,
+                            std::size_t linhas, Medida cellula);
 
 // chave_do_letreiro — o nome do arquivo em cache, e a somma de TODO o pedido:
 // texto, tintas, corpo e célullas. As célullas entram porque a proporção sahe
