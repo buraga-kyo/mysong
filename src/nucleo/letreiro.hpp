@@ -44,6 +44,36 @@ struct Pedido {
   int corpo = CORPO_DA_MARCA;
 };
 
+// argumentos_do_letreiro — o que se corre, pelo precedente do
+// `argumentos_do_chafa`: a linha á parte e PURA, para que a bateria afira o
+// que se HA DE correr sem correr programa algum. O `-q` cala a janella que o
+// pango-view abriria, e o `--margin` leva DOUS numeros, que é como elle diz o
+// vertical e o horizontal: a folga vae em cima e em baixo, e nunca aos lados,
+// que largura a mais deslocaria a palavra dentro da caixa.
+std::vector<std::string> argumentos_do_letreiro(
+    const Pedido& pedido, std::size_t margem,
+    const std::filesystem::path& sahida);
+
+// margem_da_chapa — a folga, em pixeis, que casa a proporção da chapa com a
+// da CAIXA. Sem ella o Überzug++, que encolhe guardando a proporção, deixaria
+// a chapa mais chata que a linha: a palavra em XIROD é larga, e a caixa da
+// aba é uma cella de altura, d'onde a largura manda na conta e a chapa
+// pararia a meia altura, com o mono de baixo a espreitar por fóra.
+//
+// PURA, e sem parametro de omissão pela razão do `rectangulo_da_capa`: a
+// cella entra por parametro, e trocando elle o corpo da fonte é UM numero.
+std::size_t margem_da_chapa(Medida crua, std::size_t cellulas, Medida cellula);
+
+// chave_do_letreiro — o nome do arquivo em cache, e a somma de TODO o pedido:
+// texto, tintas, corpo e célullas. As célullas entram porque a proporção sahe
+// d'ellas, e chapa da mesma palavra em caixa mais larga é outra imagem.
+std::string chave_do_letreiro(const Pedido& pedido);
+
+// caminho_da_chapa_em_cache — `$XDG_CACHE_HOME/mysong/letreiro/<chave>.png`,
+// ao lado das capas e pela mesma razão: o Überzug++ lê DISCO, e não memoria.
+// Vazio sem XDG_CACHE_HOME e sem HOME, que ahi cache não ha.
+std::filesystem::path caminho_da_chapa_em_cache(const Pedido& pedido);
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
