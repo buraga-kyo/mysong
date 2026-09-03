@@ -38,6 +38,48 @@ Aba aba_da_secao(Secao secao) noexcept {
   return Aba::MySong;
 }
 
+Aba aba_seguinte(Aba corrente) noexcept {
+  switch (corrente) {
+    case Aba::MySong: return Aba::Playlists;
+    case Aba::Playlists: return Aba::Download;
+    case Aba::Download: break;
+  }
+  return Aba::MySong;  // o cyclo fecha-se: a fita não tem ponta que prenda
+}
+
+Secao vista_seguinte(Secao corrente, bool ha_artista) noexcept {
+  switch (corrente) {
+    case Secao::Busca: return Secao::Artistas;
+    case Secao::Artistas: return ha_artista ? Secao::Albuns : Secao::Busca;
+    // Dentro de um album o `o` sobe á vista plana, e não ao degrau de que se
+    // veio: esta tecla cycla a VISTA das MY SONG, e não desfaz a navegação,
+    // que d'isso já cuidam o Escape e o Backspace.
+    case Secao::Albuns:
+    case Secao::Faixas:
+    case Secao::Rede:
+    case Secao::Rois:
+    case Secao::NoRol:
+    case Secao::Lista: break;
+  }
+  return Secao::Busca;
+}
+
+std::string nome_da_vista(Secao secao) {
+  switch (secao) {
+    case Secao::Busca: return "FAIXAS";
+    case Secao::Artistas: return "ARTISTAS";
+    case Secao::Albuns:
+    case Secao::Faixas: return "ÁLBUNS";
+    // Fóra das MY SONG a vista se não cycla, e chapa que dissesse «FAIXAS»
+    // n'uma lista de listas mentiria sobre o que a tecla faz alli.
+    case Secao::Rede:
+    case Secao::Rois:
+    case Secao::NoRol:
+    case Secao::Lista: break;
+  }
+  return {};
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
