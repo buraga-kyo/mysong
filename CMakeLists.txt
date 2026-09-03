@@ -447,3 +447,9 @@ target_sources(mysong_core PRIVATE src/nucleo/lousa.cpp)
 add_executable(fita_lousa exemplos/fita_lousa.cpp)
 target_compile_options(fita_lousa PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_lousa PRIVATE mysong_core)
+
+# ─── O RIO DA LETRA (issue #109) ────────────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Peça nova
+# pela razão do espectro: o rio resolve-se em QUADRO, e quadro prova-se sem
+# terminal nem relogio; a janella não se prova.
+target_sources(mysong_core PRIVATE src/tui/letra_viva.cpp)
