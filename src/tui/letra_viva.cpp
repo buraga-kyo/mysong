@@ -103,6 +103,33 @@ std::string embaralha(const std::vector<std::string>& glifos, double resolvida,
   return saida;
 }
 
+namespace {
+
+// TINTA DA SUBIDA. Tres terços, e tres tokens, como a issue os nomeia: o
+// apagado ao nascer, o corpo a meia subida, o brilhante no ultimo terço, que é
+// quando o olho já a lê inteira e a linha está a chegar.
+std::string_view tinta_da_subida(double fracao) {
+  if (fracao < 1.0 / 3.0) return tokens::text_faint;
+  if (fracao < 2.0 / 3.0) return tokens::text_body;
+  return tokens::text_bright;
+}
+
+// posta_na_tela — o texto da linha, cortado á largura e CENTRADO. O corte remata
+// em reticencias, e a collunha é a que sobra repartida em duas: linha comprida
+// não empurra as outras nem sahe do painel.
+void posta_na_tela(const std::string& texto, std::size_t largura,
+                   std::size_t qual, long long quadro, LinhaViva* viva) {
+  std::vector<std::string> glifos = glifos_da_linha(texto);
+  if (glifos.size() > largura) {
+    glifos.resize(largura - 1);
+    glifos.emplace_back("…");
+  }
+  viva->collunha = (largura - glifos.size()) / 2;
+  viva->texto = embaralha(glifos, viva->resolvida, qual, quadro);
+}
+
+}  // namespace
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
