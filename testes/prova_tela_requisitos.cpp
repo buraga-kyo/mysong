@@ -104,7 +104,7 @@ std::vector<std::size_t> larguras_visiveis(const std::string& pintura) {
 // com problema. Afere-se em quarenta e em cem, e o que se exige é o mesmo.
 TEST_CASE("o quadro cabe em quarenta collunas, e nada d'elle se perde") {
   const nu::Relatorio relatorio =
-      nu::sondar(faltando({"fonte", "libmpv", "yt-dlp", "chafa"}));
+      nu::sondar(faltando({"fonte", "libmpv", "yt-dlp", "chafa", "ffmpeg"}));
   for (const int largura : {40, 100}) {
     const std::string pintura = pintar(relatorio, largura);
     for (const std::size_t medida : larguras_visiveis(pintura))

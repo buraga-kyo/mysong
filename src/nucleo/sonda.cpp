@@ -47,6 +47,10 @@ const std::vector<Requisito>& requisitos() {
       {"chafa", "chafa (o mostrador de capa)", Gravidade::Aviso,
        Especie::Executavel, "chafa",
        "installe o chafa: sudo apt install chafa (sem elle não se vê capa)"},
+      {"ffmpeg", "ffmpeg (o desenhador da onda)", Gravidade::Aviso,
+       Especie::Executavel, "ffmpeg",
+       "installe o ffmpeg: sudo apt install ffmpeg (sem elle a fita mostra a "
+       "barra chata em logar da onda)"},
   };
   return taboa;
 }

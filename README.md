@@ -104,6 +104,7 @@ vez, pela linha do apt mais abaixo, e nao volte aqui a cada tarefa que entra.
 | chafa    | 1.19.0      | Desenha a capa do album. Sem elle, nao ha capa; o resto toca igual |
 | yt-dlp   | 2026.08.19  | Busca audio do YouTube. Sem elle, so o disco local |
 | ueberzugpp | 2.9.8     | Desenha a capa NITIDA, em janella de X11 por cima do terminal. Sem elle, a capa fica nos symbolos do chafa |
+| ffmpeg   | 6.1.1       | Desenha a onda da faixa no meio da fita. Sem elle, o meio mostra a barra chata; o progresso e o clique ficam iguais |
 
 **Advertencia sobre o yt-dlp, e ella importa**: NAO o instale pelo apt. A
 versao empacotada e velha demais e quebra contra o YouTube, que muda o seu
@@ -290,6 +291,32 @@ as palavras em mono negrito, e aviso algum apparece na tela: quem quiser saber
 porque pergunta ao `--sonda`. A alavanca e a MESMA da lousa, e nao ha outra:
 `lousa = nao` (ou `MYSONG_LOUSA=nao`) desliga a capa nitida e o letreiro juntos,
 que a chapa sem lousa nao tem onde se pôr.
+
+### A onda da faixa
+
+No meio da fita do pe corre a ONDA da faixa, ao modo do SoundCloud: a
+envolvente de amplitude da musica inteira, um bloco por collunha, do oitavo ao
+cheio. O que ja tocou fica violeta, o que falta fica apagado, e clicar n'ella
+busca a posicao.
+
+A onda sai do `ffmpeg`, que decodifica a faixa toda uma vez, n'um fio de fundo,
+quando a faixa muda. Sao mil e vinte e quatro pontos, um por balde de tempo,
+com a media quadratica de cada balde normalizada ao maior da faixa: por isso a
+gravacao baixinha se ve tao bem quanto a alta.
+
+O resultado fica em `~/.cache/mysong/ondas/` (ou em `$XDG_CACHE_HOME/mysong/`,
+havendo a variavel), um arquivo de texto por faixa, com o caminho, o tamanho e
+a data de alteracao dentro da chave. A segunda vez que a faixa toca, a onda vem
+do cache e programa algum corre. Apagar a pasta so custa recalcular:
+
+```sh
+du -sh ~/.cache/mysong/ondas/    # o que ella ocupa
+rm -rf ~/.cache/mysong/ondas/    # e a Casa colhe outra vez quando precisar
+```
+
+Sem o `ffmpeg`, o meio da fita mostra a barra chata que o trilho mostrava
+antes, nas mesmas cores, e o progresso e o clique continuam iguais: a onda e
+feicao, e nunca dependencia. O `mysong --sonda` diz se elle esta na machina.
 
 ### Tudo o que vem do apt, n'uma linha
 
@@ -655,29 +682,37 @@ volta.
 
 ### O espectro por registros
 
-As barras do espectro deixaram de ser um violeta so. A cor de cada barra diz em
-que REGISTRO ella soa, isto e, em que faixa de frequencia, e vae da esquerda
-para a direita como o ouvido sobe:
+A barra do espectro e violeta, escura no pe e viva no topo, e a rampa e a mesma
+em toda a largura: a altura da coluna diz o nivel, e a cor nunca o repete nem o
+contradiz.
 
-| registro | faixa | cor | o que costuma morar ali |
+Quando uma banda da a sua batida mais forte, a coluna inteira acende na cor do
+REGISTRO dela, isto e, na cor da faixa de frequencia em que ella soa. Batida
+forte quer dizer duas coisas ao mesmo tempo: a banda chegou a noventa por cento
+do pico recente dela, e passou de meio. Esse pico cai a metade em um segundo e
+meio, donde pouco depois de a batida passar a coluna ja voltou ao violeta. E por
+ser relativa ao pico de cada banda que o agudo acende no prato, em vez de ficar
+apagado so por nunca chegar ao teto da fita.
+
+| registro | faixa | cor da batida | o que costuma morar ali |
 |---|---|---|---|
-| GRAVES | 40 a 250 Hz | violeta | bumbo, baixo |
+| GRAVES | 40 a 250 Hz | rosa | bumbo, baixo |
 | MEDIOS-GRAVES | 250 Hz a 1 kHz | cyan | caixa, guitarra, o corpo da voz |
 | MEDIOS-AGUDOS | 1 a 4 kHz | laranja | voz, presenca, teclados |
 | AGUDOS | 4 a 16 kHz | amarelo | pratos, chimbal, o ar |
 
-Cada coluna tem o seu degrade, escuro no pe e vivo no topo. O degrade e do
-PAINEL e nao da barra: a altura da coluna diz o nivel, e a cor nunca o repete
-nem o contradiz. A batida forte continua a acender rosa na coluna inteira, e o
-mudo continua apagado, como sempre foi.
+Com o som mudo a fita fica apagada, e o mudo vence a batida: ordem sua nao se
+deixa passar por cima por leitura de sinal. A rampa e ancorada ao PAINEL e nao a
+barra, donde ella nunca mente sobre o nivel: quem diz o nivel e a altura.
 
 Diga-se com honestidade o que esta cor e: ella vem da FAIXA DE HERTZ, e nao de
-instrumento reconhecido. O que sae em violeta e o grave que toca naquele
+instrumento reconhecido. O que acende em rosa e o grave que toca naquele
 instante, seja bumbo, baixo ou a mao esquerda do piano. Separar instrumentos de
 verdade pede modelo de separacao de fontes, que nao roda em tempo real dentro de
 um tocador de terminal, e vender o que nao ha seria mentir na tela.
 
-Para ver os quatro grupos lado a lado, com os nomes por baixo de cada um:
+Para ver as quatro cores da batida lado a lado, com o nome da familia e a cor
+dela por baixo de cada grupo:
 
 ```sh
 ./build/fita_espectro 72 12
