@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 
 #include <unistd.h>
@@ -272,6 +273,39 @@ TEST_CASE("o arquivario acha a capa ao lado e mede-a sem escrever nada") {
   CHECK(achado.medida.altura == 400);
   // Capa AO LADO não vae ao cache: o arquivo já existe onde o operador o poz.
   CHECK(arquivario.quantos_escriptos() == 0);
+}
+
+TEST_CASE("a capa embutida vae ao cache uma vez, e a segunda vista não escreve") {
+  const Cova cova;
+  const std::filesystem::path faixa = cova.raiz() / "01 - Tear.mp3";
+  { std::ofstream(faixa, std::ios::binary) << "\xFF\xFB\x90\x00"; }
+  REQUIRE(nu::embute_arte(faixa, png_de_cabecalho()));
+  const char* const antes = std::getenv("XDG_CACHE_HOME");
+  const std::string guardado = antes == nullptr ? std::string() : antes;
+  ::setenv("XDG_CACHE_HOME", (cova.raiz() / "cache").c_str(), 1);
+  {
+    nu::Arquivario arquivario;
+    const std::filesystem::path onde = arquivario.de(faixa).caminho;
+    REQUIRE_FALSE(onde.empty());
+    CHECK(std::filesystem::exists(onde));
+    CHECK(std::filesystem::file_size(onde) == png_de_cabecalho().size());
+    CHECK(arquivario.quantos_escriptos() == 1);
+    arquivario.de(faixa);  // memoizado: não torna a abrir a etiqueta
+    CHECK(arquivario.quantos_escriptos() == 1);
+    // E arquivario NOVO acha o arquivo já escripto, e não o reescreve: é a
+    // propriedade do nome que vem do conteudo, e é ella que faz o cache valer
+    // de uma corrida para a outra.
+    nu::Arquivario outro;
+    CHECK(outro.de(faixa).caminho == onde);
+    CHECK(outro.quantos_escriptos() == 0);
+    // Rasto algum do temporario da escripta atomica fica para traz.
+    CHECK(std::distance(std::filesystem::directory_iterator(onde.parent_path()),
+                        std::filesystem::directory_iterator()) == 1);
+  }
+  if (antes == nullptr)
+    ::unsetenv("XDG_CACHE_HOME");
+  else
+    ::setenv("XDG_CACHE_HOME", guardado.c_str(), 1);
 }
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
