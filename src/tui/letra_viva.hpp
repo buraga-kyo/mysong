@@ -66,9 +66,17 @@ struct LinhaViva {
   std::size_t linha_da_tela = 0;  // zero é o TOPO, como no Quadro do espectro
   std::size_t collunha = 0;       // onde o texto assenta, já centrado
   std::string texto;              // cortado á largura, e com o embaralho do instante
+  // O VERSO como se LÊ: cortado á mesma largura, e sem embaralho algum. É elle
+  // que a chapa em XIROD rasteriza (issue #110), e nunca o `texto`: imagem de
+  // glyphos embaralhados seria lixo desenhado com esmero.
+  std::string verso;
   std::string_view tinta = tokens::text_faint;
   double resolvida = 0.0;         // a fracção de glyphos já resolvidos, em [0,1]
   bool corrente = false;          // está na linha de leitura, e é a que se canta
+  // SOBE — nasceu na base e ainda não chegou. UMA sómente em cada quadro, que o
+  // nascimento se cinge ao intervallo desde a anterior: duas a subir juntas não
+  // ha. É por ella que a chapa da PROXIMA se adianta.
+  bool sobe = false;
 };
 
 // O QUADRO DA LETRA: as linhas Á VISTA n'uma posição, e mais nada. Linha que
@@ -121,6 +129,11 @@ QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
 // linha_corrente_do_rio — a linha que se canta, ou nada. Funcção NOMEADA, e não
 // campo a que se chegue por conta: a issue irmã da letra em XIROD pende d'ella.
 const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro);
+
+// linha_que_sobe_do_rio — a que nasceu na base e ainda sobe, ou nada. Serve á
+// chapa da PROXIMA (issue #110), que se rasteriza ao nascer d'ella para estar
+// prompta no instante em que a voz a canta.
+const LinhaViva* linha_que_sobe_do_rio(const QuadroDaLetra& quadro);
 
 // caixa_da_corrente — o rectangulo que a linha corrente occupa, em coordenadas
 // do RECTANGULO DO ESPECTRO e não da tela: quem a põe na tela somma-lhe o canto
