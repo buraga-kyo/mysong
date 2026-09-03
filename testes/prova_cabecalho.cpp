@@ -21,9 +21,9 @@ namespace {
 
 // linha_do — o cabeçalho pintado, lido cella a cella. O `ToString` metteria
 // escape no meio dos bytes, e contar bytes seria contar a tinta.
-ftxui::Screen papel(ftxui::Element quadro, int largura) {
+ftxui::Screen papel(ftxui::Element quadro, int largura, int altura = 1) {
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
-                                              ftxui::Dimension::Fixed(1));
+                                              ftxui::Dimension::Fixed(altura));
   ftxui::Render(ecran, quadro);
   return ecran;
 }
@@ -31,10 +31,11 @@ ftxui::Screen papel(ftxui::Element quadro, int largura) {
 // pedaco — as `quantas` cellas a partir da collunha `x`, na fileira zero. Por
 // CELLA, e não por byte: `substr` n'uma cadeia UTF-8 contaria octetos, e o
 // glifo de tres bytes desalinharia todo indice depois do primeiro.
-std::string pedaco(const ftxui::Screen& ecran, int x, int quantas) {
+std::string pedaco(const ftxui::Screen& ecran, int x, int quantas,
+                   int linha = 0) {
   std::string dita;
   for (int i = x; i < x + quantas && i < ecran.dimx(); ++i) {
-    const std::string& glifo = ecran.PixelAt(i, 0).character;
+    const std::string& glifo = ecran.PixelAt(i, linha).character;
     dita += glifo.empty() ? " " : glifo;
   }
   return dita;
@@ -130,6 +131,31 @@ TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
                20, 11) == "(nada toca)");
 }
 
+
+// A FITA ALTA do pé (issue #125): duas linhas, o fundo de CADA segmento nas
+// duas, e o rotulo em mono na de CIMA. Lê-se em écran de papel de duas
+// fileiras, cella a cella, que é o unico modo de o affirmar sem terminal.
+TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists,
+                                       "NO FEAR!", 167, nullptr,
+                                       tui::Focavel::Pauta, 2),
+            167, 2);
+  CHECK(pedaco(tela, 76, 13, 0) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 76, 13, 1) == "             ");
+  // O FUNDO é o mesmo nas duas fileiras, peça por peça: aba corrente, aba
+  // apagada, botão, nome, vão do outro lado e ponta direita.
+  for (const int x : {78, 66, 1, 30, 110, 145})
+    CHECK(tela.PixelAt(x, 1).background_color ==
+          tela.PixelAt(x, 0).background_color);
+  CHECK(tela.PixelAt(78, 1).background_color == cor(tk::v600));
+  CHECK(tela.PixelAt(1, 1).background_color == cor(tk::panel_hi));
+  // E a seta da junção repete-se em baixo, senão os dous fundos encostavam-se
+  // em quadrado e a emenda via-se.
+  CHECK(pedaco(tela, 75, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 11, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 115, 1, 1) == "\ue0b2");
+}
 
 // AS TINTAS. A aba corrente é BLOCO SOLIDO, v600 com texto v50, que é o gesto do
 // site d'elle onde o que está sob a mão vira bloco cheio; as outras ficam no
