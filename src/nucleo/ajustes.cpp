@@ -189,6 +189,26 @@ std::string_view chave_dos_sextantes(Sextantes sextantes) {
   return "valor sem nome";
 }
 
+// lousa_de e chave_da_lousa — as mesmas tres palavras do sextante, e de
+// proposito: quem já sabe escrever `capa_sextantes = nao` escreve `lousa = nao`
+// sem consultar cousa alguma. Nome que não é nenhuma d'ellas devolve vazio, e a
+// queixa fica com quem chama, pela regra do fonte_de.
+std::optional<ModoDaLousa> lousa_de(std::string_view texto) {
+  if (egual_sem_caixa(texto, "auto")) return ModoDaLousa::Auto;
+  if (egual_sem_caixa(texto, "sim")) return ModoDaLousa::Sim;
+  if (egual_sem_caixa(texto, "nao")) return ModoDaLousa::Nao;
+  return std::nullopt;
+}
+
+std::string_view chave_da_lousa(ModoDaLousa modo) {
+  switch (modo) {
+    case ModoDaLousa::Auto: return "auto";
+    case ModoDaLousa::Sim: return "sim";
+    case ModoDaLousa::Nao: return "nao";
+  }
+  return "valor sem nome";
+}
+
 std::optional<int> volume_de(std::string_view texto) {
   const std::optional<int> numero = inteiro_de(texto);
   if (!numero || *numero < 0 || *numero > VOLUME_DA_CASA) return std::nullopt;
@@ -244,6 +264,12 @@ void resolver(const Degraus& degraus,
       else
         ajustes->queixa(onde + "capa_sextantes «" + par.valor +
                        "» não é auto, sim nem nao");
+    } else if (par.chave == "lousa") {
+      if (const auto quer = lousa_de(par.valor))
+        ajustes->lousa = {*quer, Origem::Arquivo};
+      else
+        ajustes->queixa(onde + "lousa «" + par.valor +
+                       "» não é auto, sim nem nao");
     } else {
       ajustes->queixa(onde + "chave desconhecida «" + par.chave + "»; ignorada");
     }
@@ -266,6 +292,16 @@ void resolver(const Degraus& degraus,
     else
       ajustes->queixa("MYSONG_CAPA_SEXTANTES «" +
                      *degraus.sextantes_do_ambiente +
+                     "» não é auto, sim nem nao");
+  }
+  // A LOUSA do ambiente, e afere-se pela razão do sextante: é a chave que elle
+  // ha de querer virar por UMA corrida, para comparar a imagem nitida com os
+  // symbolos no proprio terminal, sem editar arquivo nenhum.
+  if (degraus.lousa_do_ambiente) {
+    if (const auto quer = lousa_de(*degraus.lousa_do_ambiente))
+      ajustes->lousa = {*quer, Origem::Ambiente};
+    else
+      ajustes->queixa("MYSONG_LOUSA «" + *degraus.lousa_do_ambiente +
                      "» não é auto, sim nem nao");
   }
   // O ARGUMENTO, que é o degrau de cima, e este AFERE-SE: quem o digita está a
@@ -359,6 +395,8 @@ Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
   const char* const sextante = std::getenv("MYSONG_CAPA_SEXTANTES");
   if (sextante != nullptr && sextante[0] != '\0')
     degraus.sextantes_do_ambiente = sextante;
+  const char* const lousa = std::getenv("MYSONG_LOUSA");
+  if (lousa != nullptr && lousa[0] != '\0') degraus.lousa_do_ambiente = lousa;
   std::string texto;
   ajustes.estado = ler_o_arquivo(ajustes.arquivo, &texto, &ajustes);
   if (ajustes.estado == EstadoDoArquivo::Lido)
@@ -444,6 +482,9 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
       &texto, "capa_sextantes",
       std::string(chave_dos_sextantes(ajustes.capa_sextantes.valor)),
       ajustes.capa_sextantes.origem);
+  linha_do_ajuste(&texto, "lousa",
+                  std::string(chave_da_lousa(ajustes.lousa.valor)),
+                  ajustes.lousa.origem);
   // O CAMINHO vae sempre, ainda que o arquivo não exista: sem elle, quem
   // escreveu o arquivo no logar errado não tem como descobrir qual é o certo.
   texto += "\n  arquivo: " + ajustes.arquivo.string() + " (";
