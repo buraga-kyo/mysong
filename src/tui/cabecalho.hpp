@@ -18,10 +18,12 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/letreiro.hpp"
 #include "tui/navegador.hpp"
 #include "tui/rato.hpp"
 #include "tui/transporte.hpp"
@@ -116,6 +118,35 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas = nullptr);
+
+// A ORDEM que o pintor dá á lousa quanto á chapa de UMA aba. Sahem TRES de
+// cada quadro, uma por aba e na ordem da fita, e nunca menos: aba que não tem
+// chapa ha de dizer que a não tem, senão a do quadro anterior ficava na tela.
+struct ChapaDaAba {
+  Aba aba = Aba::MySong;
+  EstadoDaAba estado = EstadoDaAba::Apagada;
+  bool poe = false;  // falso é o Tira, e é o que o quadro sem caixa pede
+  int collunha = 0;
+  int linha = 0;
+  std::size_t largura = 0;  // em cellas, e é d'ella que a proporção sahe
+};
+
+// identidade_da_chapa — o nome por que a lousa conhece a janella de cada aba.
+std::string_view identidade_da_chapa(Aba aba) noexcept;
+
+// ordens_das_chapas — a decisão, PURA pelo molde exacto do `ordem_da_capa`: o
+// foco entra em TODO quadro, e não sómente no do evento, que o FTXUI desenha
+// logo depois de correr os eventos e um tira_tudo no tratador desfaz-se no
+// desenho seguinte. O `com_foco` é da issue irmã das setas: punho nullo quer
+// dizer que aba alguma o tem, e é o que vale enquanto ella não chega.
+std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
+                                          Aba corrente, bool letreiro_de_pe,
+                                          bool foco_dentro,
+                                          const Aba* com_foco = nullptr);
+
+// pedido_da_chapa — o que se manda rasterizar: a palavra, as côres do degrau,
+// e a largura em cellas. Aqui se casam a tinta da chapa e a da cella.
+nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem);
 
 // elemento_do_trilho — a linha do progresso, de largura inteira, logo abaixo
 // do cabeçalho: v600 no andado e line_dim no que falta. A caixa d'elle é a do
