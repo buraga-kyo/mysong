@@ -123,6 +123,21 @@ class Lousa {
   bool tira(std::string_view identidade) noexcept;
   void tira_tudo() noexcept;
 
+  // empurra — uma ordem que NADA mostra, e que existe por uma MEDIÇÃO: o
+  // Überzug++ (o 2.9.8 e o 2.9.10) não desenha a janella de UMA linha de
+  // altura no instante em que a cria, e ella fica preta até que outro `add` o
+  // faça redesenhar a tela toda. A de duas linhas desenha-se sósinha; a de uma
+  // não, e a chapa do letreiro (issue #108) tem uma linha.
+  //
+  // Empurra-se com um `add` MUITO fóra da tela, que o X11 recorta inteiro seja
+  // qual for o canto em que o terminal esteja, e que troca de logar a cada
+  // empurrão para o deduplicador do `poe` o deixar passar.
+  void empurra(const std::filesystem::path& imagem) noexcept;
+
+  // escritas — quantas ordens sahiram pelo cano. É por ella que quem chama
+  // sabe se o quadro mexeu na lousa: sómente ahi o empurrão tem que fazer.
+  std::size_t escritas() const noexcept { return escritas_; }
+
   const Parecer& parecer() const noexcept { return parecer_; }
   // descartadas — as ordens que o cano cheio engoliu. A janella di-las no
   // stderr ao sahir, pelo molde da linha da vigilia: o --sonda é outra corrida
@@ -137,6 +152,8 @@ class Lousa {
   int cano_ = -1;
   int filho_ = -1;
   std::size_t descartadas_ = 0;
+  std::size_t escritas_ = 0;
+  bool empurrao_ = false;  // o lado do proximo empurrão
   // O que está POSTO, e a ordem que o poz: é a comparação com ella que cala o
   // pintor quando nada mudou, e a lista das chaves que o tira_tudo percorre.
   std::map<std::string, std::string> postas_;

@@ -16,11 +16,15 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include "nucleo/letreiro.hpp"
 #include "tui/foco.hpp"
 #include "tui/navegador.hpp"
 #include "tui/rato.hpp"
@@ -70,16 +74,40 @@ struct OrdemDaAba {
 // Tab abria a barra que esta issue apaga.
 OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept;
 
-// O ESTADO em que cada aba se pinta. Tres, e não dous booleanos ao lado: dous
-// admittiriam o estado «corrente e apagada», que não existe. A irmã do letreiro
-// (issue #108) lê este enum para saber que chapa em XIROD ha de pôr sobre a
-// palavra, e é por isso que elle vive aqui e não dentro do pintor.
+// Os tres degraus de pintura de uma aba. O `ComFoco` é da issue irmã das setas
+// e nasce aqui por a chapa em XIROD precisar dos tres n'um logar só: a côr da
+// chapa e a da cella debaixo d'ella, lidas em dous logares, divergiriam na
+// primeira issue que mexesse n'uma.
 enum class EstadoDaAba { Apagada, Corrente, ComFoco };
 
-// estado_da_aba — o estado de uma aba, dada a corrente e a peça com foco. O
-// FOCO GANHA da corrente: quem anda com as setas ha de ver ONDE está a mão, e
-// a aba corrente diz-se tambem pela chapa por cima da pauta.
+struct PinturaDaAba {
+  std::string_view tinta;
+  std::string_view fundo;
+};
+
+// pintura_da_aba — o par de côres de cada degrau, e o UNICO logar que o diz.
+PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept;
+
+// palavra_da_aba — a palavra de MARCA sósinha, sem o glifo e sem a guarnição.
+// É ella, e sómente ella, que sahe em XIROD: a chapa não cobre o icone nem as
+// setas da fita, que aquelle é glifo da fonte do terminal e estas são junção.
+std::string palavra_da_aba(Aba aba);
+
+// caixa_da_palavra — as cellas da PALAVRA dentro da caixa do segmento. Tira o
+// flanco que o `rotulo_da_aba` põe adeante (o espaço, o glifo, o espaço) e o
+// espaço que põe atraz; caixa por pintar, ou segmento sem palavra que sobre,
+// responde VAZIA, e ahi o pintor não tem chapa que pôr.
+ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept;
+
+// estado_da_aba — o degrau de uma aba, dada a corrente e a peça com foco
+// (issue #107). O FOCO GANHA da corrente: quem anda com as setas ha de ver
+// ONDE está a mão, e onde se ESTÁ diz-o tambem a chapa por cima da pauta.
 EstadoDaAba estado_da_aba(Aba qual, Aba corrente, Focavel foco) noexcept;
+
+// aba_com_foco — a aba que tem o foco, ou vazio quando elle está fóra da fita.
+// É o punho que o `ordens_das_chapas` pede: assim a chapa em XIROD da aba
+// focada sahe do MESMO degrau que pinta a cella debaixo d'ella.
+std::optional<Aba> aba_com_foco(Focavel foco) noexcept;
 
 // rotulo_da_aba — a palavra da aba com o seu glifo e a guarnição dos flancos.
 // UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a
@@ -107,6 +135,35 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas = nullptr,
                                      Focavel foco = Focavel::Pauta);
+
+// A ORDEM que o pintor dá á lousa quanto á chapa de UMA aba. Sahem TRES de
+// cada quadro, uma por aba e na ordem da fita, e nunca menos: aba que não tem
+// chapa ha de dizer que a não tem, senão a do quadro anterior ficava na tela.
+struct ChapaDaAba {
+  Aba aba = Aba::MySong;
+  EstadoDaAba estado = EstadoDaAba::Apagada;
+  bool poe = false;  // falso é o Tira, e é o que o quadro sem caixa pede
+  int collunha = 0;
+  int linha = 0;
+  std::size_t largura = 0;  // em cellas, e é d'ella que a proporção sahe
+};
+
+// identidade_da_chapa — o nome por que a lousa conhece a janella de cada aba.
+std::string_view identidade_da_chapa(Aba aba) noexcept;
+
+// ordens_das_chapas — a decisão, PURA pelo molde exacto do `ordem_da_capa`: o
+// foco entra em TODO quadro, e não sómente no do evento, que o FTXUI desenha
+// logo depois de correr os eventos e um tira_tudo no tratador desfaz-se no
+// desenho seguinte. O `com_foco` é da issue irmã das setas: punho nullo quer
+// dizer que aba alguma o tem, e é o que vale enquanto ella não chega.
+std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
+                                          Aba corrente, bool letreiro_de_pe,
+                                          bool foco_dentro,
+                                          const Aba* com_foco = nullptr);
+
+// pedido_da_chapa — o que se manda rasterizar: a palavra, as côres do degrau,
+// e a largura em cellas. Aqui se casam a tinta da chapa e a da cella.
+nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem);
 
 // elemento_do_trilho — a linha do progresso, de largura inteira, logo abaixo
 // do cabeçalho: v600 no andado e line_dim no que falta. A caixa d'elle é a do

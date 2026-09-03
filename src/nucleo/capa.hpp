@@ -118,6 +118,12 @@ std::string somma_dos_octetos(std::string_view octetos);
 // o mais, e ahi a capa não vae ao cache.
 std::string_view extensao_da_capa(std::string_view octetos);
 
+// raiz_do_cache — `$XDG_CACHE_HOME/mysong`, e sem a variavel `~/.cache/mysong`.
+// Vazia sem uma e sem HOME, que ahi cache não ha. Á parte por serem DOUS os
+// que escrevem n'este cache, a arte embutida e a chapa do letreiro, e raiz
+// lida em dous logares divergiria no dia em que uma d'ellas mudasse.
+std::filesystem::path raiz_do_cache();
+
 // caminho_da_capa_em_cache — `$XDG_CACHE_HOME/mysong/capas/<somma>.<extensão>`,
 // e sem a variavel `~/.cache/mysong/capas/`, pelo precedente exacto do
 // caminho_da_configuracao. Vazio sem HOME, e vazio quando os octetos não são

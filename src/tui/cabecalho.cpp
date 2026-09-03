@@ -14,6 +14,7 @@
 #include "tui/cabecalho.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -47,6 +48,13 @@ inline constexpr std::string_view kMudo = "\U000f075f";
 // fundo violaceo a esta opacidade, e trilho que se não vê não diz onde a
 // faixa vae.
 inline constexpr std::string_view kTraco = "\u2501";
+
+// Quantas cellas o rotulo põe ADEANTE da palavra e ATRAZ d'ella: o espaço, o
+// glifo e o espaço de um lado, o espaço do outro. Vivem ao pé do
+// `rotulo_da_aba`, que é quem as escreve, e a bateria prende as duas contra
+// uma linha do cabeçalho pintada em papel.
+inline constexpr int kFlancoDoRotulo = 3;
+inline constexpr int kCaudaDoRotulo = 1;
 
 Secao secao_da_aba(Aba aba) noexcept {
   switch (aba) {
@@ -213,50 +221,136 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
   return ftxui::hbox(std::move(partes));
 }
 
-// As tintas da aba, n'um logar só: a corrente é BLOCO SOLIDO, v600 com texto
-// v50, que é o gesto do site d'elle onde o que está sob a mão vira bloco cheio;
-// as outras ficam no `raised`, que é o degrau de repouso do chrome. O fundo
-// serve tambem á FITA, que d'elle tira a côr das junções: lidos em dous
-// logares, a seta sahiria de uma côr e o bloco de outra.
+// As tintas da aba, e o fundo serve tambem á FITA, que d'elle tira a côr das
+// junções: lidos em dous logares, a seta sahiria de uma côr e o bloco de outra.
 std::string_view fundo_da_aba(EstadoDaAba estado) {
-  switch (estado) {
-    case EstadoDaAba::ComFoco: return tokens::glow_core;
-    case EstadoDaAba::Corrente: return tokens::v600;
-    case EstadoDaAba::Apagada: break;
-  }
-  return tokens::raised;
+  return pintura_da_aba(estado).fundo;
 }
 std::string_view tinta_da_aba(EstadoDaAba estado) {
-  switch (estado) {
-    case EstadoDaAba::ComFoco: return tokens::panel;
-    case EstadoDaAba::Corrente: return tokens::v50;
-    case EstadoDaAba::Apagada: break;
-  }
-  return tokens::text_primary;
+  return pintura_da_aba(estado).tinta;
 }
 
-// com_foco — o segmento vestido de FOCO (issue #107): glow_core por fundo e
-// panel por tinta. É o glow CONTIDO da regra, que accende no que a mão toca; e
-// é par distincto do da aba corrente, que ninguem ha de confundir onde ESTÁ com
-// onde a mão está. Não sendo a peça a que tem o foco, devolve-se intacta.
+// aceso — o segmento vestido de FOCO (issue #107). As côres sahem do MESMO
+// `pintura_da_aba` que veste as abas e as chapas em XIROD: par de côres lido em
+// dous logares divergiria na primeira issue que mexesse n'um d'elles. Não sendo
+// a peça a que tem o foco, devolve-se intacta.
 Segmento aceso(Segmento peca, bool tem_foco) {
   if (!tem_foco) return peca;
-  peca.fundo = tokens::glow_core;
-  peca.tinta = tokens::panel;
+  const PinturaDaAba d_elle = pintura_da_aba(EstadoDaAba::ComFoco);
+  peca.fundo = d_elle.fundo;
+  peca.tinta = d_elle.tinta;
   return peca;
 }
 
 }  // namespace
 
-std::string rotulo_da_aba(Aba aba) {
-  // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
-  // rotulo como se ha de mostrar, e não lh'a accrescenta ás escondidas.
+// pintura_da_aba — a corrente é BLOCO SOLIDO, v600 com texto v50, que é o
+// gesto do site d'elle onde o que está sob a mão vira bloco cheio; a apagada
+// fica no `raised`, que é o degrau de repouso do chrome; e a que tem o FOCO
+// accende em glow_core com a tinta do painel, distincta da corrente de
+// proposito, que peça focada e peça eleita não são a mesma cousa.
+PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept {
+  switch (estado) {
+    case EstadoDaAba::Corrente: return {tokens::v50, tokens::v600};
+    case EstadoDaAba::ComFoco: return {tokens::panel, tokens::glow_core};
+    case EstadoDaAba::Apagada: break;
+  }
+  return {tokens::text_primary, tokens::raised};
+}
+
+std::string palavra_da_aba(Aba aba) {
   switch (aba) {
-    case Aba::Playlists: return " " + std::string(kListas) + " PLAYLISTS ";
-    case Aba::Download: return " " + std::string(kBaixa) + " DOWNLOAD ";
+    case Aba::Playlists: return "PLAYLISTS";
+    case Aba::Download: return "DOWNLOAD";
     case Aba::MySong: break;
   }
-  return " " + std::string(kNota) + " MY SONG ";
+  return "MY SONG";
+}
+
+std::string rotulo_da_aba(Aba aba) {
+  // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
+  // rotulo como se ha de mostrar, e não lh'a accrescenta ás escondidas. E é
+  // CONSTANTE de proposito: tres cellas adeante e uma atraz em toda aba, que é
+  // o que faz a caixa da palavra sahir da do segmento por subtracção.
+  std::string_view glifo = kNota;
+  switch (aba) {
+    case Aba::Playlists: glifo = kListas; break;
+    case Aba::Download: glifo = kBaixa; break;
+    case Aba::MySong: break;
+  }
+  return " " + std::string(glifo) + " " + palavra_da_aba(aba) + " ";
+}
+
+ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept {
+  ftxui::Box palavra = segmento;
+  palavra.x_min += kFlancoDoRotulo;
+  palavra.x_max -= kCaudaDoRotulo;
+  return palavra.x_max >= palavra.x_min ? palavra : caixa_por_pintar();
+}
+
+std::string_view identidade_da_chapa(Aba aba) noexcept {
+  switch (aba) {
+    case Aba::Playlists: return "aba_playlists";
+    case Aba::Download: return "aba_download";
+    case Aba::MySong: break;
+  }
+  return "aba_mysong";
+}
+
+namespace {
+
+// caixa_do_segmento — a caixa nomeada de cada aba. Por nome e não por indice,
+// que peça nova nas caixas deslocaria o indice em silencio.
+const ftxui::Box& caixa_do_segmento(const CaixasDoCabecalho& caixas, Aba aba) {
+  switch (aba) {
+    case Aba::Playlists: return caixas.aba_playlists;
+    case Aba::Download: return caixas.aba_download;
+    case Aba::MySong: break;
+  }
+  return caixas.aba_mysong;
+}
+
+}  // namespace
+
+std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
+                                          Aba corrente, bool letreiro_de_pe,
+                                          bool foco_dentro,
+                                          const Aba* com_foco) {
+  std::vector<ChapaDaAba> ordens;
+  ordens.reserve(3);
+  for (const Aba aba : {Aba::MySong, Aba::Playlists, Aba::Download}) {
+    ChapaDaAba ordem;
+    ordem.aba = aba;
+    // O FOCO ganha da corrente: elle diz onde o dedo está, e a corrente diz
+    // onde se estêve. Aba que seja as duas cousas accende como focada.
+    ordem.estado = com_foco != nullptr && *com_foco == aba
+                       ? EstadoDaAba::ComFoco
+                   : aba == corrente ? EstadoDaAba::Corrente
+                                     : EstadoDaAba::Apagada;
+    const ftxui::Box palavra = caixa_da_palavra(caixa_do_segmento(caixas, aba));
+    // As tres condições são de CONJUNCÇÃO, e nenhuma sobra: sem letreiro não
+    // ha chapa, o foco fóra manda tirar, e caixa por pintar não tem canto.
+    ordem.poe =
+        letreiro_de_pe && foco_dentro && palavra.x_max >= palavra.x_min;
+    if (ordem.poe) {
+      ordem.collunha = palavra.x_min;
+      ordem.linha = palavra.y_min;
+      ordem.largura =
+          static_cast<std::size_t>(palavra.x_max - palavra.x_min + 1);
+    }
+    ordens.push_back(ordem);
+  }
+  return ordens;
+}
+
+nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem) {
+  const PinturaDaAba pintura = pintura_da_aba(ordem.estado);
+  nucleo::PedidoDaChapa pedido;
+  pedido.texto = palavra_da_aba(ordem.aba);
+  pedido.tinta = std::string(pintura.tinta);
+  pedido.fundo = std::string(pintura.fundo);
+  pedido.cellulas = ordem.largura;
+  return pedido;
 }
 
 EstadoDaAba estado_da_aba(Aba qual, Aba corrente, Focavel foco) noexcept {
@@ -265,6 +359,26 @@ EstadoDaAba estado_da_aba(Aba qual, Aba corrente, Focavel foco) noexcept {
                                                  : Focavel::AbaMySong;
   if (foco == d_ella) return EstadoDaAba::ComFoco;
   return qual == corrente ? EstadoDaAba::Corrente : EstadoDaAba::Apagada;
+}
+
+std::optional<Aba> aba_com_foco(Focavel foco) noexcept {
+  switch (foco) {
+    case Focavel::AbaMySong: return Aba::MySong;
+    case Focavel::AbaPlaylists: return Aba::Playlists;
+    case Focavel::AbaDownload: return Aba::Download;
+    // As demais peças focaveis não são abas, e o vazio é o que o
+    // `ordens_das_chapas` já sabe ler: aba alguma tem o foco.
+    case Focavel::Pauta:
+    case Focavel::Tocar:
+    case Focavel::Anterior:
+    case Focavel::Seguinte:
+    case Focavel::Volume:
+    case Focavel::Embaralhar:
+    case Focavel::Repetir:
+    case Focavel::Trilho:
+    case Focavel::Capa: break;
+  }
+  return std::nullopt;
 }
 
 ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado) {

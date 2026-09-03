@@ -13,7 +13,9 @@
 #include <ftxui/screen/pixel.hpp>
 #include <ftxui/screen/screen.hpp>
 
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "tui/cabecalho.hpp"
 #include "tui/foco.hpp"
@@ -264,6 +266,33 @@ TEST_CASE("o foco na aba corrente ganha da corrente, e as visinhas não mudam") 
                            Focavel::Pauta) == tui::EstadoDaAba::Corrente);
   CHECK(tui::estado_da_aba(tui::Aba::Download, tui::Aba::MySong,
                            Focavel::Pauta) == tui::EstadoDaAba::Apagada);
+}
+
+TEST_CASE("a aba com foco governa tambem a chapa em XIROD que a cobre") {
+  CHECK(tui::aba_com_foco(Focavel::AbaPlaylists) == tui::Aba::Playlists);
+  CHECK(tui::aba_com_foco(Focavel::AbaDownload) == tui::Aba::Download);
+  // Peça focavel que não é aba não dá aba alguma: é o vazio que o
+  // `ordens_das_chapas` já sabe ler.
+  CHECK_FALSE(tui::aba_com_foco(Focavel::Pauta).has_value());
+  CHECK_FALSE(tui::aba_com_foco(Focavel::Volume).has_value());
+  // A chapa da aba focada sae do MESMO degrau que pinta a cella debaixo
+  // d'ella (issue #108 casada com a #107): glow_core com tinta panel, e ganha
+  // da corrente ainda quando a aba é as duas cousas.
+  const tui::CaixasDaTela caixas = tela_d_elle();
+  const std::optional<tui::Aba> focada = tui::aba_com_foco(Focavel::AbaMySong);
+  const std::vector<tui::ChapaDaAba> com = tui::ordens_das_chapas(
+      caixas.cabecalho, tui::Aba::MySong, true, true,
+      focada ? &*focada : nullptr);
+  REQUIRE(com.size() == 3);
+  CHECK(com[0].estado == tui::EstadoDaAba::ComFoco);
+  CHECK(com[0].poe);
+  CHECK(tui::pedido_da_chapa(com[0]).fundo == std::string(tk::glow_core));
+  CHECK(tui::pedido_da_chapa(com[0]).tinta == std::string(tk::panel));
+  // Sem punho, a mesma aba é a CORRENTE, e a chapa sae no bloco de violeta.
+  const std::vector<tui::ChapaDaAba> sem =
+      tui::ordens_das_chapas(caixas.cabecalho, tui::Aba::MySong, true, true);
+  CHECK(sem[0].estado == tui::EstadoDaAba::Corrente);
+  CHECK(tui::pedido_da_chapa(sem[0]).fundo == std::string(tk::v600));
 }
 
 TEST_CASE("o trilho com foco accende o andado, e o que falta fica quieto") {

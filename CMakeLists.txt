@@ -448,8 +448,25 @@ target_sources(mysong_core PRIVATE src/tui/rato.cpp)
 # de correr, que a capa cae nos symbolos do chafa.
 target_sources(mysong_core PRIVATE src/nucleo/lousa.cpp)
 
+# ─── O LETREIRO EM XIROD (issue #108) ───────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Vae ao
+# lado da lousa por d'ella depender: a chapa que este rasteriza é ella quem põe.
+target_sources(mysong_core PRIVATE src/nucleo/letreiro.cpp)
+
 # A FITA da lousa: a prova do OLHO sem se abrir o tocador. Alvo proprio, pelo
 # molde do fita_capa; não corre em machina de integração, que ella não tem X11.
 add_executable(fita_lousa exemplos/fita_lousa.cpp)
 target_compile_options(fita_lousa PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(fita_lousa PRIVATE mysong_core)
+
+# ─── O RIO DA LETRA (issue #109) ────────────────────────────────────────────
+# Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Peça nova
+# pela razão do espectro: o rio resolve-se em QUADRO, e quadro prova-se sem
+# terminal nem relogio; a janella não se prova.
+target_sources(mysong_core PRIVATE src/tui/letra_viva.cpp)
+
+# A FITA da letra (issue #109): o rio por cima do espectro, para o olho julgar
+# sem se abrir o tocador. Alvo proprio, pelo molde do fita_espectro.
+add_executable(fita_letra exemplos/fita_letra.cpp)
+target_compile_options(fita_letra PRIVATE ${MYSONG_AVISOS})
+target_link_libraries(fita_letra PRIVATE mysong_core)
