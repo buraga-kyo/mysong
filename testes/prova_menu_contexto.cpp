@@ -93,3 +93,44 @@ TEST_CASE("o Escape fecha o menu, e o botão a descer tambem") {
   CHECK(tui::tecla_no_menu(menu, ftxui::Event::Return).pedido ==
         tui::PedidoDoMenu::Nada);
 }
+
+TEST_CASE("sem lista alguma o submenu não abre") {
+  tui::MenuDeContexto menu = menu_de_pe({});
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowRight);
+  CHECK_FALSE(menu.submenu);
+  CHECK(tui::tecla_no_menu(menu, ftxui::Event::Return).pedido ==
+        tui::PedidoDoMenu::Nada);
+  CHECK(menu.aberto);  // e o Enter tambem não fecha nem promette cousa alguma
+}
+
+TEST_CASE("o Enter escolhe cada item, na ordem em que se lêem") {
+  const tui::PedidoDoMenu esperados[] = {
+      tui::PedidoDoMenu::Toca, tui::PedidoDoMenu::Nada,
+      tui::PedidoDoMenu::NovaLista, tui::PedidoDoMenu::Renomeia,
+      tui::PedidoDoMenu::Apaga};
+  for (std::size_t qual = 0; qual < tui::QUANTOS_ITENS; ++qual) {
+    tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+    for (std::size_t passo = 0; passo < qual; ++passo)
+      tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+    const tui::RespostaDoMenu escolha =
+        tui::tecla_no_menu(menu, ftxui::Event::Return);
+    CHECK(escolha.pedido == esperados[qual]);
+    CHECK(escolha.lista == 0);
+    // O JUNTAR abre o submenu em vez de escolher, e por isso fica de pé.
+    CHECK(menu.aberto == (qual == 1));
+  }
+}
+
+TEST_CASE("o Enter dentro do submenu junta á lista eleita, pelo id d'ella") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowRight);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  tui::tecla_no_menu(menu, ftxui::Event::ArrowDown);
+  const tui::RespostaDoMenu escolha =
+      tui::tecla_no_menu(menu, ftxui::Event::Return);
+  CHECK(escolha.pedido == tui::PedidoDoMenu::Junta);
+  CHECK(escolha.lista == 40);  // a terceira, e o id d'ella, e não o indice
+  CHECK_FALSE(menu.aberto);
+}
