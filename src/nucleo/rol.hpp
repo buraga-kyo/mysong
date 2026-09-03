@@ -87,6 +87,12 @@ class Roleiro {
   // retira — o item de ordem `ordem`, e FECHA o buraco que elle deixou.
   bool retira(int id, int ordem);
 
+  // retira_de_todos — o caminho sae de TODAS as listas, e cada uma fecha os seus
+  // buracos. Devolve quantas occorrencias sahiram. É o que a faixa mandada á
+  // lixeira pede: deixá-la nas listas faria a lista apontar para arquivo que já
+  // não está no disco, e tocá-la daria silencio sem se saber porquê.
+  int retira_de_todos(std::string_view caminho);
+
   // troca — os itens de duas ordens vizinhas ou não. Falso quando alguma das duas
   // não existe. É por aqui que sobe e desce se cumprem.
   bool troca(int id, int uma, int outra);
