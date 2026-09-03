@@ -686,29 +686,13 @@ A barra do espectro e violeta, escura no pe e viva no topo, e a rampa e a mesma
 em toda a largura: a altura da coluna diz o nivel, e a cor nunca o repete nem o
 contradiz.
 
-A fita e feita de BARRAS de duas colunas, apartadas por um vao de uma. Uma
-barra e uma banda, e o numero de barras sai da largura do painel: o tocador pede
-ao analisador tantas bandas quantas barras couberem, donde nunca ha duas barras
-iguais coladas so por serem a mesma banda repartida. Estreitando a janela, o
-numero de barras cai e nenhuma barra parte ao meio.
-
-Quando uma banda da a sua batida mais forte, a barra inteira acende na cor do
+Quando uma banda da a sua batida mais forte, a coluna inteira acende na cor do
 REGISTRO dela, isto e, na cor da faixa de frequencia em que ella soa. Batida
 forte quer dizer duas coisas ao mesmo tempo: a banda chegou a noventa por cento
 do pico recente dela, e passou de meio. Esse pico cai a metade em um segundo e
-meio, donde pouco depois de a batida passar a barra ja voltou ao violeta. E por
+meio, donde pouco depois de a batida passar a coluna ja voltou ao violeta. E por
 ser relativa ao pico de cada banda que o agudo acende no prato, em vez de ficar
 apagado so por nunca chegar ao teto da fita.
-
-A barra acesa acaba em PONTA, e nao em topo chato: as duas celulas do alto dela
-desenham uma seta ENCORPADA, feita das mesmas meias diagonais powerline das
-setas que apartam MY SONG, PLAYLISTS e DOWNLOAD, o flanco que sobe na primeira
-coluna e o que desce na segunda.
-
-A ponta toma o lugar da celula do topo, e nao acrescenta celula: a barra acesa e
-a apagada da mesma altura medem o mesmo. Barra que fique com uma coluna so, na
-beira da tela, nao leva ponta: meia diagonal sozinha e degrau e nao seta. As
-barras violeta continuam de topo chato, e a fita muda tambem.
 
 | registro | faixa | cor da batida | o que costuma morar ali |
 |---|---|---|---|

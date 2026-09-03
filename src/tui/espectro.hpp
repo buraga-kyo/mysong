@@ -129,37 +129,6 @@ std::string_view tinta_do_registro(Registro registro);
 // se escrevesse no exemplo divergiria da tela no dia em que a côr mudasse.
 std::string_view nome_do_registro(Registro registro);
 
-// ── AS BARRAS (issue #144). A fita deixou de pintar uma columna por cella: ella
-// pinta BARRAS de duas collunhas, apartadas por um vão de uma. O que se ganha
-// não é enfeite: com uma banda por barra, duas barras visinhas nunca sahem
-// eguaes por serem a mesma banda repartida em collunhas, que era o que fazia a
-// fita parecer um bloco de trez em trez collunhas.
-//
-// E a seta da batida (issue #141) assenta EXACTAMENTE nas duas collunhas da
-// barra: o flanco que sobe na primeira e o que desce na segunda. Antes ella
-// dependia de quantas collunhas a banda tivesse apanhado, e em largura impar
-// abria ao meio.
-inline constexpr std::size_t LARGURA_DA_BARRA = 2;
-inline constexpr std::size_t VAO_ENTRE_BARRAS = 1;
-inline constexpr std::size_t PASSO_DA_BARRA =
-    LARGURA_DA_BARRA + VAO_ENTRE_BARRAS;
-
-// quantas_barras — quantas cabem na largura. A ULTIMA não precisa do vão d'ella
-// (o vão aparta barras, e depois da ultima não ha o que apartar), d'onde a
-// conta soma o vão antes de dividir. Largura zero dá zero; largura que não
-// chegue para uma barra inteira dá UMA, mais estreita, que fita sem barra
-// alguma seria painel morto.
-std::size_t quantas_barras(std::size_t largura);
-
-// collunhas_da_barra — a primeira collunha da barra `b` e quantas ella toma de
-// facto (duas, ou uma na beira da tela). Serve á pintura e á bateria, que assim
-// não repetem a conta do passo.
-struct Barra {
-  std::size_t primeira = 0;
-  std::size_t collunhas = 0;
-};
-Barra collunhas_da_barra(std::size_t b, std::size_t largura);
-
 // Quantos degraus cabem n'uma célulla. Oito, que são os blocos U+2581 a U+2588,
 // e não é numero de gosto: é quanto o terminal sabe subdividir uma célulla na
 // vertical. D'onde a resolução de uma columna de N célullas é 8N degraus, e é
@@ -214,38 +183,6 @@ struct Quadro {
 // escreve-se ANTES do cingir, e de propósito: comparação com NaN é sempre
 // falsa, d'onde um cingir escripto ingenuamente deixaria o NaN passar ao floor.
 int oitavos(float magnitude, std::size_t altura);
-
-// A PONTA da batida (issue #139, refeita pela #141). A columna que accende na
-// côr do registro deixa de acabar em topo chato: as cellas do alto da BANDA
-// desenham uma seta ENCORPADA, e é assim que o olho apanha a batida de relance
-// no meio da fita.
-//
-// Os glifos são os MESMOS da fita arrowline que aparta MY SONG, PLAYLISTS e
-// DOWNLOAD: as meias diagonaes powerline, que enchem a cella de orla a orla. O
-// triangulo do Unicode (U+25B2) desenha-se miudo no meio da cella e nada tem
-// que ver com o chrome d'esta Casa; foi o que a primeira lavra fez, e é o que
-// esta desfaz. Escrevem-se por PONTO DE CODIGO, e não pelo glifo cru, pela
-// regra da Casa; conferidos na JetBrainsMono Nerd Font d'elle e medidos a UMA
-// collunha pelo `ftxui::string_width`, que é o que faz a conta da fita prestar.
-inline constexpr std::string_view kFlancoQueSobe = "\ue0ba";   // , á esquerda
-inline constexpr std::string_view kFlancoQueDesce = "\ue0b8";  // , á direita
-// O BLOCO CHEIO, que enche as cellas do MEIO da ponta. É o mesmo U+2588 que o
-// `glifo_do_degrau` devolve nos oito oitavos, e escreve-se aqui por nome para
-// que a ponta o não vá buscar por arithmetica de degrau.
-inline constexpr std::string_view kBlocoCheio = "\u2588";
-
-// glifo_da_ponta — a cella do topo, dada a posição da collunha DENTRO da barra:
-// o flanco que sobe na primeira, o que desce na ultima, e o bloco cheio nas do
-// meio (que na barra de duas não ha). Barra de UMA collunha, que sómente
-// acontece na beira da tela, devolve VAZIO: meia diagonal sósinha não é seta, é
-// degrau, e ahi a barra fica com o topo de bloco.
-//
-// A ponta SUBSTITUE a cella do topo, e não a acrescenta: a barra acesa e a
-// apagada da mesma magnitude hão de medir o mesmo, senão a côr passaria a
-// crescer. Sendo o topo um degrau parcial, a ponta toma a cella inteira: a
-// differença é de sub-cella, dura o que dura a batida, e o que se pede é que a
-// batida se VEJA.
-std::string_view glifo_da_ponta(bool primeira, bool ultima);
 
 // glifo_do_degrau — o bloco de k oitavos, em U+2580 + k. Zero dá a célulla
 // vazia; acima de oito cinge-se a oito, que é o bloco cheio.
