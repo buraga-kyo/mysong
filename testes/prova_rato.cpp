@@ -250,7 +250,9 @@ TEST_CASE("a caixa não muda um pixel do cabeçalho nem do trilho") {
     // se esquecesse de as pôr, e a prova não provaria cousa alguma.
     CHECK_FALSE(caixas.aba_mysong.IsEmpty());
     CHECK_FALSE(caixas.botao_tocar.IsEmpty());
-    CHECK_FALSE(caixas.nome.IsEmpty());
+    // O NOME sómente onde ha collunha para elle: em 60 o grupo das abas já
+    // encosta aos botões (issue #125), e caixa de largura zero nasce vazia.
+    if (largura > 60) CHECK_FALSE(caixas.nome.IsEmpty());
     ftxui::Box trilho;
     CHECK(papel(tui::elemento_do_trilho(retracto, larg), largura, 1) ==
           papel(tui::elemento_do_trilho(retracto, larg, &trilho), largura, 1));
