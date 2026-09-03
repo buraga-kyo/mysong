@@ -37,7 +37,43 @@ std::atomic<int> o_filho{-1};
 
 void mata_o_filho() {
   const int quem = o_filho.exchange(-1);
-  if (quem > 0) ::kill(quem, SIGTERM);
+  // SIGKILL, pela razão do PDEATHSIG: esta funcção só corre com o tocador já a
+  // morrer, e o ueberzugpp APANHA o SIGTERM. O `exchange` de um atomico sem
+  // fechadura é dos poucos que a norma admitte dentro de tratador de signal.
+  if (quem > 0) ::kill(quem, SIGKILL);
+}
+
+// A REDE DOS SIGNAES, e é a terceira porta. Morrendo o tocador pela acção
+// PADRÃO de um signal, o destructor não corre e o `atexit` tambem não: o FTXUI,
+// ao receber HUP, INT ou TERM, repõe o tratador de antes e torna a levantar o
+// signal (app.cpp, RestoreSignalHandlerAndRaise), e a acção padrão mata sem
+// desenrolar cousa alguma. As duas portas da Casa fechavam-se ao mesmo tempo.
+//
+// E o tratador de antes é JUSTAMENTE este: instalado antes do Loop, elle entra
+// na taboa dos «de antes» do FTXUI, e é para elle que o levantar torna. A tela
+// já foi devolvida ao terminal quando isto corre.
+struct sigaction o_de_antes[NSIG];
+
+void mata_e_repassa(int signal) {
+  mata_o_filho();  // um kill() e nada mais: é o que cabe n'um tratador
+  if (signal > 0 && signal < NSIG) {
+    ::sigaction(signal, &o_de_antes[signal], nullptr);
+    ::raise(signal);
+  }
+}
+
+void amarra_os_signaes() {
+  struct sigaction assim;
+  assim.sa_handler = mata_e_repassa;
+  ::sigemptyset(&assim.sa_mask);
+  assim.sa_flags = SA_RESTART;
+  for (const int qual : signaes_da_lousa())
+    ::sigaction(qual, &assim, &o_de_antes[qual]);
+}
+
+void solta_os_signaes() {
+  for (const int qual : signaes_da_lousa())
+    ::sigaction(qual, &o_de_antes[qual], nullptr);
 }
 
 // ergue — o fork com CANO na entrada do filho: devolve o pid, e menos um
@@ -130,9 +166,13 @@ Lousa::Lousa(ModoDaLousa modo) noexcept
   // encheria a taboa d'elle na bateria que erguesse muitas lousas.
   static const bool registado = std::atexit(mata_o_filho) == 0;
   (void)registado;
+  amarra_os_signaes();
 }
 
 Lousa::~Lousa() noexcept {
+  // Solta-se ANTES de matar: o tratador já não tem filho que valha, e deixál-o
+  // posto faria a lousa seguinte achar a rede d'esta na taboa dos «de antes».
+  if (filho_ > 0) solta_os_signaes();
   tira_tudo();
   // O fim do cano é o pedido de sahir em ordem; o SIGTERM vem depois, para o
   // caso de elle estar preso a redimensionar uma imagem grande.
