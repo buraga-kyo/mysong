@@ -404,5 +404,40 @@ TEST_CASE("sem letreiro ou sem foco ou com a letra escondida não ha chapa") {
   CHECK_FALSE(tui::ordem_da_chapa_da_letra(canta, {}, true, true, true).poe);
 }
 
+TEST_CASE("a caixa da chapa sae em coordenadas da tela") {
+  // A SALA de verdade, na tela d'elle. A 167 collunhas o painel fica com 83 e
+  // começa na 84, e o verso de cinco glyphos centra-se na (83 menos 5) meio.
+  const tui::Sala sala = tui::sala_da_tela(167, 45, false);
+  const tui::Rectangulo espectro = tui::espectro_abaixo_da(sala, 0);
+  REQUIRE(espectro.x == 84);
+  REQUIRE(espectro.largura == 83);
+  const tui::QuadroDaLetra rio =
+      tui::quadro_da_letra(kVersos, 10.0, espectro.largura, espectro.altura);
+  const tui::ChapaDaLetra ordem =
+      tui::ordem_da_chapa_da_letra(rio, espectro, true, true, true);
+  REQUIRE(ordem.poe);
+  CHECK(ordem.collunha == 84 + 39);
+  CHECK(ordem.linha == static_cast<int>(espectro.y + espectro.altura / 3));
+  CHECK(ordem.cellulas == 5);
+}
+
+TEST_CASE("o verso comprido corta-se e é o cortado que se rasteriza") {
+  const std::vector<nu::LinhaDaLetra> comprido = {
+      {10.0, "um verso muito mais comprido que o painel"}};
+  const tui::ChapaDaLetra ordem =
+      da_chapa(tui::quadro_da_letra(comprido, 10.0, kLargura, kAltura));
+  REQUIRE(ordem.poe);
+  CHECK(ordem.verso == "um verso muito mais…");
+  CHECK(ordem.cellulas == kLargura);
+  // E o pedido veste a chapa das MESMAS côres com que a linha em mono se pinta.
+  const nu::PedidoDaChapa pedido =
+      tui::pedido_da_chapa_da_letra(ordem.verso, ordem.cellulas);
+  CHECK(pedido.texto == "um verso muito mais…");
+  CHECK(pedido.tinta == std::string(tk::text_bright));
+  CHECK(pedido.fundo == std::string(tk::panel));
+  CHECK(pedido.cellulas == kLargura);
+  CHECK(pedido.familia == std::string(nu::FAMILIA_DA_MARCA));
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
