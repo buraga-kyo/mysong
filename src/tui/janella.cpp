@@ -301,6 +301,17 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
   }
 }
 
+// AS DICAS do rodapé, n'uma linha. Ficam aqui, e não no meio da composição:
+// ellas mudam a cada issue que dá tecla nova, e assim quem as procura sabe
+// onde estão. As tres primeiras são as da issue #102, que são as unicas
+// teclas d'esta tela que ninguem conhece de outra casa.
+constexpr const char* kDicas =
+    "1 2 3 abas · Tab cicla · o vista · ↑↓ anda · → entra · ← volta"
+    " · Enter toca · espaço pausa · , . busca · + - volume · z x modos"
+    " · / filtra · s rede · f fonte · b baixa · r varre · l letra"
+    " · P listas · c cria · a junta · t retira · K/J move · R renomeia"
+    " · D apaga · v video · I spotify · T baixa todas · q sahe";
+
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
 // fita tremer por diff de buffer. O risco do tremor está declarado no plano, e
