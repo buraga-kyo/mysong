@@ -160,7 +160,10 @@ bool Lousa::escreve(const std::string& ordem) noexcept {
   if (!disponivel()) return false;
   const ::ssize_t postos =
       ::send(cano_, ordem.data(), ordem.size(), MSG_NOSIGNAL);
-  if (postos == static_cast<::ssize_t>(ordem.size())) return true;
+  if (postos == static_cast<::ssize_t>(ordem.size())) {
+    ++escritas_;
+    return true;
+  }
   ++descartadas_;
   // Cano cheio é passageiro, e a ordem descarta-se INTEIRA: meia linha de JSON
   // seria peor que linha nenhuma, que o filho lê por linha e a seguinte
@@ -204,6 +207,16 @@ bool Lousa::tira(std::string_view identidade) noexcept {
   if (!escreve(ordem_de_tirar(identidade))) return false;
   postas_.erase(chave);
   return true;
+}
+
+void Lousa::empurra(const std::filesystem::path& imagem) noexcept {
+  if (!disponivel() || imagem.empty()) return;
+  empurrao_ = !empurrao_;
+  // Quatro mil célullas á esquerda: terminal algum está a tanto do canto da
+  // tela, d'onde a janella cae inteira fóra d'ella e ninguem a vê. Não entra
+  // nas `postas_` de proposito: não ha o que tirar de janella que se não vê, e
+  // o filho leva-a comsigo ao morrer.
+  escreve(ordem_de_por("empurrao", imagem, empurrao_ ? -4000 : -4001, 0, 1, 1));
 }
 
 void Lousa::tira_tudo() noexcept {
