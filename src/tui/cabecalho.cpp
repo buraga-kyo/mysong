@@ -197,6 +197,20 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
   return feito + "…" + std::string(largura - gastas - 1, ' ');
 }
 
+// vestir_todas — o texto repetido em TODAS as fileiras, e não sómente na de
+// cima. É o que a junção pede: o `vestir` assenta o fundo na caixa inteira mas
+// escreve o glifo n'uma fileira só, e seta pintada sómente em cima deixaria o
+// fundo do visinho a entrar em quadrado por baixo d'ella, que é a emenda
+// visivel que o tractado da fita proscreve.
+ftxui::Element vestir_todas(const std::string& texto, std::string_view tinta,
+                            std::string_view fundo, std::size_t altura) {
+  std::vector<ftxui::Element> fileiras;
+  fileiras.reserve(altura);
+  for (std::size_t i = 0; i < altura; ++i)
+    fileiras.push_back(vestir(texto, tinta, fundo));
+  return ftxui::vbox(std::move(fileiras));
+}
+
 // pintar_fita — os pedaços em elementos, com a caixa de CADA segmento pendurada
 // pela ORDEM em que a fita o juntou, e não pelo glifo que elle mostra. A irmã
 // do letreiro troca a palavra da aba por uma imagem, e caixa achada por texto
@@ -214,10 +228,8 @@ ftxui::Element pintar_fita(const std::vector<Pedaco>& pedacos,
   std::size_t qual = 0;  // o indice do SEGMENTO, que a junção não adianta
   for (const Pedaco& pedaco : pedacos) {
     if (pedaco.juncao) {
-      // A junção repete-se nas DUAS linhas, que a emenda entre segmentos é
-      // diagonal em toda a altura d'elles: junção n'uma só deixaria a de baixo
-      // com o fundo do visinho a entrar em quadrado.
-      partes.push_back(vestir(pedaco.texto, pedaco.tinta, pedaco.fundo, altura));
+      partes.push_back(
+          vestir_todas(pedaco.texto, pedaco.tinta, pedaco.fundo, altura));
       continue;
     }
     // O NEGRITO em todo segmento, e não sómente nas abas: a issue pede os
