@@ -411,6 +411,7 @@ que ella deixar.
 | `T` | baixa TODAS as faixas da lista lida |
 | F2 | renomeia a faixa eleita: o campo abre com o titulo corrente |
 | Delete | manda a faixa eleita a lixeira do systema (pede confirmacao) |
+| `m` | abre o menu de contexto sobre a faixa eleita |
 | `q` | sahe |
 
 As seis de funcção fazem o que o `p`, o espaco, o `n`, o `-` e o `+` ja
@@ -433,8 +434,9 @@ na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
 no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
 clique na capa pausa e retoma, e a roda anda tres linhas na pauta. Sobre o
 cabecalho a roda fica muda: n'uma fita de tres abas ella trocaria de seccao por
-acaso, com o dedo a caminho de outra peca. Botao direito nao faz nada ainda.
-Dentro do tmux, isto pede `set -g mouse on`.
+acaso, com o dedo a caminho de outra peca. O botao direito n'uma faixa abre o
+menu de contexto d'ella, que a seccao abaixo descreve. Dentro do tmux, isto pede
+`set -g mouse on`.
 
 E ha um preco a declarar, que e a primeira cousa que se nota: pedido o modo dos
 botoes, o emulador passa a entregar o CLIQUE e o ARRASTO ao programa, donde
@@ -562,6 +564,33 @@ por si. Nome ja tomado na lixeira ganha suffixo `.2`, `.3`, e o suffixo vae ao
 arquivo E ao bilhete. Arquivo n'outro volume, que nao se renomeia para dentro do
 `$HOME`, copia-se e apaga-se, e o recado diz que houve copia. A faixa sae do
 indice e de todas as listas no mesmo quadro.
+
+### O menu de contexto
+
+Sobre uma faixa, o botao direito ou a tecla `m` abrem um menu com o que se pode
+fazer com ella: TOCAR, JUNTAR À LISTA, NOVA LISTA COM ESTA, RENOMEAR e APAGAR.
+O botao direito abre-o na linha em que se clicou, e o `m` na linha eleita; abrir
+ELEGE a linha, como o gerenciador de arquivos faz.
+
+Emquanto esta aberto o menu toma TODAS as teclas: `↑` e `↓` andam pelos itens e
+dao a volta no fim, `→` abre o submenu das listas (e `↓` `↑` andam n'elle), `←`
+fecha o submenu e deixa o menu de pe, Enter escolhe, Escape fecha tudo, e o `m`
+fecha-o tambem. Qualquer clique fecha. Tecla alguma vaza para a pauta por baixo:
+a lista nao anda com o menu aberto.
+
+Cada item desagua no caminho que a tecla d'elle ja tinha. TOCAR e o Enter da
+faixa, RENOMEAR e o F2, APAGAR e o Delete, com a mesma pergunta. JUNTAR À LISTA
+abre o submenu com as listas que ha e junta a faixa aquella que se escolher, sem
+mudar a lista alvo do `a`; sem lista alguma o item sahe apagado e nao abre. NOVA
+LISTA COM ESTA pede o nome no campo de digitar e cria a lista ja com a faixa
+dentro.
+
+O chrome e o do RADICAL-OS, e e o mesmo do menu do botao direito do tmux: fundo
+`panel`, orla `line_base` de cantos angulares, o nome da faixa na propria orla de
+cima em `text_heading`, o item eleito em bloco `v600` com tinta `v50`, e um
+filete `line_dim` a apartar o RENOMEAR e o APAGAR dos tres de cima. O menu abre
+para BAIXO da linha; nas ultimas linhas da pauta, onde nao caberia, abre para
+CIMA. Nunca sahe da tela.
 
 ### O socket de commando
 
