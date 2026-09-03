@@ -135,5 +135,24 @@ TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
 }
 
 
+TEST_CASE("o modo aceso accende, e o apagado guarda o logar sem sommir") {
+  tui::Retracto posto = tocando();
+  const ftxui::Screen quieto =
+      papel(tui::elemento_do_cabecalho(posto, tui::Aba::MySong, "x", 167), 167);
+  CHECK(quieto.PixelAt(143, 0).foreground_color == cor(tk::text_muted));
+  CHECK(quieto.PixelAt(158, 0).foreground_color == cor(tk::text_muted));
+  posto.embaralhado = true;
+  posto.repeticao = nu::Repeticao::Uma;
+  const ftxui::Screen aceso =
+      papel(tui::elemento_do_cabecalho(posto, tui::Aba::MySong, "x", 167), 167);
+  CHECK(aceso.PixelAt(143, 0).foreground_color == cor(tk::glow_core));
+  CHECK(aceso.PixelAt(158, 0).foreground_color == cor(tk::glow_core));
+  // A collunha é a MESMA: o segmento apagado guarda o logar do aceso, e o nome
+  // da faixa não salta de sitio quando o operador tecla `z`.
+  CHECK(pedaco(aceso, 141, 14) == " \U000f049d EMBARALHAR ");
+  // E a repetição de UMA troca o glifo, sem mudar a palavra nem a largura.
+  CHECK(pedaco(aceso, 156, 11) == " \U000f0458 REPETIR ");
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
