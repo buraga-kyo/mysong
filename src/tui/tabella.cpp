@@ -133,6 +133,21 @@ Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
   return medidas;
 }
 
+std::string conselho_do_vazio(Secao secao, bool ha_termo) {
+  switch (secao) {
+    case Secao::Rois: return "lista alguma ainda (c cria uma)";
+    case Secao::NoRol: return "lista vazia (elege uma faixa e tecla a)";
+    case Secao::Rede: return "nada achado (s pergunta outra vez)";
+    case Secao::Lista: return "lista alguma lida (I cola a URL do Spotify)";
+    // Sem TERMO quem está vazio é o acervo, e não a busca (issue #93).
+    case Secao::Busca:
+      if (ha_termo) return "nada casa com esse termo";
+      break;
+    case Secao::Artistas: case Secao::Albuns: case Secao::Faixas: break;
+  }
+  return "varra o acervo (r)";
+}
+
 Medidas medidas_da_fatia(const Navegador& navegador, std::size_t primeira,
                          std::size_t fim, std::size_t largura, int* maior) {
   // A vista que CONTA nomes: alli o numero da linha é conta de faixas, e não
@@ -291,37 +306,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
   if (caixas != nullptr) caixas->clear();
   if (altura == 0 || largura == 0) return ftxui::text("");
   const std::vector<Linha>& vista = navegador.vista();
-  if (vista.empty()) {
-    // O recado do vazio é POR SECÇÃO. Um recado só dizia «varra o acervo» dentro de
-    // uma lista de faixas escolhidas á mão, que é conselho que não serve para nada
-    // e manda o operador ao logar errado.
-    const char* recado = "  (nada aqui: varra o acervo, ou baixe uma faixa)";
-    switch (navegador.secao()) {
-      case Secao::Rois:
-        recado = "  (lista alguma ainda: `c` cria uma)";
-        break;
-      case Secao::NoRol:
-        recado = "  (lista vazia: elege uma faixa no acervo e tecla `a`)";
-        break;
-      case Secao::Rede:
-        recado = "  (nada achado: `s` pergunta outra vez)";
-        break;
-      case Secao::Lista:
-        recado = "  (lista alguma lida: `I` cola a URL de uma do Spotify)";
-        break;
-      case Secao::Busca:
-        // As MINHAS MÚSICAS abrem com termo VAZIO (issue #93): não havendo
-        // termo, quem está vazio é o acervo, e culpar o termo mandaria o
-        // operador procurar erro de escripta que elle não commetteu.
-        if (!navegador.termo().empty()) recado = "  (nada casa com esse termo)";
-        break;
-      case Secao::Artistas:
-      case Secao::Albuns:
-      case Secao::Faixas:
-        break;
-    }
-    return pinta(recado, tokens::text_faint);
-  }
+  if (vista.empty())
+    return pinta("  " + conselho_do_vazio(navegador.secao(),
+                                          !navegador.termo().empty()),
+                 tokens::text_faint);
 
   // As columnas e a maior linha da fatia sahem d'uma conta só, que a bateria
   // interroga sem écran. A pintura d'aqui em diante é traducção, e não decisão.
