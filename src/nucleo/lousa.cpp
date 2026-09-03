@@ -13,17 +13,31 @@
 
 #include "nucleo/aquisicao.hpp"  // corre(): o fork e o exec sem shell
 
+#include <atomic>
+#include <cerrno>
 #include <cstdlib>
 
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 namespace mysong::nucleo {
 
 namespace {
+
+// O FILHO d'esta Casa, guardado FÓRA do objecto para que o `atexit` o alcance:
+// o handler d'elle não toma argumento algum. Atomico porque a sahida pode vir
+// de fio que não é o que ergueu a lousa. UM, e a regra é declarada: uma lousa
+// por processo, que duas dariam duas janellas a disputar o mesmo canto.
+std::atomic<int> o_filho{-1};
+
+void mata_o_filho() {
+  const int quem = o_filho.exchange(-1);
+  if (quem > 0) ::kill(quem, SIGTERM);
+}
 
 // ergue — o fork com CANO na entrada do filho: devolve o pid, e menos um
 // quando não vae. SOCKETPAR, e não `pipe`: escrevendo-se n'um cano cujo leitor
@@ -66,6 +80,39 @@ int ergue(int* cano) noexcept {
 }
 
 }  // namespace
+
+Lousa::Lousa(ModoDaLousa modo) noexcept
+    : parecer_(
+          parecer_da_lousa(modo, ha_display(), !versao_da_lousa().empty())) {
+  if (!parecer_.de_pe) return;
+  filho_ = ergue(&cano_);
+  if (filho_ < 0) {
+    parecer_ = {false, "o ueberzugpp não se ergueu"};
+    return;
+  }
+  vivo_ = true;
+  o_filho.store(filho_);
+  // UMA vez por processo: o atexit não desregista, e registar por objecto
+  // encheria a taboa d'elle na bateria que erguesse muitas lousas.
+  static const bool registado = std::atexit(mata_o_filho) == 0;
+  (void)registado;
+}
+
+Lousa::~Lousa() noexcept {
+  tira_tudo();
+  // O fim do cano é o pedido de sahir em ordem; o SIGTERM vem depois, para o
+  // caso de elle estar preso a redimensionar uma imagem grande.
+  if (cano_ >= 0) ::close(cano_);
+  if (filho_ > 0) {
+    o_filho.store(-1);
+    ::kill(filho_, SIGTERM);
+    // A UNICA espera d'este modulo, e é da SAHIDA: sem ella o filho ficaria
+    // zombie e a janella d'elle podia sobreviver ao ultimo quadro do tocador,
+    // que é justamente o fantasma que a issue manda não deixar na tela.
+    int estado = 0;
+    while (::waitpid(filho_, &estado, 0) < 0 && errno == EINTR) {}
+  }
+}
 
 std::vector<std::string> argumentos_da_lousa() {
   return {"ueberzugpp", "layer", "--silent", "-o", "x11"};
