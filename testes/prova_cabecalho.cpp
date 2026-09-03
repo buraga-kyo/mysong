@@ -9,6 +9,7 @@
 #include <ftxui/dom/node.hpp>
 #include <ftxui/screen/screen.hpp>
 #include <string>
+#include <vector>
 
 #include "tui/cabecalho.hpp"
 #include "tui/tokens.hpp"
@@ -131,6 +132,33 @@ TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
                20, 11) == "(nada toca)");
 }
 
+
+// A CONTA da fita, interrogada sem se pintar cousa alguma: os doze collunhas
+// dos botões, os trinta e nove do grupo, e as cinco larguras da ponta direita.
+TEST_CASE("a conta da fita cede as pontas antes de o grupo deixar o centro") {
+  const std::vector<std::size_t> direita = {0, 16, 25, 40, 52};
+  const auto conta = [&](std::size_t larga) {
+    return tui::conta_da_fita(larga, 12, 39, direita);
+  };
+  CHECK(conta(167).ao_centro);
+  CHECK(conta(167).comeca == 64);
+  CHECK(conta(167).quantas == 4);
+  CHECK(conta(167).nome == 52);
+  CHECK(conta(167).depois == 12);
+  // A somma FECHA a largura: sem isto, a fita deixaria vão ou transbordaria.
+  for (const std::size_t larga : {70, 88, 100, 118, 142, 166, 167, 200}) {
+    const tui::ContaDaFita c = conta(larga);
+    CHECK(12 + c.nome + 39 + c.depois + direita[c.quantas] == larga);
+  }
+  // A ESCADA: a ponta direita cede do fim para o principio, e o grupo sómente
+  // deixa o centro quando ao nome já não sobram as sete collunhas do minimo.
+  CHECK(conta(141).quantas == 3);
+  CHECK(conta(117).quantas == 2);
+  CHECK(conta(87).quantas == 1);
+  CHECK(conta(69).quantas == 0);
+  CHECK(conta(77).ao_centro);
+  CHECK_FALSE(conta(76).ao_centro);
+}
 
 // O CENTRO EXACTO (issue #125): a collunha do grupo é a largura menos a d'elle,
 // a dividir por dous. Pede-se em largura PAR e IMPAR, com nome curto, comprido
