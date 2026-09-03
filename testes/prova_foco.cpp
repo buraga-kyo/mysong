@@ -29,28 +29,29 @@ using tui::Focavel;
 
 namespace {
 
-// A TELA D'ELLE, de 167 por 67, em caixas escriptas á mão. As do cabeçalho são
-// as que a prova da linha do alto já afere cella a cella; as do corpo sahem da
-// sala: pauta de 83 collunhas á esquerda, painel de 83 á direita, e a capa
-// centrada n'elle. Numero algum d'aqui se adivinha.
+// A TELA D'ELLE, de 167 por 67, em caixas escriptas á mão. As da fita são as
+// que a prova da linha já afere cella a cella, com a fita no PÉ (issue #125):
+// duas fileiras, a 64 e a 65, e o grupo das abas a principiar na collunha 64.
+// As do corpo sahem da sala: pauta de 83 collunhas á esquerda, painel de 83 á
+// direita, e a capa no alto d'elle. Numero algum d'aqui se adivinha.
 tui::CaixasDaTela tela_d_elle() {
   tui::CaixasDaTela caixas;
-  tui::CaixasDoCabecalho& alto = caixas.cabecalho;
-  alto.aba_mysong = {0, 10, 0, 0};
-  alto.aba_playlists = {12, 24, 0, 0};
-  alto.aba_download = {26, 37, 0, 0};
-  alto.botao_tocar = {39, 41, 0, 0};
-  alto.botao_anterior = {43, 45, 0, 0};
-  alto.botao_seguinte = {47, 49, 0, 0};
-  alto.nome = {51, 114, 0, 0};
-  alto.tempo = {116, 130, 0, 0};
-  alto.volume = {132, 139, 0, 0};
-  alto.embaralhar = {141, 154, 0, 0};
-  alto.repetir = {156, 166, 0, 0};
-  alto.trilho = {0, 166, 1, 1};
-  caixas.pauta = {0, 82, 3, 65};
-  for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 3 + i, 3 + i});
-  caixas.capa = {84, 166, 2, 29};
+  tui::CaixasDoCabecalho& pe = caixas.cabecalho;
+  pe.botao_tocar = {0, 2, 64, 65};
+  pe.botao_anterior = {4, 6, 64, 65};
+  pe.botao_seguinte = {8, 10, 64, 65};
+  pe.nome = {12, 63, 64, 65};
+  pe.aba_mysong = {64, 74, 64, 65};
+  pe.aba_playlists = {76, 88, 64, 65};
+  pe.aba_download = {90, 101, 64, 65};
+  pe.tempo = {116, 130, 64, 65};
+  pe.volume = {132, 139, 64, 65};
+  pe.embaralhar = {141, 154, 64, 65};
+  pe.repetir = {156, 166, 64, 65};
+  pe.trilho = {0, 166, 63, 63};
+  caixas.pauta = {0, 82, 1, 62};
+  for (int i = 0; i < 5; ++i) caixas.linhas.push_back({0, 82, 1 + i, 1 + i});
+  caixas.capa = {84, 166, 0, 27};
   return caixas;
 }
 
