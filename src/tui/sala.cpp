@@ -256,6 +256,17 @@ ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
+ftxui::Element elemento_do_divisor(std::size_t altura) {
+  if (altura == 0) return ftxui::emptyElement();
+  // O traço PESADO vertical, e não o `separator` de fabrica: aquelle pinta na
+  // côr herdada, e esta Casa não deixa côr por decretar.
+  std::vector<ftxui::Element> cellas;
+  cellas.reserve(altura);
+  for (std::size_t l = 0; l < altura; ++l)
+    cellas.push_back(pinta("\u2503", tokens::line_dim));
+  return ftxui::vbox(std::move(cellas));
+}
+
 ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
                                   std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();

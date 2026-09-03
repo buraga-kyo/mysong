@@ -139,6 +139,11 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
 // terminal é de dous por um. Quem pede a capa á Galeria pede-a n'este tamanho.
 inline constexpr std::size_t kCapaPequena = 10, kCapaPequenaLinhas = 5;
 
+// elemento_do_divisor — a collunha que aparta as duas metades, em `line_dim`. É
+// collunha PROPRIA, e não orla do painel: orla custaria duas de cada lado, e
+// n'este painel ellas sahiriam todas da arte.
+ftxui::Element elemento_do_divisor(std::size_t altura);
+
 // elemento_do_painel — a metade direita: a arte no alto, e o que o chamador
 // quizer por baixo (o espectro, ou a letra quando o `l` a pede). Os dous entram
 // já compostos, para que esta peça não conheça nem um nem outra e a bateria
