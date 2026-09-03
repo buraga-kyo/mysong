@@ -1,21 +1,19 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DO PROMPT — src/tui/prompt.hpp
 // ══════════════════════════════════════════════════════════════════════════
-// O MODO de digitar, e o TOPO da tela que d'elle depende. A trilha diz ONDE se
-// está; o prompt diz o QUE se digita. Duas linhas, e não uma disputada: até a
-// issue #79 o prompt escrevia por cima da trilha, e quem não reparasse
-// continuava a navegar com as teclas a virarem lettras.
+// O MODO de digitar, e a LINHA do campo que d'elle depende. O campo tem linha
+// PROPRIA, e não uma disputada: até a issue #79 elle escrevia por cima da
+// trilha, e quem não reparasse continuava a navegar com as teclas a virarem
+// lettras. A trilha sahiu na issue #102; a linha propria fica.
 //
-// DOMÍNIO ......... o modo, a trilha já montada, o termo que se vae digitando,
-//                   e a largura em collunhas.
-// CONTRA-DOMÍNIO .. um `ftxui::Element` de uma ou duas linhas, e as taboadas
-//                   puras que a janella consulta.
-// INVARIANTE ...... a trilha entra INTACTA e sahe intacta: a cadeia d'ella e a
-//                   do prompt são parâmetros differentes, e caminho algum
-//                   d'este modulo as junta. Estructural, e não vigilancia.
-// Q.E.D. .......... sendo o topo funcção pura de (trilha, modo, termo), a
-//                   bateria pinta-o em papel e afere as duas linhas, a tinta e
-//                   a collunha do cursor, sem erguer terminal.
+// DOMÍNIO ......... o modo, o termo que se vae digitando, e a largura.
+// CONTRA-DOMÍNIO .. um `ftxui::Element` de UMA linha, e as taboadas puras que
+//                   a janella consulta.
+// INVARIANTE ...... o campo é o UNICO nó d'esta obra que pede foco, e ha de
+//                   continuar a ser: o Render do FTXUI elege um nó focado por
+//                   quadro e cala os outros sem aviso.
+// Q.E.D. .......... sendo a linha funcção pura de (modo, termo), a bateria
+//                   pinta-a em papel e afere a tinta e a collunha do cursor.
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
@@ -33,9 +31,6 @@ enum class Modo { Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma, List
 // aceita_letra — o modo escreve no termo? Falso em Nada e em Confirma.
 bool aceita_letra(Modo modo) noexcept;
 
-// linhas_do_topo — UMA linha (a trilha) fechado o prompt, DUAS aberto.
-std::size_t linhas_do_topo(Modo modo) noexcept;
-
 // assenta_novidade — a tela pode tomar novidade de fio de fundo? SÓMENTE em
 // Nada: com o campo de pé a secção CONGELA, e o que chega espera (issue #79).
 bool assenta_novidade(Modo modo) noexcept;
@@ -44,10 +39,13 @@ bool assenta_novidade(Modo modo) noexcept;
 // fonte na Procura e o nome da lista no Confirma; os mais ignoram-no.
 std::string rotulo_do_prompt(Modo modo, std::string_view contexto);
 
-// elemento_do_topo — a trilha e, havendo prompt, o prompt POR BAIXO d'ella.
-ftxui::Element elemento_do_topo(const std::string& trilha, Modo modo,
-                                std::string_view contexto,
-                                const std::string& termo, std::size_t largura);
+// elemento_do_campo — a linha do prompt, e sómente ella. A trilha sahiu da
+// composição na issue #102: quem diz onde se está é a chapa por cima da pauta,
+// e o campo ganha linha propria abaixo do trilho do progresso. Modo Nada dá
+// elemento vazio, que a sala não lhe reserva linha alguma.
+ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
+                                 const std::string& termo,
+                                 std::size_t largura);
 
 }  // namespace mysong::tui
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
