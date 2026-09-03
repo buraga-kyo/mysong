@@ -239,6 +239,29 @@ ftxui::Element elemento_da_aba(Aba aba, bool corrente) {
          ftxui::bold;
 }
 
+namespace {
+
+// fita_da_esquerda — as tres abas e os tres botões, na ordem d'elle: tocar,
+// anterior, seguinte. Os botões vestem panel_hi com o glifo em glow_core, que
+// é o glow CONTIDO da regra: elle accende no que TOCA, e não no fundo todo.
+Fita fita_da_esquerda(Aba corrente, bool tocando) {
+  Fita fita(Sentido::Dextra);
+  for (const Aba qual : {Aba::MySong, Aba::Playlists, Aba::Download})
+    fita.junta({rotulo_da_aba(qual), fundo_da_aba(qual == corrente),
+                tinta_da_aba(qual == corrente)});
+  // O botão do meio TROCA de glifo com o estado, e não de logar: botão que
+  // mudasse de sitio faria o dedo errar a pausa que elle proprio pediu.
+  fita.junta({" " + std::string(tocando ? kPausar : kTocar) + " ",
+              tokens::panel_hi, tokens::glow_core});
+  fita.junta({" " + std::string(kAnterior) + " ", tokens::panel_hi,
+              tokens::glow_core});
+  fita.junta({" " + std::string(kSeguinte) + " ", tokens::panel_hi,
+              tokens::glow_core});
+  return fita;
+}
+
+}  // namespace
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
