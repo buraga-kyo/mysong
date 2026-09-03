@@ -811,27 +811,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     return ftxui::vbox(std::move(tudo));
   });
 
-  // entra_no_alvo — o caminho do Enter na barra, n'um logar só. Sahe do ramo do
-  // menu porque o clique do rato (issue #95) ha de percorrer o MESMO caminho:
-  // duas copias d'estes recados divergiriam na primeira issue que acrescentasse
-  // degrau, e o dedo veria um aviso e a tecla outro.
+  // vai_para_aba — o caminho das teclas `1` `2` `3`, n'um logar só. Sahe do
+  // ramo d'ellas porque o clique na aba (issue #95) percorre o MESMO caminho:
+  // duas copias d'estes recados divergiriam na primeira issue que mexesse
+  // n'uma d'ellas, e o dedo veria um aviso e a tecla outro.
   //
-  // Quem chama diz o ALVO, e não o degrau: a taboada degrau para alvo é da
-  // barra (issue #93), e este lambda não a conhece.
-  const auto entra_no_alvo = [&](const tui::AlvoDaBarra& alvo) {
-    const bool entrou = alvo.rol != 0 ? navegador.vai_para_rol(alvo.rol)
-                                      : navegador.vai_para(alvo.secao);
-    if (entrou) {
-      menu.fecha();  // entrar é estar dentro: o foco volta á lista
-    } else if (alvo.secao == tui::Secao::Albuns) {
-      aviso_da_rede = "entra por um artista primeiro";
-    } else if (alvo.secao == tui::Secao::NoRol) {
-      aviso_da_rede = "essa lista já não existe";
-    } else if (alvo.secao == tui::Secao::Rede) {
-      aviso_da_rede = "a rede está vazia: busca primeiro (s)";
-    } else {
-      aviso_da_rede = "catálogo nenhum; importa com I";
-    }
+  // Aba sem chão AVISA e fica onde está. A DOWNLOAD é a unica que o pode não
+  // ter: ella abre a lista dos achados, e antes da primeira busca não ha
+  // achado algum. As outras duas abrem sempre.
+  const auto vai_para_aba = [&](tui::Aba qual) {
+    if (navegador.vai_para(tui::secao_da_aba(qual))) return;
+    aviso_da_rede = "a rede está vazia: busca primeiro (s)";
   };
 
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
