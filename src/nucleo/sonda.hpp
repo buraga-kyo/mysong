@@ -116,6 +116,12 @@ Inquerito inquerito_do_systema();
 // de o pedir ao chafa: sem elle, o sextante sahe quadrículo vazio.
 bool familia_com_glypho(std::string_view agulha, char32_t ponto);
 
+// familia_installada — a MESMA passagem pelas fontes, com o nome a bastar. É a
+// pergunta que o letreiro faz pela XIROD (issue #108): não a achando, o
+// pango-view desenharia a palavra na fonte de substituição sem dizer nada, e
+// chapa em fonte errada é peor que chapa nenhuma, que esta ao menos se vê.
+bool familia_installada(std::string_view agulha);
+
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
