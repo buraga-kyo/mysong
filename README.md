@@ -711,32 +711,36 @@ A barra do espectro e violeta, escura no pe e viva no topo, e a rampa e a mesma
 em toda a largura: a altura da coluna diz o nivel, e a cor nunca o repete nem o
 contradiz.
 
-Quando uma banda da a sua batida mais forte, a coluna inteira acende na cor do
-REGISTRO dela, isto e, na cor da faixa de frequencia em que ella soa. Batida
-forte quer dizer duas coisas ao mesmo tempo: a banda chegou a noventa por cento
-do pico recente dela, e passou de meio. Esse pico cai a metade em um segundo e
-meio, donde pouco depois de a batida passar a coluna ja voltou ao violeta. E por
-ser relativa ao pico de cada banda que o agudo acende no prato, em vez de ficar
-apagado so por nunca chegar ao teto da fita.
+Quando uma banda da a sua batida mais forte, a ULTIMA celula da coluna acende em
+ROSA, e so ela: as de baixo ficam na rampa violeta. Batida forte quer dizer duas
+coisas ao mesmo tempo: a banda chegou a noventa por cento do pico recente dela, e
+passou de meio. Esse pico cai a metade em um segundo e meio, donde pouco depois
+de a batida passar o topo ja voltou ao violeta. E por ser relativa ao pico de
+cada banda que o agudo acende no prato, em vez de ficar apagado so por nunca
+chegar ao teto da fita.
 
-| registro | faixa | cor da batida | o que costuma morar ali |
-|---|---|---|---|
-| GRAVES | 40 a 250 Hz | rosa | bumbo, baixo |
-| MEDIOS-GRAVES | 250 Hz a 1 kHz | cyan | caixa, guitarra, o corpo da voz |
-| MEDIOS-AGUDOS | 1 a 4 kHz | laranja | voz, presenca, teclados |
-| AGUDOS | 4 a 16 kHz | amarelo | pratos, chimbal, o ar |
+A fita tem DUAS cores, e nao mais: o violeta da barra e o rosa da batida. Os
+quatro registros continuam a existir, e o HELP diz em que faixa de hertz cada um
+mora, mas cor propria eles nao tem.
+
+| registro | faixa | o que costuma morar ali |
+|---|---|---|
+| GRAVES | 40 a 250 Hz | bumbo, baixo |
+| MEDIOS-GRAVES | 250 Hz a 1 kHz | caixa, guitarra, o corpo da voz |
+| MEDIOS-AGUDOS | 1 a 4 kHz | voz, presenca, teclados |
+| AGUDOS | 4 a 16 kHz | pratos, chimbal, o ar |
+
+Diga-se com honestidade o que este registro e: ele vem da FAIXA DE HERTZ, e nao
+de instrumento reconhecido. O que sobe na coluna dos graves e o grave que toca
+naquele instante, seja bumbo, baixo ou a mao esquerda do piano. Separar
+instrumentos de verdade pede modelo de separacao de fontes, que nao roda em
+tempo real dentro de um tocador de terminal, e vender o que nao ha seria mentir
+na tela.
 
 Com o som mudo a fita fica apagada, e o mudo vence a batida: ordem sua nao se
-deixa passar por cima por leitura de sinal. A rampa e ancorada ao PAINEL e nao a
-barra, donde ella nunca mente sobre o nivel: quem diz o nivel e a altura.
+deixa sobrepujar por leitura de sinal.
 
-Diga-se com honestidade o que esta cor e: ella vem da FAIXA DE HERTZ, e nao de
-instrumento reconhecido. O que acende em rosa e o grave que toca naquele
-instante, seja bumbo, baixo ou a mao esquerda do piano. Separar instrumentos de
-verdade pede modelo de separacao de fontes, que nao roda em tempo real dentro de
-um tocador de terminal, e vender o que nao ha seria mentir na tela.
-
-Para ver as quatro cores da batida lado a lado, com o nome da familia e a cor
+Para ver os quatro registros lado a lado, com o nome de cada familia
 dela por baixo de cada grupo:
 
 ```sh
