@@ -104,6 +104,7 @@ vez, pela linha do apt mais abaixo, e nao volte aqui a cada tarefa que entra.
 | chafa    | 1.19.0      | Desenha a capa do album. Sem elle, nao ha capa; o resto toca igual |
 | yt-dlp   | 2026.08.19  | Busca audio do YouTube. Sem elle, so o disco local |
 | ueberzugpp | 2.9.8     | Desenha a capa NITIDA, em janella de X11 por cima do terminal. Sem elle, a capa fica nos symbolos do chafa |
+| ffmpeg   | 6.1.1       | Desenha a onda da faixa no meio da fita. Sem elle, o meio mostra a barra chata; o progresso e o clique ficam iguais |
 
 **Advertencia sobre o yt-dlp, e ella importa**: NAO o instale pelo apt. A
 versao empacotada e velha demais e quebra contra o YouTube, que muda o seu
