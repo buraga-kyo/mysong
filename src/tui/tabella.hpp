@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <ftxui/dom/elements.hpp>
@@ -27,6 +29,16 @@
 #include "tui/navegador.hpp"
 
 namespace mysong::tui {
+
+// apara_collunhas — a cadeia em EXACTAMENTE `collunhas` cellas do terminal: o
+// que sobeja corta-se e a ultima cella leva «…», e o que falta enche-se de
+// espaço. Conta-se por CELLA, e não por codepoint: o glypho CJK toma duas, e a
+// conta por codepoint dava-lhe uma, d'onde a columna do titulo transbordava e
+// empurrava as de baixo. Foi o debito que a issue #93 deixou escripto.
+//
+// Cabendo a cadeia inteira, «…» algum se põe: a reticencia é signal de que se
+// cortou, e pô-la sem corte seria mentir ao olho.
+std::string apara_collunhas(const std::string& crua, std::size_t collunhas);
 
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não

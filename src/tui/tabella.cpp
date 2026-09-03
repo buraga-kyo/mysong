@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+#include <ftxui/screen/string.hpp>
+
 #include "tui/rato.hpp"
 #include "tui/tokens.hpp"
 #include "tui/transporte.hpp"
@@ -68,6 +70,36 @@ std::string apara(const std::string& crua, std::size_t largura) {
 }
 
 }  // namespace
+
+std::string apara_collunhas(const std::string& crua, std::size_t collunhas) {
+  if (collunhas == 0) return {};
+  if (static_cast<std::size_t>(ftxui::string_width(crua)) <= collunhas) {
+    std::string feita = crua;
+    while (static_cast<std::size_t>(ftxui::string_width(feita)) < collunhas)
+      feita += ' ';
+    return feita;
+  }
+  // O `Utf8ToGlyphs` do FTXUI devolve UM item por CELLA: depois do glypho largo
+  // vem um item VAZIO, que é a segunda cella d'elle. É por elle que se conta, e
+  // não pelos octetos, que é o que faz o corte casar com o que a tela mostra.
+  const std::vector<std::string> glyphos = ftxui::Utf8ToGlyphs(crua);
+  const std::size_t cabem = collunhas - 1;  // uma cella fica para o «…»
+  std::string feita;
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < glyphos.size(); ++i) {
+    if (glyphos[i].empty()) continue;  // a segunda cella do glypho largo
+    const std::size_t mede =
+        i + 1 < glyphos.size() && glyphos[i + 1].empty() ? 2 : 1;
+    if (gastas + mede > cabem) break;
+    feita += glyphos[i];
+    gastas += mede;
+  }
+  feita += "\u2026";
+  // O glypho largo que não coube deixa UMA cella orphã antes da reticencia: ella
+  // enche-se de espaço, que a columna promette largura fixa.
+  while (gastas++ + 1 < collunhas) feita += ' ';
+  return feita;
+}
 
 ftxui::Element caret_do_campo() {
   // Espaço, e não cadeia vazia: o cursor pousa no `x_min` da caixa d'este nó, e
