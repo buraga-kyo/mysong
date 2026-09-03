@@ -151,6 +151,12 @@ ftxui::Element vestir(const std::string& texto, std::string_view tinta,
 // curto deixaria buraco no meio da linha. Não cabendo, corta-se com «…».
 std::string aparar_nome(const std::string& nome, std::size_t largura) {
   if (largura == 0) return {};
+  const std::size_t inteiro =
+      static_cast<std::size_t>(ftxui::string_width(nome));
+  // O «…» só entra HAVENDO corte: a collunha d'elle guarda-se depois de se
+  // saber que ha corte, e não antes. Guardada sempre, o nome que cabia
+  // exactamente sahia cortado na ultima lettra, e a prova em papel accusa-o.
+  if (inteiro <= largura) return nome + std::string(largura - inteiro, ' ');
   std::string feito;
   std::size_t gastas = 0;
   for (std::size_t i = 0; i < nome.size();) {
@@ -161,13 +167,14 @@ std::string aparar_nome(const std::string& nome, std::size_t largura) {
     const std::string letra = nome.substr(i, fim - i);
     const std::size_t vale =
         static_cast<std::size_t>(ftxui::string_width(letra));
-    // Uma collunha se guarda para o «…», e sómente quando ha corte de facto.
-    if (gastas + vale > largura - 1) return feito + "…";
+    if (gastas + vale > largura - 1) break;
     feito += letra;
     gastas += vale;
     i = fim;
   }
-  return feito + std::string(largura - gastas, ' ');
+  // O que sobrar depois do «…» enche-se: o kanji de duas collunhas pode deixar
+  // uma por gastar, e essa collunha sem fundo seria buraco na fita.
+  return feito + "…" + std::string(largura - gastas - 1, ' ');
 }
 
 }  // namespace
