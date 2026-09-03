@@ -895,6 +895,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                              rectangulo.collunas))),
                 caixas.capa.y_min, rectangulo.collunas, rectangulo.linhas);
     caixas.capa = tui::caixa_por_pintar();
+    // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
+    // base d'elle e sobe por cima. Escondido o rio pelo `l`, o quadro d'elle sae
+    // VAZIO, e a composição devolve o espectro tal qual; faixa sem `.lrc` faz o
+    // mesmo por si, que letra alguma se inventa.
+    //
+    // Resolve-se ANTES das chapas (issue #110) por ser d'elle que sae a caixa da
+    // chapa da linha corrente, que vae pela mesma lousa d'ellas.
+    const tui::QuadroDaLetra rio =
+        mostra_letra.load()
+            ? tui::quadro_da_letra(letra, retracto.posicao, abaixo.largura,
+                                   abaixo.altura)
+            : tui::QuadroDaLetra{};
     // AS CHAPAS DAS ABAS (issue #108), pela MESMA lousa e com a mesma
     // disciplina: a ordem sae do QUADRO, e as caixas são as do quadro
     // anterior, que são as unicas que o `reflect` já encheu.
@@ -916,6 +928,29 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                 ordem.linha, ordem.largura, 1);
       ultima_chapa = *chapa;
     }
+    // A CHAPA DA LINHA CORRENTE (issue #110), ao lado das das abas e pela mesma
+    // lousa: o verso que se canta cristaliza em XIROD sobre as cellas d'elle. O
+    // mono continua pintado por baixo, e por isso sem lousa nada falta.
+    const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_da_letra(
+        rio, abaixo, lousa.disponivel() && letreiro.disponivel(),
+        vigilia.pede_batida(), mostra_letra.load());
+    const std::filesystem::path* cristal = nullptr;
+    if (da_letra.poe)
+      cristal = &letreiro.chapa(
+          tui::pedido_da_chapa_da_letra(da_letra.verso, da_letra.cellulas));
+    if (cristal == nullptr || cristal->empty()) {
+      lousa.tira(tui::IDENTIDADE_DA_LETRA);
+    } else {
+      lousa.poe(tui::IDENTIDADE_DA_LETRA, *cristal, da_letra.collunha,
+                da_letra.linha, da_letra.cellulas, 1);
+      ultima_chapa = *cristal;
+    }
+    // A PROXIMA rasteriza-se ao NASCER d'ella, e não no instante em que se
+    // canta: o pango-view corre duas vezes na primeira chamada, e esperá-lo com
+    // a voz já a cantar deixaria em mono o quadro em que a linha cristaliza.
+    if (!da_letra.adiantado.empty())
+      letreiro.chapa(tui::pedido_da_chapa_da_letra(
+          da_letra.adiantado, da_letra.cellulas_adiantadas));
     // O EMPURRÃO, e sómente havendo ordem nova: a chapa tem UMA linha, e a
     // janella de uma linha do Überzug++ fica preta até que outra ordem chegue.
     if (!ultima_chapa.empty() && lousa.escritas() != escritas)
@@ -932,15 +967,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
-    // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
-    // base d'elle e sobe por cima. Escondido o rio pelo `l`, o quadro d'elle sae
-    // VAZIO, e a composição devolve o espectro tal qual; faixa sem `.lrc` faz o
-    // mesmo por si, que letra alguma se inventa.
-    const tui::QuadroDaLetra rio =
-        mostra_letra.load()
-            ? tui::quadro_da_letra(letra, retracto.posicao, abaixo.largura,
-                                   abaixo.altura)
-            : tui::QuadroDaLetra{};
     ftxui::Element painel =
         sala.painel.vazio()
             ? ftxui::emptyElement()
