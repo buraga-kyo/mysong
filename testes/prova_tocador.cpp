@@ -78,6 +78,87 @@ class MotorDuble final : public mysong::nucleo::Motor {
 }  // namespace
 
 // ══════════════════════════════════════════════════════════════════════════
+
+// O ENCADEAMENTO (issue #149): acabada a faixa, a seguinte entra sósinha. É na
+// BATIDA que elle se dá, que é onde o fim da faixa se sabe, e por isso todos
+// estes casos passam pelo `pulsa`.
+TEST_CASE("acabada a faixa, a seguinte entra na mesma batida") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.junta("uma.wav");
+  tocador.junta("duas.wav");
+  REQUIRE(tocador.tocar_corrente());
+  duble.acaba_na_proxima_batida();
+  tocador.pulsa();
+  const std::vector<std::string> esperado = {"uma.wav", "duas.wav"};
+  CHECK(duble.tocados == esperado);
+  CHECK(tocador.retracto().estado == mysong::nucleo::Estado::Tocando);
+  CHECK(tocador.retracto().faixa == "duas.wav");
+}
+
+TEST_CASE("sem repetição, acabada a ultima o tocador pára") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.junta("uma.wav");
+  REQUIRE(tocador.tocar_corrente());
+  duble.acaba_na_proxima_batida();
+  tocador.pulsa();
+  const std::vector<std::string> esperado = {"uma.wav"};
+  CHECK(duble.tocados == esperado);  // não tornou a tocar cousa alguma
+  CHECK(tocador.retracto().estado == mysong::nucleo::Estado::Parado);
+}
+
+TEST_CASE("com repetir UMA a mesma torna, e com TODAS a lista gira") {
+  MotorDuble uma_vez;
+  Tocador d_uma(uma_vez);
+  d_uma.junta("uma.wav");
+  d_uma.junta("duas.wav");
+  d_uma.repetir(mysong::nucleo::Repeticao::Uma);
+  REQUIRE(d_uma.tocar_corrente());
+  uma_vez.acaba_na_proxima_batida();
+  d_uma.pulsa();
+  const std::vector<std::string> mesma = {"uma.wav", "uma.wav"};
+  CHECK(uma_vez.tocados == mesma);
+
+  MotorDuble gira;
+  Tocador de_todas(gira);
+  de_todas.junta("uma.wav");
+  de_todas.junta("duas.wav");
+  de_todas.repetir(mysong::nucleo::Repeticao::Todas);
+  REQUIRE(de_todas.tocar_corrente());
+  REQUIRE(de_todas.proxima());  // está na ultima
+  gira.acaba_na_proxima_batida();
+  de_todas.pulsa();
+  const std::vector<std::string> volta = {"uma.wav", "duas.wav", "uma.wav"};
+  CHECK(gira.tocados == volta);
+}
+
+TEST_CASE("a faixa que o motor recusa não encadeia a seguinte") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  tocador.junta("uma.wav");
+  tocador.junta("duas.wav");
+  tocador.junta("tres.wav");
+  REQUIRE(tocador.tocar_corrente());
+  duble.recusa_tocar = true;
+  duble.acaba_na_proxima_batida();
+  tocador.pulsa();
+  // Tentou-se a segunda, e ella recusou: alli se pára, em vez de correr a
+  // lista inteira em silencio n'um segundo.
+  const std::vector<std::string> esperado = {"uma.wav"};
+  CHECK(duble.tocados == esperado);
+  CHECK(tocador.retracto().estado == mysong::nucleo::Estado::Parado);
+}
+
+TEST_CASE("com a fila vazia a batida do fim nada encadeia") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  duble.acaba_na_proxima_batida();
+  tocador.pulsa();
+  CHECK(duble.tocados.empty());
+  CHECK(tocador.retracto().estado == mysong::nucleo::Estado::Parado);
+}
+
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
 TEST_CASE("o motor recebe cada faixa da fila, nos dous sentidos") {
   MotorDuble duble;
