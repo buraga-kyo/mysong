@@ -31,17 +31,6 @@ namespace mysong::tui {
 // um album e uma lista contam a MESMA cousa, e tres nomes dariam tres erros.
 enum class Especie { Faixas, Artistas, Albuns, Listas, Achados };
 
-// A COLLECÇÃO Á VISTA: o que o cabeçalho do meio diz d'ella. Cópia de valores,
-// e nunca punho: perguntar duas vezes no mesmo quadro dá tela a contradizer-se.
-struct Colleccao {
-  std::string nome;
-  std::size_t quantas = 0;
-  Especie especie = Especie::Faixas;
-  int duracao = 0;  // somma das linhas á vista, em segundos; zero não se diz
-  bool embaralhado = false;
-  nucleo::Repeticao repeticao = nucleo::Repeticao::Nenhuma;
-};
-
 // texto_da_duracao — a somma POR EXTENSO: `1h23`, `23min`, `45s`, e vazia no
 // que não é positivo. `MM:SS` ao lado de «4 FAIXAS» lê-se como o tempo D'ELLA.
 std::string texto_da_duracao(int segundos);
@@ -134,10 +123,6 @@ struct Ficha {
 // painel dizer que nada toca na hora em que alguma cousa toca.
 Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
                      const std::string& artista, const std::string& album);
-
-// elemento_da_ficha — TRES linhas, sempre as tres: ficha que encolhe faria o
-// espectro subir e descer a cada troca de faixa.
-ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura);
 
 // A ARTE: a capa já pintada, cingida ao TECTO que se pediu á Galeria.
 // `linhas_da_arte` diz quantas linhas ella toma de facto (as do chafa quando
