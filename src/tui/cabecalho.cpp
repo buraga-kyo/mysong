@@ -133,6 +133,45 @@ OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept {
   return {};
 }
 
+namespace {
+
+// vestir — o texto com o par de côres do token. Côr crua não entra n'esta obra.
+ftxui::Element vestir(const std::string& texto, std::string_view tinta,
+                      std::string_view fundo) {
+  const tokens::Triade f = tokens::rgb(tinta);
+  const tokens::Triade t = tokens::rgb(fundo);
+  return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(f.r, f.g, f.b)) |
+         ftxui::bgcolor(ftxui::Color::RGB(t.r, t.g, t.b));
+}
+
+// aparar_nome — o nome do que sôa, na largura que sobrou. Mede-se em COLLUNHAS
+// pelo `string_width`, e não em pontos de codigo como a fita: o nome vem do
+// acervo d'elle, e ha titulo com kanji e com emoji, que valem duas. Cabendo,
+// enche-se de espaços: o fundo do segmento veste a collunha inteira, e nome
+// curto deixaria buraco no meio da linha. Não cabendo, corta-se com «…».
+std::string aparar_nome(const std::string& nome, std::size_t largura) {
+  if (largura == 0) return {};
+  std::string feito;
+  std::size_t gastas = 0;
+  for (std::size_t i = 0; i < nome.size();) {
+    std::size_t fim = i + 1;
+    while (fim < nome.size() &&
+           (static_cast<unsigned char>(nome[fim]) & 0xC0) == 0x80)
+      ++fim;
+    const std::string letra = nome.substr(i, fim - i);
+    const std::size_t vale =
+        static_cast<std::size_t>(ftxui::string_width(letra));
+    // Uma collunha se guarda para o «…», e sómente quando ha corte de facto.
+    if (gastas + vale > largura - 1) return feito + "…";
+    feito += letra;
+    gastas += vale;
+    i = fim;
+  }
+  return feito + std::string(largura - gastas, ' ');
+}
+
+}  // namespace
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
