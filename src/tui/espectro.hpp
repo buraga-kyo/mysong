@@ -154,12 +154,19 @@ int oitavos(float magnitude, std::size_t altura);
 // vazia; acima de oito cinge-se a oito, que é o bloco cheio.
 std::string glifo_do_degrau(int degrau);
 
+// O ALFA DA BASE. O pé da columna não se apaga por arithmetica de côr propria:
+// compõe-se a côr do registro sobre o tokens::panel_hi com este peso, que é o
+// modo com que o design system resolve opacidade. Cinco decimos e meio assentam
+// o pé no painel sem o deixar competir com o topo, que é o que canta.
+inline constexpr double ALFA_DA_BASE = 0.55;
+
 // tinta_da_linha — o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
-// base para cima, de sorte que zero dá v700 EXACTO e `altura - 1` dá v400
-// EXACTO. Painel de uma célulla só dá v700, a base, que é d'onde a §7.4.9
+// base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá a côr do
+// REGISTRO exacta. Painel de uma célulla só dá a base, que é d'onde a §7.4.9
 // ancora a rampa. Não recebe magnitude alguma, e é n'isto que o invariante
 // (iii) se torna estructural em vez de boa intenção.
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
+                              Registro registro = Registro::Graves);
 
 // compor — o QUADRO. Não guarda estado: as mesmas bandas na mesma largura dão o
 // mesmo quadro, hoje e depois de dez redimensionamentos. Não presume que as
