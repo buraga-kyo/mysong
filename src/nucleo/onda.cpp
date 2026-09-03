@@ -162,6 +162,34 @@ bool escreve_onda(const std::filesystem::path& onde, const Onda& onda) {
   return true;
 }
 
+bool le_onda(const std::filesystem::path& onde, Onda* onda) {
+  if (onde.empty()) return false;
+  std::ifstream entrada(onde);
+  if (!entrada) return false;
+  std::string marca;
+  int versao = 0;
+  std::size_t quantos = 0;
+  if (!(entrada >> marca >> versao >> quantos)) return false;
+  if (marca != MARCA_DA_ONDA || versao != VERSAO_DA_ONDA || quantos == 0)
+    return false;
+  Onda lida;
+  // A reserva CINGE-SE, e a conta declarada não se toma por palavra: arquivo
+  // do cache com «mysong-onda 1 999999999999» pediria de uma vez memoria que
+  // esta machina não tem, e cache corrompido não ha de derrubar o tocador.
+  lida.pontos.reserve(std::min<std::size_t>(quantos, PONTOS_DA_ONDA));
+  for (std::size_t p = 0; p < quantos; ++p) {
+    int degrau = 0;
+    if (!(entrada >> degrau) || degrau < 0 || degrau > 255) return false;
+    lida.pontos.push_back(static_cast<float>(degrau) / 255.0f);
+  }
+  // Valor A MAIS tambem recusa: o cabeçalho declara a conta, e arquivo que a
+  // desminta é formato que esta Casa não conhece, e não sobra innocente.
+  int sobra = 0;
+  if (entrada >> sobra) return false;
+  if (onda != nullptr) *onda = std::move(lida);
+  return true;
+}
+
 }  // namespace mysong::nucleo
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
