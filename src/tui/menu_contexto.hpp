@@ -44,6 +44,36 @@ struct RespostaDoMenu {
   int lista = 0;
 };
 
+// O ESTADO. Struct de valores, e não classe com punhos: quem o muta é a
+// taboada abaixo, e quem o lê é a pintura; guarda alguma se lhe pede que o
+// proprio compilador não faça.
+struct MenuDeContexto {
+  bool aberto = false;
+  std::size_t faixa = 0;  // o indice ABSOLUTO da vista, que é o que acha a linha
+  std::string titulo;     // o nome da faixa, que vae no titulo do menu
+  std::size_t item = 0;   // qual dos cinco está eleito
+  bool submenu = false;   // o das listas, aberto ou não
+  std::size_t lista = 0;  // qual das listas está eleita dentro d'elle
+  // As listas colhem-se ao ABRIR, e não a cada quadro: o relogio repinta vinte
+  // vezes por segundo, e perguntá-las ao banco seriam vinte consultas por
+  // segundo por uma cousa que sómente muda quando o operador cria ou apaga uma.
+  std::vector<nucleo::Rol> listas;
+};
+
+// abre_o_menu — o menu de pé sobre a faixa, no primeiro item e com o submenu
+// fechado. Abrir SEMPRE do principio é decisão, e não descuido: menu que
+// lembrasse o item da vez passada poria o APAGAR debaixo do Enter de quem
+// acabou de apagar, e a segunda faixa hia-se sem que se lesse o que se escolheu.
+void abre_o_menu(MenuDeContexto& menu, std::size_t faixa, std::string titulo,
+                 std::vector<nucleo::Rol> listas);
+
+// tecla_no_menu — a taboada de dentro, e o unico logar que muta o estado. TODA
+// tecla se consome: as que a taboada não conhece devolvem Nada, e Nada quer
+// dizer «consumida, e nada mais ha a fazer». O evento do rato entra aqui
+// tambem: o botão a DESCER fecha o menu, e o a subir não, que o modo 1000 manda
+// sempre o soltar e o menu fechava no mesmo clique que o abriu.
+RespostaDoMenu tecla_no_menu(MenuDeContexto& menu, const ftxui::Event& tecla);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
