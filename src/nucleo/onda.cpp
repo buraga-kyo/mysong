@@ -15,7 +15,9 @@
 
 #include "nucleo/capa.hpp"  // somma_dos_octetos, raiz_do_cache: o mesmo cache
 
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -220,6 +222,52 @@ bool ha_no_caminho(const char* nome) {
     resto.remove_prefix(corte + 1);
   }
   return false;
+}
+
+// corre_o_ffmpeg — fork e exec SEM shell: o stdout n'um cano, e o stdin com o
+// stderr no buraco. O `corre` da aquisição faz quasi isto, e não serve por uma
+// cousa: alli o filho herda o stdin do pae, que n'esta Casa é o terminal que o
+// FTXUI governa. O `-nostdin` da linha de commando já o defende, e o
+// descriptor fechado defende-o OUTRA VEZ: a guarda que mora no argv morre no
+// dia em que alguem lhe mexer, e esta não. Menos um quer dizer que nem se
+// pôde erguer o processo.
+int corre_o_ffmpeg(const std::vector<std::string>& argumentos,
+                   std::string* colhido) {
+  int cano[2] = {-1, -1};
+  if (::pipe(cano) != 0) return -1;
+  const ::pid_t filho = ::fork();
+  if (filho < 0) { ::close(cano[0]); ::close(cano[1]); return -1; }
+  if (filho == 0) {
+    ::close(cano[0]);
+    ::dup2(cano[1], STDOUT_FILENO);
+    // O stderr vae ao buraco: esta Casa corre debaixo de uma tela do FTXUI,
+    // e uma linha de aviso no meio do quadro estraga o quadro.
+    const int buraco = ::open("/dev/null", O_RDWR);
+    if (buraco >= 0) {
+      ::dup2(buraco, STDIN_FILENO);
+      ::dup2(buraco, STDERR_FILENO);
+      ::close(buraco);
+    }
+    ::close(cano[1]);
+    std::vector<char*> argv;
+    argv.reserve(argumentos.size() + 1);
+    for (const std::string& um : argumentos)
+      argv.push_back(const_cast<char*>(um.c_str()));
+    argv.push_back(nullptr);
+    ::execvp(argv[0], argv.data());
+    ::_exit(127);  // o 127 do shell para «commando não achado»
+  }
+  ::close(cano[1]);
+  // O pedaço é grande: a faixa de tres minutos dá quasi tres milhões de
+  // octetos, e o balde de quatro mil pedia mil e tantas voltas de leitura.
+  std::vector<char> pedaco(64 * 1024);
+  ::ssize_t lidos = 0;
+  while ((lidos = ::read(cano[0], pedaco.data(), pedaco.size())) > 0)
+    colhido->append(pedaco.data(), static_cast<std::size_t>(lidos));
+  ::close(cano[0]);
+  int estado = 0;
+  if (::waitpid(filho, &estado, 0) < 0) return -1;
+  return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
 
 }  // namespace
