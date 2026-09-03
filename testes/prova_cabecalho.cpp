@@ -234,5 +234,36 @@ TEST_CASE("a chapa diz a vista sómente onde ella se cycla") {
     CHECK(tui::nome_da_vista(qual).empty());
 }
 
+TEST_CASE("o trilho anda em v600, e o que falta fica em line_dim") {
+  tui::Retracto meio = tocando();
+  meio.posicao = 50.0;
+  meio.duracao = 100.0;
+  const ftxui::Screen tela =
+      papel(tui::elemento_do_trilho(meio, 40), 40);
+  // Cincoenta por cento de quarenta: vinte cellas andadas, vinte por andar. A
+  // fronteira afere-se dos DOUS lados, que é o que apanha o erro de uma cella.
+  CHECK(tela.PixelAt(0, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(19, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(20, 0).foreground_color == cor(tk::line_dim));
+  CHECK(tela.PixelAt(39, 0).foreground_color == cor(tk::line_dim));
+  // O glifo é o traço PESADO em toda a largura, andado ou não: traço leve some
+  // no fundo violaceo, e trilho que se não vê não diz onde a faixa vae.
+  std::string traco;
+  for (int i = 0; i < 40; ++i) traco += "\u2501";
+  CHECK(pedaco(tela, 0, 40) == traco);
+  // No principio da faixa cella alguma anda, e no fim andam todas: o trilho é
+  // UM elemento, e não duas metades de que uma teria largura zero.
+  tui::Retracto principio = tocando();
+  principio.posicao = 0.0;
+  CHECK(papel(tui::elemento_do_trilho(principio, 40), 40)
+            .PixelAt(0, 0)
+            .foreground_color == cor(tk::line_dim));
+  tui::Retracto fim = tocando();
+  fim.posicao = fim.duracao;
+  CHECK(papel(tui::elemento_do_trilho(fim, 40), 40)
+            .PixelAt(39, 0)
+            .foreground_color == cor(tk::v600));
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
