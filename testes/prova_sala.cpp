@@ -89,7 +89,13 @@ TEST_CASE("a chapa diz a aba e os degraus de dentro, apartados por seta") {
   const std::vector<std::string> fundo = {"Boards of Canada", "Geogaddi"};
   CHECK(tui::onde_da_chapa(tui::Secao::Busca, alto, "") == "MY SONG");
   CHECK(tui::onde_da_chapa(tui::Secao::Artistas, alto, "") == "MY SONG");
-  CHECK(tui::onde_da_chapa(tui::Secao::Albuns, fundo, "") ==
+  // Em ÁLBUNS a trilha tem UM degrau só, que é o artista: o `vai_para` faz
+  // `trilha_.resize(1)`. Alvo de dous degraus provaria estado que a obra não
+  // produz, e prova de estado irreal não guarda cousa alguma.
+  CHECK(tui::onde_da_chapa(tui::Secao::Albuns, {"Boards of Canada"}, "") ==
+        "MY SONG \u25b8 Boards of Canada");
+  // Em FAIXAS os dous degraus existem: o artista e o album em que se entrou.
+  CHECK(tui::onde_da_chapa(tui::Secao::Faixas, fundo, "") ==
         "MY SONG \u25b8 Boards of Canada \u25b8 Geogaddi");
   CHECK(tui::onde_da_chapa(tui::Secao::Rede, alto, "") == "DOWNLOAD");
   CHECK(tui::onde_da_chapa(tui::Secao::Rois, alto, "") == "PLAYLISTS");
