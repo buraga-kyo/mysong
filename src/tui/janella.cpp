@@ -741,34 +741,32 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
     const nucleo::CapaPintada& arte =
-        galeria.capa(retracto.titulo, geo.painel, geo.capa);
-    const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
-    const std::size_t alt_baixo =
-        geo.livre > alt_arte ? geo.livre - alt_arte : 1;
+        galeria.capa(retracto.titulo, sala.capa.largura, sala.capa.altura);
+    const std::size_t alt_arte = tui::linhas_da_arte(arte, sala.capa.altura);
+    const tui::Rectangulo abaixo = tui::espectro_abaixo_da(sala, alt_arte);
     const tui::Quadro quadro =
-        tui::compor(tocador.bandas(), geo.painel, alt_baixo);
-    // Tela estreita ou baixa não pinta painel algum, e com elle vão-se o
-    // espectro e a letra: roubar da tabella, que é onde se navega, para mostrar
-    // arte seria trocar o que serve pelo que enfeita. É o que a capa já fazia.
-    // A CAIXA da arte (issue #95) pendura-se aqui, no punho que a sala recebe:
-    // assim o `sala.*` da lavra irmã não muda uma linha, e o clique na arte
-    // continua a achar o quadro que ella pintou. Esvazia-se a cada quadro, que
-    // painel que se não pinta não ha de deixar caixa velha a apanhar cliques.
+        tui::compor(tocador.bandas(), abaixo.largura, abaixo.altura);
+    // Tela estreita não pinta painel algum, e com elle vão-se a capa, o
+    // espectro e a letra: roubar da pauta, que é onde se navega, para mostrar
+    // arte seria trocar o que serve pelo que enfeita.
+    //
+    // A CAIXA da arte (issue #95) pendura-se aqui, no punho que a sala recebe.
+    // Esvazia-se a cada quadro, que painel que se não pinta não ha de deixar
+    // caixa velha a apanhar cliques.
     caixas.capa = tui::caixa_por_pintar();
     ftxui::Element painel =
-        geo.painel == 0
-            ? ftxui::text("")
+        sala.painel.vazio()
+            ? ftxui::emptyElement()
             : tui::elemento_do_painel(
-                  ficha,
-                  tui::elemento_da_arte(arte, geo.painel, alt_arte) |
+                  tui::elemento_da_arte(arte, sala.capa.largura, alt_arte) |
                       ftxui::reflect(caixas.capa),
                   mostra_letra.load()
                       ? tui::elemento_da_letra(
                             letra,
                             nucleo::linha_corrente(letra, retracto.posicao),
-                            alt_baixo, geo.painel)
+                            abaixo.altura, abaixo.largura)
                       : tui::elemento_do_espectro(quadro),
-                  geo.painel);
+                  sala.painel.largura);
     return ftxui::vbox({
                ftxui::text(std::string(nucleo::marca())) | ftxui::bold,
                tui::elemento_do_topo(trilha, digita, contexto_do_campo,
