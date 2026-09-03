@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -19,8 +20,10 @@
 #include <vector>
 
 #include "nucleo/onda.hpp"
+#include "tui/onda.hpp"
 
 namespace nu = mysong::nucleo;
+namespace tui = mysong::tui;
 
 namespace {
 
@@ -267,4 +270,35 @@ TEST_CASE("o formato estranho é recusado, e não lido pela metade") {
   REQUIRE(lida.pontos.size() == 2);
   CHECK(lida.pontos[0] == 0.0f);
   CHECK(lida.pontos[1] == doctest::Approx(1.0));
+}
+
+// ── A PEÇA DA TELA. Écran de PAPEL, lido cella a cella: terminal algum se
+// abre, e a onda arma-se á mão.
+
+TEST_CASE("dobrar funde por máximo, e nunca amostra") {
+  const std::vector<float> pontos = {0.1f, 0.9f, 0.2f, 0.8f};
+  CHECK(tui::dobrar(pontos, 2) == std::vector<float>{0.9f, 0.8f});
+  CHECK(tui::dobrar(pontos, 1) == std::vector<float>{0.9f});
+  // Esticar é o máximo a degenerar em copia: quatro pontos em oito collunhas.
+  CHECK(tui::dobrar(pontos, 8) ==
+        std::vector<float>{0.1f, 0.1f, 0.9f, 0.9f, 0.2f, 0.2f, 0.8f, 0.8f});
+  CHECK(tui::dobrar({}, 8).empty());
+  CHECK(tui::dobrar(pontos, 0).empty());
+}
+
+// A largura EXACTA, de uma a duzentas: a fita conta collunhas sobre o que a
+// dobra devolve, e um valor a menos deixaria a linha curta n'aquella largura
+// só, que é o defeito que ninguem repara até o terminal ter aquelle tamanho.
+TEST_CASE("dobrar fecha a largura exacta de uma a duzentas collunhas") {
+  std::vector<float> pontos(nu::PONTOS_DA_ONDA);
+  for (std::size_t p = 0; p < pontos.size(); ++p)
+    pontos[p] = static_cast<float>(p % 17) / 16.0f;
+  const float maior = 1.0f;
+  for (std::size_t largura = 1; largura <= 200; ++largura) {
+    const std::vector<float> dobrados = tui::dobrar(pontos, largura);
+    REQUIRE(dobrados.size() == largura);
+    // Pico algum some ao estreitar: o máximo da faixa sobrevive a toda dobra.
+    CHECK(*std::max_element(dobrados.begin(), dobrados.end()) ==
+          doctest::Approx(maior));
+  }
 }
