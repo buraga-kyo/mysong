@@ -363,6 +363,37 @@ std::size_t Galeria::quantos_renders() const noexcept { return renders_; }
 
 namespace {
 
+// cabeca_do_arquivo — o que a medida pede: sessenta e quatro mil octetos, que
+// chegam para o SOF do JPEG, que vem depois do JFIF e ás vezes do EXIF.
+std::string cabeca_do_arquivo(const std::filesystem::path& caminho) {
+  std::ifstream entrada(caminho, std::ios::binary);
+  if (!entrada) return {};
+  std::string cabeca(64 * 1024, '\0');
+  entrada.read(cabeca.data(), static_cast<std::streamsize>(cabeca.size()));
+  cabeca.resize(static_cast<std::size_t>(entrada.gcount()));
+  return cabeca;
+}
+
+}  // namespace
+
+const ArquivoDaCapa& Arquivario::de(const std::filesystem::path& faixa) {
+  const auto assento = guardados_.find(faixa);
+  if (assento != guardados_.end()) return assento->second;
+  ArquivoDaCapa achado;
+  // A capa AO LADO ganha da embutida, pela ordem declarada da Galeria.
+  if (!faixa.empty()) achado.caminho = capa_ao_lado(faixa);
+  if (!achado.caminho.empty()) {
+    achado.medida = medida_da_imagem(cabeca_do_arquivo(achado.caminho));
+  }
+  // A AUSENCIA guarda-se, pela regra da Galeria: sem ella, faixa sem capa
+  // faria a Casa procurar no disco vinte vezes por segundo.
+  return guardados_.emplace(faixa, std::move(achado)).first->second;
+}
+
+std::size_t Arquivario::quantos_escriptos() const noexcept { return escriptos_; }
+
+namespace {
+
 // aplica_sgr — lê UM escape do chafa e assenta a côr na corrida que vem. Sómente os
 // codigos que o chafa emitte: 38;2;R;G;B, 48;2;R;G;B, 39, 49, 0 e 7. Codigo que não se
 // conheça ignora-se, e não se lança: o chafa é ferramenta alheia e pode mudar.
