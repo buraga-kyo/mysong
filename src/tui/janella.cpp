@@ -232,6 +232,19 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   return retracto;
 }
 
+// renomeia_a_faixa — o titulo na ETIQUETA primeiro, e no índice depois. N'esta
+// ordem, e não na contraria: gravado o índice antes, a etiqueta que recusasse
+// deixava a pauta a mostrar nome que o arquivo não tem, e a proxima varredura
+// desfazia-o sem o operador entender porquê.
+std::string renomeia_a_faixa(const std::string& caminho,
+                             const std::string& titulo,
+                             nucleo::Biblioteca& livraria) {
+  const nucleo::DoTitulo desfecho = nucleo::renomeia_titulo(caminho, titulo);
+  if (!desfecho.feito) return "não se renomeou: " + desfecho.razao;
+  livraria.muda_o_titulo(caminho, desfecho.titulo);
+  return "agora chama-se «" + desfecho.titulo + "»";
+}
+
 // cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
 // na taboada acende aviso do compilador aqui, e não passa calado.
 // O ROTEAMENTO das ordens de transporte. Havendo janella de video de pé, é ELLA
@@ -1018,6 +1031,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         } else if (era == Digita::NomeNovo) {
           if (!navegador.cria_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::TituloOutro) {
+          const std::string qual = navegador.caminho_eleito();
+          aviso_da_rede = renomeia_a_faixa(qual, termo_em_curso, livraria);
+          navegador.recarrega();  // a pauta reflecte no mesmo quadro
         } else if (era == Digita::NomeOutro) {
           if (!navegador.renomeia_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
@@ -1206,6 +1223,20 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           pede_buscar.store(true);
           aviso_da_rede = "a perguntar á rede...";
         }
+        return true;
+      }
+      case tui::Verbo::RenomeiaFaixa: {
+        // O campo abre já com o titulo CORRENTE, que é o que o índice guarda:
+        // o operador corrige uma lettra em vez de digitar o nome outra vez.
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty()) {
+          aviso_da_rede = "elege uma faixa primeiro";
+          return true;
+        }
+        nucleo::Faixa d_ella;
+        livraria.acha_por_caminho(qual, d_ella);
+        digita = Digita::TituloOutro;
+        termo_em_curso = d_ella.titulo;
         return true;
       }
       case tui::Verbo::AbreRois:
