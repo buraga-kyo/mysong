@@ -154,12 +154,6 @@ ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
 // terminal é de dous por um. Quem pede a capa á Galeria pede-a n'este tamanho.
 inline constexpr std::size_t kCapaPequena = 10, kCapaPequenaLinhas = 5;
 
-// elemento_do_cabecalho — a colleção á vista por cima da tabella: capa pequena,
-// nome, conta com os chips, separador. SEIS linhas, as que a geometria reservou.
-ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
-                                     const nucleo::CapaPintada& capa,
-                                     std::size_t largura);
-
 // elemento_do_painel — o TOCANDO AGORA: o titulo, a arte, a ficha logo abaixo
 // d'ella SEM VÃO, e o que o chamador quizer por baixo (o espectro, ou a letra
 // quando o `l` a pede). O de baixo entra já composto, para que esta peça não

@@ -274,37 +274,6 @@ ftxui::Element linha_da_conta(const Colleccao& qual, std::size_t largura) {
   return ftxui::hbox(std::move(partes));
 }
 
-ftxui::Element elemento_do_cabecalho(const Colleccao& colleccao,
-                                     const nucleo::CapaPintada& capa,
-                                     std::size_t largura) {
-  if (largura == 0) return ftxui::text("");
-  std::string risca;
-  for (std::size_t c = 0; c < largura; ++c) risca += "\u2500";
-  // O que sobra depois da capa pequena e do vão d'ella. O CINGE não é enfeite:
-  // nome comprido punha a sua largura no `min_x` do meio, e o `flex_shrink_x`
-  // do FTXUI nasce zero, d'onde o `hbox` cahe no encolhimento DURO e apara
-  // TODOS os irmãos por egual, a barra e o painel inclusive, apesar de estes
-  // pedirem largura EGUAL. Medido: nome de cento e vinte collunhas em cento e
-  // cincoenta e seis levava a barra de nove a oito e o painel de trinta e nove
-  // a trinta e dous. É a mesma mecanica dos chips, e a mesma cura.
-  const std::size_t sobra =
-      largura > kCapaPequena + 2 ? largura - kCapaPequena - 2 : 1;
-  return ftxui::vbox(
-      {ftxui::hbox({elemento_da_arte(capa, kCapaPequena, kCapaPequenaLinhas),
-                    ftxui::text("  "),
-                    ftxui::vbox({ftxui::text(""),
-                                 pinta(colleccao.nome, tokens::text_heading) |
-                                     ftxui::bold,
-                                 ftxui::text(""),
-                                 linha_da_conta(colleccao, largura),
-                                 ftxui::text("")}) |
-                        ftxui::size(ftxui::WIDTH, ftxui::LESS_THAN,
-                                    static_cast<int>(sobra))}) |
-           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
-                       static_cast<int>(kCapaPequenaLinhas)),
-       pinta(risca, tokens::line_dim)});
-}
-
 ftxui::Element elemento_do_painel(const Ficha& ficha, ftxui::Element arte,
                                   ftxui::Element baixo, std::size_t largura) {
   if (largura == 0) return ftxui::text("");
