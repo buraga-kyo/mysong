@@ -94,9 +94,9 @@ inline constexpr float FRONTEIRA_DOS_MEDIOS_AGUDOS = 4000.0f;
 // banda pergunta aqui, e jamais conta indices por fóra.
 Registro registro_da_banda(float centro_em_hertz);
 
-// tinta_do_registro — a côr do registro, e devolve o TOKEN e não a tríade
-// porque o gradiente compõe por tokens::mistura, que pede o hexadecimal do
-// design system. Violeta v500 nos graves, cyan data5 nos medios-graves, laranja
+// tinta_do_registro — a côr da BATIDA FORTE do registro, e devolve o TOKEN e
+// não a tríade porque quem a veste pede o hexadecimal do design system. Rosa
+// glow_hot nos graves, cyan data5 nos medios-graves, laranja
 // data3 nos medios-agudos e amarello data2 nos agudos: é o Postulado do Poente
 // Contido, que reserva o amarello, o laranja e o cyan á série de dados, e o
 // espectro É uma série de dados.
@@ -167,18 +167,18 @@ int oitavos(float magnitude, std::size_t altura);
 std::string glifo_do_degrau(int degrau);
 
 // O ALFA DA BASE. O pé da columna não se apaga por arithmetica de côr propria:
-// compõe-se a côr do registro sobre o tokens::panel_hi com este peso, que é o
+// compõe-se o violeta v500 sobre o tokens::panel_hi com este peso, que é o
 // modo com que o design system resolve opacidade. Cinco decimos e meio assentam
 // o pé no painel sem o deixar competir com o topo, que é o que canta.
 inline constexpr double ALFA_DA_BASE = 0.55;
 
 // tinta_da_linha — o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
-// base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá a côr do
-// REGISTRO exacta. Painel de uma célulla só dá a base, que é d'onde a §7.4.9
-// ancora a rampa. Não recebe magnitude alguma, e é n'isto que o invariante
-// (iii) se torna estructural em vez de boa intenção.
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
-                              Registro registro = Registro::Graves);
+// base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá o v500
+// exacto. Painel de uma célulla só dá a base, que é d'onde a §7.4.9 ancora a
+// rampa. Não recebe magnitude alguma NEM REGISTRO algum, e é n'isto que o
+// invariante (iii) se torna estructural em vez de boa intenção: a rampa é UMA
+// em toda a fita, e nada n'ella pode variar de columna para columna.
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
 
 // centros_das_bandas — os CENTROS em hertz, colhidos das bordas em RAIAS que o
 // nucleo::Espectro abre. A borda b vale `b * hertz_por_raia`, e o centro da

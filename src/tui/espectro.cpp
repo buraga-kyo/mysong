@@ -45,16 +45,16 @@ Registro registro_da_banda(float centro_em_hertz) {
 
 // O switch sem `default`, de proposito: registro novo accende aviso do
 // compilador aqui e no nome, e o gate da issue #64 o converte em recusa. Com
-// `default` o registro novo sahiria violeta e sem nome, calado. O return de
+// `default` o registro novo sahiria rosa e sem nome, calado. O return de
 // baixo existe só porque a linguagem não sabe que o switch é exhaustivo.
 std::string_view tinta_do_registro(Registro registro) {
   switch (registro) {
-    case Registro::Graves: return tokens::v500;
+    case Registro::Graves: return tokens::glow_hot;
     case Registro::MediosGraves: return tokens::data5;
     case Registro::MediosAgudos: return tokens::data3;
     case Registro::Agudos: return tokens::data2;
   }
-  return tokens::v500;
+  return tokens::glow_hot;
 }
 
 std::string_view nome_do_registro(Registro registro) {
@@ -190,9 +190,10 @@ Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
 
 }  // namespace
 
-tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
-                              Registro registro) {
-  const std::string_view cor = tinta_do_registro(registro);
+tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
+  // O VIOLETA CARDEAL, e não a côr do registro: desde a issue #132 a rampa é
+  // UMA em toda a fita, e a familia sómente se lê no instante da batida forte.
+  const std::string_view cor = tokens::v500;
   // Painel de uma célulla só: a rampa degenera, e vale a BASE. A §7.4.9 ancora
   // a rampa na base, e painel de uma célulla é todo base; o meio da rampa seria
   // côr que spec alguma nomeia. E o desvio por zero fica excluido antes de se
@@ -204,7 +205,7 @@ tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura,
 
   // A interpolação vae por tokens::mistura, e NÃO por arithmetica de côr nova.
   // Ella compõe a frente sobre o fundo com o peso dado, d'onde t = 1 dá a côr do
-  // registro EXACTA (peso cheio devolve a frente) e t = 0 dá a base EXACTA, sem
+  // v500 EXACTO (peso cheio devolve a frente) e t = 0 dá a base EXACTA, sem
   // arredondamento a explicar. Uma segunda conta de côr abriria um segundo
   // caminho para o mesmo resultado, e dous caminhos divergem sem avisar.
   return tokens::mistura(cor, tokens::panel_hi,
@@ -220,15 +221,15 @@ namespace {
 //   2. ZERO veste text_faint, que é o piso do silencio. Vem antes do quente por
 //      pura arrumação (zero nunca é quente), e junto do mudo porque é a MESMA
 //      côr que a §7.4.9 manda: mudo e silencio lêem-se egualmente apagados.
-//   3. QUENTE veste glow_hot, e veste a COLUMNA INTEIRA. É a lógica do
-//      bar_meter.lua, que faz `color = hot and glow_hot or FILL_COOL` e
+//   3. QUENTE veste a côr do REGISTRO d'esta columna, e veste-a INTEIRA. É a
+//      lógica do bar_meter.lua, que faz `color = hot and glow_hot or FILL_COOL` e
 //      substitue o enchimento todo, não sómente o cimo. Duas razões mais: só a
 //      célulla do topo em glow_hot seria quasi invisivel n'uma fita que salta a
 //      quarenta e seis quadros por segundo, que uma célulla a piscar não se lê;
 //      e o indicador de pico existe para SER VISTO.
-//   4. Não sendo nada d'isso, o GRADIENTE do painel, na côr do REGISTRO que
-//      veste esta columna. O registro é da columna e não da célulla, d'onde a
-//      columna inteira sahe da mesma familia, do pé ao topo.
+//   4. Não sendo nada d'isso, o GRADIENTE do painel, que é o violeta v500 em
+//      TODA columna. Era aqui que a côr do registro morava (issue #104), e a
+//      fita sahia arco-iris parado, que nada dizia da musica.
 // Note-se que sómente o ramo 4 consulta a linha, e sómente os ramos 1 a 3
 // consultam o valor: nenhum consulta os dous, e é d'ahi que o gradiente não
 // pode depender da magnitude nem por descuido.
@@ -236,8 +237,8 @@ tokens::Triade tinta_da_celula(float valor, bool mudo, std::size_t desde_a_base,
                                std::size_t altura, Registro registro) {
   if (mudo) return tokens::rgb(tokens::text_faint);
   if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
-  if (valor >= LIMIAR_QUENTE) return tokens::rgb(tokens::glow_hot);
-  return tinta_da_linha(desde_a_base, altura, registro);
+  if (valor >= LIMIAR_QUENTE) return tokens::rgb(tinta_do_registro(registro));
+  return tinta_da_linha(desde_a_base, altura);
 }
 
 }  // namespace
