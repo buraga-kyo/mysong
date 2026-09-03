@@ -154,5 +154,56 @@ TEST_CASE("o modo aceso accende, e o apagado guarda o logar sem sommir") {
   CHECK(pedaco(aceso, 156, 11) == " \U000f0458 REPETIR ");
 }
 
+TEST_CASE("as tres teclas de algarismo vão á aba que dizem") {
+  const tui::Aba alvos[3] = {tui::Aba::MySong, tui::Aba::Playlists,
+                             tui::Aba::Download};
+  for (int i = 0; i < 3; ++i) {
+    const tui::OrdemDaAba d_ella =
+        tui::ordem_da_aba(ftxui::Event::Character('1' + i));
+    CHECK(d_ella.gesto == tui::GestoDaAba::Vai);
+    CHECK(d_ella.aba == alvos[i]);
+  }
+  // O Tab e o Shift+Tab cyclam, e o `o` cycla a vista. O `4` não é aba alguma.
+  CHECK(tui::ordem_da_aba(ftxui::Event::Tab).gesto == tui::GestoDaAba::Cycla);
+  CHECK(tui::ordem_da_aba(ftxui::Event::TabReverse).gesto ==
+        tui::GestoDaAba::Cycla);
+  CHECK(tui::ordem_da_aba(ftxui::Event::Character('o')).gesto ==
+        tui::GestoDaAba::CyclaVista);
+  // Tecla alheia é ALHEIA, e é isso que faz o atalho de sempre valer: o `q`, o
+  // espaço e as setas seguem á taboada do commando e fazem o que sempre fizeram.
+  for (const ftxui::Event qual :
+       {ftxui::Event::Character('4'), ftxui::Event::Character('q'),
+        ftxui::Event::Character(' '), ftxui::Event::ArrowLeft,
+        ftxui::Event::Return, ftxui::Event::Custom})
+    CHECK(tui::ordem_da_aba(qual).gesto == tui::GestoDaAba::Alheio);
+}
+
+TEST_CASE("o Tab cycla as tres abas e torna ao principio") {
+  CHECK(tui::aba_seguinte(tui::Aba::MySong) == tui::Aba::Playlists);
+  CHECK(tui::aba_seguinte(tui::Aba::Playlists) == tui::Aba::Download);
+  CHECK(tui::aba_seguinte(tui::Aba::Download) == tui::Aba::MySong);
+  // Tres Tabs tornam ao ponto de partida: a fita não tem ponta que prenda.
+  tui::Aba onde = tui::Aba::Playlists;
+  for (int i = 0; i < 3; ++i) onde = tui::aba_seguinte(onde);
+  CHECK(onde == tui::Aba::Playlists);
+}
+
+TEST_CASE("a aba diz a secção, e a secção diz a aba que accende") {
+  CHECK(tui::secao_da_aba(tui::Aba::MySong) == tui::Secao::Busca);
+  CHECK(tui::secao_da_aba(tui::Aba::Playlists) == tui::Secao::Rois);
+  CHECK(tui::secao_da_aba(tui::Aba::Download) == tui::Secao::Rede);
+  // Os degraus de DENTRO accendem a aba d'elles, e não aba alguma: dentro de
+  // uma lista está-se nas PLAYLISTS, e no catalogo está-se no DOWNLOAD.
+  CHECK(tui::aba_da_secao(tui::Secao::NoRol) == tui::Aba::Playlists);
+  CHECK(tui::aba_da_secao(tui::Secao::Lista) == tui::Aba::Download);
+  for (const tui::Secao qual : {tui::Secao::Busca, tui::Secao::Artistas,
+                                tui::Secao::Albuns, tui::Secao::Faixas})
+    CHECK(tui::aba_da_secao(qual) == tui::Aba::MySong);
+  // E a volta fecha: a secção em que a aba abre accende a MESMA aba.
+  for (const tui::Aba qual : {tui::Aba::MySong, tui::Aba::Playlists,
+                              tui::Aba::Download})
+    CHECK(tui::aba_da_secao(tui::secao_da_aba(qual)) == qual);
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
