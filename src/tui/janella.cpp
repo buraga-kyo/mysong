@@ -683,6 +683,33 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                 sala.pauta.altura, primeira_linha);
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
 
+    // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
+    // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: a chapa apara
+    // na borda, e o que se perde é o fim do ultimo, o menos urgente dos que ha.
+    std::string recado;
+    const auto junta = [&recado](const std::string& dito) {
+      if (dito.empty()) return;
+      if (!recado.empty()) recado += "  ";
+      recado += dito;
+    };
+    // A FONTE diz-se na secção da rede, e sempre: a lista pode ser da fonte
+    // anterior por um instante, que a busca é assynchrona.
+    if (navegador.secao() == tui::Secao::Rede)
+      junta(std::string(nucleo::nome_da_fonte(fonte_da_busca)));
+    // A lista ALVO diz-se havendo alguma, e em toda secção: é para onde o `a`
+    // manda a faixa, e o operador não ha de o adivinhar.
+    if (navegador.rol_corrente() != 0 &&
+        navegador.secao() != tui::Secao::NoRol)
+      junta("\ue0b1 " + navegador.nome_corrente());
+    if (!navegador.termo().empty()) junta("[" + navegador.termo() + "]");
+    // A janella do video cala-se por si quando ella morre: é a pergunta ao
+    // processo que o diz, e não bandeira nossa que pudesse ficar a mentir.
+    if (projector.rodando())
+      junta("video: " + projector.faixa().filename().string());
+    if (!varrida.load()) junta("a varrer o acervo...");
+    junta(aviso_da_rede);
+    junta(nucleo::texto_do_andamento(estaleiro.andamento()));
+
     // A letra e a ficha relêem-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
       letra_de_qual = retracto.titulo;
