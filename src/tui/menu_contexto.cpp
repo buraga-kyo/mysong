@@ -153,6 +153,20 @@ ftxui::Element linha_do_item(std::string_view rotulo, std::size_t campo,
        pinta("│", tokens::line_base, tokens::panel)});
 }
 
+// caixa_das_listas — o submenu, e elle é caixa PROPRIA á direita da outra, e
+// não a mesma caixa a trocar de conteudo. Com as duas á vista lê-se de onde se
+// veio e para onde se vae, e a seta esquerda tem visivelmente para onde tornar.
+ftxui::Element caixa_das_listas(const MenuDeContexto& menu) {
+  const std::size_t campo = campo_das_listas(menu);
+  std::vector<ftxui::Element> linhas;
+  linhas.push_back(orla_com_titulo("LISTAS", campo + 4));
+  for (std::size_t qual = 0; qual < menu.listas.size(); ++qual)
+    linhas.push_back(linha_do_item(menu.listas[qual].nome, campo, "",
+                                   qual == menu.lista, false));
+  linhas.push_back(linha_da_base(campo + 4));
+  return ftxui::vbox(std::move(linhas));
+}
+
 }  // namespace
 
 void abre_o_menu(MenuDeContexto& menu, std::size_t faixa, std::string titulo,
@@ -260,7 +274,11 @@ ftxui::Element elemento_do_menu(const MenuDeContexto& menu) {
                                    junta && menu.listas.empty()));
   }
   linhas.push_back(linha_da_base(largura));
-  return ftxui::vbox(std::move(linhas));
+  ftxui::Element caixa = ftxui::vbox(std::move(linhas));
+  if (!menu.submenu) return caixa;
+  // As duas caixas encostam-se, sem vão entre ellas: vão de uma collunha
+  // deixaria ver a pauta por dentro do menu, e as duas deixariam de ser uma.
+  return ftxui::hbox({std::move(caixa), caixa_das_listas(menu)});
 }
 
 }  // namespace mysong::tui
