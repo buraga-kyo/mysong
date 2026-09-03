@@ -15,10 +15,12 @@
 
 #include "nucleo/capa.hpp"  // somma_dos_octetos, raiz_do_cache: o mesmo cache
 
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 
 namespace mysong::nucleo {
@@ -189,6 +191,38 @@ bool le_onda(const std::filesystem::path& onde, Onda* onda) {
   if (onda != nullptr) *onda = std::move(lida);
   return true;
 }
+
+// ── E AGORA O QUE TOCA O MUNDO.
+
+namespace {
+
+// ha_no_caminho — o programa existe no PATH e corre. Lavra-se aqui, e não se
+// toma á sonda: alli a busca vive em namespace anonymo por ser da taboa dos
+// requisitos, e abrir aquelle modulo por quinze linhas custaria mais.
+bool ha_no_caminho(const char* nome) {
+  const char* const caminho = std::getenv("PATH");
+  if (caminho == nullptr) return false;
+  std::string_view resto(caminho);
+  while (!resto.empty()) {
+    const std::size_t corte = resto.find(':');
+    const std::string_view pasta = resto.substr(
+        0, corte == std::string_view::npos ? resto.size() : corte);
+    if (!pasta.empty()) {
+      std::string tentativa(pasta);
+      tentativa += '/';
+      tentativa += nome;
+      struct stat marca = {};
+      if (::stat(tentativa.c_str(), &marca) == 0 && S_ISREG(marca.st_mode) &&
+          ::access(tentativa.c_str(), X_OK) == 0)
+        return true;
+    }
+    if (corte == std::string_view::npos) break;
+    resto.remove_prefix(corte + 1);
+  }
+  return false;
+}
+
+}  // namespace
 
 }  // namespace mysong::nucleo
 
