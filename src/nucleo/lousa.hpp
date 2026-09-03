@@ -76,6 +76,18 @@ std::string versao_da_lousa();
 // texto_dos_ajustes: escape algum sahe d'aqui.
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 
+// A ORDEM que o pintor da a lousa quanto á capa, e as duas unicas que ha.
+enum class OrdemDaCapa { Tira, Poe };
+
+// ordem_da_capa — a decisão, e é PURA para que a bateria a afira sem tela. O
+// `foco_dentro` manda em TODO quadro, e não sómente no quadro do evento, e é
+// isso que a corrige: o FTXUI DESENHA logo depois de executar os eventos, d'onde
+// um `tira_tudo` posto no tratador do foco desfaz-se no desenho seguinte, e a
+// janella da lousa fica de pé por cima do que o operador foi ver. Medido no
+// FTXUI v7.0.3, em `app.cpp`: o RunOnce corre as tarefas e chama o Draw.
+OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
+                          bool caixa_pintada) noexcept;
+
 // ── E AGORA O QUE TOCA O MUNDO.
 
 // A LOUSA: o filho vivo, e o cano por onde se lhe fala. Ergue-se no

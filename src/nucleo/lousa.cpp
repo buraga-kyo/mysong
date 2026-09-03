@@ -214,6 +214,16 @@ std::string ordem_de_tirar(std::string_view identidade) {
          escapado_em_json(identidade) + "\"}\n";
 }
 
+OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
+                          bool caixa_pintada) noexcept {
+  // As quatro condições são de CONJUNCÇÃO, e nenhuma d'ellas é redundante: a
+  // lousa deitada não tem onde pôr, o foco fóra manda tirar, a faixa sem capa
+  // não ha de mostrar a da anterior, e caixa por pintar não tem coordenada.
+  return lousa_de_pe && foco_dentro && ha_arquivo && caixa_pintada
+             ? OrdemDaCapa::Poe
+             : OrdemDaCapa::Tira;
+}
+
 Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa) {
   if (modo == ModoDaLousa::Nao)
     return {false, "desligada pelo ajuste: lousa = nao"};
