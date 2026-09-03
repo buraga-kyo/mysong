@@ -8,11 +8,14 @@
 #include <doctest/doctest.h>
 
 #include <cstddef>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/mouse.hpp>
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 #include "tui/menu_contexto.hpp"
 
 namespace tui = mysong::tui;
@@ -133,4 +136,46 @@ TEST_CASE("o Enter dentro do submenu junta á lista eleita, pelo id d'ella") {
   CHECK(escolha.pedido == tui::PedidoDoMenu::Junta);
   CHECK(escolha.lista == 40);  // a terceira, e o id d'ella, e não o indice
   CHECK_FALSE(menu.aberto);
+}
+
+namespace {
+
+// O ÉCRAN DE PAPEL, lido cella a cella. Não se lê o `ToString`, pela razão que
+// a prova da tabella deu: elle mette escapes no meio dos bytes.
+ftxui::Screen pintado(const tui::MenuDeContexto& menu, const ftxui::Box& linha,
+                      int largura, int altura) {
+  ftxui::Element quadro = tui::flutuante_do_menu(
+      menu, linha, static_cast<std::size_t>(largura),
+      static_cast<std::size_t>(altura));
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
+                                              ftxui::Dimension::Fixed(altura));
+  ftxui::Render(ecran, quadro);
+  return ecran;
+}
+
+std::string linha_de(ftxui::Screen& ecran, int y) {
+  std::string feita;
+  for (int x = 0; x < ecran.dimx(); ++x) feita += ecran.PixelAt(x, y).character;
+  return feita;
+}
+
+}  // namespace
+
+TEST_CASE("a caixa do menu veste o chrome do RADICAL, linha a linha") {
+  tui::MenuDeContexto menu = menu_de_pe(tres_listas());
+  CHECK(tui::medida_do_menu(menu).largura == 25);
+  CHECK(tui::medida_do_menu(menu).altura == 8);
+  // A linha da faixa é a SEIS: o menu abre na sete, logo abaixo d'ella.
+  ftxui::Screen ecran = pintado(menu, {0, 59, 6, 6}, 120, 30);
+  CHECK(linha_de(ecran, 7).rfind("┌─ Montagem Lunar Celes ┐", 0) == 0);
+  CHECK(linha_de(ecran, 8).rfind("│ TOCAR", 0) == 0);
+  CHECK(linha_de(ecran, 9).find("JUNTAR À LISTA") != std::string::npos);
+  CHECK(linha_de(ecran, 9).find("▸") != std::string::npos);
+  CHECK(linha_de(ecran, 10).find("NOVA LISTA COM ESTA") != std::string::npos);
+  CHECK(linha_de(ecran, 11).rfind("├", 0) == 0);  // o filete, antes das duas
+  CHECK(linha_de(ecran, 12).find("RENOMEAR") != std::string::npos);
+  CHECK(linha_de(ecran, 13).find("APAGAR") != std::string::npos);
+  CHECK(linha_de(ecran, 14).rfind("└", 0) == 0);
+  // A linha ACIMA fica intacta: a camada não pinta o que não é d'ella.
+  CHECK(linha_de(ecran, 6).find_first_not_of(' ') == std::string::npos);
 }
