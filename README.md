@@ -575,6 +575,14 @@ sempre a vista, subindo como um rio:
 - Ali ella fica ate a proxima chegar. Dai sobe uma linha por segundo, apagando,
   e some na linha zero.
 
+Com a lousa e o letreiro de pe, a linha que esta na linha de leitura CRISTALIZA:
+por cima das celulas della assenta uma chapa da mesma linha em XIROD, em brilho
+cheio sobre o fundo do painel, e a chapa da proxima ja se rasteriza quando ella
+nasce na base, para estar pronta no instante. A chapa sai quando a linha deixa a
+leitura, quando o foco sai da janela, quando o `l` esconde o rio e quando a
+faixa muda; sem lousa ou sem letreiro nada muda, que a linha em mono continua
+pintada por baixo della.
+
 A celula que tem letra pinta a letra com o fundo do painel, escondendo SO a
 celula da barra debaixo della. O espaco entre as palavras deixa passar a barra,
 e por isso o verso parece sair do espectro em vez de assentar numa tarja.
