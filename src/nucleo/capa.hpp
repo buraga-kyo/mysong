@@ -72,6 +72,59 @@ bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos);
 std::string chave_do_cache(const std::filesystem::path& faixa,
                            std::size_t collunas, std::size_t linhas);
 
+// A MEDIDA de uma imagem, em PIXEIS. Serve tambem á célulla do terminal, que é
+// rectangulo com largura e altura como qualquer outro.
+struct Medida {
+  std::size_t largura = 0, altura = 0;
+};
+
+// medida_da_imagem — a largura e a altura lidas do CABEÇALHO dos octetos, sem
+// se decodificar imagem alguma. Conhece o JPEG e o PNG, que são os dous que o
+// APIC d'este acervo traz e os que a Casa embute; de todo o mais devolve zero,
+// e quem chama toma isso por «não sei» e não por «vazia». PURA, e é d'ahi que
+// a bateria a afere contra cabeçalhos escriptos á mão, sem imagem no disco.
+Medida medida_da_imagem(std::string_view octetos);
+
+// O RECTANGULO que a capa toma, em CÉLULLAS.
+struct Retangulo {
+  std::size_t collunas = 0, linhas = 0;
+};
+
+// A CÉLULLA d'esta machina, em pixeis: nove por vinte, medido no Alacritty do
+// operador com a JetBrainsMono NF de corpo onze. Entra por PARAMETRO na conta,
+// e este é sómente o padrão da Casa: quem trocar de fonte troca um numero.
+inline constexpr Medida CELLULA_DA_CASA{9, 20};
+
+// rectangulo_da_capa — quantas célullas a imagem toma dentro do tecto, GUARDADA
+// A PROPORÇÃO. A célulla é mais alta que larga, e sem essa razão na conta a
+// capa quadrada pediria o dobro das linhas que toma. Medida por ler (formato
+// que este modulo não conhece) toma o tecto inteiro, que o Überzug++ encolhe a
+// imagem por dentro e o que se perde é sómente a fileira que sobraria.
+//
+// PURA, e sem parametro de omissão pela razão do argumentos_do_chafa: com
+// padrão, o valor avaliar-se-ia no logar da chamada e a bateria deixaria de
+// alcançar a machina de célulla differente.
+Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
+                             std::size_t tecto_linhas, Medida cellula);
+
+// somma_dos_octetos — o FNV-1a de sessenta e quatro bits, em hexadecimal. Não é
+// criptographia e não precisa de ser: o que se quer é que duas capas
+// differentes não caiam no mesmo arquivo do cache. Vae aqui, e não em
+// bibliotheca, porque nenhuma d'esta Casa o traz e são seis linhas.
+std::string somma_dos_octetos(std::string_view octetos);
+
+// extensao_da_capa — «jpg» ou «png», pelo CONTEUDO e por extensão nenhuma, pela
+// regra do embute_arte: o APIC declara um mime que ninguem afere. Vazio de todo
+// o mais, e ahi a capa não vae ao cache.
+std::string_view extensao_da_capa(std::string_view octetos);
+
+// caminho_da_capa_em_cache — `$XDG_CACHE_HOME/mysong/capas/<somma>.<extensão>`,
+// e sem a variavel `~/.cache/mysong/capas/`, pelo precedente exacto do
+// caminho_da_configuracao. Vazio sem HOME, e vazio quando os octetos não são
+// imagem que se conheça. Directorio algum se cria aqui: quem escreve é quem
+// cria, e esta funcção sómente diz ONDE.
+std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos);
+
 // ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
 // (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
 // degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a
@@ -139,7 +192,32 @@ CapaPintada pinta_imagem(const std::filesystem::path& imagem,
                          std::size_t collunas, std::size_t linhas,
                          bool com_sextante);
 
+// O ARQUIVO de capa de uma faixa: o caminho que a lousa ha de abrir, e a medida
+// d'elle em pixeis. Caminho vazio quer dizer «esta faixa não tem capa alguma».
+struct ArquivoDaCapa {
+  std::filesystem::path caminho;
+  Medida medida;
+};
+
 // ── E AGORA O QUE TOCA O MUNDO.
+
+// O ARQUIVARIO: o arquivo de capa de cada faixa, achado uma vez. Existe porque
+// a lousa quer CAMINHO e não octetos (o Überzug++ lê disco), e porque procurar
+// no disco a cada quadro seriam vinte aberturas por segundo.
+//
+// Guarda por FAIXA, e não por pasta como a Galeria: aquella guarda o RENDER,
+// que é caro e é do album; este guarda o caminho, e a arte embutida é de cada
+// arquivo. Acervo de pasta unica teria uma capa só se a chave fosse a pasta.
+class Arquivario {
+ public:
+  const ArquivoDaCapa& de(const std::filesystem::path& faixa);
+
+  std::size_t quantos_escriptos() const noexcept;  // serve á prova do cache
+
+ private:
+  std::map<std::filesystem::path, ArquivoDaCapa> guardados_;
+  std::size_t escriptos_ = 0;
+};
 
 // A GALERIA: guarda os renders já feitos, para que converter aconteça uma vez por
 // album e por tamanho. Não é optimização gratuita: o chafa leva dezenas de

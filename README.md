@@ -103,6 +103,7 @@ vez, pela linha do apt mais abaixo, e nao volte aqui a cada tarefa que entra.
 |----------|-------------|--------------------------------------------------|
 | chafa    | 1.19.0      | Desenha a capa do album. Sem elle, nao ha capa; o resto toca igual |
 | yt-dlp   | 2026.08.19  | Busca audio do YouTube. Sem elle, so o disco local |
+| ueberzugpp | 2.9.8     | Desenha a capa NITIDA, em janella de X11 por cima do terminal. Sem elle, a capa fica nos symbolos do chafa |
 
 **Advertencia sobre o yt-dlp, e ella importa**: NAO o instale pelo apt. A
 versao empacotada e velha demais e quebra contra o YouTube, que muda o seu
@@ -131,6 +132,10 @@ nao se desenha por protocolo, e sim por SYMBOLO DE BLOCO, que e o que o chafa
 faz e o que atravessa o tmux inteiro: blocos, meios-blocos e quadrantes, e o
 SEXTANTE quando a sua fonte o tiver. Cada symbolo leva duas cores, a tinta e o
 fundo, donde a celula vale por dous, quatro ou seis pixeis.
+
+Ha um caminho por FORA d'esse limite, e e o que o yazi usa n'esta machina: o
+`ueberzugpp`, que abre uma janella de X11 e a pousa por cima do terminal. Nao
+atravessa o tmux, passa AO LADO d'elle. E a LOUSA, e tem seccao propria abaixo.
 
 ### De onde vem a capa que se desenha
 
@@ -179,6 +184,49 @@ dao arquivo byte a byte egual, e bandeira que nao faz nada e mentira.
 A arte enche a LARGURA do painel guardando a proporcao: a miniatura 16:9 do
 YouTube fica 16:9, a arte quadrada fica quadrada, e nada se estica nem se corta.
 O `--stretch` do chafa existe, e e por NAO se passar que a proporcao se guarda.
+
+### A capa NITIDA, pela lousa do Überzug++
+
+Havendo `ueberzugpp` e havendo X11, a capa do painel deixa de ser mosaico de
+caracteres e passa a ser a imagem de verdade, pixel a pixel. Nao e protocolo de
+terminal: e uma janella de X11 posta POR CIMA do terminal, no rectangulo de
+celullas que o painel deixa. E o mesmo caminho que faz o yazi ficar nitido.
+
+O programa NAO vem do apt: compila-se do repositorio dos autores, ou baixa-se o
+binario d'elles.
+
+```sh
+mysong --sonda | tail -2     # diz «lousa: ueberzugpp 2.9.8, X11», ou a razao
+./build/fita_lousa /caminho/da/capa.jpg 8x4 40x21 8    # a prova do olho
+```
+
+O `fita_lousa` recebe a imagem, o canto em `COLLUNHAxLINHA` contado de ZERO, o
+rectangulo em `LARGURAxALTURA` de celullas, e os segundos que a imagem fica.
+Escreve uma regua por baixo, para o senhor conferir a posicao contando.
+
+Tres cousas ficam ditas, e as tres foram MEDIDAS n'este Alacritty, em imagem da
+tela. A imagem CABE no rectangulo guardando a proporcao: a miniatura 16:9 do
+YouTube toma menos de metade da altura, e as fileiras que ella deixa ficam para
+o espectro. Trocando de janella do tmux a capa some, e voltando ella volta: o
+proprio `ueberzugpp` arma os hooks do tmux. E perdendo o terminal o foco a capa
+some, que a janella d'ella nao segue o foco e ficaria por cima do que o senhor
+foi ver; voltando o foco, ella volta.
+
+Essa terceira depende do tmux mandar o aviso de foco: vendo a capa ficar por
+cima de outra janella, o logar a olhar e `set -g focus-events on`.
+
+O que NAO se mediu com o olho foi o redimensionar: a conta esta escripta e o
+canto cinge-se a borda nova, mas imagem da tela nao houve.
+
+O limite: a sahida e de **X11**. O `ueberzugpp` tem sahida wayland, e ella fica
+para quando esta machina correr Wayland. Sem DISPLAY, a capa volta aos symbolos
+do chafa sem erro algum, que essa continua a ser a maneira legitima de a ver.
+
+A capa embutida na etiqueta escreve-se UMA vez em
+`$XDG_CACHE_HOME/mysong/capas/<somma>.jpg` (ou `.png`), porque o `ueberzugpp` le
+disco e nao memoria. O nome sahe do conteudo, donde duas faixas com a mesma arte
+partilham um arquivo so. Apagar essa pasta nao perde nada: a proxima corrida
+torna a escrever.
 
 ### Tudo o que vem do apt, n'uma linha
 
@@ -513,6 +561,7 @@ Chave repetida vale a ultima.
 | `fonte_da_busca` | `youtube`, `youtube-music` ou `spotify` | `youtube` |
 | `baixas_simultaneas` | inteiro de 1 a 8 | `2` |
 | `capa_sextantes` | `auto`, `sim` ou `nao` | `auto` |
+| `lousa` | `auto`, `sim` ou `nao` | `auto` |
 
 A PRECEDENCIA, do mais forte para o mais fraco: o argumento da linha de
 commando, a variavel de ambiente, este arquivo, e o padrao da Casa. O
@@ -523,6 +572,12 @@ mudar debaixo dos pes de quem aponta para monte de rede que ainda nao montou.
 O `MYSONG_CAPA_SEXTANTES` ganha do arquivo do mesmo modo, e serve para virar o
 sextante por UMA corrida sem editar arquivo nenhum. Esse AFERE-SE: palavra que
 nao e `auto`, `sim` nem `nao` vira queixa e nao apaga o que o arquivo dizia.
+
+O `MYSONG_LOUSA` faz o mesmo pela capa nitida, e afere-se do mesmo modo. Com
+`auto`, a lousa ergue-se havendo DISPLAY e havendo o programa. Com `sim`, a
+pergunta do DISPLAY salta-se, que a variavel e palpite sobre haver X11 ao
+alcance e o senhor pode saber melhor; a falta do programa nao salta, que essa
+nao e palpite. Com `nao`, a capa fica nos symbolos do chafa.
 
 Chave desconhecida e valor que nao presta NAO derrubam cousa alguma: cae-se no
 degrau de baixo e a queixa apparece no `mysong --sonda`, que diz tambem de ONDE

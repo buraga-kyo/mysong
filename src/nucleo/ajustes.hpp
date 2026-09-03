@@ -58,6 +58,13 @@ enum class EstadoDoArquivo { Ausente, Lido, Illegivel };
 // saberia dizer «não escolhi», e o --sonda não poderia mostrar a differença.
 enum class Sextantes { Auto, Sim, Nao };
 
+// A ALAVANCA DA LOUSA (issue #103). Os mesmos tres valores do sextante, e pela
+// mesma razão: `Auto` é a regra da Casa, que pergunta ao mundo se ha DISPLAY e
+// se o `ueberzugpp` está installado; `Sim` e `Nao` são a vontade do operador
+// por cima d'ella. Desligada, a capa volta aos symbolos do chafa, que é o
+// desenho de sempre, e queixa alguma se lavra: não ter X11 não é defeito.
+enum class ModoDaLousa { Auto, Sim, Nao };
+
 // O VOLUME de fabrica. Applica-se SEMPRE ao abrir, donde é este o numero que
 // vale, e não o do tocador: uma verdade, e não duas a divergirem com o tempo.
 inline constexpr int VOLUME_DA_CASA = 100;
@@ -90,6 +97,7 @@ struct Ajustes {
   Ajuste<Fonte> fonte_da_busca{Fonte::YouTube, Origem::Padrao};
   Ajuste<std::size_t> baixas_simultaneas{OBREIROS_DA_BAIXA, Origem::Padrao};
   Ajuste<Sextantes> capa_sextantes{Sextantes::Auto, Origem::Padrao};
+  Ajuste<ModoDaLousa> lousa{ModoDaLousa::Auto, Origem::Padrao};
 
   std::filesystem::path arquivo;
   EstadoDoArquivo estado = EstadoDoArquivo::Ausente;
@@ -139,6 +147,12 @@ std::string_view chave_da_fonte(Fonte fonte);
 std::optional<Sextantes> sextantes_de(std::string_view texto);
 std::string_view chave_dos_sextantes(Sextantes sextantes);
 
+// lousa_de e chave_da_lousa — a palavra do arquivo e o inverso d'ella, visinhas
+// pela razão do sextantes_de: valor novo esquecido n'uma das duas accende aviso
+// do compilador nos dous switches, e não passa calado.
+std::optional<ModoDaLousa> lousa_de(std::string_view texto);
+std::string_view chave_da_lousa(ModoDaLousa modo);
+
 // volume_de e baixas_de — os dous numeros. Vazio quando o texto não é inteiro
 // INTEIRAMENTE consumido, ou quando cae fóra do que a chave admitte: o volume
 // de zero a cem, e as baixas de uma até o tecto.
@@ -152,6 +166,7 @@ struct Degraus {
   std::optional<std::string> acervo_do_argumento;
   std::optional<std::string> acervo_do_ambiente;
   std::optional<std::string> sextantes_do_ambiente;
+  std::optional<std::string> lousa_do_ambiente;
   std::vector<Par> arquivo;
 };
 

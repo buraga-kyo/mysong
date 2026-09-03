@@ -57,6 +57,7 @@
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
 #include "nucleo/lixeira.hpp"
+#include "nucleo/lousa.hpp"
 #include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
@@ -535,6 +536,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> mostra_letra{false};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
   nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
+  // A LOUSA (issue #103) e o arquivario que a serve. Vivem n'esta pilha, ao
+  // lado da Galeria: a lousa ergue o filho ao nascer e mata-o ao morrer, e é
+  // por viver aqui que a sahida da tela leva a janella d'ella junto.
+  nucleo::Lousa lousa(ajustes.lousa.valor);
+  nucleo::Arquivario arquivario;
 
   // Os fios de fundo são POSSUIDOS, e juntam-se antes de esta pilha se desfazer. Antes
   // corriam soltos por `detach()`, e o corpo d'elles referencia objectos d'esta pilha:
@@ -812,11 +818,24 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         tui::chave_e_caminho(navegador.secao()) && !navegador.vista().empty()
             ? navegador.vista().front().chave
             : std::string();
+    // A LOUSA de pé toma a capa (issue #103), e ahi o chafa NÃO corre: o render
+    // d'elle ficaria por baixo da janella e ninguem o veria, e cada troca de
+    // faixa pagaria dezenas de milesimos por um desenho invisivel.
+    const bool pela_lousa =
+        lousa.disponivel() && geo.painel > 0 && geo.capa > 0;
+    static const nucleo::CapaPintada kSemArte;
+    const nucleo::CapaPintada& arte =
+        pela_lousa ? kSemArte
+                   : galeria.capa(retracto.titulo, geo.painel, geo.capa);
+    nucleo::Retangulo rectangulo;
+    if (pela_lousa)
+      rectangulo = nucleo::rectangulo_da_capa(
+          arquivario.de(retracto.titulo).medida, geo.painel, geo.capa,
+          nucleo::CELLULA_DA_CASA);
     // A ARTE mede-se pelo que o chafa devolveu, e não pelo tecto: a capa de 16
     // por 9 sahe mais baixa, e o que ella deixa fica para o espectro.
-    const nucleo::CapaPintada& arte =
-        galeria.capa(retracto.titulo, geo.painel, geo.capa);
-    const std::size_t alt_arte = tui::linhas_da_arte(arte, geo.capa);
+    const std::size_t alt_arte =
+        pela_lousa ? rectangulo.linhas : tui::linhas_da_arte(arte, geo.capa);
     const std::size_t alt_baixo =
         geo.livre > alt_arte ? geo.livre - alt_arte : 1;
     // Os centros em hertz, colhidos UMA vez: a escala é do contracto do
@@ -832,14 +851,45 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // assim o `sala.*` da lavra irmã não muda uma linha, e o clique na arte
     // continua a achar o quadro que ella pintou. Esvazia-se a cada quadro, que
     // painel que se não pinta não ha de deixar caixa velha a apanhar cliques.
+    // A ORDEM á lousa vae com a caixa do quadro ANTERIOR, que é a unica que o
+    // `reflect` já encheu: elle escreve DEPOIS de o pintor devolver o quadro.
+    // Custa UM quadro de atraso ao redimensionar, e não custa mais nada, que a
+    // mesma ordem repetida não manda cousa alguma pelo cano.
+    const std::filesystem::path capa_do_painel =
+        pela_lousa ? arquivario.de(retracto.titulo).caminho
+                   : std::filesystem::path();
+    // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
+    // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
+    if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
+                              !capa_do_painel.empty(),
+                              caixas.capa.x_max >= caixas.capa.x_min) ==
+        nucleo::OrdemDaCapa::Tira)
+      lousa.tira("capa");
+    else
+      // O canto é do quadro ANTERIOR e o rectangulo é d'este: encolhendo-se o
+      // terminal, o canto velho cae fóra da tela nova e a imagem sahia meia
+      // por fóra por um quadro. Cinge-se á borda, que atraso de um quadro se
+      // corrige na batida seguinte e imagem fóra da tela não se corrige.
+      lousa.poe("capa", capa_do_painel,
+                std::min(caixas.capa.x_min,
+                         std::max(0, col - static_cast<int>(
+                                              rectangulo.collunas))),
+                caixas.capa.y_min, rectangulo.collunas, rectangulo.linhas);
     caixas.capa = tui::caixa_por_pintar();
+    // Com a lousa de pé, as célullas debaixo da imagem pintam o FUNDO do
+    // painel, e marcador algum: a janella d'ella chega um quadro depois, e
+    // n'esse quadro o operador não ha de ver nota musical por baixo da capa.
+    ftxui::Element quadro_da_arte =
+        pela_lousa ? ftxui::text(std::string(geo.painel, ' ')) |
+                         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                                     static_cast<int>(alt_arte))
+                   : tui::elemento_da_arte(arte, geo.painel, alt_arte);
     ftxui::Element painel =
         geo.painel == 0
             ? ftxui::text("")
             : tui::elemento_do_painel(
                   ficha,
-                  tui::elemento_da_arte(arte, geo.painel, alt_arte) |
-                      ftxui::reflect(caixas.capa),
+                  std::move(quadro_da_arte) | ftxui::reflect(caixas.capa),
                   mostra_letra.load()
                       ? tui::elemento_da_letra(
                             letra,
@@ -925,7 +975,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // letra no termo em curso.
     switch (tui::gesto_do_foco(tecla)) {
       case tui::GestoDoFoco::Ganha: vigilia.ganha(); return true;
-      case tui::GestoDoFoco::Perde: vigilia.perde(); return true;
+      case tui::GestoDoFoco::Perde:
+        vigilia.perde();
+        // A janella da lousa NÃO segue o foco do terminal: perdido elle, a
+        // imagem ficaria por cima do que o operador foi ver. Quem manda de
+        // facto é o `ordem_da_capa` do pintor, que lê a mesma vigilia em todo
+        // quadro; este é a redundancia barata que tira as demais identidades.
+        lousa.tira_tudo();
+        return true;
       case tui::GestoDoFoco::Alheio: break;
     }
     // Tecla de gente só chega a painel focado: adormecida, a vigilia acorda
@@ -1438,6 +1495,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // veio na sessão inteira. Diz-se o FATO, e não a culpa, que saber se o
   // terminal é incapaz ou se ninguem trocou de foco não se pode; e diz-se
   // depois da tela, no stderr, como o relatorio dos requisitos se diz.
+  // As ordens da capa que o cano não coube (issue #103). Dizem-se DEPOIS da
+  // tela, no stderr, pelo molde exacto da linha da vigilia abaixo: byte algum
+  // sahe por baixo de um quadro do FTXUI.
+  if (lousa.descartadas() > 0)
+    std::cerr << "mysong: " << lousa.descartadas()
+              << " ordens da capa não couberam no cano do ueberzugpp e"
+                 " descartaram-se; a capa pode ter piscado.\n";
   if (!vigilia.ha_noticia())
     std::cerr << "mysong: evento de foco nenhum veio nesta sessão; o relogio "
                  "nunca dormiu. Dentro do tmux, «set -g focus-events on» é o "
@@ -1533,6 +1597,14 @@ int main(int argc, char** argv) {
     std::cout << tui::texto_do_relatorio(relatorio);
     std::cout << api::texto_do_socket();
     std::cout << nucleo::texto_dos_ajustes(ajustes);
+    // A LOUSA (issue #103) diz-se DEPOIS dos ajustes, e não na taboa dos
+    // requisitos: o `ueberzugpp` não é requisito d'esta obra, e pol-o lá faria
+    // o operador sem X11 ler «falta» de uma cousa que não lhe falta.
+    const std::string versao_da_lousa = nucleo::versao_da_lousa();
+    std::cout << nucleo::texto_da_lousa(
+        nucleo::parecer_da_lousa(ajustes.lousa.valor, nucleo::ha_display(),
+                                 !versao_da_lousa.empty()),
+        versao_da_lousa);
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
