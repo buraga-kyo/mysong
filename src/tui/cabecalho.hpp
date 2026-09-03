@@ -82,7 +82,11 @@ ftxui::Element elemento_da_aba(Aba aba, bool corrente);
 // elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
 // dizer «esta chamada não quer saber», e a linha sahe a mesma, cella a cella.
+// O `nome` é o que se MOSTRA, e não o caminho que o Retracto carrega: o titulo
+// vem da etiqueta do indice, e caminho de arquivo na linha do alto diria a
+// pasta do operador em vez de dizer a musica.
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
+                                     const std::string& nome,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas = nullptr);
 

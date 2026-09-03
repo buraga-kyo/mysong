@@ -293,6 +293,22 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas) {
   return fita;
 }
 
+// O que se guarda ao nome quando a tela aperta: seis collunhas e um «…». Menos
+// que isso não é nome, é ruido, e ahi as peças da direita hão de ceder antes.
+constexpr std::size_t kNomeMinimo = 7;
+
+// caixas_da — os punhos das caixas na ORDEM em que a fita junta os segmentos.
+// Punho nullo em toda a lista quer dizer «esta chamada não quer saber».
+std::vector<ftxui::Box*> caixas_da_esquerda(CaixasDoCabecalho* c) {
+  if (c == nullptr) return {};
+  return {&c->aba_mysong,   &c->aba_playlists,  &c->aba_download,
+          &c->botao_tocar,  &c->botao_anterior, &c->botao_seguinte};
+}
+std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
+  if (c == nullptr) return {};
+  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir};
+}
+
 }  // namespace
 
 }  // namespace mysong::tui
