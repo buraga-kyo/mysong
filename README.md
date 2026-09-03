@@ -642,18 +642,18 @@ apagado so por nunca chegar ao teto da fita.
 | MEDIOS-AGUDOS | 1 a 4 kHz | laranja | voz, presenca, teclados |
 | AGUDOS | 4 a 16 kHz | amarelo | pratos, chimbal, o ar |
 
-Cada coluna tem o seu degrade, escuro no pe e vivo no topo. O degrade e do
-PAINEL e nao da barra: a altura da coluna diz o nivel, e a cor nunca o repete
-nem o contradiz. A batida forte continua a acender rosa na coluna inteira, e o
-mudo continua apagado, como sempre foi.
+Com o som mudo a fita fica apagada, e o mudo vence a batida: ordem sua nao se
+deixa passar por cima por leitura de sinal. A rampa e ancorada ao PAINEL e nao a
+barra, donde ella nunca mente sobre o nivel: quem diz o nivel e a altura.
 
 Diga-se com honestidade o que esta cor e: ella vem da FAIXA DE HERTZ, e nao de
-instrumento reconhecido. O que sae em violeta e o grave que toca naquele
+instrumento reconhecido. O que acende em rosa e o grave que toca naquele
 instante, seja bumbo, baixo ou a mao esquerda do piano. Separar instrumentos de
 verdade pede modelo de separacao de fontes, que nao roda em tempo real dentro de
 um tocador de terminal, e vender o que nao ha seria mentir na tela.
 
-Para ver os quatro grupos lado a lado, com os nomes por baixo de cada um:
+Para ver as quatro cores da batida lado a lado, com o nome da familia e a cor
+dela por baixo de cada grupo:
 
 ```sh
 ./build/fita_espectro 72 12
