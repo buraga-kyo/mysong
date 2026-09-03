@@ -542,10 +542,13 @@ canto opposto donde elle olhava. Por isso o `←` na pauta nao faz cousa alguma,
 e nomeadamente nao volta degrau algum.
 
 O foco começa na PAUTA. Dentro della o `↑` e o `↓` continuam a andar na lista,
-e sómente no alto o `↑` sobe ao cabecalho; o `→` sae para o painel da direita,
-onde a capa e o botao de pausa e retoma, como no rato. Do cabecalho, o `↓`
-torna ao que cada segmento tem por baixo: os seis da esquerda a pauta, e os
-tres da direita a capa, que mora no painel debaixo delles.
+e sómente no FIM d'ella o `↓` desce a fita, que agora mora no pe; o `→` sae
+para o painel da direita, onde a capa e o botao de pausa e retoma, como no
+rato. Da fita, o `↑` torna ao que cada segmento tem POR CIMA: os tres botoes a
+pauta, os tres da direita a capa, e as tres abas ao TRILHO, que corre a
+largura toda e cae mesmo sobre o grupo, donde um segundo `↑` e que leva a
+lista. Nada d'isto se escreveu na taboada: o salto anda por geometria, e a
+geometria e que virou.
 
 Enter e espaco na peça com foco fazem exactamente o que o clique faria nella, e
 pelo mesmo caminho: Enter em PLAYLISTS abre a lista das listas, Enter no botao
@@ -568,7 +571,9 @@ tmux 3.4 com `set -g extended-keys on` entrega as seis.
 
 ### O rato
 
-Clicar n'uma aba do cabecalho vae a ella; clicar n'uma faixa elege-a, e clicar
+Clicar n'uma aba da fita vae a ella, e a linha de baixo do segmento vale como
+a de cima, que a caixa e de duas e o dedo nao sabe de linhas; clicar n'uma
+faixa elege-a, e clicar
 na JÁ eleita toca-a. Os tres botoes do transporte fazem o que dizem, o clique
 no trilho busca a posicao, o clique no EMBARALHAR ou no REPETIR troca o modo, o
 clique no volume cala a Casa e devolve-lhe o volume inteiro, o clique na capa
