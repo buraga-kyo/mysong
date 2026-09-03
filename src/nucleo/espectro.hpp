@@ -11,11 +11,11 @@
 //                   canaes que o formato confirmado disser, em blocos de
 //                   tamanho QUALQUER, inclusive zero e maiores que a janela: o
 //                   quantum d'esta machina vae de 32 a 2048, e muda em voo.
-// CONTRA-DOMÍNIO .. QUANTAS_BANDAS magnitudes em [0,1], suavizadas, promptas
-//                   para barra de terminal.
+// CONTRA-DOMÍNIO .. as bandas que se PEDIRAM, em [0,1], suavizadas, promptas
+//                   para barra de terminal. Quem nada pede leva as de omissão.
 // INVARIANTE ...... silencio absoluto dá zero EXACTO, e não erro. As bandas
 //                   nunca sahem de [0,1], nunca sahem NaN e nunca sahem em
-//                   numero differente de QUANTAS_BANDAS. As bordas se calculam
+//                   numero differente do que se pediu. As bordas se calculam
 //                   da taxa CONFIRMADA, jamais de 48000 chumbado: placa de
 //                   44100 muda a largura da raia, e as bordas com ella.
 // Q.E.D. .......... um seno de frequencia conhecida acende a banda que o
@@ -29,7 +29,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "nucleo/analisador.hpp"  // de onde vem QUANTAS_BANDAS, que é do CONTRACTO
+#include "nucleo/analisador.hpp"  // de onde vêm as bandas por omissão e os limites
 
 // O plano da fftw3, declarado adiante e não incluido: assim fftw3.h não entra
 // por este cabeçalho em unidade alguma que não precise d'ella, e a bateria da
@@ -143,15 +143,15 @@ class Espectro {
   // de guarda chama quando o nó morre.
   void esmorece(double millesimos);
 
-  // O retracto: sempre QUANTAS_BANDAS valores, sempre em [0,1].
+  // O retracto: sempre as bandas que se pediram, sempre em [0,1].
   std::vector<float> bandas() const;
 
   float taxa() const noexcept;
   int canaes() const noexcept;
 
   // As bordas em RAIAS, abertas á prova: é assim que ella sabe QUAL banda
-  // contém 440 Hz sem repetir a conta que ella mesma quer aferir. Ha
-  // QUANTAS_BANDAS + 1 bordas, não decrescentes, e a banda b vae de bordas()[b]
+  // contém 440 Hz sem repetir a conta que ella mesma quer aferir. Ha uma borda
+  // a mais que as bandas, não decrescentes, e a banda b vae de bordas()[b]
   // inclusive a bordas()[b + 1] exclusive.
   const std::vector<std::size_t>& bordas() const noexcept;
   std::size_t banda_de(float hertz) const;
