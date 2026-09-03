@@ -18,6 +18,7 @@
 #include <utility>
 
 #include <ftxui/component/mouse.hpp>
+#include <ftxui/screen/color.hpp>
 #include <ftxui/screen/string.hpp>
 
 #include "tui/tokens.hpp"
@@ -68,6 +69,41 @@ std::size_t anda(std::size_t onde, std::size_t quantos, bool desce) noexcept {
   if (quantos == 0) return 0;
   if (desce) return (onde + 1) % quantos;
   return onde == 0 ? quantos - 1 : onde - 1;
+}
+
+// pinta — o texto na tinta e o fundo por baixo d'elle. TODA cella do menu se
+// pinta: elle flutua, e cella por pintar deixaria ver a pauta por dentro.
+ftxui::Element pinta(const std::string& texto, std::string_view tinta,
+                     std::string_view fundo) {
+  const tokens::Triade t = tokens::rgb(tinta), f = tokens::rgb(fundo);
+  return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(t.r, t.g, t.b)) |
+         ftxui::bgcolor(ftxui::Color::RGB(f.r, f.g, f.b));
+}
+
+// repete — o glifo n vezes. `std::string(n, c)` não serve: o «─» tem tres bytes.
+std::string repete(std::string_view glifo, std::size_t quantos) {
+  std::string feita;
+  for (std::size_t i = 0; i < quantos; ++i) feita += glifo;
+  return feita;
+}
+
+// apara — a cadeia cortada em `largura` COLLUNHAS e enchida de espaços até
+// ellas: o enchimento é que põe a orla da direita sempre na mesma collunha.
+std::string apara(std::string_view crua, std::size_t largura) {
+  std::string feita;
+  std::size_t tem = 0;
+  for (std::size_t i = 0; i < crua.size();) {
+    const unsigned char byte = static_cast<unsigned char>(crua[i]);
+    const std::size_t quantos =
+        byte >= 0xF0 ? 4 : byte >= 0xE0 ? 3 : byte >= 0xC0 ? 2 : 1;
+    const std::string_view glifo = crua.substr(i, quantos);
+    if (tem + collunhas(glifo) > largura) break;
+    feita += glifo;
+    tem += collunhas(glifo);
+    i += quantos;
+  }
+  while (tem++ < largura) feita += ' ';
+  return feita;
 }
 
 }  // namespace
@@ -161,6 +197,19 @@ MedidaDoMenu medida_do_menu(const MenuDeContexto& menu) {
   medida.largura += campo_das_listas(menu) + 4;
   medida.altura = std::max(medida.altura, menu.listas.size() + 2);
   return medida;
+}
+
+ftxui::Element elemento_do_menu(const MenuDeContexto& menu) {
+  const std::size_t largura = medida_do_menu(menu).largura;
+  std::vector<ftxui::Element> linhas;
+  linhas.push_back(pinta("┌" + repete("─", largura - 2) + "┐",
+                         tokens::line_base, tokens::panel));
+  for (const std::string_view rotulo : kRotulos)
+    linhas.push_back(pinta("│ " + apara(rotulo, largura - 4) + " │",
+                           tokens::text_primary, tokens::panel));
+  linhas.push_back(pinta("└" + repete("─", largura - 2) + "┘",
+                         tokens::line_base, tokens::panel));
+  return ftxui::vbox(std::move(linhas));
 }
 
 }  // namespace mysong::tui
