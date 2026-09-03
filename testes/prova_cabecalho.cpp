@@ -82,5 +82,30 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
   CHECK(pedaco(tela, 0, 167) == pedaco(tela, 0, 200));
 }
 
+TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
+  // Em 120 sobram 17 collunhas ao nome: 120 menos as 51 da esquerda e as 52 da
+  // direita. O nome que não cabe corta-se com «…»; o que cabe enche-se.
+  const ftxui::Screen larga = papel(
+      tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong,
+                                 "Montagem Lunar Celestia 1.0 (SLOWED)", 120),
+      120);
+  CHECK(pedaco(larga, 51, 17) == "Montagem Lunar C…");
+  CHECK(pedaco(larga, 68, 1) == "\ue0b2");
+  // Nome curto: o fundo do segmento veste a collunha inteira, e o que sobra
+  // enche-se de espaço. Buraco escuro no meio da fita lê-se como emenda.
+  const ftxui::Screen curto =
+      papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "NO FEAR!",
+                                       120),
+            120);
+  CHECK(pedaco(curto, 51, 17) == "NO FEAR!         ");
+  // E nada tocando, o meio DIZ que nada toca, em vez de ficar em branco.
+  tui::Retracto parado;
+  CHECK(pedaco(papel(tui::elemento_do_cabecalho(parado, tui::Aba::MySong, "",
+                                                120),
+                     120),
+               51, 11) == "(nada toca)");
+}
+
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
