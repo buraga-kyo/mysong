@@ -564,7 +564,7 @@ lista quebrada nao corra inteira em silencio.
 | `S` ou `s` | responde sim a pergunta do `D`; outro caractere, Escape ou Enter e nao |
 | `a` | junta a faixa eleita a lista alvo |
 | `t` | retira o item eleito da lista |
-| `K` / `J` | move o item para cima, para baixo |
+| `K` / `J` | move para cima, para baixo: item de lista, e faixa do acervo |
 | `v` | abre a faixa eleita em janella de video |
 | `I` | le uma playlist publica do Spotify por catalogo |
 | `T` | baixa TODAS as faixas da lista lida |
@@ -642,6 +642,24 @@ teclas nao fazem nada: o GNOME Terminal prende o F10 para o menu, e solta-se em
 Preferencias, Geral, «Activar a tecla de menu». Medido n'esta machina: o
 Alacritty nao prende nem o F10 nem o F11 (so o Alt+Enter faz tela cheia), e o
 tmux 3.4 com `set -g extended-keys on` entrega as seis.
+
+### Arrastar e soltar
+
+A lista arruma-se a mao: pega-se na faixa com o botao esquerdo, arrasta-se e
+larga-se onde ela vai. Enquanto a mao anda, a linha de onde ela saiu fica
+apagada e a linha em que ela cairia veste o repouso do chrome, que e como o olho
+sabe onde a solta. Largar onde se pegou nao move nada, e continua a valer como
+clique.
+
+Vale em MY SONG, pela ordem propria do acervo, que fica gravada e sobrevive a
+fechar o tocador; e dentro de uma lista, pela ordem que ela ja gravava. Nas
+vistas de ARTISTAS e ALBUNS e nos achados da rede o arrastar nao move nada, que
+ali a ordem nao e do operador. As teclas `K` e `J` fazem o mesmo por degraus, e
+agora tambem no acervo.
+
+Para o arrasto chegar, o mysong pede ao terminal o modo `1002`, que manda o
+movimento COM o botao premido. Nao se pede o `1003`, que manda toda mexida e
+vaza lixo dentro do tmux.
 
 ### O rato
 
