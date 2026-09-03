@@ -410,12 +410,24 @@ d'esta Casa e uma fita de abas, a maneira da topbar do RADICAL-OS.
                                                            (a segunda linha da fita, com o mesmo fundo)
 ```
 
-No cabecalho: a aba corrente em bloco solido, as outras em repouso; os tres
-botoes do transporte; o nome do que soa, cortado com «…» quando nao cabe; e a
-direita o tempo, o volume, o EMBARALHAR e o REPETIR. Apertando a tela, essas
-quatro cedem o logar INTEIRAS, da direita para a esquerda, e as abas ficam
-sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz;
-clicar no trilho busca a posicao.
+A fita le-se em TRES blocos, e cada segmento pinta o fundo d'elle nas DUAS
+linhas, com o rotulo em mono na de cima. A esquerda os tres botoes do
+transporte e o nome do que soa, cortado com «…» quando nao cabe. Ao CENTRO
+EXACTO o grupo das tres abas, a corrente em bloco solido e as outras em
+repouso: a collunha em que o grupo principia e a largura da fita menos a
+largura d'elle, a dividir por dous, donde elle NAO se move quando a faixa
+muda. A direita o tempo, o volume, o EMBARALHAR e o REPETIR.
+
+Apertando a tela, quem cede sao as PONTAS, e por esta ordem: primeiro o nome
+corta, depois o REPETIR, depois o EMBARALHAR, depois o tempo; sómente quando
+nem assim cabe e que o grupo deixa o centro e se encosta. As abas ficam
+sempre. Clicar n'uma aba, n'um botao ou n'um dos modos faz o que a tecla faz,
+e clicar em QUALQUER das duas linhas do segmento vale o mesmo; clicar no
+trilho busca a posicao.
+
+Encolhendo a tela em ALTURA, quem cede e o pe: sae primeiro o rodape das
+dicas, depois a fita volta a UMA linha, e o trilho e o ultimo. Nunca se mostra
+o tocador sem lista alguma.
 
 Por cima da pauta ha uma CHAPA de uma linha: onde se esta, a conta e a vista
 (`MY SONG, 42 FAIXAS, 1h29, FAIXAS`), com os degraus de dentro apartados por
