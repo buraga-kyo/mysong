@@ -703,11 +703,16 @@ TEST_CASE("o mudo vence a côr da batida do registro") {
 }
 
 // ── C16 · as quatro côres da batida na TELA ────────────────────────────────
-// Oito columnas, uma banda por columna, e as familias aos pares: a de indice
-// par bate, a impar ao lado d'ella fica fria. Assim afere-se n'uma composição só
-// que a côr é da COLUMNA e da familia d'ella, e não da fita. Lê-se por PixelAt,
+// Oito BARRAS, uma banda por barra, e as familias aos pares: a de indice par
+// bate, a impar ao lado d'ella fica fria. Assim afere-se n'uma composição só
+// que a côr é da BARRA e da familia d'ella, e não da fita. Lê-se por PixelAt,
 // que é o que o terminal receberia: a côr prova-se depois de atravessar o
 // elemento, e não sómente no quadro.
+//
+// A largura vae em VINTE E TREZ, e não em oito: desde a issue #144 a barra toma
+// duas collunhas e um vão de uma, d'onde oito barras pedem trez vezes oito menos
+// o vão da ultima. A barra da banda b principia na collunha 3b, e o par f mora
+// pois nas collunhas 6f (a quente) e 6f+3 (a fria), com o vão 6f+2 entre ellas.
 //
 // Painel de duas: teto 16, e 0,95 dá 15 degraus, um cheio e resto sete, d'onde
 // as DUAS célullas; 0,30 dá 4 degraus, que é uma célulla, na base.
@@ -716,20 +721,28 @@ TEST_CASE("as quatro batidas sahem nas quatro côres, e a vizinha fria não") {
                                      0.95f, 0.30f, 0.95f, 0.30f};
   const std::vector<float> centros = {100.0f,  100.0f,  500.0f,  500.0f,
                                       2000.0f, 2000.0f, 8000.0f, 8000.0f};
-  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(8),
+  const int largura = 3 * 8 - 1;
+  ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
                                               ftxui::Dimension::Fixed(2));
-  ftxui::Render(ecran, es::elemento_do_espectro(
-                           es::compor(bandas, 8, 2, false, centros)));
+  ftxui::Render(
+      ecran, es::elemento_do_espectro(es::compor(
+                 bandas, static_cast<std::size_t>(largura), 2, false, centros)));
 
   // Os tokens escriptos Á MÃO, na ordem em que o ouvido sobe.
   const std::string_view batidas[] = {tk::glow_hot, tk::data5, tk::data3,
                                       tk::data2};
   for (int f = 0; f < 4; ++f) {
-    // A columna QUENTE veste a batida da familia d'ella, da base ao topo.
-    CHECK(ecran.PixelAt(2 * f, 1).foreground_color == cor(tk::rgb(batidas[f])));
-    CHECK(ecran.PixelAt(2 * f, 0).foreground_color == cor(tk::rgb(batidas[f])));
+    // A barra QUENTE veste a batida da familia d'ella, da base ao topo, e nas
+    // DUAS collunhas d'ella.
+    CHECK(ecran.PixelAt(6 * f, 1).foreground_color == cor(tk::rgb(batidas[f])));
+    CHECK(ecran.PixelAt(6 * f, 0).foreground_color == cor(tk::rgb(batidas[f])));
+    CHECK(ecran.PixelAt(6 * f + 1, 1).foreground_color ==
+          cor(tk::rgb(batidas[f])));
+    // O VÃO entre as duas fica em branco: elle não pinta, e no terminal isso
+    // lê-se por espaço.
+    CHECK(ecran.PixelAt(6 * f + 2, 1).character == " ");
     // E a vizinha FRIA veste a rampa, que é a mesma nas quatro familias.
-    CHECK(ecran.PixelAt(2 * f + 1, 1).foreground_color ==
+    CHECK(ecran.PixelAt(6 * f + 3, 1).foreground_color ==
           cor(tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   }
 }
