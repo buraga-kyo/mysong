@@ -118,6 +118,13 @@ std::string somma_dos_octetos(std::string_view octetos);
 // o mais, e ahi a capa não vae ao cache.
 std::string_view extensao_da_capa(std::string_view octetos);
 
+// caminho_da_capa_em_cache — `$XDG_CACHE_HOME/mysong/capas/<somma>.<extensão>`,
+// e sem a variavel `~/.cache/mysong/capas/`, pelo precedente exacto do
+// caminho_da_configuracao. Vazio sem HOME, e vazio quando os octetos não são
+// imagem que se conheça. Directorio algum se cria aqui: quem escreve é quem
+// cria, e esta funcção sómente diz ONDE.
+std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos);
+
 // ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
 // (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
 // degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a

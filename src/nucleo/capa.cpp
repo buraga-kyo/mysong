@@ -230,6 +230,25 @@ std::string_view extensao_da_capa(std::string_view octetos) {
   return {};
 }
 
+std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos) {
+  const std::string_view extensao = extensao_da_capa(octetos);
+  if (extensao.empty()) return {};
+  // O CACHE, e não o directorio de corrida em que o chafa recebia a arte:
+  // aquelle morre no fim da sessão, e a lousa quer o arquivo enquanto a janella
+  // estiver de pé. E cache é o logar certo, que isto se apaga sem perda.
+  const char* const posto = std::getenv("XDG_CACHE_HOME");
+  std::filesystem::path raiz;
+  if (posto != nullptr && posto[0] != '\0') {
+    raiz = std::filesystem::path(posto);
+  } else {
+    const char* const casa = std::getenv("HOME");
+    if (casa == nullptr) return {};
+    raiz = std::filesystem::path(casa) / ".cache";
+  }
+  return raiz / "mysong" / "capas" /
+         (somma_dos_octetos(octetos) + "." + std::string(extensao));
+}
+
 std::string arte_embutida(const std::filesystem::path& faixa) {
   // Cada guarda cobre um caso MEDIDO, e não um receio. Arquivo que não é MP3 (o
   // `.mkv` do video, um `.webm`, lixo, arquivo vazio) faz a taglib dar `isValid()`
