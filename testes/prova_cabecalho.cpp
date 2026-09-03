@@ -206,5 +206,33 @@ TEST_CASE("a aba diz a secção, e a secção diz a aba que accende") {
     CHECK(tui::aba_da_secao(tui::secao_da_aba(qual)) == qual);
 }
 
+TEST_CASE("o `o` cycla faixas, artistas e albuns, e salta o que não tem chão") {
+  CHECK(tui::vista_seguinte(tui::Secao::Busca, false) == tui::Secao::Artistas);
+  // Dos ARTISTAS desce-se ao eleito, e essa é a terceira vista. Sem eleito a
+  // que descer, o cyclo salta-a: vista sem chão seria tecla a não fazer nada.
+  CHECK(tui::vista_seguinte(tui::Secao::Artistas, true) == tui::Secao::Albuns);
+  CHECK(tui::vista_seguinte(tui::Secao::Artistas, false) == tui::Secao::Busca);
+  CHECK(tui::vista_seguinte(tui::Secao::Albuns, true) == tui::Secao::Busca);
+  // Dentro de um album o `o` sobe á vista plana, e não desfaz a navegação: de
+  // desfazer já cuidam o Escape e o Backspace.
+  CHECK(tui::vista_seguinte(tui::Secao::Faixas, true) == tui::Secao::Busca);
+  // Fóra das MY SONG a tecla leva ás faixas, que é a aba a que ella pertence.
+  for (const tui::Secao qual : {tui::Secao::Rois, tui::Secao::NoRol,
+                                tui::Secao::Rede, tui::Secao::Lista})
+    CHECK(tui::vista_seguinte(qual, true) == tui::Secao::Busca);
+}
+
+TEST_CASE("a chapa diz a vista sómente onde ella se cycla") {
+  CHECK(tui::nome_da_vista(tui::Secao::Busca) == "FAIXAS");
+  CHECK(tui::nome_da_vista(tui::Secao::Artistas) == "ARTISTAS");
+  CHECK(tui::nome_da_vista(tui::Secao::Albuns) == "ÁLBUNS");
+  CHECK(tui::nome_da_vista(tui::Secao::Faixas) == "ÁLBUNS");
+  // Fóra das MY SONG a palavra sahe VAZIA: chapa que dissesse «FAIXAS» n'uma
+  // lista de listas prometteria uma tecla que alli não faz cousa alguma.
+  for (const tui::Secao qual : {tui::Secao::Rois, tui::Secao::NoRol,
+                                tui::Secao::Rede, tui::Secao::Lista})
+    CHECK(tui::nome_da_vista(qual).empty());
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
