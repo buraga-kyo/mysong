@@ -228,6 +228,31 @@ disco e nao memoria. O nome sahe do conteudo, donde duas faixas com a mesma arte
 partilham um arquivo so. Apagar essa pasta nao perde nada: a proxima corrida
 torna a escrever.
 
+#### Um limite MEDIDO: a imagem pode sahir do canto
+
+O `ueberzugpp` nao recebe o canto em pixeis: recebe a CELLA, e mede sozinho onde
+o terminal comeca e quanto vale uma cella. E mede pelo PROCESSO: sobe a arvore
+dos paes ate achar um que tenha terminal, e toma o tamanho D'ESSE.
+
+Aberto o mysong pelo proprio terminal, isso da o terminal certo. Aberto de
+dentro de OUTRA sessao (um script disparado de outra janella, um agente, um
+tmux por baixo de outro), o que elle acha e o terminal do pae, e a conta sahe
+pela medida errada: toda imagem apparece deslocada do mesmo tanto, metade da
+differenca entre as duas medidas.
+
+Medido em 03/09 n'esta machina: mysong n'um Alacritty de 167x67 (1503x1340
+pixeis) aberto de dentro de um paine de 54x64 (486x1280) sahiu com a capa E as
+tres chapas 508 pixeis a direita e 30 abaixo, todas pelo mesmo tanto. A mesma
+janella aberta SOLTA da arvore (`setsid --fork alacritty ...`) leu 167x67 e tudo
+cahiu no logar, ate a cella.
+
+Quem quiser conferir: o `ueberzugpp` escreve em `/tmp/ueberzugpp-$USER.log` a
+linha `ioctl sizes: COLS=... ROWS=...`, e alli se ve que terminal elle mediu.
+
+Do lado do mysong nao ha o que corrigir: o protocolo do `ueberzugpp` so aceita
+a cella, e a conta do canto e d'elle. O remedio e abrir o tocador pelo terminal
+em que se quer ve-lo.
+
 ### As palavras de marca em XIROD, pelo letreiro
 
 Havendo lousa, havendo o `pango-view` e havendo a fonte XIROD installada, as
