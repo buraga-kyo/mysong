@@ -13,13 +13,13 @@
 // Tres linhas, e d'ellas sahe todo o resto por decisão registrada no ledger.
 // Mudando-se a fonte lá, esta cópia não sabe: é o preço de arquivo não
 // versionado, e escreve-se aqui para que a divergencia se leia no codigo.
-// A ISSUE #104 SUBSTITUE as duas ancoras d'essa segunda linha, e vae dito para
-// que a divergencia não fique por descobrir: o v700 da base e o v400 do topo
-// vestião as vinte e quatro bandas de um violeta só, e a côr nada dizia da
-// musica, que subia e descia egual no bumbo e no chimbal. Ficam a côr do
-// REGISTRO no topo e ella mesma composta sobre o painel na base. O que a §7.4.9
-// manda de facto, e que se conserva inteiro, é a rampa VERTICAL ancorada ao
-// painel e o mudo em text_faint.
+// A ISSUE #132 SUBSTITUE as duas ancoras d'essa segunda linha, e vae dito para
+// que a divergencia não fique por descobrir: na base o v500 composto sobre o
+// painel, no topo o v500 inteiro, e a rampa é UMA só em toda a largura. A côr
+// do REGISTRO já não veste a rampa (foi a issue #104, e a fita sahia arco-iris
+// parado): ella veste a columna INTEIRA, e sómente no instante da BATIDA FORTE
+// d'aquella banda. O que a §7.4.9 manda de facto, e se conserva inteiro, é a
+// rampa VERTICAL ancorada ao painel e o mudo em text_faint.
 // ADVERTENCIA DE ORIENTAÇÃO, que se leia antes de tudo: os oito blocos U+2581 a
 // U+2588 crescem de BAIXO para cima, e o Quadro (como o FTXUI) lê-se de CIMA
 // para baixo. Os dous sentidos são OPPOSTOS, e a barra desenhada de cabeça para
