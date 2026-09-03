@@ -1600,6 +1600,12 @@ int main(int argc, char** argv) {
         nucleo::parecer_da_lousa(ajustes.lousa.valor, nucleo::ha_display(),
                                  !versao_da_lousa.empty()),
         versao_da_lousa);
+    // O LETREIRO (issue #108) logo abaixo d'ella, que d'ella depende: diz
+    // «Xirod, pango-view» de pé, e a razão deitado. Tambem fóra da taboa dos
+    // requisitos, e pela mesma razão: a XIROD não tranca porta alguma.
+    std::cout << nucleo::texto_do_letreiro(nucleo::parecer_do_letreiro(
+        ajustes.lousa.valor, nucleo::ha_pango_view(),
+        nucleo::ha_familia_da_marca()));
     return relatorio.ha_impedimento() ? 1 : 0;
   }
 
