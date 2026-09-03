@@ -102,27 +102,32 @@ TEST_CASE("a linha do alto sahe egual á cadeia escripta á mão") {
 }
 
 TEST_CASE("a linha fecha a largura exacta, e o nome toma o que sobra") {
-  // Em 120 sobram 17 collunhas ao nome: 120 menos as 51 da esquerda e as 52 da
-  // direita. O nome que não cabe corta-se com «…»; o que cabe enche-se.
+  // Em 120 o centro cae na collunha 40, d'onde ao nome ficam as 28 que vão dos
+  // 12 dos botões até elle. O REPETIR cede, que a ponta direita já lá não
+  // cabia; o nome que não cabe corta-se com «…», e o que cabe centra-se.
   const ftxui::Screen larga = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong,
                                  "Montagem Lunar Celestia 1.0 (SLOWED)", 120),
       120);
-  CHECK(pedaco(larga, 51, 17) == "Montagem Lunar C…");
-  CHECK(pedaco(larga, 68, 1) == "\ue0b2");
+  CHECK(pedaco(larga, 12, 28) == "Montagem Lunar Celestia 1.0…");
+  CHECK(pedaco(larga, 40, 11) == " \U000f075a MY SONG ");
+  CHECK(pedaco(larga, 80, 1) == "\ue0b2");
   // Nome curto: o fundo do segmento veste a collunha inteira, e o que sobra
   // enche-se de espaço. Buraco escuro no meio da fita lê-se como emenda.
   const ftxui::Screen curto =
       papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, "NO FEAR!",
                                        120),
             120);
-  CHECK(pedaco(curto, 51, 17) == "NO FEAR!         ");
+  CHECK(pedaco(curto, 12, 28) == "          NO FEAR!          ");
+  // E o grupo fica na MESMA collunha com o nome comprido e com o curto: é o
+  // que o centro CONTADO dá, e o que enchimento elastico algum daria.
+  CHECK(pedaco(curto, 40, 11) == " \U000f075a MY SONG ");
   // E nada tocando, o meio DIZ que nada toca, em vez de ficar em branco.
   tui::Retracto parado;
   CHECK(pedaco(papel(tui::elemento_do_cabecalho(parado, tui::Aba::MySong, "",
                                                 120),
                      120),
-               51, 11) == "(nada toca)");
+               20, 11) == "(nada toca)");
 }
 
 
@@ -133,17 +138,19 @@ TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, "x", 167),
       167);
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::v600));
-  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::v50));
-  CHECK(tela.PixelAt(4, 0).background_color == cor(tk::raised));
-  CHECK(tela.PixelAt(4, 0).foreground_color == cor(tk::text_primary));
-  CHECK(tela.PixelAt(30, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(78, 0).background_color == cor(tk::v600));
+  CHECK(tela.PixelAt(78, 0).foreground_color == cor(tk::v50));
+  CHECK(tela.PixelAt(66, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(66, 0).foreground_color == cor(tk::text_primary));
+  CHECK(tela.PixelAt(92, 0).background_color == cor(tk::raised));
   // Os botões vestem panel_hi com o glifo em glow_core: é o glow CONTIDO da
   // regra da Casa, que accende no que TOCA e nunca no fundo todo.
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
-  CHECK(tela.PixelAt(40, 0).foreground_color == cor(tk::glow_core));
-  // O nome veste `panel`, que é o degrau de fundo, e não o da fita.
-  CHECK(tela.PixelAt(60, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(1, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(1, 0).foreground_color == cor(tk::glow_core));
+  // O nome veste `panel`, que é o degrau de fundo, e não o da fita; e o vão
+  // da outra banda do grupo veste o mesmo, que a fita ha de ser continua.
+  CHECK(tela.PixelAt(30, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(110, 0).background_color == cor(tk::panel));
 }
 
 
