@@ -13,6 +13,13 @@
 // Tres linhas, e d'ellas sahe todo o resto por decisão registrada no ledger.
 // Mudando-se a fonte lá, esta cópia não sabe: é o preço de arquivo não
 // versionado, e escreve-se aqui para que a divergencia se leia no codigo.
+// A ISSUE #104 SUBSTITUE as duas ancoras d'essa segunda linha, e vae dito para
+// que a divergencia não fique por descobrir: o v700 da base e o v400 do topo
+// vestião as vinte e quatro bandas de um violeta só, e a côr nada dizia da
+// musica, que subia e descia egual no bumbo e no chimbal. Ficam a côr do
+// REGISTRO no topo e ella mesma composta sobre o painel na base. O que a §7.4.9
+// manda de facto, e que se conserva inteiro, é a rampa VERTICAL ancorada ao
+// painel e o mudo em text_faint.
 // ADVERTENCIA DE ORIENTAÇÃO, que se leia antes de tudo: os oito blocos U+2581 a
 // U+2588 crescem de BAIXO para cima, e o Quadro (como o FTXUI) lê-se de CIMA
 // para baixo. Os dous sentidos são OPPOSTOS, e a barra desenhada de cabeça para
@@ -35,7 +42,7 @@
 //                   (iii) o gradiente é ancorado ao PAINEL, e não á barra: a
 //                   tinta da célulla sahe da posição d'ella na collunha, e
 //                   JAMAIS da magnitude da banda. Ancorado na barra, uma barra
-//                   de uma célulla sahiria em v400, o topo brilhante, no
+//                   de uma célulla sahiria no topo brilhante da rampa, no
 //                   instante em que a banda está quasi morta, e a côr passaria
 //                   a MENTIR sobre o nivel. É tambem o que o bar_meter.lua faz,
 //                   que fixa o gradiente á extensão nominal do trilho «pois
