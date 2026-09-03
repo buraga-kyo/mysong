@@ -83,7 +83,8 @@ ftxui::Element caret(ftxui::Color fundo) {
 }  // namespace
 
 bool aceita_letra(Modo modo) noexcept {
-  return modo != Modo::Nada && modo != Modo::Confirma;
+  return modo != Modo::Nada && modo != Modo::Confirma &&
+         modo != Modo::ConfirmaFaixa;
 }
 
 std::size_t linhas_do_topo(Modo modo) noexcept {
@@ -106,7 +107,15 @@ std::string rotulo_do_prompt(Modo modo, std::string_view contexto) {
     case Modo::Lista: return "PLAYLIST DO SPOTIFY:";
     case Modo::NomeNovo: return "LISTA NOVA:";
     case Modo::NomeOutro: return "NOME:";
-    case Modo::Confirma: return "apagar «" + std::string(contexto) + "»? s/n";
+    // O titulo da faixa, e não «NOME:»: o campo abre já com o titulo corrente
+    // dentro, e o rotulo ha de dizer o que aquelle texto é.
+    case Modo::TituloOutro: return "TITULO:";
+    // A MESMA pergunta do apagar da lista, palavra por palavra. Duas perguntas
+    // com a mesma resposta e redacções differentes fariam o operador ler duas
+    // vezes para saber se a tecla que responde é a mesma.
+    case Modo::Confirma:
+    case Modo::ConfirmaFaixa:
+      return "apagar «" + std::string(contexto) + "»? s/n";
     case Modo::Nada: break;
   }
   return {};
