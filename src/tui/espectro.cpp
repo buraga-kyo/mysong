@@ -41,6 +41,30 @@ Registro registro_da_banda(float centro_em_hertz) {
   return Registro::Agudos;
 }
 
+// O switch sem `default`, de proposito: registro novo accende aviso do
+// compilador aqui e no nome, e o gate da issue #64 o converte em recusa. Com
+// `default` o registro novo sahiria violeta e sem nome, calado. O return de
+// baixo existe só porque a linguagem não sabe que o switch é exhaustivo.
+std::string_view tinta_do_registro(Registro registro) {
+  switch (registro) {
+    case Registro::Graves: return tokens::v500;
+    case Registro::MediosGraves: return tokens::data5;
+    case Registro::MediosAgudos: return tokens::data3;
+    case Registro::Agudos: return tokens::data2;
+  }
+  return tokens::v500;
+}
+
+std::string_view nome_do_registro(Registro registro) {
+  switch (registro) {
+    case Registro::Graves: return "GRAVES";
+    case Registro::MediosGraves: return "MÉDIOS-GRAVES";
+    case Registro::MediosAgudos: return "MÉDIOS-AGUDOS";
+    case Registro::Agudos: return "AGUDOS";
+  }
+  return "GRAVES";
+}
+
 int oitavos(float magnitude, std::size_t altura) {
   const int teto = static_cast<int>(altura) * DEGRAUS_POR_CELULA;
   if (teto <= 0) return 0;

@@ -87,6 +87,19 @@ inline constexpr float FRONTEIRA_DOS_MEDIOS_AGUDOS = 4000.0f;
 // banda pergunta aqui, e jamais conta indices por fóra.
 Registro registro_da_banda(float centro_em_hertz);
 
+// tinta_do_registro — a côr do registro, e devolve o TOKEN e não a tríade
+// porque o gradiente compõe por tokens::mistura, que pede o hexadecimal do
+// design system. Violeta v500 nos graves, cyan data5 nos medios-graves, laranja
+// data3 nos medios-agudos e amarello data2 nos agudos: é o Postulado do Poente
+// Contido, que reserva o amarello, o laranja e o cyan á série de dados, e o
+// espectro É uma série de dados.
+std::string_view tinta_do_registro(Registro registro);
+
+// nome_do_registro — o rótulo em caixa alta, para a legenda que o olho lê. Mora
+// aqui, ao pé da côr, para que nome e tinta tenham UMA verdade só: legenda que
+// se escrevesse no exemplo divergiria da tela no dia em que a côr mudasse.
+std::string_view nome_do_registro(Registro registro);
+
 // Quantos degraus cabem n'uma célulla. Oito, que são os blocos U+2581 a U+2588,
 // e não é numero de gosto: é quanto o terminal sabe subdividir uma célulla na
 // vertical. D'onde a resolução de uma columna de N célullas é 8N degraus, e é
