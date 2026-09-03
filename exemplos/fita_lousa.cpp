@@ -45,5 +45,41 @@ bool par_de(std::string_view texto, long* um, long* outro) {
 
 }  // namespace
 
+int main(int argc, char** argv) {
+  long collunha = 0, linha = 0, largura = 0, altura = 0;
+  if (argc < 5 || !par_de(argv[2], &collunha, &linha) ||
+      !par_de(argv[3], &largura, &altura)) {
+    std::fprintf(stderr,
+                 "uso: fita_lousa <imagem> <COLLUNHAxLINHA> <LARGURAxALTURA>"
+                 " <segundos>\n");
+    return 2;
+  }
+  const double espera = std::strtod(argv[4], nullptr);
+  // A REGUA, para que a prova do olho conte em vez de estimar: uma linha por
+  // fileira, numerada de zero, com marca de dez em dez collunhas.
+  for (int i = 0; i < static_cast<int>(linha + altura + 2); ++i) {
+    std::printf("%02d", i);
+    for (int c = 2; c < 78; ++c) std::putchar(c % 10 == 0 ? '0' + c / 10 : '.');
+    std::putchar('\n');
+  }
+  nu::Lousa lousa(nu::ModoDaLousa::Auto);
+  if (!lousa.disponivel()) {
+    std::fprintf(stderr, "fita_lousa: %s\n", lousa.parecer().razao.c_str());
+    return 2;
+  }
+  if (!lousa.poe("fita", argv[1], static_cast<int>(collunha),
+                 static_cast<int>(linha), static_cast<std::size_t>(largura),
+                 static_cast<std::size_t>(altura))) {
+    std::fprintf(stderr, "fita_lousa: a ordem não passou pelo cano\n");
+    return 2;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(
+      static_cast<long long>(espera * 1000.0)));
+  // O `tira` explicito, e não sómente o destructor: a prova ha de ver a imagem
+  // sahir com o programa ainda vivo, que é o caso do foco que se perde.
+  lousa.tira("fita");
+  return 0;
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
