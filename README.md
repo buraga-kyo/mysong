@@ -646,7 +646,10 @@ tmux 3.4 com `set -g extended-keys on` entrega as seis.
 ### Arrastar e soltar
 
 A lista arruma-se a mao: pega-se na faixa com o botao esquerdo, arrasta-se e
-larga-se onde ela vai. Enquanto a mao anda, a linha de onde ela saiu fica
+larga-se onde ela vai. O arrasto pede MAIS de uma linha de distancia: o tremor
+de uma linha e o que todo duplo clique tem, e toma-lo por arrasto fazia a faixa
+mudar de lugar em vez de tocar. Para mover uma linha so ha o `K` e o `J`. E
+quem manda e a linha em que o dedo LARGOU, e nao a ultima por onde ele passou. Enquanto a mao anda, a linha de onde ela saiu fica
 apagada e a linha em que ela cairia veste o repouso do chrome, que e como o olho
 sabe onde a solta. Largar onde se pegou nao move nada, e continua a valer como
 clique.

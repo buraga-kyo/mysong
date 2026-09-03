@@ -140,18 +140,31 @@ RespostaDoArrasto gesto_do_arrasto(Arrasto& arrasto, const Alvo& alvo,
       // torna não perde a faixa que trazia na mão.
       if (!arrasto.pegou || !na_linha || alvo.indice == arrasto.alvo) return {};
       arrasto.alvo = alvo.indice;
-      arrasto.andou = arrasto.alvo != arrasto.origem;
+      // ANDOU quer dizer MAIS de uma linha (issue #169). O tremor de uma linha
+      // é o que todo duplo clique tem, e tomá-lo por arrasto fazia a faixa
+      // mudar de logar em vez de tocar. Quem quer mover uma linha só tem o `K`
+      // e o `J`, que já servem e não tremem.
+      const std::size_t d_onde = arrasto.origem;
+      const std::size_t d_agora = arrasto.alvo;
+      const std::size_t quanto =
+          d_agora > d_onde ? d_agora - d_onde : d_onde - d_agora;
+      arrasto.andou = quanto > 1;
       return {GestoDoArrasto::Arrasta, arrasto.origem, arrasto.alvo};
     }
     case ftxui::Mouse::Released: {
       if (!arrasto.pegou) return {};
       const Arrasto tinha = arrasto;
       arrasto = Arrasto();
+      // A linha em que o dedo LARGOU, e não a ultima por onde elle passou
+      // (issue #169): passar por cima de uma faixa e tornar á de origem é
+      // largar na de origem, e era o contrario que se cumpria. Largando FÓRA
+      // da pauta, vale o ultimo alvo conhecido, que é o que a mão trazia.
+      const std::size_t onde = na_linha ? alvo.indice : tinha.alvo;
       // Largar onde se pegou não é movimento: é o clique de sempre, e quem o
       // cumpre é a taboada d'elle.
-      if (!tinha.andou || tinha.alvo == tinha.origem)
+      if (!tinha.andou || onde == tinha.origem)
         return {GestoDoArrasto::Desiste, tinha.origem, tinha.origem};
-      return {GestoDoArrasto::Larga, tinha.origem, tinha.alvo};
+      return {GestoDoArrasto::Larga, tinha.origem, onde};
     }
   }
   return {};

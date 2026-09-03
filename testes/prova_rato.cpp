@@ -455,6 +455,55 @@ TEST_CASE("a vista que não se arruma não deixa pegar, e o botão direito tambe
   CHECK_FALSE(mao.pegou);
 }
 
+// O DUPLO CLIQUE (issue #169). Todo duplo clique treme, e o tremor cahia n'uma
+// linha visinha: o gesto virava ARRASTO, movia a faixa e engolia o clique que
+// ia tocá-la. Duas regras o corrigem, e são estas que estes casos prendem: o
+// largar lê a linha do PROPRIO evento, e o arrasto pede MAIS de uma linha.
+TEST_CASE("o tremor de uma linha não arrasta, e o clique segue") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  tui::Arrasto mao;
+  const auto na_linha = [&caixas](int y) {
+    return tui::alvo_do_ponto(caixas, 30, y);
+  };
+  // Pega na terceira linha visivel (indice 22) e treme para a visinha (21).
+  tui::gesto_do_arrasto(mao, na_linha(5), Mouse::Left, Mouse::Pressed, true);
+  const tui::RespostaDoArrasto tremeu =
+      tui::gesto_do_arrasto(mao, na_linha(4), Mouse::Left, Mouse::Moved, true);
+  CHECK(tremeu.gesto == tui::GestoDoArrasto::Arrasta);
+  CHECK_FALSE(mao.andou);  // UMA linha não é arrasto: é tremor
+  // Largando na visinha, DESISTE: o clique de sempre segue, e é elle que toca.
+  const tui::RespostaDoArrasto larga =
+      tui::gesto_do_arrasto(mao, na_linha(4), Mouse::Left, Mouse::Released, true);
+  CHECK(larga.gesto == tui::GestoDoArrasto::Desiste);
+}
+
+TEST_CASE("o largar lê a linha do evento, e não a ultima por onde se passou") {
+  const tui::CaixasDaTela caixas = tela_de_mentira();
+  tui::Arrasto mao;
+  const auto na_linha = [&caixas](int y) {
+    return tui::alvo_do_ponto(caixas, 30, y);
+  };
+  // A pauta de mentira tem cinco linhas (as fileiras 3 a 7, indices 20 a 24).
+  // Pega em 20, passa por 23 (tres linhas: arrasto de facto) e TORNA a 20.
+  tui::gesto_do_arrasto(mao, na_linha(3), Mouse::Left, Mouse::Pressed, true);
+  tui::gesto_do_arrasto(mao, na_linha(6), Mouse::Left, Mouse::Moved, true);
+  CHECK(mao.andou);
+  const tui::RespostaDoArrasto torna =
+      tui::gesto_do_arrasto(mao, na_linha(3), Mouse::Left, Mouse::Released, true);
+  // Largou onde pegou: movimento algum, ainda que tenha passado por outra.
+  CHECK(torna.gesto == tui::GestoDoArrasto::Desiste);
+
+  // E largando de facto n'outra, é a linha do EVENTO que manda.
+  tui::Arrasto outra;
+  tui::gesto_do_arrasto(outra, na_linha(3), Mouse::Left, Mouse::Pressed, true);
+  tui::gesto_do_arrasto(outra, na_linha(6), Mouse::Left, Mouse::Moved, true);
+  const tui::RespostaDoArrasto d = tui::gesto_do_arrasto(
+      outra, na_linha(5), Mouse::Left, Mouse::Released, true);
+  CHECK(d.gesto == tui::GestoDoArrasto::Larga);
+  CHECK(d.de == 20);
+  CHECK(d.para == 22);  // a linha em que se largou, e não a 23 por onde passou
+}
+
 TEST_CASE("a mão que sae da pauta guarda o alvo que tinha") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   tui::Arrasto mao;
