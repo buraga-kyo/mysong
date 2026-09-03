@@ -191,6 +191,12 @@ target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
 # o desenha, e o nome é o certo em ambas.
 target_sources(mysong_core PRIVATE src/tui/espectro.cpp)
 
+# ─── A ONDA NA TELA (issue #131) ────────────────────────────────────────────
+# A peça pura que pinta a onda da faixa n'uma linha da fita. Linha NOVA ao
+# lado da do espectro, que é a peça de quem ella toma a escada dos oito
+# blocos; nada se altera na d'elle, que a issue #132 lavra alli agora.
+target_sources(mysong_core PRIVATE src/tui/onda.cpp)
+
 # A FITA do espectro: a peça que o olho do operador julga, e a sahida cujos bytes
 # se conferem com o grep. Linha de commando, e SEM FTXUI na conta que ella pinta:
 # a fita resolve-se em quadro, e o quadro emitte-se em SGR cru. Alvo proprio, e
