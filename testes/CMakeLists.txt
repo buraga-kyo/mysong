@@ -102,6 +102,12 @@ target_sources(mysong_testes PRIVATE prova_letra.cpp)
 # ─── A PROVA DA CAPA (issue #16) ────────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_capa.cpp)
 
+# ─── A PROVA DA ONDA (issue #131) ───────────────────────────────────────────
+# Ao lado da prova da capa, que é o cache de quem a onda toma a somma e a raiz.
+# Linha NOVA, e nunca alteração da d'ella. O ffmpeg não corre aqui senão no
+# caso VIVO, que dorme sem a variavel MYSONG_PROVA_MP3.
+target_sources(mysong_testes PRIVATE prova_onda.cpp)
+
 # ─── A PROVA DO MPRIS (issue #29) ───────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_unidades.cpp)
 
