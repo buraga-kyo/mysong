@@ -34,11 +34,13 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <ftxui/screen/screen.hpp>
 
 #include "nucleo/analisador.hpp"
+#include "nucleo/espectro.hpp"
 #include "tui/espectro.hpp"
 #include "tui/tokens.hpp"
 
@@ -95,6 +97,13 @@ std::vector<float> bandas_uniformes(float valor) {
   return std::vector<float>(mysong::nucleo::QUANTAS_BANDAS, valor);
 }
 
+// centros_em — as QUANTAS_BANDAS todas no mesmo hertz, para PRENDER o registro
+// da fita a um só. Os casos da rampa afirmam a RAMPA, e não a fronteira, que tem
+// caso proprio: sem isto, cada columna cahiria n'uma familia differente.
+std::vector<float> centros_em(float hertz) {
+  return std::vector<float>(mysong::nucleo::QUANTAS_BANDAS, hertz);
+}
+
 // Os glifos ESCRIPTOS Á MÃO, por ponto de codigo. Escrevem-se por \u e não pelo
 // glifo cru para que a prova não dependa da codificação com que o editor gravou
 // este arquivo, e para que o assento de cada degrau se leia como numero.
@@ -132,36 +141,41 @@ TEST_CASE("a columna empilha o cheio e põe o degrau parcial acima") {
 // á mão: teto 5 vezes 8 = 40 degraus, 0,899 vezes 40 = 35,96, floor 35, que dá
 // quatro blocos cheios (32) e resto tres. Cinco célullas desenhadas, e é o que
 // permitte aferir a rampa INTEIRA, da base ao topo, n'uma composição só.
-TEST_CASE("a rampa vae de v700 na base a v400 no topo") {
+TEST_CASE("a rampa vae da base composta ao topo do registro") {
   const std::vector<float> bandas = bandas_uniformes(0.899f);
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5);
+  // Cem hertz prende a fita inteira nos GRAVES, e o caso afere a RAMPA.
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                       false, centros_em(100.0f));
 
   REQUIRE(quadro.altura == 5);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
     REQUIRE(quadro.em(4, c).pinta);
     REQUIRE(quadro.em(0, c).pinta);
 
-    // A BASE (linha 4) veste v700 EXACTO, conferido contra o TOKEN e não contra
-    // outra chamada da obra: é asserção de fóra, e não pergunta ao oraculo.
-    CHECK(es::mesma_tinta(quadro.em(4, c).tinta, tk::rgb(tk::v700)));
-    // O TOPO (linha 0) veste v400 EXACTO, pelo mesmo modo.
-    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v400)));
+    // A BASE (linha 4) veste o v500 composto sobre o painel com peso 0,55,
+    // conferido contra os TOKENS e não contra outra chamada da obra.
+    CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+    // O TOPO (linha 0) veste v500 EXACTO, pelo mesmo modo.
+    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v500)));
 
     // O MEIO (linha 2) fica a meia rampa. O peso recalcula-se AQUI: a linha 2 é
-    // a terceira desde a base d'um painel de cinco, d'onde o alto vale 2 e o
-    // peso 2/4, que é 0,5. Compõe-se por tokens::mistura, que é a mesma
-    // interpolação que a issue #2 já prova, e não pela funcção sob exame.
+    // a terceira desde a base d'um painel de cinco, d'onde o alto vale 2 e a
+    // fracção 2/4, que é 0,5; e o peso vae de 0,55 a 1, d'onde 0,775. Compõe-se
+    // por tokens::mistura, e não pela funcção sob exame.
     CHECK(es::mesma_tinta(quadro.em(2, c).tinta,
-                          tk::mistura(tk::v400, tk::v700, 0.5)));
+                          tk::mistura(tk::v500, tk::panel_hi, 0.775)));
   }
 }
 
 TEST_CASE("painel de uma célulla veste a base da rampa") {
-  const es::Quadro quadro = es::compor(bandas_uniformes(0.5f), 8, 1);
+  const es::Quadro quadro =
+      es::compor(bandas_uniformes(0.5f), 8, 1, false, centros_em(100.0f));
   REQUIRE(quadro.altura == 1);
   for (std::size_t c = 0; c < quadro.largura; ++c) {
     REQUIRE(quadro.em(0, c).pinta);
-    CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(tk::v700)));
+    CHECK(es::mesma_tinta(quadro.em(0, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   }
 }
 
@@ -177,8 +191,11 @@ TEST_CASE("painel de uma célulla veste a base da rampa") {
 // resto quatro. Ambas alcançam a linha 2, e é o que as torna comparaveis.
 TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
   const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
-  const es::Quadro alta = es::compor(bandas_uniformes(0.899f), largura, 5);
-  const es::Quadro baixa = es::compor(bandas_uniformes(0.5f), largura, 5);
+  const std::vector<float> centros = centros_em(100.0f);
+  const es::Quadro alta =
+      es::compor(bandas_uniformes(0.899f), largura, 5, false, centros);
+  const es::Quadro baixa =
+      es::compor(bandas_uniformes(0.5f), largura, 5, false, centros);
 
   for (std::size_t c = 0; c < largura; ++c) {
     // As duas pintam a linha 2 e a linha 4, e é premissa do caso.
@@ -189,9 +206,10 @@ TEST_CASE("a tinta da linha não muda quando a magnitude muda") {
     // A linha 2 veste a MESMA tinta nas duas, e a linha 4 tambem. Confere-se
     // contra o alvo escripto de fóra, e ainda uma contra a outra.
     CHECK(es::mesma_tinta(baixa.em(2, c).tinta,
-                          tk::mistura(tk::v400, tk::v700, 0.5)));
+                          tk::mistura(tk::v500, tk::panel_hi, 0.775)));
     CHECK(es::mesma_tinta(alta.em(2, c).tinta, baixa.em(2, c).tinta));
-    CHECK(es::mesma_tinta(baixa.em(4, c).tinta, tk::rgb(tk::v700)));
+    CHECK(es::mesma_tinta(baixa.em(4, c).tinta,
+                          tk::mistura(tk::v500, tk::panel_hi, 0.55)));
     CHECK(es::mesma_tinta(alta.em(4, c).tinta, baixa.em(4, c).tinta));
 
     // E a barra BAIXA de facto pára antes do topo: não é que ella seja egual
@@ -209,7 +227,8 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;  // acima do limiar: quente
   bandas[4] = 0.40f;  // abaixo: fria, e no gradiente
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5);
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                       false, centros_em(100.0f));
 
   // A columna 3: teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e resto 6,
   // d'onde cinco célullas, todas em glow_hot, da base ao topo.
@@ -219,9 +238,11 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
   }
 
   // A columna 4: 0,40 vezes 40 = 16 degraus, dous cheios e resto zero, d'onde
-  // duas célullas, e no GRADIENTE. A base em v700, e não em glow_hot.
+  // duas célullas, e no GRADIENTE. A base na côr do registro composta sobre o
+  // painel, e não em glow_hot.
   REQUIRE(quadro.em(4, 4).pinta);
-  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::v700)));
+  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   CHECK_FALSE(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::glow_hot)));
   CHECK(quadro.em(2, 4).pinta == false);
 }
@@ -230,15 +251,19 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
 // maior-ou-igual se distingue do maior.
 TEST_CASE("o limiar de noventa por cento pertence ao quente") {
   const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
-  const es::Quadro no_limiar = es::compor(bandas_uniformes(0.90f), largura, 4);
-  const es::Quadro sob_limiar = es::compor(bandas_uniformes(0.899f), largura, 4);
+  const std::vector<float> centros = centros_em(100.0f);
+  const es::Quadro no_limiar =
+      es::compor(bandas_uniformes(0.90f), largura, 4, false, centros);
+  const es::Quadro sob_limiar =
+      es::compor(bandas_uniformes(0.899f), largura, 4, false, centros);
 
   REQUIRE(no_limiar.em(3, 0).pinta);
   REQUIRE(sob_limiar.em(3, 0).pinta);
   // Em cima do limiar: quente.
   CHECK(es::mesma_tinta(no_limiar.em(3, 0).tinta, tk::rgb(tk::glow_hot)));
   // Um milesimo abaixo: frio, e de volta á base da rampa.
-  CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta, tk::rgb(tk::v700)));
+  CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
 }
 
 // ── C5 · o mudo, e o piso do silencio ───────────────────────────────────────
@@ -276,6 +301,165 @@ TEST_CASE("o silencio deixa um piso de um oitavo em text_faint") {
     // E nada acima d'ella, em linha alguma.
     for (std::size_t l = 0; l < 5; ++l) CHECK(quadro.em(l, c).pinta == false);
   }
+}
+
+// ── C11 · os quatro registros, e a fronteira em HERTZ ───────────────────────
+// A taboada vae escripta Á MÃO, e nos DOUS lados de cada fronteira: é ahi que o
+// maior-ou-egual se distingue do maior, e é o unico logar onde um erro de um
+// hertz se apanha, que no meio da faixa toda obra acerta.
+TEST_CASE("a fronteira do registro decide-se pelo centro em hertz") {
+  CHECK(es::registro_da_banda(40.0f) == es::Registro::Graves);
+  CHECK(es::registro_da_banda(249.0f) == es::Registro::Graves);
+  CHECK(es::registro_da_banda(250.0f) == es::Registro::Graves);
+  CHECK(es::registro_da_banda(251.0f) == es::Registro::MediosGraves);
+  CHECK(es::registro_da_banda(999.0f) == es::Registro::MediosGraves);
+  CHECK(es::registro_da_banda(1000.0f) == es::Registro::MediosGraves);
+  CHECK(es::registro_da_banda(1001.0f) == es::Registro::MediosAgudos);
+  CHECK(es::registro_da_banda(3999.0f) == es::Registro::MediosAgudos);
+  CHECK(es::registro_da_banda(4000.0f) == es::Registro::MediosAgudos);
+  CHECK(es::registro_da_banda(4001.0f) == es::Registro::Agudos);
+  CHECK(es::registro_da_banda(16000.0f) == es::Registro::Agudos);
+
+  // O lixo, e é a mesma lição do cingido: toda comparação com NaN é falsa,
+  // d'onde elle atravessaria os tres ramos e sahiria AGUDOS, que é a familia
+  // que ninguem pediu. Sahe GRAVES, que é o principio da escala.
+  CHECK(es::registro_da_banda(std::numeric_limits<float>::quiet_NaN()) ==
+        es::Registro::Graves);
+  CHECK(es::registro_da_banda(-1.0f) == es::Registro::Graves);
+}
+
+// ── C12 · as quatro côres, no topo e na base ────────────────────────────────
+// Um caso por familia, com o centro posto no MEIO da faixa d'ella e não junto da
+// fronteira: aqui afere-se a CÔR, e a fronteira tem caso proprio.
+TEST_CASE("cada registro veste a sua côr no topo e a sua base no pé") {
+  struct Caso {
+    float hertz;
+    std::string_view cor;
+  };
+  // Os hertz e os tokens escriptos Á MÃO, que é a taboada da issue #104:
+  // violeta v500 nos graves, cyan data5 nos medios-graves, laranja data3 nos
+  // medios-agudos e amarello data2 nos agudos.
+  const Caso casos[] = {{100.0f, tk::v500},
+                        {500.0f, tk::data5},
+                        {2000.0f, tk::data3},
+                        {8000.0f, tk::data2}};
+  for (const Caso& caso : casos) {
+    CHECK(es::tinta_do_registro(es::registro_da_banda(caso.hertz)) == caso.cor);
+    // 0,899 pinta as CINCO célullas d'um painel de cinco, pela conta do caso da
+    // rampa: teto 40, floor de 35,96 dá 35, quatro cheios e resto tres.
+    const es::Quadro quadro =
+        es::compor(bandas_uniformes(0.899f), 6, 5, false, centros_em(caso.hertz));
+    for (std::size_t c = 0; c < quadro.largura; ++c) {
+      REQUIRE(quadro.em(0, c).pinta);
+      CHECK(es::mesma_tinta(quadro.em(0, c).tinta, tk::rgb(caso.cor)));
+      CHECK(es::mesma_tinta(quadro.em(4, c).tinta,
+                            tk::mistura(caso.cor, tk::panel_hi, 0.55)));
+    }
+  }
+}
+
+// A FRONTEIRA dentro do QUADRO, e não sómente no punho puro: duas bandas, uma de
+// centro em 249 hertz e a outra em 251, e a fita mostra as duas familias lado a
+// lado. É o caso que apanha um quadro que resolvesse o registro pela POSIÇÃO da
+// columna em vez do centro em hertz da banda que ella cobre.
+TEST_CASE("banda de 249 hertz sahe grave e a de 251 sahe media-grave") {
+  const std::vector<float> bandas = {0.5f, 0.5f};
+  const std::vector<float> centros = {249.0f, 251.0f};
+  const es::Quadro quadro = es::compor(bandas, 2, 4, false, centros);
+
+  REQUIRE(quadro.registros.size() == 2);
+  CHECK(quadro.registros[0] == es::Registro::Graves);
+  CHECK(quadro.registros[1] == es::Registro::MediosGraves);
+
+  // E a TINTA segue o registro, que é o que o olho vê: teto 32, 0,5 vezes 32 dá
+  // 16 degraus, dous blocos cheios e resto zero, d'onde duas célullas, e a base
+  // é a linha 3. Violeta n'uma columna, cyan na outra, no mesmo quadro.
+  REQUIRE(quadro.em(3, 0).pinta);
+  REQUIRE(quadro.em(3, 1).pinta);
+  CHECK(es::mesma_tinta(quadro.em(3, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
+  CHECK(es::mesma_tinta(quadro.em(3, 1).tinta,
+                        tk::mistura(tk::data5, tk::panel_hi, 0.55)));
+}
+
+// A PRECEDENCIA da côr não se mexe com o registro. Arma-se n'uma familia que NÃO
+// é a violeta, de propósito: uma obra que esquecesse o ramo do quente e cahisse
+// na rampa denuncia-se pelo amarello, ao passo que armada nos graves a mesma
+// falha daria côr parecida de mais com a de antes.
+TEST_CASE("o pico veste glow_hot e o mudo text_faint em qualquer registro") {
+  const std::vector<float> centros = centros_em(8000.0f);  // agudos, o amarello
+  const es::Quadro quente =
+      es::compor(bandas_uniformes(0.95f), 6, 4, false, centros);
+  const es::Quadro calado =
+      es::compor(bandas_uniformes(0.95f), 6, 4, true, centros);
+  const es::Quadro silencio =
+      es::compor(bandas_uniformes(0.0f), 6, 4, false, centros);
+
+  for (std::size_t c = 0; c < 6; ++c) {
+    // A base (linha 3) em todos os tres, que é a célulla que toda barra tem.
+    REQUIRE(quente.em(3, c).pinta);
+    CHECK(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::glow_hot)));
+    CHECK_FALSE(es::mesma_tinta(quente.em(3, c).tinta, tk::rgb(tk::data2)));
+    CHECK(es::mesma_tinta(calado.em(3, c).tinta, tk::rgb(tk::text_faint)));
+    CHECK(es::mesma_tinta(silencio.em(3, c).tinta, tk::rgb(tk::text_faint)));
+  }
+}
+
+// ── C13 · as bordas REAES do nucleo ─────────────────────────────────────────
+// A obra viva não alcança as bordas do nucleo::Espectro, que o punho do
+// analisador as não abre, e vae pela escala NOMINAL do contracto. Este caso
+// afere que as duas põem TODA banda no mesmo registro, nas taxas que esta Casa
+// encontra, e é o que fecha a differença entre o que a tela pinta e o que o
+// nucleo colheu. Em 96 kHz ellas divergem em tres bandas do grave, que a
+// quantização em raias empurra as bordas para cima; taxa que o mundo não dá a
+// um tocador de mesa, e por isso se nomeia aqui em vez de se affirmar.
+TEST_CASE("as bordas reaes do nucleo põem toda banda no mesmo registro") {
+  const std::vector<float> nominais =
+      es::centros_da_escala(mysong::nucleo::QUANTAS_BANDAS);
+  for (const float taxa : {44100.0f, 48000.0f}) {
+    mysong::nucleo::Espectro espectro(taxa, 2);
+    const std::vector<float> reaes = es::centros_das_bandas(
+        espectro.bordas(),
+        taxa / static_cast<float>(mysong::nucleo::JANELA_DA_FFT));
+    REQUIRE(reaes.size() == mysong::nucleo::QUANTAS_BANDAS);
+    for (std::size_t b = 0; b < reaes.size(); ++b)
+      CHECK(es::registro_da_banda(reaes[b]) ==
+            es::registro_da_banda(nominais[b]));
+  }
+}
+
+// A FITA com as bordas REAES, que é o aceite da issue por extenso: vinte e
+// quatro columnas, uma por banda, e as quatro familias em BLOCOS na ordem, da
+// esquerda para a direita. Os limites vão escriptos Á MÃO, colhidos das bordas
+// que o nucleo assenta em 48 kHz: a banda 6 tem centro em 210 hertz e a 7 em
+// 267, a 12 em 907 e a 13 em 1163, a 17 em 3163 e a 18 em 4059.
+TEST_CASE("com as bordas reaes a fita sahe violeta, cyan, laranja, amarella") {
+  mysong::nucleo::Espectro espectro(48000.0f, 2);
+  const std::vector<float> centros = es::centros_das_bandas(
+      espectro.bordas(),
+      48000.0f / static_cast<float>(mysong::nucleo::JANELA_DA_FFT));
+  const es::Quadro quadro = es::compor(
+      bandas_uniformes(0.5f), mysong::nucleo::QUANTAS_BANDAS, 4, false, centros);
+
+  struct Faixa {
+    std::size_t ultima;
+    es::Registro registro;
+    std::string_view cor;
+  };
+  const Faixa faixas[] = {{6, es::Registro::Graves, tk::v500},
+                          {12, es::Registro::MediosGraves, tk::data5},
+                          {17, es::Registro::MediosAgudos, tk::data3},
+                          {23, es::Registro::Agudos, tk::data2}};
+  REQUIRE(quadro.registros.size() == mysong::nucleo::QUANTAS_BANDAS);
+  std::size_t b = 0;
+  for (const Faixa& faixa : faixas)
+    for (; b <= faixa.ultima; ++b) {
+      CHECK(quadro.registros[b] == faixa.registro);
+      // E a base da columna veste a côr da familia, que é o que o olho lê.
+      CHECK(es::mesma_tinta(quadro.em(3, b).tinta,
+                            tk::mistura(faixa.cor, tk::panel_hi, 0.55)));
+    }
+  CHECK(b == mysong::nucleo::QUANTAS_BANDAS);  // a taboada cobre a fita inteira
 }
 
 // ── C6 · o ladrilho exacto, e a cobertura de toda banda ─────────────────────
@@ -445,15 +629,17 @@ TEST_CASE("o elemento mostra a linha que o quadro manda") {
 // A sequencia esperada vae escripta Á MÃO, octeto a octeto, e não composta por
 // tokens::sgr: escripta por sgr, o caso affirmaria que a obra chama sgr, que é o
 // que já se vê no codigo. Escripta á mão, affirma a SEQUENCIA. Os numeros sahem
-// de v700 = #6d28d9, que em decimal é 109, 40 e 217.
+// da base dos graves, que é v500 = #8b5cf6 composto sobre panel_hi = #1b1030 com
+// peso 0,55: 139 por 0,55 mais 27 por 0,45 dá 89, e assim 58 e 157.
 TEST_CASE("a tinta sahe immediatamente antes do glifo, sem repouso pelo meio") {
-  const es::Quadro quadro = es::compor(bandas_uniformes(0.899f), 4, 5);
-  // A base veste v700, e traz bloco cheio: dous cheios ao menos, pela conta do
-  // caso da rampa (35 degraus, quatro cheios e resto tres).
+  const es::Quadro quadro =
+      es::compor(bandas_uniformes(0.899f), 4, 5, false, centros_em(100.0f));
+  // A base veste a côr dos graves composta, e traz bloco cheio: dous cheios ao
+  // menos, pela conta do caso da rampa (35 degraus, quatro cheios e resto tres).
   const es::Celula& base = quadro.em(4, 0);
   REQUIRE(base.pinta);
   REQUIRE(base.glifo == kCheio);
-  CHECK(es::sequencia_da_celula(base) == "\x1b[38;2;109;40;217m█");
+  CHECK(es::sequencia_da_celula(base) == "\x1b[38;2;89;58;157m█");
 
   // A célulla que NÃO pinta sahe em ordem de repouso, e traz o espaço.
   const es::Celula vazia;

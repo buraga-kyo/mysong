@@ -56,6 +56,7 @@
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
+#include "nucleo/lixeira.hpp"
 #include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
@@ -232,6 +233,35 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   return retracto;
 }
 
+// apaga_a_faixa — o arquivo á LIXEIRA, e a faixa fóra do índice e de todas as
+// listas. As tres peças juntam-se aqui porque é aqui que as tres se têm na mão.
+// Nada se desliga do disco: o que se apaga por engano volta pelo gerenciador.
+std::string apaga_a_faixa(const std::string& caminho,
+                          nucleo::Biblioteca& livraria,
+                          nucleo::Roleiro& roleiro) {
+  const nucleo::DaLixeira desfecho = nucleo::manda_a_lixeira(caminho);
+  if (!desfecho.feita) return "não se apagou: " + desfecho.razao;
+  livraria.esquece(caminho);
+  roleiro.retira_de_todos(caminho);
+  std::string recado = "«" + desfecho.nome + "» foi para a lixeira";
+  if (desfecho.levou_a_letra) recado += ", com a letra";
+  if (desfecho.copiada) recado += " (outro volume: copiada e apagada)";
+  return recado;
+}
+
+// renomeia_a_faixa — o titulo na ETIQUETA primeiro, e no índice depois. N'esta
+// ordem, e não na contraria: gravado o índice antes, a etiqueta que recusasse
+// deixava a pauta a mostrar nome que o arquivo não tem, e a proxima varredura
+// desfazia-o sem o operador entender porquê.
+std::string renomeia_a_faixa(const std::string& caminho,
+                             const std::string& titulo,
+                             nucleo::Biblioteca& livraria) {
+  const nucleo::DoTitulo desfecho = nucleo::renomeia_titulo(caminho, titulo);
+  if (!desfecho.feito) return "não se renomeou: " + desfecho.razao;
+  livraria.muda_o_titulo(caminho, desfecho.titulo);
+  return "agora chama-se «" + desfecho.titulo + "»";
+}
+
 // cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
 // na taboada acende aviso do compilador aqui, e não passa calado.
 // O ROTEAMENTO das ordens de transporte. Havendo janella de video de pé, é ELLA
@@ -297,6 +327,8 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     case tui::Verbo::AbreCatalogo:
     case tui::Verbo::BaixaTudo:
     case tui::Verbo::TrocaFonte:
+    case tui::Verbo::RenomeiaFaixa:
+    case tui::Verbo::ApagaFaixa:
       break;
   }
 }
@@ -480,6 +512,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // despacho de teclas continuar a dizer `Digita::Busca` sem mudar uma linha.
   using Digita = tui::Modo;
   Digita digita = Digita::Nada;
+  // O titulo que a pergunta do apagar mostra. Guardado quando se pergunta: com
+  // a pergunta de pé o relogio repinta vinte vezes por segundo, e perguntá-lo
+  // ao índice no pintor seriam vinte consultas por segundo.
+  std::string titulo_em_causa;
   std::string termo_em_curso;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
@@ -732,7 +768,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
     const std::string contexto_do_campo =
-        digita == Digita::Confirma
+        digita == Digita::ConfirmaFaixa ? titulo_em_causa
+        : digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
     // A CHAPA por cima da pauta. A somma é das linhas Á VISTA, e não do
@@ -752,15 +789,22 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         galeria.capa(retracto.titulo, sala.capa.largura, sala.capa.altura);
     const std::size_t alt_arte = tui::linhas_da_arte(arte, sala.capa.altura);
     const tui::Rectangulo abaixo = tui::espectro_abaixo_da(sala, alt_arte);
-    const tui::Quadro quadro =
-        tui::compor(tocador.bandas(), abaixo.largura, abaixo.altura);
+    // Os centros em hertz (issue #104), colhidos UMA vez: a escala é do
+    // contracto do analisador, e o punho d'elle não abre as bordas que o
+    // nucleo assentou.
+    static const std::vector<float> centros_em_hertz =
+        tui::centros_da_escala(nucleo::QUANTAS_BANDAS);
+    const tui::Quadro quadro = tui::compor(tocador.bandas(), abaixo.largura,
+                                           abaixo.altura, false,
+                                           centros_em_hertz);
     // Tela estreita não pinta painel algum, e com elle vão-se a capa, o
     // espectro e a letra: roubar da pauta, que é onde se navega, para mostrar
     // arte seria trocar o que serve pelo que enfeita.
     //
-    // A CAIXA da arte (issue #95) pendura-se aqui, no punho que a sala recebe.
-    // Esvazia-se a cada quadro, que painel que se não pinta não ha de deixar
-    // caixa velha a apanhar cliques.
+    // A CAIXA da arte (issue #95) pendura-se aqui, no punho que a sala recebe:
+    // assim a lavra irmã da lousa troca o INTERIOR do rectangulo sem tocar na
+    // caixa. Esvazia-se a cada quadro, que painel que se não pinta não ha de
+    // deixar caixa velha a apanhar cliques.
     caixas.capa = tui::caixa_por_pintar();
     ftxui::Element painel =
         sala.painel.vazio()
@@ -919,11 +963,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
     // antes do resto para que a letra «s» não vá parar ao termo em curso.
-    if (digita == Digita::Confirma) {
+    if (digita == Digita::Confirma || digita == Digita::ConfirmaFaixa) {
       if (tecla == ftxui::Event::Character('s') ||
           tecla == ftxui::Event::Character('S')) {
+        const bool era_faixa = digita == Digita::ConfirmaFaixa;
         digita = Digita::Nada;
-        if (!navegador.apaga_rol()) aviso_da_rede = "não se pôde apagar";
+        if (era_faixa) {
+          aviso_da_rede =
+              apaga_a_faixa(navegador.caminho_eleito(), livraria, roleiro);
+          navegador.recarrega();  // a faixa sae da pauta no mesmo quadro
+        } else if (!navegador.apaga_rol()) {
+          aviso_da_rede = "não se pôde apagar";
+        }
         return true;
       }
       if (tecla.is_character() || tecla == ftxui::Event::Escape ||
@@ -947,6 +998,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         } else if (era == Digita::NomeNovo) {
           if (!navegador.cria_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
+        } else if (era == Digita::TituloOutro) {
+          const std::string qual = navegador.caminho_eleito();
+          aviso_da_rede = renomeia_a_faixa(qual, termo_em_curso, livraria);
+          navegador.recarrega();  // a pauta reflecte no mesmo quadro
         } else if (era == Digita::NomeOutro) {
           if (!navegador.renomeia_rol(termo_em_curso))
             aviso_da_rede = "esse nome já existe, ou é vazio";
@@ -1120,6 +1175,32 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           pede_buscar.store(true);
           aviso_da_rede = "a perguntar á rede...";
         }
+        return true;
+      }
+      case tui::Verbo::ApagaFaixa: {
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty()) {
+          aviso_da_rede = "elege uma faixa primeiro";
+          return true;
+        }
+        nucleo::Faixa d_ella;
+        livraria.acha_por_caminho(qual, d_ella);
+        titulo_em_causa = d_ella.titulo;
+        digita = Digita::ConfirmaFaixa;
+        return true;
+      }
+      case tui::Verbo::RenomeiaFaixa: {
+        // O campo abre já com o titulo CORRENTE, que é o que o índice guarda:
+        // o operador corrige uma lettra em vez de digitar o nome outra vez.
+        const std::string qual = navegador.caminho_eleito();
+        if (qual.empty()) {
+          aviso_da_rede = "elege uma faixa primeiro";
+          return true;
+        }
+        nucleo::Faixa d_ella;
+        livraria.acha_por_caminho(qual, d_ella);
+        digita = Digita::TituloOutro;
+        termo_em_curso = d_ella.titulo;
         return true;
       }
       case tui::Verbo::AbreRois:

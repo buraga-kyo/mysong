@@ -134,6 +134,11 @@ target_sources(mysong_testes PRIVATE prova_correio.cpp)
 # Corre em directorio temporario: o caminho do banco entra por parâmetro.
 target_sources(mysong_testes PRIVATE prova_rol.cpp)
 
+# ─── A PROVA DA LIXEIRA (issue #105) ────────────────────────────────────────
+# Ao lado da prova das listas, e pela mesma razão: a raiz entra por parâmetro,
+# donde a bateria corre em temporario e não toca a lixeira de quem nos usa.
+target_sources(mysong_testes PRIVATE prova_lixeira.cpp)
+
 # ─── A PROVA DO PROJECTOR (issue #17) ───────────────────────────────────────
 # Janella alguma se abre: o que se afere é o que se HA DE correr e o que se HA DE
 # mandar. Dous casos erguem processo, e nenhum d'elles abre video.

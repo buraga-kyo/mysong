@@ -23,10 +23,15 @@
 #include <ftxui/dom/elements.hpp>
 
 namespace mysong::tui {
-// Os OITO estados. Seis DIGITAM, e são CINCO officios (NomeNovo e NomeOutro dão
-// nome á mesma lista); o Confirma é pergunta de uma tecla, que captura sem
-// digitar; o Nada é a navegação.
-enum class Modo { Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma, Lista };
+// Os DEZ estados. Sete DIGITAM, e são SEIS officios (NomeNovo e NomeOutro dão
+// nome á mesma lista); os dous Confirma são pergunta de uma tecla, que captura
+// sem digitar; o Nada é a navegação.
+//
+// ConfirmaFaixa é modo PROPRIO, e não uma bandeira ao lado do Confirma: quem
+// responde «s» tem de saber se apaga lista ou faixa, e o estado que vive n'uma
+// variavel só é estado que não se pode desencontrar de si mesmo.
+enum class Modo { Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma,
+                  Lista, TituloOutro, ConfirmaFaixa };
 
 // aceita_letra — o modo escreve no termo? Falso em Nada e em Confirma.
 bool aceita_letra(Modo modo) noexcept;
