@@ -123,6 +123,38 @@ TEST_CASE("o corte da pauta conta CELLAS, e o glypho largo vale duas") {
   CHECK(tui::apara_collunhas("Fuga", 0).empty());
 }
 
+TEST_CASE("as columnas da pauta cedem por ordem de serviço") {
+  // A metade esquerda de uma tela de 167 collunhas: abrem-se todas.
+  const tui::Medidas larga = tui::medidas_da_pauta(83, true, false);
+  CHECK(larga.marcador == 1);
+  CHECK(larga.numero == 3);
+  CHECK(larga.regua == 6);
+  CHECK(larga.conta == 5);  // MM:SS
+  CHECK(larga.artista == 19);
+  CHECK(larga.titulo == 40);
+  CHECK(larga.titulo >= 2 * larga.artista);  // dous terços contra um
+  // A ESTREITA cede o ARTISTA, e mais nada: elle é o primeiro a ceder.
+  const tui::Medidas media = tui::medidas_da_pauta(40, true, false);
+  CHECK(media.artista == 0);
+  CHECK(media.regua == 6);
+  CHECK(media.titulo == 18);
+  // Depois d'elle cede a RÉGUA, e depois o TEMPO.
+  CHECK(tui::medidas_da_pauta(30, true, false).regua == 6);
+  CHECK(tui::medidas_da_pauta(29, true, false).regua == 0);
+  CHECK(tui::medidas_da_pauta(20, true, false).conta == 0);
+  // A pauta MINIMA: as duas margens e o titulo. Nem o marcador cabe.
+  const tui::Medidas minima = tui::medidas_da_pauta(10, true, false);
+  CHECK(minima.marcador == 0);
+  CHECK(minima.titulo == 8);
+  // A vista que CONTA nomes não tem № nem artista: o que ella conta vae na
+  // columna da direita, em quatro cellas, e a régua mede-se por elle.
+  const tui::Medidas conta = tui::medidas_da_pauta(83, true, true);
+  CHECK(conta.numero == 0);
+  CHECK(conta.artista == 0);
+  CHECK(conta.conta == 4);
+  CHECK(conta.titulo == 67);
+}
+
 TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita") {
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
