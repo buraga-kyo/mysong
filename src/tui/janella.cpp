@@ -909,9 +909,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // em branco; por mais, o rodapé sahe d'ella.
     std::vector<ftxui::Element> metades = {ftxui::vbox(
         {tui::elemento_da_chapa(chapa, sala.chapa.largura),
+         // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
+         // da tabella: é a caixa que o FOCO lê para saltar ás visinhas, e com a
+         // vista vazia ella ha de existir na mesma, que alli não ha linha
+         // alguma e o foco não teria a que voltar.
          tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                   sala.pauta.largura, retracto.titulo,
-                                  &caixas.linhas)})};
+                                  &caixas.linhas) |
+             ftxui::reflect(caixas.pauta)})};
     if (!sala.painel.vazio()) {
       metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
       metades.push_back(std::move(painel));
@@ -1040,6 +1045,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // contrario do que se viu.
         case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
         case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
+        // O MUDO pelo segmento do volume, e pela mesma razão dos dous modos:
+        // quem guarda o numero e quem o devolve é o TOCADOR, de uma tomada só.
+        case tui::Gesto::Muda: tocador.alterna_mudo(); return true;
         // Os que viram ORDEM. Não se cumprem aqui: desaguam na taboada de
         // sempre, que é quem sabe roteá-las ao video quando elle está de pé.
         case tui::Gesto::Anterior: ordem_do_rato = {tui::Verbo::Anterior}; break;
