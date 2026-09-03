@@ -233,3 +233,22 @@ TEST_CASE("o empurrão cabe na coordenada de uma janella do X11") {
                          1, 1)
             .find("\"x\":-1500") != std::string::npos);
 }
+
+TEST_CASE("a caixa do empurrão nunca reduz um lado a zero") {
+  // O que o Überzug++ fazia com a caixa de UMA cella: a chapa da aba (duzentos
+  // por sessenta e tres) sahia com dous pixeis de altura, e a da linha inteira
+  // sahia com ZERO, e ahi o OpenCV d'elle abortava e levava tudo comsigo.
+  const nu::Medida cella = nu::CELLULA_DA_CASA;
+  for (const nu::Medida chapa : {nu::Medida{200, 63}, nu::Medida{248, 67},
+                                 nu::Medida{1503, 20}, nu::Medida{4000, 20},
+                                 nu::Medida{20, 4000}}) {
+    const nu::Medida lados = nu::lados_do_empurrao(chapa, cella);
+    CHECK(lados.largura > 0);
+    CHECK(lados.altura > 0);
+    // E cabe na caixa, que é o que a reducção promette.
+    CHECK(lados.largura <= nu::LARGURA_DO_EMPURRAO * cella.largura);
+    CHECK(lados.altura <= nu::ALTURA_DO_EMPURRAO * cella.altura);
+  }
+  // Medida que se não leu não dá lado algum, e ahi não se pede reducção.
+  CHECK(nu::lados_do_empurrao({0, 0}, cella).largura == 0);
+}
