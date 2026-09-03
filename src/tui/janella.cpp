@@ -542,9 +542,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // indice consultado a cada quadro seriam vinte perguntas por segundo ao
   // banco por uma cousa que sómente muda quando a faixa muda.
   tui::Ficha ficha;
-  // ATOMICO, e não bool nú: o fio do relogio lê-o para saber se as bandas entram na
-  // assignatura, e o fio da tela troca-o na tecla `l`.
-  std::atomic<bool> mostra_letra{false};
+  // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
+  // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
+  // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
+  //
+  // ATOMICO, e não bool nú: o fio do relogio lê-o para o pôr na assignatura, e o
+  // fio da tela troca-o na tecla `l`.
+  std::atomic<bool> mostra_letra{true};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
   nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
   // A LOUSA (issue #103) e o arquivario que a serve. Vivem n'esta pilha, ao
