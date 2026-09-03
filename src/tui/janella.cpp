@@ -353,9 +353,14 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
 // As seis de funcção (issue #106) entraram, e para lhes caber o logar sahiram
 // o Enter, o espaço e o `n`/`p`, que dizem o que o F7, o F6 e o F8 já dizem, e
 // sahiu o `o` da vista, que a chapa por cima da pauta annuncia por si.
+//
+// O `m` do menu (issue #96) entrou, e para lhe caber o logar o ponto do meio
+// cedeu o passo a DOUS ESPAÇOS, que é o que o proprio esboço da tela usa no
+// rodapé d'elle. Com o ponto a linha media cento e vinte e quatro collunhas, e
+// o que se perderia era o fim: o README, que é onde mora o que não coube.
 constexpr const char* kDicas =
-    "1 2 3 abas · Tab cicla · F6 F7 F8 transporte · F9 mudo"
-    " · F10 F11 volume · F2 renomeia · Del apaga · q sahe · README";
+    "1 2 3 abas  Tab cicla  F6 F7 F8 transporte  F9 mudo"
+    "  F10 F11 volume  F2 renomeia  Del apaga  m menu  q sahe  README";
 
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
