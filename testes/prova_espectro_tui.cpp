@@ -225,7 +225,8 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
   std::vector<float> bandas(mysong::nucleo::QUANTAS_BANDAS, 0.0f);
   bandas[3] = 0.95f;  // acima do limiar: quente
   bandas[4] = 0.40f;  // abaixo: fria, e no gradiente
-  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5);
+  const es::Quadro quadro = es::compor(bandas, mysong::nucleo::QUANTAS_BANDAS, 5,
+                                       false, centros_em(100.0f));
 
   // A columna 3: teto 40, 0,95 vezes 40 = 38 degraus, quatro cheios e resto 6,
   // d'onde cinco célullas, todas em glow_hot, da base ao topo.
@@ -235,9 +236,11 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
   }
 
   // A columna 4: 0,40 vezes 40 = 16 degraus, dous cheios e resto zero, d'onde
-  // duas célullas, e no GRADIENTE. A base em v700, e não em glow_hot.
+  // duas célullas, e no GRADIENTE. A base na côr do registro composta sobre o
+  // painel, e não em glow_hot.
   REQUIRE(quadro.em(4, 4).pinta);
-  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::v700)));
+  CHECK(es::mesma_tinta(quadro.em(4, 4).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
   CHECK_FALSE(es::mesma_tinta(quadro.em(4, 4).tinta, tk::rgb(tk::glow_hot)));
   CHECK(quadro.em(2, 4).pinta == false);
 }
@@ -246,15 +249,19 @@ TEST_CASE("a columna quente veste glow_hot inteira, e a vizinha fria não") {
 // maior-ou-igual se distingue do maior.
 TEST_CASE("o limiar de noventa por cento pertence ao quente") {
   const std::size_t largura = mysong::nucleo::QUANTAS_BANDAS;
-  const es::Quadro no_limiar = es::compor(bandas_uniformes(0.90f), largura, 4);
-  const es::Quadro sob_limiar = es::compor(bandas_uniformes(0.899f), largura, 4);
+  const std::vector<float> centros = centros_em(100.0f);
+  const es::Quadro no_limiar =
+      es::compor(bandas_uniformes(0.90f), largura, 4, false, centros);
+  const es::Quadro sob_limiar =
+      es::compor(bandas_uniformes(0.899f), largura, 4, false, centros);
 
   REQUIRE(no_limiar.em(3, 0).pinta);
   REQUIRE(sob_limiar.em(3, 0).pinta);
   // Em cima do limiar: quente.
   CHECK(es::mesma_tinta(no_limiar.em(3, 0).tinta, tk::rgb(tk::glow_hot)));
   // Um milesimo abaixo: frio, e de volta á base da rampa.
-  CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta, tk::rgb(tk::v700)));
+  CHECK(es::mesma_tinta(sob_limiar.em(3, 0).tinta,
+                        tk::mistura(tk::v500, tk::panel_hi, 0.55)));
 }
 
 // ── C5 · o mudo, e o piso do silencio ───────────────────────────────────────
@@ -461,15 +468,17 @@ TEST_CASE("o elemento mostra a linha que o quadro manda") {
 // A sequencia esperada vae escripta Á MÃO, octeto a octeto, e não composta por
 // tokens::sgr: escripta por sgr, o caso affirmaria que a obra chama sgr, que é o
 // que já se vê no codigo. Escripta á mão, affirma a SEQUENCIA. Os numeros sahem
-// de v700 = #6d28d9, que em decimal é 109, 40 e 217.
+// da base dos graves, que é v500 = #8b5cf6 composto sobre panel_hi = #1b1030 com
+// peso 0,55: 139 por 0,55 mais 27 por 0,45 dá 89, e assim 58 e 157.
 TEST_CASE("a tinta sahe immediatamente antes do glifo, sem repouso pelo meio") {
-  const es::Quadro quadro = es::compor(bandas_uniformes(0.899f), 4, 5);
-  // A base veste v700, e traz bloco cheio: dous cheios ao menos, pela conta do
-  // caso da rampa (35 degraus, quatro cheios e resto tres).
+  const es::Quadro quadro =
+      es::compor(bandas_uniformes(0.899f), 4, 5, false, centros_em(100.0f));
+  // A base veste a côr dos graves composta, e traz bloco cheio: dous cheios ao
+  // menos, pela conta do caso da rampa (35 degraus, quatro cheios e resto tres).
   const es::Celula& base = quadro.em(4, 0);
   REQUIRE(base.pinta);
   REQUIRE(base.glifo == kCheio);
-  CHECK(es::sequencia_da_celula(base) == "\x1b[38;2;109;40;217m█");
+  CHECK(es::sequencia_da_celula(base) == "\x1b[38;2;89;58;157m█");
 
   // A célulla que NÃO pinta sahe em ordem de repouso, e traz o espaço.
   const es::Celula vazia;
