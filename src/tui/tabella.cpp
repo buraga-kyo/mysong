@@ -133,6 +133,25 @@ Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta) {
   return medidas;
 }
 
+Medidas medidas_da_fatia(const Navegador& navegador, std::size_t primeira,
+                         std::size_t fim, std::size_t largura, int* maior) {
+  // A vista que CONTA nomes: alli o numero da linha é conta de faixas, e não
+  // numero de faixa, e duração não ha nenhuma.
+  const Secao secao = navegador.secao();
+  const bool pela_conta = secao == Secao::Artistas || secao == Secao::Albuns ||
+                          secao == Secao::Rois;
+  const std::vector<Linha>& vista = navegador.vista();
+  bool ha_autor = false;
+  int maior_da_fatia = 0;
+  for (std::size_t i = primeira; i < fim && i < vista.size(); ++i) {
+    if (!vista[i].autor.empty()) ha_autor = true;
+    maior_da_fatia = std::max(
+        maior_da_fatia, pela_conta ? vista[i].numero : vista[i].duracao);
+  }
+  if (maior != nullptr) *maior = maior_da_fatia;
+  return medidas_da_pauta(largura, ha_autor, pela_conta);
+}
+
 std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas) {
   if (quanto <= 0 || maior <= 0 || cellas == 0) return 0;
   const std::size_t medida = static_cast<std::size_t>(quanto);

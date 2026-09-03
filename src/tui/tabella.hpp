@@ -62,6 +62,14 @@ struct Medidas {
 // columnas de baixo desalinhavam das de cima e a pauta parecia quebrada.
 Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta);
 
+// medidas_da_fatia — as medidas da fatia que se vae pintar, e por `maior` o que
+// mede a maior linha d'ella (a duração, ou a conta na vista que conta nomes).
+// Os dous decidem-se pela FATIA, e não por linha: por linha, as columnas de
+// baixo desalinhavam das de cima, e a régua de cada uma media contra si
+// propria, que é não medir cousa alguma.
+Medidas medidas_da_fatia(const Navegador& navegador, std::size_t primeira,
+                         std::size_t fim, std::size_t largura, int* maior);
+
 // cheias_da_regua — quantas cellas da régua se pintam cheias, dado o que a
 // linha mede e o que mede a MAIOR da fatia á vista. É textura de HUD: o olho
 // compara as linhas entre si, e não com relogio algum.
