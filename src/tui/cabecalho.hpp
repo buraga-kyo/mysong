@@ -44,6 +44,30 @@ Aba aba_da_secao(Secao secao) noexcept;
 // aba_seguinte — o Tab: MY SONG, PLAYLISTS, DOWNLOAD, e torna ao principio.
 Aba aba_seguinte(Aba corrente) noexcept;
 
+// vista_seguinte — o `o` dentro das MY SONG: faixas, artistas, albuns, e torna
+// ás faixas. Os ÁLBUNS pedem artista na trilha, que a bibliotheca lista os
+// albuns D'ELLE e não os do acervo inteiro; sem artista o cyclo salta-os, que
+// vista sem chão seria tecla a não fazer nada.
+Secao vista_seguinte(Secao corrente, bool ha_artista) noexcept;
+
+// nome_da_vista — a palavra que a chapa diz da vista: FAIXAS, ARTISTAS,
+// ÁLBUNS. Vazia fóra das MY SONG, que lá a vista se não cycla.
+std::string nome_da_vista(Secao secao);
+
+// Os GESTOS que as teclas do cabeçalho pedem. O Alheio é toda tecla que elle
+// não conhece, e quem o recebe deixa-a seguir á taboada de sempre.
+enum class GestoDaAba { Alheio, Vai, Cycla, CyclaVista };
+
+struct OrdemDaAba {
+  GestoDaAba gesto = GestoDaAba::Alheio;
+  Aba aba = Aba::MySong;  // sómente no Vai; nas demais fica no principio
+};
+
+// ordem_da_aba — a taboada: `1` `2` `3` vão á aba, o Tab e o Shift+Tab cyclam
+// as abas, e o `o` cycla a vista. Nenhuma d'estas teclas estava tomada, e o
+// Tab abria a barra que esta issue apaga.
+OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept;
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
