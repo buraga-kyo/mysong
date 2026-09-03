@@ -29,6 +29,25 @@ namespace mysong::tui {
 // `x_min` é o vazio que o FTXUI reconhece, e o `Contain` d'elle recusa tudo.
 inline ftxui::Box caixa_por_pintar() noexcept { return {0, -1, 0, -1}; }
 
+// As caixas do CABEÇALHO (issue #102). Uma por PEÇA e todas nomeadas, e não um
+// vector indexado: as issues irmãs pendem d'esta linha (o letreiro põe imagem
+// sobre a caixa do rotulo, o foco desenha a orla sobre a do botão), e indice
+// n'um vector é endereço que a primeira peça nova desloca em silencio.
+struct CaixasDoCabecalho {
+  ftxui::Box aba_mysong = caixa_por_pintar();
+  ftxui::Box aba_playlists = caixa_por_pintar();
+  ftxui::Box aba_download = caixa_por_pintar();
+  ftxui::Box botao_tocar = caixa_por_pintar();
+  ftxui::Box botao_anterior = caixa_por_pintar();
+  ftxui::Box botao_seguinte = caixa_por_pintar();
+  ftxui::Box nome = caixa_por_pintar();
+  ftxui::Box tempo = caixa_por_pintar();
+  ftxui::Box volume = caixa_por_pintar();
+  ftxui::Box embaralhar = caixa_por_pintar();
+  ftxui::Box repetir = caixa_por_pintar();
+  ftxui::Box trilho = caixa_por_pintar();
+};
+
 // As caixas do TRANSPORTE. As metades da barra de progresso guardam-se á parte
 // porque o enchimento se pinta em DOUS elementos, o cheio e o vazio: no
 // principio e no fim um d'elles tem largura zero e a caixa d'esse sahe vazia.
