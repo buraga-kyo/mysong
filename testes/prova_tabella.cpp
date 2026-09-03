@@ -234,12 +234,12 @@ TEST_CASE("a columna do canal apparece havendo autor, e o tempo fica á direita"
   Cova cova;
   nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
-  navegador.mostra_rede({achado("Toccata", "Canal do Orgao", 542),
-                         achado("Fuga", "Outro Canal", 65)});
+  navegador.mostra_rede({achado("Toccata", "Canal Bach", 542),
+                         achado("Fuga", "Outro", 65)});
   const std::vector<std::string> linhas = pintar(navegador, 2, 60);
   REQUIRE(linhas.size() == 2);
   CHECK(linhas[0].find("Toccata") != std::string::npos);
-  CHECK(linhas[0].find("Canal do Orgao") != std::string::npos);
+  CHECK(linhas[0].find("Canal Bach") != std::string::npos);
   CHECK(linhas[0].find("09:02") != std::string::npos);
   CHECK(linhas[1].find("01:05") != std::string::npos);
 }
@@ -292,10 +292,10 @@ TEST_CASE("basta UMA linha com autor na fatia para a columna se abrir") {
   // FATIA, ella abre-se para as duas e as columnas alinham.
   const std::string comprido(75, 'x');
   navegador.mostra_rede({achado(comprido, {}, 100),
-                         achado("Fuga", "Canal do Orgao", 65)});
+                         achado("Fuga", "Canal Bach", 65)});
   const std::vector<std::string> linhas = pintar(navegador, 2, 60);
   REQUIRE(linhas.size() == 2);
-  CHECK(linhas[1].find("Canal do Orgao") != std::string::npos);
+  CHECK(linhas[1].find("Canal Bach") != std::string::npos);
   CHECK(escriptas(linhas[0]) == escriptas(linhas[1]));
 }
 
@@ -358,17 +358,22 @@ TEST_CASE("a faixa que sôa accende com signal proprio ao lado do da eleita") {
   // Sôa a PRIMEIRA, e a eleita é a segunda: dous signaes em linhas differentes.
   const ftxui::Screen dous = com_som(navegador, "https://y/Toccata");
   CHECK(dous.PixelAt(1, 0).character == "▶");
-  CHECK(dous.PixelAt(0, 0).foreground_color == cor(tk::glow_core));
-  CHECK(dous.PixelAt(0, 1).background_color == cor(tk::v900));
-  // E o «▶» NÃO empurra o titulo: elle toma o logar do numero, e a columna do
-  // titulo cahe na mesma collunha com signal e sem elle.
-  CHECK(dous.PixelAt(4, 0).character == "T");
-  CHECK(dous.PixelAt(4, 1).character == "F");
-  // Sôa a MESMA que está eleita: o fundo é o v900 e a tinta o glow_core.
+  CHECK(dous.PixelAt(1, 0).foreground_color == cor(tk::glow_core));
+  // A ELEITA é BLOCO: o v600 veste a linha de ORLA A ORLA, e a que não é eleita
+  // não leva fundo algum. É o gesto do sitio d'esta Casa.
+  CHECK(dous.PixelAt(0, 1).background_color == cor(tk::v600));
+  CHECK(dous.PixelAt(59, 1).background_color == cor(tk::v600));
+  CHECK(dous.PixelAt(0, 0).background_color != cor(tk::v600));
+  // E o «▶» NÃO empurra o titulo: elle tem cella PROPRIA, e a columna do titulo
+  // cahe na mesma collunha com signal e sem elle.
+  CHECK(dous.PixelAt(7, 0).character == "T");
+  CHECK(dous.PixelAt(7, 1).character == "F");
+  // Sôa a MESMA que está eleita: o bloco troca o violeta pelo glow_core, e o
+  // texto sahe em panel, que é o fundo escuro por cima do claro.
   const ftxui::Screen um = com_som(navegador, "https://y/Fuga");
   CHECK(um.PixelAt(1, 1).character == "▶");
-  CHECK(um.PixelAt(0, 1).background_color == cor(tk::v900));
-  CHECK(um.PixelAt(0, 1).foreground_color == cor(tk::glow_core));
+  CHECK(um.PixelAt(0, 1).background_color == cor(tk::glow_core));
+  CHECK(um.PixelAt(7, 1).foreground_color == cor(tk::panel));
   // Caminho que não casa com chave alguma não accende linha nenhuma.
   const ftxui::Screen nada = com_som(navegador, "/musica/outra.mp3");
   CHECK(nada.PixelAt(1, 0).character != "▶");

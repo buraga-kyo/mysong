@@ -323,22 +323,12 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     return pinta(recado, tokens::text_faint);
   }
 
-  // As columnas fixas: numero, tempo, o AUTOR quando ha, e o que sobra para o
-  // titulo. O tempo e o numero são de largura conhecida, e por isso o titulo cede.
-  //
-  // A columna do autor apparece pelo DADO, e não pela secção: havendo linha com
-  // autor na fatia á vista, ella abre-se para todas as linhas d'essa fatia. Por
-  // linha, e não por fatia, ella desalinharia as columnas de baixo com as de cima,
-  // que é o defeito que faz a tabella parecer quebrada.
+  // As columnas e a maior linha da fatia sahem d'uma conta só, que a bateria
+  // interroga sem écran. A pintura d'aqui em diante é traducção, e não decisão.
   const std::size_t fim_da_fatia = std::min(primeira + altura, vista.size());
-  bool ha_autor = false;
-  for (std::size_t i = primeira; i < fim_da_fatia; ++i)
-    if (!vista[i].autor.empty()) ha_autor = true;
-  const std::size_t larg_num = 4, larg_tempo = 7;
-  const std::size_t larg_autor =
-      ha_autor && largura >= 40 ? std::min<std::size_t>(24, largura / 4) : 0;
-  const std::size_t fixas = larg_num + larg_tempo + larg_autor + 2;
-  const std::size_t larg_titulo = largura > fixas ? largura - fixas : 1;
+  int maior = 0;
+  const Medidas medidas =
+      medidas_da_fatia(navegador, primeira, fim_da_fatia, largura, &maior);
 
   std::vector<ftxui::Element> linhas;
   // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
@@ -355,29 +345,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     const bool eleita = i == navegador.eleito();
     // O que SÔA casa-se pela CHAVE, que nas secções de faixa é o caminho do
     // arquivo. Nas outras a chave é nome ou id, e ahi nada casa, que é o que se
-    // quer: album algum «toca». O «▶» toma o logar do numero, e não uma columna
-    // nova: columna nova empurraria o titulo e desalinharia a tabella inteira
-    // sómente porque alguma cousa sôa.
+    // quer: album algum «toca».
     const bool soa = !tocando.empty() && linha.chave == tocando;
-    const std::string numero =
-        soa ? apara(" \u25b6", larg_num)
-        : linha.numero > 0 ? apara(std::to_string(linha.numero), larg_num)
-                           : apara("", larg_num);
-    const std::string tempo =
-        linha.duracao > 0 ? apara(" " + mm_ss(linha.duracao), larg_tempo)
-                          : apara("", larg_tempo);
-    const std::string autor =
-        larg_autor == 0 ? std::string() : apara(" " + linha.autor, larg_autor);
-    ftxui::Element pintada =
-        pinta(numero + apara(linha.texto, larg_titulo) + autor + tempo,
-              soa       ? tokens::glow_core
-              : eleita  ? tokens::text_bright
-                        : tokens::text_muted);
-    if (eleita) {
-      const tokens::Triade fundo = tokens::rgb(tokens::v900);
-      pintada = pintada | ftxui::bgcolor(
-                              ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
-    }
+    ftxui::Element pintada = elemento_da_linha(
+        pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura);
     if (caixas != nullptr)
       pintada = pintada | ftxui::reflect((*caixas)[i - primeira]);
     linhas.push_back(std::move(pintada));
