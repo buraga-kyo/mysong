@@ -250,9 +250,13 @@ std::vector<Pedaco> pedacos_da_linha(const Linha& linha,
   if (medidas.regua > 0) {
     vao(kVao);
     const std::size_t cheias = cheias_da_regua(quanto, maior, medidas.regua);
+    // Fatia sem medida alguma não leva régua: seis cellas vazias em TODA linha
+    // lêem-se como dado, e alli o dado não existe. É o caso dos artistas e dos
+    // albuns emquanto a bibliotheca não souber contar as faixas d'elles.
+    const std::string_view vazia = maior > 0 ? "\u25b1" : " ";
     feitos.push_back({repete("\u25b0", cheias), tokens::v700, false});
     feitos.push_back(
-        {repete("\u25b1", medidas.regua - cheias), tokens::line_faint, false});
+        {repete(vazia, medidas.regua - cheias), tokens::line_faint, false});
   }
   if (!medidas.pela_conta) a_conta(1);
   vao(kMargem);
