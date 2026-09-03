@@ -163,3 +163,33 @@ TEST_CASE("a caixa da palavra cae exactamente sobre a palavra") {
   const ftxui::Box nenhuma = tui::caixa_da_palavra(tui::caixa_por_pintar());
   CHECK(nenhuma.x_max < nenhuma.x_min);
 }
+
+TEST_CASE("as tres ordens de chapa sahem do quadro do cabeçalho") {
+  tui::CaixasDoCabecalho caixas;
+  papel(&caixas, tui::Aba::Playlists);
+  const std::vector<tui::ChapaDaAba> ordens =
+      tui::ordens_das_chapas(caixas, tui::Aba::Playlists, true, true);
+  REQUIRE(ordens.size() == 3);
+  CHECK(ordens[0].aba == tui::Aba::MySong);
+  CHECK(ordens[0].estado == tui::EstadoDaAba::Apagada);
+  CHECK(ordens[1].estado == tui::EstadoDaAba::Corrente);
+  CHECK(ordens[2].estado == tui::EstadoDaAba::Apagada);
+  CHECK(ordens[0].collunha == 3);
+  for (const tui::ChapaDaAba& ordem : ordens) {
+    CHECK(ordem.poe);
+    CHECK(ordem.linha == 0);
+    CHECK(ordem.largura == tui::palavra_da_aba(ordem.aba).size());
+  }
+  // O FOCO FÓRA do terminal tira as tres, que é a disciplina da capa; e sem
+  // letreiro tambem, e por quadro ainda por pintar tambem.
+  const tui::CaixasDoCabecalho por_pintar;
+  for (const auto& caso : {tui::ordens_das_chapas(caixas, tui::Aba::MySong, true, false),
+                           tui::ordens_das_chapas(caixas, tui::Aba::MySong, false, true),
+                           tui::ordens_das_chapas(por_pintar, tui::Aba::MySong, true, true)})
+    for (const tui::ChapaDaAba& ordem : caso) CHECK_FALSE(ordem.poe);
+  // O foco da issue irmã ganha da corrente, e a aba focada accende n'elle.
+  const tui::Aba focada = tui::Aba::Playlists;
+  CHECK(tui::ordens_das_chapas(caixas, tui::Aba::Playlists, true, true,
+                               &focada)[1]
+            .estado == tui::EstadoDaAba::ComFoco);
+}
