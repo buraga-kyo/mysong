@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 //   TRACTADO DO TRANSPORTE — src/tui/transporte.cpp
 // ══════════════════════════════════════════════════════════════════════════
-// A implementação da composição. Vale aqui a mesma regra do cabeçalho: cousa
-// alguma d'este arquivo sabe o que é um Tocador. Se um dia souber, a prova do
-// criterio C4 accusa, que ella busca os nomes proibidos por grep.
+// A implementação das contas do tempo. Vale aqui a mesma regra do cabeçalho:
+// cousa alguma d'este arquivo sabe o que é um Tocador. Se um dia souber, a
+// prova do criterio C4 accusa, que ella busca os nomes proibidos por grep.
 //
 // DOMÍNIO ......... o Retracto e a largura.
 // CONTRA-DOMÍNIO .. cadeias e elementos, deterministicos.
@@ -17,10 +17,7 @@
 
 #include <cmath>
 #include <cstdio>
-#include <utility>
-#include <vector>
 
-#include "tui/arrowline.hpp"
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
@@ -30,15 +27,6 @@ namespace mysong::tui {
 // célulla, e ha emulador que o não faz; glifo desenhado sahe sempre.
 inline constexpr std::string_view kBarraCheia = "\u2588";
 inline constexpr std::string_view kBarraVazia = "\u2591";
-
-// Os glifos dos botões. Escrevem-se por PONTO DE CODIGO pela razão da fita, e
-// ganham nome porque servem tambem de ENDEREÇO: é por elles que a caixa do rato
-// (issue #95) acha o seu segmento, e não pela ordem em que a fita os junta.
-inline constexpr std::string_view kPausar = "\u23f8";
-inline constexpr std::string_view kTocar = "\u25b6";
-inline constexpr std::string_view kAnterior = "\u23ee";
-inline constexpr std::string_view kProxima = "\u23ed";
-
 
 std::string mm_ss(double segundos) {
   // Tempo que não é tempo mostra-se como tal, e não como `00:00`: zero é uma
@@ -65,97 +53,6 @@ std::size_t enchimento(double posicao, double duracao, std::size_t largura) {
   const double collunhas = std::round(razao * static_cast<double>(largura));
   const std::size_t cheias = static_cast<std::size_t>(collunhas);
   return cheias > largura ? largura : cheias;
-}
-
-namespace {
-
-// pinta — texto com tinta de token, que é o que se repete em toda a barra.
-ftxui::Element pinta(const std::string& texto, std::string_view token) {
-  const tokens::Triade c = tokens::rgb(token);
-  return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
-}
-
-// repete — n copias do glifo. O glifo é multibyte, donde std::string(n, ch) não
-// serve: ella repetiria UM byte, e a barra sahiria em lixo.
-std::string repete(std::string_view glifo, std::size_t n) {
-  std::string feito;
-  feito.reserve(glifo.size() * n);
-  for (std::size_t i = 0; i < n; ++i) feito += glifo;
-  return feito;
-}
-
-// Os pedaços da fita em elementos. A regra do DESIGN_SYSTEM manda que a côr da
-// seta seja a côr do segmento que ella SEGUE, e a fita já a resolveu: aqui
-// sómente se pinta o que ella diz.
-ftxui::Element fita_em_elemento(const std::vector<Pedaco>& pedacos,
-                                CaixasDoTransporte* caixas) {
-  std::vector<ftxui::Element> partes;
-  partes.reserve(pedacos.size());
-  for (const Pedaco& pedaco : pedacos) {
-    const tokens::Triade frente = tokens::rgb(pedaco.tinta);
-    const tokens::Triade tras = tokens::rgb(pedaco.fundo);
-    // vestir — o pedaço com o seu par de côres, que é o que a regra (b) da fita
-    // já resolveu: aqui sómente se pinta o que ella diz.
-    const auto vestir = [&](const std::string& texto) {
-      return ftxui::text(texto) |
-             ftxui::color(ftxui::Color::RGB(frente.r, frente.g, frente.b)) |
-             ftxui::bgcolor(ftxui::Color::RGB(tras.r, tras.g, tras.b));
-    };
-    ftxui::Element parte = vestir(pedaco.texto);
-    // A caixa põe-se por cima do pedaço INTEIRO, e o segmento acha-se pelo
-    // GLIFO, e não pela ordem em que a fita o junta. Texto algum se parte.
-    if (caixas != nullptr && !pedaco.juncao) {
-      if (pedaco.texto.find(kProxima) != std::string::npos)
-        parte = parte | ftxui::reflect(caixas->saltos);
-      else if (pedaco.texto.find(kPausar) != std::string::npos ||
-               pedaco.texto.find(kTocar) != std::string::npos)
-        parte = parte | ftxui::reflect(caixas->pausa);
-    }
-    partes.push_back(std::move(parte));
-  }
-  return ftxui::hbox(std::move(partes));
-}
-
-// rotulo_dos_modos — o que a fita diz dos dous modos, e cadeia VAZIA quando os
-// dous estão desligados. ASCII curto, e não o glifo bonito: a Fita conta
-// CODEPOINTS, e os emoji de embaralhar e de repetir occupam DUAS collunhas no
-// terminal; a linha transbordaria sem que conta alguma o accusasse.
-std::string rotulo_dos_modos(const Retracto& retracto) {
-  std::string dito;
-  if (retracto.embaralhado) dito = "emb";
-  if (retracto.repeticao != nucleo::Repeticao::Nenhuma) {
-    if (!dito.empty()) dito += ' ';
-    dito += "rep ";
-    dito += nucleo::nome_da_repeticao(retracto.repeticao);
-  }
-  return dito;
-}
-
-}  // namespace
-
-// A fita dos botões e do estado. Sentido DEXTRA sómente: misturar os dous
-// lavraria o losango que a regra proscreve, e a Fita já o torna inexprimivel.
-// Os fundos descem pela rampa, do acento cardeal ao fundo do painel, que é a
-// leitura da esquerda para a direita.
-//
-// Devolve a FITA, e não o elemento: quem compõe precisa da largura que ella pede
-// ANTES de repartir o que sobra, e a fita é quem a sabe dizer.
-Fita fita_dos_botoes(const Retracto& retracto, bool com_modos) {
-  const bool tocando = retracto.estado == nucleo::Estado::Tocando;
-  Fita fita(Sentido::Dextra);
-  fita.junta({" " + std::string(tocando ? kPausar : kTocar) + " ",
-              tokens::v500, tokens::base});
-  fita.junta({" " + std::string(kAnterior) + " " + std::string(kProxima) + " ",
-              tokens::v700, tokens::text_bright});
-  fita.junta({" " + std::string(nucleo::nome_do_estado(retracto.estado)) + " ",
-              tokens::v900, tokens::text_bright});
-  // Os dous modos, e SÓMENTE quando ha modo ligado: fita que dissesse «emb:
-  // não» gastaria collunhas para dizer que nada ha. Com os dous desligados a
-  // fita sae egual á de sempre, byte a byte, e a prova que já existe o afere.
-  const std::string modos = com_modos ? rotulo_dos_modos(retracto) : std::string();
-  if (!modos.empty())
-    fita.junta({" " + modos + " ", tokens::v950, tokens::text_primary});
-  return fita;
 }
 
 std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
