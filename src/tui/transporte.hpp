@@ -29,7 +29,6 @@
 
 #include "nucleo/fila.hpp"
 #include "nucleo/motor.hpp"
-#include "tui/rato.hpp"
 
 namespace mysong::tui {
 

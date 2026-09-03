@@ -48,25 +48,6 @@ struct CaixasDoCabecalho {
   ftxui::Box trilho = caixa_por_pintar();
 };
 
-// As caixas do TRANSPORTE. As metades da barra de progresso guardam-se á parte
-// porque o enchimento se pinta em DOUS elementos, o cheio e o vazio: no
-// principio e no fim um d'elles tem largura zero e a caixa d'esse sahe vazia.
-struct CaixasDoTransporte {
-  // Os DOUS saltos vivem n'UM segmento da fita, e a fita não se parte para os
-  // separar: foi MEDIDO que partir muda o desenho, que a trinta collunhas o
-  // FTXUI encolhe a linha e reparte o corte por ELEMENTO, donde dous textos
-  // onde havia um dão « ⏮⏭ » em logar de « ⏮ ⏭». A caixa é pois UMA, e quem a
-  // lê parte-a ao meio.
-  ftxui::Box saltos = caixa_por_pintar();
-  ftxui::Box pausa = caixa_por_pintar();
-  ftxui::Box barra_cheia = caixa_por_pintar();
-  ftxui::Box barra_vazia = caixa_por_pintar();
-
-  // progresso — a barra inteira, união das metades. Não se guarda em campo:
-  // campo seria estado em duplicata, e o `reflect` só enche as metades.
-  ftxui::Box progresso() const noexcept;
-};
-
 // CaixasDaTela — o que o quadro ANTERIOR deixou escripto. Enchem-se DENTRO de
 // quem pinta cada peça, e não na composição da janella: assim quem move os
 // paineis não move os cliques, e a assignatura de quem pinta ganha parametro
