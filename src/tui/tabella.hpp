@@ -91,6 +91,16 @@ struct Pedaco {
 std::vector<Pedaco> pedacos_da_linha(const Linha& linha, const Medidas& medidas,
                                      int maior, bool soa);
 
+// elemento_da_linha — os pedaços vestidos de tinta. A ELEITA vira BLOCO: fundo
+// de orla a orla, e TODO o texto n'uma tinta só. É o gesto do sitio do Plano
+// Artistico, onde o cursor sobre a palavra do menu a engole n'um bloco solido;
+// aqui o bloco é violeta, que é a palheta d'esta Casa.
+//
+// Eleita que TAMBEM sôa troca o violeta pelo glow_core: dous signaes na mesma
+// linha hão de dar um bloco só, e não dous fundos a brigar pela mesma cella.
+ftxui::Element elemento_da_linha(const std::vector<Pedaco>& pedacos, bool eleita,
+                                 bool soa, std::size_t largura);
+
 // A tabella do meio, com a fatia que cabe em `altura` linhas. `primeira` é o que
 // `primeira_a_mostrar` devolveu, e entra por parâmetro para que a pintura não
 // guarde estado de rolagem que pudesse divergir da vista.

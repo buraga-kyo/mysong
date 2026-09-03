@@ -144,6 +144,29 @@ std::size_t cheias_da_regua(int quanto, int maior, std::size_t cellas) {
   return cheias == 0 ? 1 : cheias;
 }
 
+ftxui::Element elemento_da_linha(const std::vector<Pedaco>& pedacos,
+                                 bool eleita, bool soa, std::size_t largura) {
+  const std::string_view sobre = soa ? tokens::panel : tokens::v50;
+  std::vector<ftxui::Element> partes;
+  partes.reserve(pedacos.size());
+  for (const Pedaco& pedaco : pedacos) {
+    ftxui::Element parte = pinta(pedaco.texto, eleita ? sobre : pedaco.tinta);
+    if (pedaco.negrito) parte = parte | ftxui::bold;
+    partes.push_back(std::move(parte));
+  }
+  ftxui::Element linha = ftxui::hbox(std::move(partes));
+  if (eleita) {
+    const tokens::Triade fundo =
+        tokens::rgb(soa ? tokens::glow_core : tokens::v600);
+    linha = linha |
+            ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+  }
+  // O cinge da largura é o que faz o bloco chegar á orla mesmo onde a somma
+  // dos pedaços desse menos: fundo que parasse a meio lê-se como defeito.
+  return linha |
+         ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
+}
+
 std::vector<Pedaco> pedacos_da_linha(const Linha& linha,
                                      const Medidas& medidas, int maior,
                                      bool soa) {
