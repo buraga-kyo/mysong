@@ -75,19 +75,6 @@ ftxui::Element caret_do_campo() {
   return ftxui::text(" ") | ftxui::focusCursorBar;
 }
 
-ftxui::Element elemento_da_trilha(const std::string& trilha,
-                                  const std::string& sufixo, bool digitando,
-                                  std::size_t largura) {
-  if (!digitando) return ftxui::text(trilha + sufixo) | ftxui::dim;
-  // Digitando, o sufixo fica de fóra: a linha é o prompt, e o caret ha de
-  // pousar no fim do que se escreveu, não no fim do ultimo recado da rede.
-  // Uma collunha se guarda para o caret, e a trilha corta-se no que sobra. Sem
-  // este corte, o texto comprido levaria o caret para lá da ultima collunha.
-  const std::size_t cabe = largura > 1 ? largura - 1 : 0;
-  return ftxui::hbox(
-      {ftxui::text(cortar(trilha, cabe)) | ftxui::dim, caret_do_campo()});
-}
-
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura,

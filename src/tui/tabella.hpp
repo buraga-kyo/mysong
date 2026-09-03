@@ -77,28 +77,6 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
 // não tem `frame` algum, e quem puser um ha de saber que herda esta linha.
 ftxui::Element caret_do_campo();
 
-// elemento_da_trilha — a linha do topo. Digitando-se, leva o caret no fim do
-// texto, que é a unica hora em que o cursor ha de apparecer; parada, não pede
-// foco algum, e ahi o FTXUI põe `Hidden` e o cursor some. `largura` é a que o
-// pintor tem, e a trilha corta-se em `largura - 1` CODEPOINTS, não collunhas,
-// para que o caret caiba DENTRO da tela: caret fóra d'ella faria o FTXUI
-// mandar deslocamento negativo ao terminal do operador, que é escape mal
-// formado. O glypho de duas collunhas (CJK, emoji) conta por um, donde o corte
-// deixa passar até o dobro da largura pedida; o que se paga, medido em papel,
-// é o caret espremido UMA collunha além da ultima, que a folga de quatro do
-// pintor engole. Contar por `string_width` compraria a promessa inteira, mas
-// esta linha muda de mãos na tarefa irmã 79; declara-se a divida em vez de a
-// pagar duas vezes.
-//
-// O `sufixo` traz os appensos da linha (a lista alvo, o video, a varredura, o
-// aviso da rede, o andamento das baixas). Parada a trilha, elles seguem-na;
-// digitando-se, calam-se AQUI, que n'essa hora a linha é o prompt, e appenso
-// depois do texto levaria o caret para o fim de palavras que o operador não
-// escreveu.
-ftxui::Element elemento_da_trilha(const std::string& trilha,
-                                  const std::string& sufixo, bool digitando,
-                                  std::size_t largura);
-
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
