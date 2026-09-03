@@ -683,51 +683,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                 sala.pauta.altura, primeira_linha);
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
 
-    std::string trilha = "ARTISTAS";
-    for (const std::string& degrau : navegador.trilha())
-      trilha += "  \ue0b1  " + degrau;
-    // A fonte no titulo da secção, SEMPRE: a lista pode ser da fonte anterior por
-    // um instante (a busca é assynchrona), e o cabeçalho é a verdade da vigente.
-    if (navegador.secao() == tui::Secao::Rede)
-      trilha = "REDE · " + std::string(nucleo::nome_da_fonte(fonte_da_busca));
-    if (navegador.secao() == tui::Secao::Lista) {
-      trilha = "SPOTIFY";
-      if (!navegador.nome_do_catalogo().empty())
-        trilha += "  \ue0b1  " + navegador.nome_do_catalogo();
-    }
-    if (navegador.secao() == tui::Secao::Rois) trilha = "LISTAS";
-    // As MINHAS MÚSICAS (issue #93): a secção do acervo plano tem nome
-    // proprio no topo, que «ARTISTAS» n'ella seria o titulo a mentir. E o
-    // topo diz o mesmo que a barra, palavra por palavra: dous nomes para a
-    // mesma secção fariam o operador procurar duas salas onde ha uma.
-    if (navegador.secao() == tui::Secao::Busca) trilha = "MINHAS MÚSICAS";
-    if (navegador.secao() == tui::Secao::NoRol) {
-      trilha = "LISTAS";
-      for (const std::string& degrau : navegador.trilha())
-        trilha += "  \ue0b1  " + degrau;
-    }
-    // O PROMPT NÃO ESCREVE AQUI. Até a issue #79 escrevia: dez linhas neste
-    // logar trocavam a trilha pelo campo de digitar, e quem teclasse `s` perdia
-    // o unico signal de onde estava. Agora o campo tem linha propria, e a
-    // garantia é estructural: cadeia alguma d'este bloco olha o `digita`.
-    // E o filtro posto diz-se SEMPRE, tambem com o prompt aberto, que antes
-    // elle era o ultimo ramo da cadeia que o prompt encabeçava.
-    if (!navegador.termo().empty()) trilha += "   [" + navegador.termo() + "]";
-    // A lista ALVO diz-se sempre que houver alguma, e em toda secção: é para onde o
-    // `a` manda a faixa, e o operador não ha de o adivinhar.
-    if (navegador.rol_corrente() != 0 &&
-        navegador.secao() != tui::Secao::NoRol)
-      trilha += "   [\ue0b1 " + navegador.nome_corrente() + "]";
-    // A janella do video diz-se enquanto ella viver. Deixando de viver, a linha
-    // cala-se por si: é a pergunta ao processo que o diz, e não bandeira nossa que
-    // pudesse ficar a mentir.
-    if (projector.rodando())
-      trilha += "   [video: " + projector.faixa().filename().string() + "]";
-    if (!varrida.load()) trilha += "   (a varrer o acervo...)";
-    if (!aviso_da_rede.empty()) trilha += "   " + aviso_da_rede;
-    const std::string andamento = nucleo::texto_do_andamento(estaleiro.andamento());
-    if (!andamento.empty()) trilha += "   " + andamento;
-
     // A letra e a ficha relêem-se sómente quando a faixa muda.
     if (retracto.titulo != letra_de_qual) {
       letra_de_qual = retracto.titulo;
