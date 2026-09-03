@@ -204,12 +204,18 @@ O `fita_lousa` recebe a imagem, o canto em `COLLUNHAxLINHA` contado de ZERO, o
 rectangulo em `LARGURAxALTURA` de celullas, e os segundos que a imagem fica.
 Escreve uma regua por baixo, para o senhor conferir a posicao contando.
 
-Tres cousas ficam ditas, e todas medidas. A imagem CABE no rectangulo guardando
-a proporcao: a miniatura 16:9 do YouTube toma menos de metade da altura, e as
-fileiras que ella deixa ficam para o espectro. Trocando de janella do tmux a
-capa some, e voltando ella volta: o proprio `ueberzugpp` arma os hooks do tmux.
-E perdendo o terminal o foco, a capa some, que a janella d'ella nao segue o foco
-e ficaria por cima do que o senhor foi ver.
+Duas cousas ficam ditas, e as duas foram MEDIDAS n'este Alacritty. A imagem CABE
+no rectangulo guardando a proporcao: a miniatura 16:9 do YouTube toma menos de
+metade da altura, e as fileiras que ella deixa ficam para o espectro. E trocando
+de janella do tmux a capa some, e voltando ella volta: o proprio `ueberzugpp`
+arma os hooks do tmux.
+
+A terceira vae dita á parte, porque NAO se mediu com o olho: perdendo o terminal
+o foco, a capa ha de sumir, que a janella d'ella nao segue o foco e ficaria por
+cima do que o senhor foi ver. O caminho esta escripto e a bateria afere a
+decisao («o foco fóra manda tirar a capa…»), mas evento de foco nao atravessa um
+pty e prova em imagem nao houve. Vendo a capa ficar por cima de outra janella,
+o logar a olhar e `set -g focus-events on` no seu tmux.
 
 O limite: a sahida e de **X11**. O `ueberzugpp` tem sahida wayland, e ella fica
 para quando esta machina correr Wayland. Sem DISPLAY, a capa volta aos symbolos
