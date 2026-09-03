@@ -14,8 +14,42 @@
 #include "nucleo/lixeira.hpp"
 
 #include <cstdlib>
+#include <ctime>
 
 namespace mysong::nucleo {
+
+// A barra CONSERVA-SE, e sómente ella entre as reservadas: o campo guarda um
+// caminho, e escapá-la faria o gerenciador de arquivos ler um nome de arquivo
+// com barras dentro. Espaço e acento, que é o que o acervo d'elle tem aos
+// montes, sahem em `%20` e em dous octetos de `%XX` cada.
+std::string escapa_o_caminho(std::string_view cru) {
+  static constexpr char kAlgarismos[] = "0123456789ABCDEF";
+  std::string url;
+  url.reserve(cru.size());
+  for (const char bruto : cru) {
+    const unsigned char letra = static_cast<unsigned char>(bruto);
+    if ((letra >= 'A' && letra <= 'Z') || (letra >= 'a' && letra <= 'z') ||
+        (letra >= '0' && letra <= '9') || letra == '-' || letra == '_' ||
+        letra == '.' || letra == '~' || letra == '/') {
+      url += bruto;
+      continue;
+    }
+    url += '%';
+    url += kAlgarismos[letra >> 4];
+    url += kAlgarismos[letra & 0x0Fu];
+  }
+  return url;
+}
+
+// Sem fuso escripto, que é o que a especificação pede: a hora é a do relogio de
+// quem apagou, e é assim que o gerenciador de arquivos a mostra.
+std::string data_da_exclusao(std::time_t quando) {
+  std::tm partido = {};
+  ::localtime_r(&quando, &partido);
+  char linha[32] = {0};
+  std::strftime(linha, sizeof(linha), "%Y-%m-%dT%H:%M:%S", &partido);
+  return std::string(linha);
+}
 
 // O mesmo desenho do caminho_do_indice da janella, e de proposito: uma Casa que
 // leia `$XDG_DATA_HOME` de duas maneiras teria dous logares de dados no dia em

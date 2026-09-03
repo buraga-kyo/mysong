@@ -16,8 +16,10 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include <ctime>
 #include <filesystem>
 #include <string>
+#include <string_view>
 
 namespace mysong::nucleo {
 
@@ -30,6 +32,14 @@ struct DaLixeira {
   std::string nome;            // o nome que ficou em `Trash/files`
   std::string razao;           // vazio quando feita
 };
+
+// O percent-encoding do `Path=` do bilhete, e a data local em ISO 8601. Sahem
+// aqui, e não escondidas na lavra, porque são as duas regras da especificação
+// que se afferem contra alvo escripto á mão, sem disco algum. CAMINHO, e não
+// `escapa_para_url` da letra: aquella escapa a barra, que é o que um parametro
+// de consulta pede, e escapada aqui a lixeira não restaurava faixa alguma.
+std::string escapa_o_caminho(std::string_view cru);
+std::string data_da_exclusao(std::time_t quando);
 
 // `$XDG_DATA_HOME/Trash`, e sem a variavel `~/.local/share/Trash`.
 std::filesystem::path caminho_da_lixeira();
