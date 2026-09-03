@@ -536,44 +536,46 @@ ContaDaFita conta_da_fita(std::size_t largura, std::size_t esquerda,
 ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::string& nome,
                                      std::size_t largura,
-                                     CaixasDoCabecalho* caixas, Focavel foco) {
+                                     CaixasDoCabecalho* caixas, Focavel foco,
+                                     std::size_t altura) {
   // Esvaziam-se á entrada, e antes de toda sahida antecipada: linha que se não
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
-  if (largura == 0) return ftxui::text("");
+  if (largura == 0 || altura == 0) return ftxui::text("");
   const Fita abas = fita_das_abas(corrente, foco);
   const Fita botoes =
       fita_dos_botoes(retracto.estado == nucleo::Estado::Tocando, foco);
-  const std::size_t esq =
-      abas.largura_exigida() + botoes.largura_exigida();
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
-  std::size_t quantas = 4;
-  Fita direita = fita_da_direita(retracto, quantas, foco);
-  while (quantas > 0 &&
-         esq + direita.largura_exigida() + kNomeMinimo > largura) {
-    --quantas;
-    direita = fita_da_direita(retracto, quantas, foco);
-  }
-  const std::size_t dir = direita.largura_exigida();
-  const std::size_t sobra = largura > esq + dir ? largura - esq - dir : 0;
+  std::vector<std::size_t> pede(5, 0);
+  for (std::size_t q = 1; q < pede.size(); ++q)
+    pede[q] = fita_da_direita(retracto, q, foco).largura_exigida();
+  const ContaDaFita conta = conta_da_fita(largura, botoes.largura_exigida(),
+                                          abas.largura_exigida(), pede);
+  const Fita direita = fita_da_direita(retracto, conta.quantas, foco);
   const bool ha = !nome.empty();
   ftxui::Element meio =
-      vestir(aparar_nome(ha ? nome : "(nada toca)", sobra),
-             ha ? tokens::text_bright : tokens::text_muted, tokens::panel);
+      vestir(aparar_nome(ha ? nome : "(nada toca)", conta.nome),
+             ha ? tokens::text_bright : tokens::text_muted, tokens::panel,
+             altura);
   if (caixas != nullptr) meio = meio | ftxui::reflect(caixas->nome);
   return ftxui::hbox(
-      {pintar_fita(
+      {pintar_fita(botoes.compor(), caixas_dos_botoes(caixas), {}, altura),
+       std::move(meio),
+       pintar_fita(
            abas.compor(), caixas_das_abas(caixas),
            {elemento_da_aba(Aba::MySong,
-                            estado_da_aba(Aba::MySong, corrente, foco)),
+                            estado_da_aba(Aba::MySong, corrente, foco), altura),
             elemento_da_aba(Aba::Playlists,
-                            estado_da_aba(Aba::Playlists, corrente, foco)),
+                            estado_da_aba(Aba::Playlists, corrente, foco),
+                            altura),
             elemento_da_aba(Aba::Download,
-                            estado_da_aba(Aba::Download, corrente, foco))}),
-       pintar_fita(botoes.compor(), caixas_dos_botoes(caixas), {}),
-       std::move(meio),
-       pintar_fita(direita.compor(), caixas_da_direita(caixas), {})});
+                            estado_da_aba(Aba::Download, corrente, foco),
+                            altura)},
+           altura),
+       vestir(std::string(conta.depois, ' '), tokens::text_muted, tokens::panel,
+              altura),
+       pintar_fita(direita.compor(), caixas_da_direita(caixas), {}, altura)});
 }
 
 ftxui::Element elemento_do_trilho(const Retracto& retracto,
