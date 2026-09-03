@@ -1285,6 +1285,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::GestoDaAba::Alheio: break;
     }
 
+    // A TECLA `m` (issue #96): o menu sobre a ELEITA, que é o par de teclado do
+    // botão direito. Trata-se AQUI, depois do campo e das abas, e não na
+    // taboada do commando: ella não dá Ordem alguma, e verbo que sómente
+    // abrisse caixa da tela seria verbo que o tocador nunca cumpriria.
+    if (tecla == ftxui::Event::Character('m')) {
+      abre_o_menu_na(navegador.eleito());
+      return true;
+    }
     // A ordem vem do RATO quando o evento é do rato, e da tecla quando é da
     // tecla: a `ordem_da_tecla` não vê evento de rato algum, e o `switch`
     // abaixo cumpre-a sem saber por qual das duas portas ella entrou.
