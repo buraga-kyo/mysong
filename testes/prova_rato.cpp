@@ -19,7 +19,7 @@
 #include <system_error>
 
 #include "nucleo/biblioteca.hpp"
-#include "tui/menu.hpp"
+#include "tui/cabecalho.hpp"
 #include "tui/rato.hpp"
 #include "tui/tabella.hpp"
 #include "tui/transporte.hpp"
@@ -41,19 +41,27 @@ TEST_CASE("a caixa por pintar não casa com ponto algum") {
 
 namespace {
 
-// A tela de mentira: sete degraus de nove collunhas á esquerda, cinco linhas de
-// tabella á direita d'elles, a capa n'um quadro, e o transporte no pé. Os
-// numeros são arbitrarios: o que se prova é a geometria, e não a composição.
+// A tela de mentira: o cabeçalho na fileira zero, o trilho na um, cinco linhas
+// de pauta, e a capa n'um quadro á direita. Os numeros são arbitrarios: o que
+// se prova é a geometria, e não a composição.
 tui::CaixasDaTela tela_de_mentira() {
   tui::CaixasDaTela caixas;
-  for (int i = 0; i < 7; ++i) caixas.degraus.push_back({1, 9, 3 + i, 3 + i});
+  tui::CaixasDoCabecalho& alto = caixas.cabecalho;
+  alto.aba_mysong = {0, 9, 0, 0};
+  alto.aba_playlists = {10, 21, 0, 0};
+  alto.aba_download = {22, 32, 0, 0};
+  alto.botao_tocar = {33, 35, 0, 0};
+  alto.botao_anterior = {36, 38, 0, 0};
+  alto.botao_seguinte = {39, 41, 0, 0};
+  alto.nome = {42, 60, 0, 0};
+  alto.tempo = {61, 75, 0, 0};
+  alto.volume = {76, 84, 0, 0};
+  alto.embaralhar = {85, 97, 0, 0};
+  alto.repetir = {98, 107, 0, 0};
+  alto.trilho = {11, 30, 1, 1};
   for (int i = 0; i < 5; ++i) caixas.linhas.push_back({11, 60, 3 + i, 3 + i});
   caixas.primeira_linha = 20;
   caixas.capa = {62, 80, 3, 12};
-  caixas.transporte.pausa = {1, 3, 30, 30};
-  caixas.transporte.saltos = {4, 9, 30, 30};
-  caixas.transporte.barra_cheia = {11, 20, 30, 30};
-  caixas.transporte.barra_vazia = {21, 30, 30, 30};
   return caixas;
 }
 
