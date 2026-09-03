@@ -298,5 +298,31 @@ TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
     CHECK(linha_em(larga).find("MY SONG") != std::string::npos);
 }
 
+// O SEGMENTO DO VOLUME calado (issue #106). A palavra em logar do numero, em
+// glow_hot, que é a tinta da urgencia d'esta Casa; e nas MESMAS oito collunhas,
+// donde a fita não anda debaixo do olho de quem só carregou no F9.
+TEST_CASE("o segmento do volume diz MUDO, e nas mesmas oito collunhas") {
+  tui::Retracto calado = tocando();
+  calado.volume = 70;
+  calado.mudo = true;
+  const ftxui::Screen tela = papel(
+      tui::elemento_do_cabecalho(calado, tui::Aba::MySong, "x", 167), 167);
+  CHECK(pedaco(tela, 132, 8) == " \U000f075f MUDO ");
+  CHECK(tela.PixelAt(134, 0).foreground_color == cor(tk::glow_hot));
+  // A conta da fita NÃO anda: o EMBARALHAR fica na collunha em que ficava com o
+  // numero, e o nome da faixa com elle.
+  CHECK(pedaco(tela, 141, 14) == " \U000f049d EMBARALHAR ");
+
+  // E o volume ZERO por escolha do operador segue a mostrar o numero: sómente a
+  // ordem de calar diz a palavra, que são duas cousas differentes e a fita não
+  // ha de as confundir.
+  tui::Retracto no_zero = tocando();
+  no_zero.volume = 0;
+  const ftxui::Screen quieto = papel(
+      tui::elemento_do_cabecalho(no_zero, tui::Aba::MySong, "x", 167), 167);
+  CHECK(pedaco(quieto, 132, 8) == " \U000f075f   0% ");
+  CHECK(quieto.PixelAt(134, 0).foreground_color == cor(tk::text_muted));
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
