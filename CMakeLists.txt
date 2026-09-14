@@ -57,7 +57,6 @@ FetchContent_Declare(ftxui
   GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI
   GIT_TAG v7.0.3
   GIT_SHALLOW TRUE
-  PATCH_COMMAND git apply "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ftxui-no-periodic-redraw.patch"
   SYSTEM)
 FetchContent_MakeAvailable(ftxui)
 
