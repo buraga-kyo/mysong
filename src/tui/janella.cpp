@@ -520,6 +520,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   tui::CorreioDe<nucleo::Catalogo> correio_do_catalogo;
   std::string url_da_lista;
   std::atomic<bool> pede_catalogo{false};
+  tui::CorreioDe<nucleo::Pedido> correio_da_playlist;
+  std::string url_da_playlist;
+  nucleo::Fonte fonte_da_playlist = nucleo::Fonte::YouTube;
+  std::atomic<bool> pede_playlist{false};
+  std::atomic<bool> baixa_playlist_ao_chegar{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO PEDE-SE Á MÃO (issue #95), e o rastreio do FTXUI fica desligado. Não é
@@ -637,6 +642,42 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         }
         varrida.store(true);
         acervo_novo.store(true);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
+
+  // O FIO DAS PLAYLISTS da tecla `b`. A enumeração acontece fora da tela, e a
+  // fila só recebe pedidos depois que a lista inteira foi lida.
+  ao_fundo.emplace_back([&] {
+    while (!sahir.load()) {
+      if (pede_playlist.exchange(false)) {
+        std::string url;
+        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          url = url_da_playlist;
+          fonte = fonte_da_playlist;
+        }
+        std::vector<nucleo::Pedido> pedidos;
+        std::string recado;
+        if (fonte == nucleo::Fonte::Spotify) {
+          recado = "playlist Spotify usa o caminho do catalogo";
+        } else {
+          std::vector<std::string> urls;
+          const bool falou = nucleo::busca_playlist_na_rede(url, &urls);
+          for (const std::string& faixa : urls) {
+            nucleo::Pedido pedido;
+            pedido.url = faixa;
+            pedido.fonte = fonte;
+            pedidos.push_back(std::move(pedido));
+          }
+          recado = !falou ? "a playlist não respondeu"
+                          : (pedidos.empty() ? "a playlist veio vazia"
+                                             : std::to_string(pedidos.size()) +
+                                                   " faixas encontradas");
+        }
+        correio_da_playlist.poe(std::move(pedidos), std::move(recado));
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
