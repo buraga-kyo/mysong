@@ -373,6 +373,7 @@ std::optional<Aba> aba_com_foco(Focavel foco) noexcept {
     case Focavel::Volume:
     case Focavel::Embaralhar:
     case Focavel::Repetir:
+    case Focavel::Anima:
     case Focavel::Ajuda:
     case Focavel::Trilho:
     case Focavel::Capa: break;
@@ -424,7 +425,8 @@ Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando) {
 // depois o REPETIR, e o tempo por ultimo, que é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
 // fundo, que é a emenda visivel que o aceite proscreve.
 Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
-                     Focavel foco, bool animacao_travada) {
+                     Focavel foco, bool animacao_travada,
+                     bool mostrar_animacao) {
   const bool repete = retracto.repeticao != nucleo::Repeticao::Nenhuma;
   // A Casa CALADA por ordem (issue #106) não é o volume zero por escolha:
   // aquella diz a palavra, e este mostra o numero como todo outro volume. As
@@ -478,7 +480,13 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
              tokens::text_primary},
             foco == Focavel::Ajuda)};
   Fita fita(Sentido::Esquerda);
-  for (std::size_t i = 0; i < quantas && i < 6; ++i) fita.junta(todos[i]);
+  if (mostrar_animacao) {
+    for (std::size_t i = 0; i < quantas && i < 6; ++i) fita.junta(todos[i]);
+  } else {
+    const std::size_t indices_sem_animacao[5] = {0, 1, 2, 3, 5};
+    for (std::size_t i = 0; i < quantas && i < 5; ++i)
+      fita.junta(todos[indices_sem_animacao[i]]);
+  }
   return fita;
 }
 
@@ -489,10 +497,13 @@ std::vector<ftxui::Box*> caixas_da_esquerda(CaixasDoCabecalho* c) {
   return {&c->aba_mysong,  &c->aba_playlists,  &c->aba_download,
           &c->botao_tocar, &c->botao_anterior, &c->botao_seguinte};
 }
-std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
+std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c,
+                                           bool mostrar_animacao) {
   if (c == nullptr) return {};
-  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir, &c->anima,
-          &c->ajuda};
+  if (mostrar_animacao)
+    return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir, &c->anima,
+            &c->ajuda};
+  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir, &c->ajuda};
 }
 
 }  // namespace
@@ -544,7 +555,8 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::vector<float>& onda,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas, Focavel foco,
-                                     std::size_t altura, bool animacao_travada) {
+                                     std::size_t altura, bool animacao_travada,
+                                     bool mostrar_animacao) {
   // Esvaziam-se á entrada, e antes de toda sahida antecipada: linha que se não
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
@@ -553,14 +565,16 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
       corrente, foco, retracto.estado == nucleo::Estado::Tocando);
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
-  std::vector<std::size_t> pede(7, 0);
+  std::vector<std::size_t> pede(mostrar_animacao ? 7 : 6, 0);
   for (std::size_t q = 1; q < pede.size(); ++q)
-    pede[q] = fita_da_direita(retracto, q, foco, animacao_travada)
+    pede[q] = fita_da_direita(retracto, q, foco, animacao_travada,
+                              mostrar_animacao)
                   .largura_exigida();
   const ContaDaFita conta =
       conta_da_fita(largura, esquerda.largura_exigida(), pede);
   const Fita direita =
-      fita_da_direita(retracto, conta.quantas, foco, animacao_travada);
+      fita_da_direita(retracto, conta.quantas, foco, animacao_travada,
+                      mostrar_animacao);
   return ftxui::hbox(
       {pintar_fita(
            esquerda.compor(), caixas_da_esquerda(caixas),
@@ -575,7 +589,8 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
            altura),
        elemento_do_meio(retracto, onda, conta.meio, foco == Focavel::Trilho,
                         caixas != nullptr ? &caixas->trilho : nullptr, altura),
-       pintar_fita(direita.compor(), caixas_da_direita(caixas), {}, altura)});
+       pintar_fita(direita.compor(), caixas_da_direita(caixas, mostrar_animacao),
+                   {}, altura)});
 }
 
 }  // namespace mysong::tui
