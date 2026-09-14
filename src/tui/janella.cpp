@@ -541,6 +541,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // duzentas e vinte e tres collunhas do formato velho. Ligam-se abaixo, ao lado do
   // modo do foco, e desfazem-se logo depois do laço.
   tela.TrackMouse(false);
+  // Os modos do rato pertencem somente á aba que está activa. Se ficam ligados
+  // durante a troca de aba, o emulador pode mudar o ponteiro e o tmux entrega
+  // movimento ao painel que o operador está usando.
+  const auto alterna_rastreamento_do_rato = [&](bool ligado) {
+    std::cout << (ligado ? "\x1b[?1000h\x1b[?1002h\x1b[?1006h"
+                         : "\x1b[?1006l\x1b[?1002l\x1b[?1000l")
+              << std::flush;
+  };
   std::atomic<bool> sahir{false};
   // O MODO de digitar. Um enum, e não booleanos ao lado: dous booleanos
   // admittem o estado «ambos», que não existe. Mudou-se de casa na issue #79 e
@@ -630,7 +638,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::string ultima_assignatura;
   // A VIGILIA do desenho (issue #82): o fio da tela a escreve (foco e tecla)
   // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
-  tui::Vigilia vigilia(true);
+  // Sem foco, o audio continua, mas o quadro deixa de ser repintado. O valor
+  // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
+  tui::Vigilia vigilia;
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
   // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
@@ -1398,9 +1408,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
     // letra no termo em curso.
     switch (tui::gesto_do_foco(tecla)) {
-      case tui::GestoDoFoco::Ganha: vigilia.ganha(); return true;
+      case tui::GestoDoFoco::Ganha:
+        vigilia.ganha();
+        alterna_rastreamento_do_rato(true);
+        return true;
       case tui::GestoDoFoco::Perde:
         vigilia.perde();
+        alterna_rastreamento_do_rato(false);
         // A janella da lousa NÃO segue o foco do terminal: perdido elle, a
         // imagem ficaria por cima do que o operador foi ver. Quem manda de
         // facto é o `ordem_da_capa` do pintor, que lê a mesma vigilia em todo
@@ -2096,9 +2110,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   //
   // E PEDE-SE O RATO com elle (issue #95): o 1000 dá o botão a descer e a subir,
   // e o 1006 dá-os em SGR. O 1003 fica de fóra, e é esse o ponto da issue.
-  std::cout << "\x1b[?1004h\x1b[?1000h\x1b[?1002h\x1b[?1006h" << std::flush;
+  std::cout << "\x1b[?1004h" << std::flush;
+  alterna_rastreamento_do_rato(true);
   tela.Loop(janella);
-  std::cout << "\x1b[?1006l\x1b[?1002l\x1b[?1000l\x1b[?1004l" << std::flush;
+  alterna_rastreamento_do_rato(false);
+  std::cout << "\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
