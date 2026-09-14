@@ -1,0 +1,14 @@
+diff --git a/src/ftxui/component/app.cpp b/src/ftxui/component/app.cpp
+index 0000000..0000000 100644
+--- a/src/ftxui/component/app.cpp
++++ b/src/ftxui/component/app.cpp
+@@ -697,8 +697,6 @@ void App::Internal::Install() {
+   InstallTerminalInfo();
+ 
+   quit_ = false;
+ 
+-  PostAnimationTask();
+-
+   installed_ = true;
+   g_terminal_is_raw = true;
+ }
