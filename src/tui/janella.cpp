@@ -1237,7 +1237,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     ftxui::Element fita = tui::elemento_do_cabecalho(
         retracto, tui::aba_da_secao(navegador.secao()), onda_da_faixa,
         sala.cabecalho.largura, &caixas.cabecalho, foco, sala.cabecalho.altura,
-        vigilia.animacao_travada());
+        vigilia.animacao_travada(), true);
     // A ORDEM da tela nova (issue #125): o corpo abre na PRIMEIRA linha, e o pé
     // toma as ultimas, de cima para baixo o campo, a fita e as dicas. O trilho
     // morreu na issue #134: a onda no meio da fita é o progresso.

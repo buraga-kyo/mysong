@@ -25,6 +25,7 @@
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/terminal.hpp>
 
 #include "nucleo/sonda.hpp"
 #include "tui/tela_requisitos.hpp"
@@ -62,6 +63,10 @@ nu::Inquerito faltando(std::initializer_list<std::string_view> chaves) {
 
 // pintar — o écran de papel: largura escolhida, altura quanto o quadro pedir.
 std::string pintar(const nu::Relatorio& relatorio, int largura) {
+  // A prova compara as côres RGB exactas. O terminal de ctest pode declarar
+  // sómente 256 côres, o que faria o FTXUI converter as côres e falsamente
+  // accusar a tela de não vestir os tokens da taboa.
+  ftxui::Terminal::SetColorSupport(ftxui::Terminal::TrueColor);
   ftxui::Element quadro = tl::elemento_dos_requisitos(relatorio);
   // A altura vae FIXA e folgada, e não ajustada ao elemento: a altura que o
   // paragrafo pede só se sabe depois de se saber a largura em que elle reflue,
@@ -72,6 +77,12 @@ std::string pintar(const nu::Relatorio& relatorio, int largura) {
                             ftxui::Dimension::Fixed(60));
   ftxui::Render(ecran, quadro);
   return ecran.ToString();
+}
+
+std::string sequencia_da_tinta(std::string_view token) {
+  const auto cor = tk::rgb(token);
+  return "\x1b[" +
+         ftxui::Color::RGB(cor.r, cor.g, cor.b).Print(false) + "m";
 }
 
 // larguras_visiveis — conta as COLLUNAS de cada linha, e não os bytes: as
@@ -130,9 +141,9 @@ TEST_CASE("o quadro cabe em quarenta collunas, e nada d'elle se perde") {
 TEST_CASE("o impedimento veste crit, o aviso veste warn, o remedio muted") {
   const std::string pintura =
       pintar(nu::sondar(faltando({"libmpv", "chafa"})), 100);
-  CHECK(pintura.find(tk::tinta(tk::crit)) != std::string::npos);
-  CHECK(pintura.find(tk::tinta(tk::warn)) != std::string::npos);
-  CHECK(pintura.find(tk::tinta(tk::text_muted)) != std::string::npos);
+  CHECK(pintura.find(sequencia_da_tinta(tk::crit)) != std::string::npos);
+  CHECK(pintura.find(sequencia_da_tinta(tk::warn)) != std::string::npos);
+  CHECK(pintura.find(sequencia_da_tinta(tk::text_muted)) != std::string::npos);
 }
 
 TEST_CASE("não havendo impedimento, o quadro não pede tecla alguma") {

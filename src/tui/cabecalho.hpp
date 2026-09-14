@@ -163,7 +163,8 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      CaixasDoCabecalho* caixas = nullptr,
                                      Focavel foco = Focavel::Pauta,
                                      std::size_t altura = 1,
-                                     bool animacao_travada = false);
+                                     bool animacao_travada = false,
+                                     bool mostrar_animacao = false);
 
 // A ORDEM que o pintor dá á lousa quanto á chapa de UMA aba. Sahem TRES de
 // cada quadro, uma por aba e na ordem da fita, e nunca menos: aba que não tem
