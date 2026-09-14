@@ -61,6 +61,24 @@ FetchContent_Declare(ftxui
   SYSTEM)
 FetchContent_MakeAvailable(ftxui)
 
+# Um build que já tinha o FTXUI baixado não passa novamente pelo PATCH_COMMAND.
+# Reaplica-se a mesma emenda na configuração quando a fonte ainda traz o
+# agendamento periódico, sem tocar uma vez sequer numa árvore já corrigida.
+set(MYSONG_FTXUI_APP "${ftxui_SOURCE_DIR}/src/ftxui/component/app.cpp")
+if(EXISTS "${MYSONG_FTXUI_APP}")
+  file(READ "${MYSONG_FTXUI_APP}" MYSONG_FTXUI_APP_TEXT)
+  string(FIND "${MYSONG_FTXUI_APP_TEXT}" "  PostAnimationTask();\n\n  installed_" MYSONG_FTXUI_PERIODIC_CALL)
+  if(NOT MYSONG_FTXUI_PERIODIC_CALL EQUAL -1)
+    execute_process(
+      COMMAND git -C "${ftxui_SOURCE_DIR}" apply
+              "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ftxui-no-periodic-redraw.patch"
+      RESULT_VARIABLE MYSONG_FTXUI_PATCH_RESULT)
+    if(NOT MYSONG_FTXUI_PATCH_RESULT EQUAL 0)
+      message(FATAL_ERROR "Não consegui aplicar a emenda de redraw do FTXUI")
+    endif()
+  endif()
+endif()
+
 add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp)
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(mysong_core PRIVATE ${MYSONG_AVISOS})
