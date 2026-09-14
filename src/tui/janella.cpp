@@ -279,7 +279,8 @@ std::string renomeia_a_faixa(const std::string& caminho,
 // a ordem a quem está calado seria a tecla não fazer nada. Sem janella, vae ao
 // motor, que é o caminho de sempre.
 void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
-             nucleo::Projector& projector, std::atomic<bool>& sahir) {
+             nucleo::Projector& projector, std::atomic<bool>& sahir,
+             tui::Vigilia& vigilia) {
   const bool na_janella = projector.rodando();
   switch (ordem.verbo) {
     case tui::Verbo::Nada: break;
@@ -311,6 +312,7 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
     // socket ou o barramento, e a tecla assentaria o contrario do que se viu.
     case tui::Verbo::Embaralhar: tocador.alterna_embaralhar(); break;
     case tui::Verbo::Repetir: tocador.cicla_repetir(); break;
+    case tui::Verbo::Anima: vigilia.alterna_trava(); break;
     // O MUDO (issue #106) cala o MOTOR de audio, e não a janella do video: essa
     // tem o volume d'ella pelo soquete, e calá-la sem lh'o dizer deixaria o
     // segundo F9 a devolver um volume que ella nunca teve.
@@ -1234,7 +1236,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // trilho: o clique que busca é agora um clique na fita.
     ftxui::Element fita = tui::elemento_do_cabecalho(
         retracto, tui::aba_da_secao(navegador.secao()), onda_da_faixa,
-        sala.cabecalho.largura, &caixas.cabecalho, foco, sala.cabecalho.altura);
+        sala.cabecalho.largura, &caixas.cabecalho, foco, sala.cabecalho.altura,
+        vigilia.animacao_travada());
     // A ORDEM da tela nova (issue #125): o corpo abre na PRIMEIRA linha, e o pé
     // toma as ultimas, de cima para baixo o campo, a fita e as dicas. O trilho
     // morreu na issue #134: a onda no meio da fita é o progresso.
@@ -1567,6 +1570,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         case tui::Gesto::Ajuda: tui::alterna_a_ajuda(ajuda); return true;
         case tui::Gesto::Embaralha: tocador.alterna_embaralhar(); return true;
         case tui::Gesto::Repete: tocador.cicla_repetir(); return true;
+        case tui::Gesto::Anima: ordem_do_rato = {tui::Verbo::Anima}; break;
         // O MUDO pelo segmento do volume, e pela mesma razão dos dous modos:
         // quem guarda o numero e quem o devolve é o TOCADOR, de uma tomada só.
         case tui::Gesto::Muda: tocador.alterna_mudo(); return true;
@@ -2021,7 +2025,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         return true;
       }
       default:
-        cumprir(ordem, tocador, projector, sahir);
+        cumprir(ordem, tocador, projector, sahir, vigilia);
         if (sahir.load()) tela.Exit();
         return true;
     }
