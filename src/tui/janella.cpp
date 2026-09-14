@@ -1509,9 +1509,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       ftxui::Event copia = tecla;  // o punho do rato é não const no FTXUI
       const ftxui::Mouse rato = pelo_foco ? ftxui::Mouse{} : copia.mouse();
       const tui::Retracto agora = retracto_do(tocador, projector);
-      const tui::GestoDoRato gesto = tui::gesto_do_alvo(
+      const tui::Alvo alvo_do_gesto =
           pelo_foco ? tui::alvo_do_foco(foco)
-                    : tui::alvo_do_ponto(caixas, rato.x, rato.y),
+                    : tui::alvo_do_ponto(caixas, rato.x, rato.y);
+      const tui::GestoDoRato gesto = tui::gesto_do_alvo(
+          alvo_do_gesto,
           pelo_foco ? ftxui::Mouse::Left : rato.button,
           pelo_foco ? ftxui::Mouse::Pressed : rato.motion,
           {digita != Digita::Nada, navegador.eleito(),
@@ -1582,6 +1584,21 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           ordem_do_rato = {tui::Verbo::Buscar, gesto.alvo};
           break;
         case tui::Gesto::PausaOuRetoma:
+          if (alvo_do_gesto.peca == tui::Peca::Pausa &&
+              navegador.secao() == tui::Secao::Faixas) {
+            const std::size_t eleita = navegador.eleito();
+            const std::size_t antes = tocador.retracto().tamanho;
+            std::size_t quantas = 0;
+            for (const tui::Linha& linha : navegador.vista()) {
+              tocador.junta(linha.chave);
+              ++quantas;
+            }
+            if (quantas > 0) {
+              tocador.ir_para(antes + std::min(eleita, quantas - 1));
+              tocador.tocar_corrente();
+            }
+            return true;
+          }
           // O ⏯ e a capa perguntam á MESMA taboada do espaço: duas taboadas
           // dariam duas verdades sobre o que alternar quer dizer.
           ordem_do_rato =
