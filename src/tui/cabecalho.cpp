@@ -424,7 +424,7 @@ Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando) {
 // depois o REPETIR, e o tempo por ultimo, que é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
 // fundo, que é a emenda visivel que o aceite proscreve.
 Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
-                     Focavel foco) {
+                     Focavel foco, bool animacao_travada) {
   const bool repete = retracto.repeticao != nucleo::Repeticao::Nenhuma;
   // A Casa CALADA por ordem (issue #106) não é o volume zero por escolha:
   // aquella diz a palavra, e este mostra o numero como todo outro volume. As
@@ -458,7 +458,8 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
   // quando a mão pousa n'elles, e o segmento aceso guarda o mesmo logar.
   // O HELP (issue #133) é a ponta: um botão como os outros, que o Enter e o
   // clique apertam, e que se veste de foco pelo mesmo `aceso`.
-  const Segmento todos[5] = {
+  const std::string anima = animacao_travada ? " 󰏤 PARADO " : " 󰐊 ANIMA ";
+  const Segmento todos[6] = {
       {tempo, tokens::raised, tokens::text_bright},
       aceso({som, tokens::raised,
              calado ? tokens::glow_hot
@@ -470,11 +471,14 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
       aceso({torna, tokens::raised,
              repete ? tokens::glow_core : tokens::text_muted},
             foco == Focavel::Repetir),
+      aceso({anima, tokens::raised,
+             animacao_travada ? tokens::glow_hot : tokens::glow_core},
+            foco == Focavel::Anima),
       aceso({" " + std::string(kAjuda) + " HELP ", tokens::raised,
              tokens::text_primary},
             foco == Focavel::Ajuda)};
   Fita fita(Sentido::Esquerda);
-  for (std::size_t i = 0; i < quantas && i < 5; ++i) fita.junta(todos[i]);
+  for (std::size_t i = 0; i < quantas && i < 6; ++i) fita.junta(todos[i]);
   return fita;
 }
 
@@ -487,7 +491,8 @@ std::vector<ftxui::Box*> caixas_da_esquerda(CaixasDoCabecalho* c) {
 }
 std::vector<ftxui::Box*> caixas_da_direita(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
-  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir, &c->ajuda};
+  return {&c->tempo, &c->volume, &c->embaralhar, &c->repetir, &c->anima,
+          &c->ajuda};
 }
 
 }  // namespace
@@ -539,7 +544,7 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
                                      const std::vector<float>& onda,
                                      std::size_t largura,
                                      CaixasDoCabecalho* caixas, Focavel foco,
-                                     std::size_t altura) {
+                                     std::size_t altura, bool animacao_travada) {
   // Esvaziam-se á entrada, e antes de toda sahida antecipada: linha que se não
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
@@ -548,12 +553,14 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
       corrente, foco, retracto.estado == nucleo::Estado::Tocando);
   // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
   // par de côres de um segmento ao meio.
-  std::vector<std::size_t> pede(6, 0);
+  std::vector<std::size_t> pede(7, 0);
   for (std::size_t q = 1; q < pede.size(); ++q)
-    pede[q] = fita_da_direita(retracto, q, foco).largura_exigida();
+    pede[q] = fita_da_direita(retracto, q, foco, animacao_travada)
+                  .largura_exigida();
   const ContaDaFita conta =
       conta_da_fita(largura, esquerda.largura_exigida(), pede);
-  const Fita direita = fita_da_direita(retracto, conta.quantas, foco);
+  const Fita direita =
+      fita_da_direita(retracto, conta.quantas, foco, animacao_travada);
   return ftxui::hbox(
       {pintar_fita(
            esquerda.compor(), caixas_da_esquerda(caixas),

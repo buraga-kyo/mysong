@@ -62,7 +62,7 @@ enum class Verbo {
   TrocaFonte,
   // OS DOUS MODOS de reprodução (issue #62). Verbos puros, como o TrocaFonte:
   // quem alterna e quem cicla é o TOCADOR, de uma tomada só da sua tranca.
-  Embaralhar, Repetir,
+  Embaralhar, Repetir, Anima,
   // AS DUAS DA FAIXA (issue #105): renomear a musica, e mandá-la á lixeira.
   // Teclas de FUNCÇÃO, e não lettras: as duas estragam cousa gravada, e o F2 e
   // o Delete são o que o gerenciador de arquivos d'elle já faz, donde a mão não

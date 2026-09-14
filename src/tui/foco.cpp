@@ -30,7 +30,8 @@ constexpr Focavel kTodas[] = {
     Focavel::Pauta,       Focavel::AbaMySong, Focavel::AbaPlaylists,
     Focavel::AbaDownload, Focavel::Tocar,     Focavel::Anterior,
     Focavel::Seguinte,    Focavel::Volume,    Focavel::Embaralhar,
-    Focavel::Repetir,     Focavel::Ajuda,     Focavel::Trilho,
+    Focavel::Repetir,     Focavel::Anima,     Focavel::Ajuda,
+    Focavel::Trilho,
     Focavel::Capa,
 };
 
@@ -73,6 +74,7 @@ ftxui::Box caixa_da_peca(const CaixasDaTela& caixas, Focavel qual) noexcept {
     case Focavel::Volume: return alto.volume;
     case Focavel::Embaralhar: return alto.embaralhar;
     case Focavel::Repetir: return alto.repetir;
+    case Focavel::Anima: return alto.anima;
     case Focavel::Ajuda: return alto.ajuda;
     case Focavel::Trilho: return alto.trilho;
     case Focavel::Capa: return caixas.capa;
@@ -135,6 +137,7 @@ Alvo alvo_do_foco(Focavel qual) noexcept {
     case Focavel::Volume: return {Peca::Volume, 0, 0.0};
     case Focavel::Embaralhar: return {Peca::Embaralhar, 0, 0.0};
     case Focavel::Repetir: return {Peca::Repetir, 0, 0.0};
+    case Focavel::Anima: return {Peca::Anima, 0, 0.0};
     case Focavel::Ajuda: return {Peca::Ajuda, 0, 0.0};
     case Focavel::Capa: return {Peca::Capa, 0, 0.0};
     // As duas que a tecla NÃO aperta, e o porquê está no cabeçalho d'este

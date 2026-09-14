@@ -47,6 +47,7 @@ Alvo alvo_do_ponto(const CaixasDaTela& caixas, int x, int y) noexcept {
   if (alto.volume.Contain(x, y)) return {Peca::Volume, 0, 0.0};
   if (alto.embaralhar.Contain(x, y)) return {Peca::Embaralhar, 0, 0.0};
   if (alto.repetir.Contain(x, y)) return {Peca::Repetir, 0, 0.0};
+  if (alto.anima.Contain(x, y)) return {Peca::Anima, 0, 0.0};
   if (alto.ajuda.Contain(x, y)) return {Peca::Ajuda, 0, 0.0};
   if (alto.trilho.Contain(x, y))
     return {Peca::Progresso, 0, fracao_na(alto.trilho, x)};
@@ -94,6 +95,7 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
     case Peca::Aba: return {Gesto::VaiParaAba, alvo.indice, 0.0};
     case Peca::Embaralhar: return {Gesto::Embaralha, 0, 0.0};
     case Peca::Repetir: return {Gesto::Repete, 0, 0.0};
+    case Peca::Anima: return {Gesto::Anima, 0, 0.0};
     // O VOLUME cala e devolve, como o F9: é o gesto que o segmento já mostra,
     // que elle troca o numero pela palavra MUDO. Numero se não arrasta com o
     // dedo n'este modo de rato, e por isso o clique n'elle não assenta valor.
