@@ -23,6 +23,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include <atomic>
 #include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <filesystem>
@@ -129,6 +130,26 @@ std::filesystem::path raiz_do_soquete() {
   const char* posto = std::getenv("XDG_RUNTIME_DIR");
   if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
   return std::filesystem::path("/tmp");
+}
+
+// janela_do_tmux_esta_ativa — focus-events informa foco do emulador, mas trocar
+// de janela dentro do tmux não é uma troca de foco do terminal. Consulta-se o
+// estado da janela pelo identificador seguro que o tmux já entrega em
+// TMUX_PANE, para que a animação interna continue sem pintar uma janela oculta.
+bool janela_do_tmux_esta_ativa() {
+  const char* painel = std::getenv("TMUX_PANE");
+  if (painel == nullptr || painel[0] != '%') return true;
+  for (const char* digito = painel + 1; *digito != '\0'; ++digito)
+    if (*digito < '0' || *digito > '9') return true;
+  const std::string comando =
+      "tmux display-message -p -t " + std::string(painel) +
+      " '#{window_active}' 2>/dev/null";
+  FILE* resposta = popen(comando.c_str(), "r");
+  if (resposta == nullptr) return true;
+  char estado[4] = {};
+  const bool leu = fgets(estado, sizeof(estado), resposta) != nullptr;
+  pclose(resposta);
+  return leu ? estado[0] == '1' : true;
 }
 
 // QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
@@ -2067,6 +2088,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
+    bool janela_ativa = janela_do_tmux_esta_ativa();
     while (!sahir.load()) {
       tocador.pulsa();
       // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
@@ -2079,6 +2101,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (estaleiro.colheu()) pede_varrer.store(true);
       analisador.pulsa();
       mpris.pulsa();
+      const bool janela_ativa_agora = janela_do_tmux_esta_ativa();
+      if (janela_ativa_agora != janela_ativa) {
+        janela_ativa = janela_ativa_agora;
+        if (janela_ativa)
+          vigilia.ganha();
+        else
+          vigilia.perde();
+        tela.Post([&alterna_rastreamento_do_rato, janela_ativa_agora] {
+          alterna_rastreamento_do_rato(janela_ativa_agora);
+        });
+      }
       const std::chrono::steady_clock::time_point instante =
           std::chrono::steady_clock::now();
       const double lapso = std::chrono::duration<double>(
