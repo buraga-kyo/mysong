@@ -281,6 +281,23 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido);
 // respondeu; ahi a etiqueta fica como estava.
 bool sonda_url(const std::string& url, EtiquetaRemota* remota);
 
+// eh_playlist_url — reconhece identificadores de playlist dos provedores já
+// suportados. Uma URL de faixa não deve cair no caminho de lote.
+bool eh_playlist_url(const std::string& url);
+
+// argumentos_da_playlist — enumera URLs sem baixar audio. O caminho individual
+// continua protegido por `--no-playlist`; só este caminho abre a lista.
+std::vector<std::string> argumentos_da_playlist(const std::string& url,
+                                                bool com_cookie = false);
+
+// le_urls_da_playlist — lê uma URL por linha e descarta respostas vazias.
+std::vector<std::string> le_urls_da_playlist(const std::string& sahida);
+
+// busca_playlist_na_rede — enumera uma playlist do YouTube ou YouTube Music.
+// Spotify usa o catalogo público já existente, pois seu audio não é extraído.
+bool busca_playlist_na_rede(const std::string& url,
+                            std::vector<std::string>* urls);
+
 // busca_na_rede — pergunta ao yt-dlp NA FONTE dita, e estampa-a nos achados: quem
 // os consome ha de saber de onde vieram sem perguntar á tela. Vazio quando a rede
 // não respondeu, ou quando não ha achado: quem chama distingue-os pelo booleano.
