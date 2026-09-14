@@ -607,9 +607,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   tui::CorreioDe<nucleo::Onda> correio_da_onda;
   // OS PICOS do espectro (issue #132): um por banda, e são o estado de que a
   // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
-  // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou.
+  // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou. A
+  // tranca separa o avanço do relogio da leitura do pintor.
   std::vector<float> picos;
-  std::chrono::steady_clock::time_point quadro_anterior =
+  std::mutex tranca_dos_picos;
+  std::chrono::steady_clock::time_point instante_dos_picos =
       std::chrono::steady_clock::now();
 
   // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
@@ -1030,17 +1032,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // compasso: quadro que se atrasa derrubaria o pico de menos, e a meia-vida
     // é conta de segundos. Calado, os picos zerão-se, que batida não ha no que
     // se não ouve.
-    const std::chrono::steady_clock::time_point instante =
-        std::chrono::steady_clock::now();
-    const double lapso =
-        std::chrono::duration<double>(instante - quadro_anterior).count();
-    quadro_anterior = instante;
     const std::vector<float> bandas = tocador.bandas();
-    if (retracto.mudo) picos.clear();
-    tui::avanca_picos(picos, bandas, lapso);
+    std::vector<float> picos_do_quadro;
+    {
+      std::lock_guard<std::mutex> guarda(tranca_dos_picos);
+      picos_do_quadro = picos;
+    }
     const tui::Quadro quadro = tui::compor(bandas, abaixo.largura,
                                            abaixo.altura, false,
-                                           centros_em_hertz, picos);
+                                           centros_em_hertz, picos_do_quadro);
     // Tela estreita não pinta painel algum, e com elle vão-se a capa, o
     // espectro e a letra: roubar da pauta, que é onde se navega, para mostrar
     // arte seria trocar o que serve pelo que enfeita.
@@ -2079,6 +2079,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (estaleiro.colheu()) pede_varrer.store(true);
       analisador.pulsa();
       mpris.pulsa();
+      const std::chrono::steady_clock::time_point instante =
+          std::chrono::steady_clock::now();
+      const double lapso = std::chrono::duration<double>(
+          instante - instante_dos_picos).count();
+      instante_dos_picos = instante;
+      const tui::Retracto retracto = retracto_do(tocador, projector);
+      const std::vector<float> bandas = tocador.bandas();
+      {
+        std::lock_guard<std::mutex> guarda(tranca_dos_picos);
+        if (retracto.mudo) picos.clear();
+        tui::avanca_picos(picos, bandas, lapso);
+      }
       // SÓMENTE quando o que se vê muda (issue #48), e SÓMENTE com olhos no
       // painel (issue #82): a vigilia governa o desenho e nada mais; os
       // pulsos acima nunca dormem, que a musica não pára por falta de platéa.
