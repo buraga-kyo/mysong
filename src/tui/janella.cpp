@@ -628,7 +628,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::string ultima_assignatura;
   // A VIGILIA do desenho (issue #82): o fio da tela a escreve (foco e tecla)
   // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
-  tui::Vigilia vigilia;
+  tui::Vigilia vigilia(true);
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
   // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a

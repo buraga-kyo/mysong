@@ -22,6 +22,9 @@ namespace mysong::tui {
 
 class Vigilia {
  public:
+  explicit Vigilia(bool anima_sem_foco = false)
+      : anima_sem_foco_(anima_sem_foco) {}
+
   // ganha — os olhos voltaram; vindo de adormecida arma-se o despertar.
   void ganha() {
     if (estado_.exchange(Estado::Desperta) == Estado::Adormecida)
@@ -29,10 +32,29 @@ class Vigilia {
   }
 
   // perde — ninguem olha; o relogio deixa de pedir repintura.
-  void perde() { estado_.store(Estado::Adormecida); }
+  void perde() {
+    if (!anima_sem_foco_.load()) estado_.store(Estado::Adormecida);
+  }
 
   // pede_batida — o relogio pergunta antes de conferir a assignatura.
-  bool pede_batida() const { return estado_.load() != Estado::Adormecida; }
+  bool pede_batida() const {
+    return !trava_animacao_.load() && estado_.load() != Estado::Adormecida;
+  }
+
+  // alterna_trava — comando manual que congela a animação sem afetar o audio.
+  bool alterna_trava() {
+    const bool travada = !trava_animacao_.load();
+    trava_animacao_.store(travada);
+    if (travada) estado_.store(Estado::Adormecida);
+    else estado_.store(Estado::Desperta);
+    return travada;
+  }
+
+  bool animacao_travada() const { return trava_animacao_.load(); }
+
+  void configura_anima_sem_foco(bool habilitada) {
+    anima_sem_foco_.store(habilitada);
+  }
 
   // acordou — VERDADEIRO uma vez por despertar; consome-se na leitura, como o
   // colheu() do estaleiro: o que mudou dormindo não se pintou.
@@ -45,6 +67,8 @@ class Vigilia {
   enum class Estado { SemNoticia, Desperta, Adormecida };
   std::atomic<Estado> estado_{Estado::SemNoticia};
   std::atomic<bool> acordou_{false};
+  std::atomic<bool> anima_sem_foco_{false};
+  std::atomic<bool> trava_animacao_{false};
 };
 
 // O GESTO do foco, tal como o FTXUI v7.0.3 o entrega. O parser d'elle não

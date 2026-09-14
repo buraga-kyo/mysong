@@ -79,5 +79,22 @@ TEST_CASE("a vigilia guarda o despertar atravez de dormir entre batidas") {
   CHECK(v.pede_batida());
 }
 
+TEST_CASE("a vigilia configurada conserva a batida sem foco") {
+  tui::Vigilia v(true);
+  v.perde();
+  CHECK(v.pede_batida());
+  CHECK(v.ha_noticia() == false);
+}
+
+TEST_CASE("a trava manual congela e volta a liberar a animação") {
+  tui::Vigilia v(true);
+  CHECK(v.alterna_trava());
+  CHECK(v.animacao_travada());
+  CHECK_FALSE(v.pede_batida());
+  CHECK_FALSE(v.alterna_trava());
+  CHECK_FALSE(v.animacao_travada());
+  CHECK(v.pede_batida());
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
