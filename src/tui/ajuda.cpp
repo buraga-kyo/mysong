@@ -59,6 +59,7 @@ std::vector<GrupoDaAjuda> taboada_da_ajuda() {
       {"DOWNLOAD",
        {{"s", "busca na rede; Enter baixa o achado"},
         {"f", "fonte: YouTube, YT Music, Spotify"},
+        {"A", "trava ou destrava as animações"},
         {"b", "baixa faixa ou playlist por URL"},
         {"I", "lê uma playlist pública do Spotify"},
         {"T", "baixa todas as faixas da lista lida"}}},
