@@ -814,9 +814,35 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     std::vector<nucleo::Catalogo> lidos;
     std::string recado_da_lista;
     if (assenta && correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
-      if (!lidos.empty() && !lidos.front().faixas.empty())
+      if (!lidos.empty() && !lidos.front().faixas.empty()) {
         navegador.mostra_catalogo(std::move(lidos.front()));
+        if (baixa_playlist_ao_chegar.exchange(false)) {
+          const std::string lista = navegador.nome_do_catalogo();
+          std::size_t quantas = 0;
+          for (const nucleo::FaixaDoCatalogo& faixa :
+               navegador.faixas_do_catalogo()) {
+            estaleiro.encommenda(encommenda_do_catalogo(faixa, lista));
+            ++quantas;
+          }
+          recado_da_lista = std::to_string(quantas) + " faixas encomendadas";
+        }
+      } else {
+        baixa_playlist_ao_chegar.store(false);
+      }
       aviso_da_rede = recado_da_lista;
+    }
+    std::vector<nucleo::Pedido> pedidos_da_playlist;
+    std::string recado_da_playlist;
+    if (assenta && correio_da_playlist.colhe(&pedidos_da_playlist,
+                                             &recado_da_playlist)) {
+      if (baixa_playlist_ao_chegar.exchange(false)) {
+        for (nucleo::Pedido& pedido : pedidos_da_playlist)
+          estaleiro.encommenda(std::move(pedido));
+        if (!pedidos_da_playlist.empty())
+          recado_da_playlist = std::to_string(pedidos_da_playlist.size()) +
+                              " faixas encomendadas";
+      }
+      aviso_da_rede = recado_da_playlist;
     }
     // A varredura concluiu: o navegador recarrega UMA vez. A bandeira do acervo novo
     // CONSOME-SE na leitura, donde isto corre uma vez por varredura.
@@ -2002,6 +2028,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
             mostra_letra.load(), varrida.load(),
             correio.geracao() + correio_do_catalogo.geracao() +
+                correio_da_playlist.geracao() +
                 correio_da_onda.geracao(),
             projector.rodando());
         if (agora != ultima_assignatura) {
