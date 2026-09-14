@@ -1660,11 +1660,38 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             }
           }
         } else if (!termo_em_curso.empty()) {
+          const std::string url = termo_em_curso;
+          if (nucleo::eh_playlist_url(url)) {
+            const nucleo::Fonte fonte =
+                !nucleo::id_da_playlist(url).empty()
+                    ? nucleo::Fonte::Spotify
+                    : (url.find("music.youtube.com") != std::string::npos
+                           ? nucleo::Fonte::YouTubeMusic
+                           : nucleo::Fonte::YouTube);
+            {
+              std::lock_guard<std::mutex> chave(tranca_do_termo);
+              url_da_playlist = url;
+              fonte_da_playlist = fonte;
+            }
+            baixa_playlist_ao_chegar.store(true);
+            if (fonte == nucleo::Fonte::Spotify) {
+              {
+                std::lock_guard<std::mutex> chave(tranca_do_termo);
+                url_da_lista = url;
+              }
+              pede_catalogo.store(true);
+              aviso_da_rede = "a ler a playlist do Spotify...";
+            } else {
+              pede_playlist.store(true);
+              aviso_da_rede = "a ler a playlist...";
+            }
+            return true;
+          }
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
           // declarado, conta o andamento, e a tela lê-o: duas encommendas seguidas
           // não se atropelam, e a segunda espera em vez de disputar a rede.
           nucleo::Pedido pedido;
-          pedido.url = termo_em_curso;  // o resto vem da rede: o operador não disse
+          pedido.url = url;  // o resto vem da rede: o operador não disse
           estaleiro.encommenda(pedido);
         }
         return true;
