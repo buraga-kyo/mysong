@@ -220,6 +220,34 @@ TEST_CASE("os argumentos do download não embutem etiqueta, e não sobrescrevem"
   CHECK(tem("/acervo/A/B/01 - T.%(ext)s"));
 }
 
+TEST_CASE("playlist é reconhecida e enumerada sem baixar") {
+  CHECK(nu::eh_playlist_url(
+      "https://www.youtube.com/playlist?list=PL123"));
+  CHECK(nu::eh_playlist_url(
+      "https://music.youtube.com/watch?v=abc&list=PL123"));
+  CHECK(nu::eh_playlist_url(
+      "https://open.spotify.com/playlist/abc123"));
+  CHECK_FALSE(nu::eh_playlist_url("https://youtu.be/abc"));
+
+  const std::vector<std::string> ditos = nu::argumentos_da_playlist(
+      "https://www.youtube.com/playlist?list=PL123");
+  const auto tem = [&ditos](const std::string& procurado) {
+    return std::find(ditos.begin(), ditos.end(), procurado) != ditos.end();
+  };
+  CHECK(tem("--flat-playlist"));
+  CHECK(tem("--skip-download"));
+  CHECK_FALSE(tem("--no-playlist"));
+  CHECK(ditos.back() == "https://www.youtube.com/playlist?list=PL123");
+}
+
+TEST_CASE("linhas da playlist conservam a ordem e ignoram NA") {
+  const std::vector<std::string> urls = nu::le_urls_da_playlist(
+      "https://youtu.be/primeira\nNA\n\nhttps://youtu.be/terceira\n");
+  REQUIRE(urls.size() == 2);
+  CHECK(urls[0] == "https://youtu.be/primeira");
+  CHECK(urls[1] == "https://youtu.be/terceira");
+}
+
 // A CAPA (issue #81). Sem estas duas bandeiras o yt-dlp não colhe miniatura alguma,
 // e o painel NOW PLAYING fica com o marcador para toda faixa que a Casa baixe. O
 // caso afere a LISTA, e por isso corre sem rede e sem yt-dlp installado.

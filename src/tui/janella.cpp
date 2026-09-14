@@ -520,6 +520,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   tui::CorreioDe<nucleo::Catalogo> correio_do_catalogo;
   std::string url_da_lista;
   std::atomic<bool> pede_catalogo{false};
+  tui::CorreioDe<nucleo::Pedido> correio_da_playlist;
+  std::string url_da_playlist;
+  nucleo::Fonte fonte_da_playlist = nucleo::Fonte::YouTube;
+  std::atomic<bool> pede_playlist{false};
+  std::atomic<bool> baixa_playlist_ao_chegar{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
   // O RATO PEDE-SE Á MÃO (issue #95), e o rastreio do FTXUI fica desligado. Não é
@@ -637,6 +642,42 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         }
         varrida.store(true);
         acervo_novo.store(true);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+    }
+  });
+
+  // O FIO DAS PLAYLISTS da tecla `b`. A enumeração acontece fora da tela, e a
+  // fila só recebe pedidos depois que a lista inteira foi lida.
+  ao_fundo.emplace_back([&] {
+    while (!sahir.load()) {
+      if (pede_playlist.exchange(false)) {
+        std::string url;
+        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+        {
+          std::lock_guard<std::mutex> chave(tranca_do_termo);
+          url = url_da_playlist;
+          fonte = fonte_da_playlist;
+        }
+        std::vector<nucleo::Pedido> pedidos;
+        std::string recado;
+        if (fonte == nucleo::Fonte::Spotify) {
+          recado = "playlist Spotify usa o caminho do catalogo";
+        } else {
+          std::vector<std::string> urls;
+          const bool falou = nucleo::busca_playlist_na_rede(url, &urls);
+          for (const std::string& faixa : urls) {
+            nucleo::Pedido pedido;
+            pedido.url = faixa;
+            pedido.fonte = fonte;
+            pedidos.push_back(std::move(pedido));
+          }
+          recado = !falou ? "a playlist não respondeu"
+                          : (pedidos.empty() ? "a playlist veio vazia"
+                                             : std::to_string(pedidos.size()) +
+                                                   " faixas encontradas");
+        }
+        correio_da_playlist.poe(std::move(pedidos), std::move(recado));
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
@@ -773,9 +814,35 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     std::vector<nucleo::Catalogo> lidos;
     std::string recado_da_lista;
     if (assenta && correio_do_catalogo.colhe(&lidos, &recado_da_lista)) {
-      if (!lidos.empty() && !lidos.front().faixas.empty())
+      if (!lidos.empty() && !lidos.front().faixas.empty()) {
         navegador.mostra_catalogo(std::move(lidos.front()));
+        if (baixa_playlist_ao_chegar.exchange(false)) {
+          const std::string lista = navegador.nome_do_catalogo();
+          std::size_t quantas = 0;
+          for (const nucleo::FaixaDoCatalogo& faixa :
+               navegador.faixas_do_catalogo()) {
+            estaleiro.encommenda(encommenda_do_catalogo(faixa, lista));
+            ++quantas;
+          }
+          recado_da_lista = std::to_string(quantas) + " faixas encomendadas";
+        }
+      } else {
+        baixa_playlist_ao_chegar.store(false);
+      }
       aviso_da_rede = recado_da_lista;
+    }
+    std::vector<nucleo::Pedido> pedidos_da_playlist;
+    std::string recado_da_playlist;
+    if (assenta && correio_da_playlist.colhe(&pedidos_da_playlist,
+                                             &recado_da_playlist)) {
+      if (baixa_playlist_ao_chegar.exchange(false)) {
+        for (nucleo::Pedido& pedido : pedidos_da_playlist)
+          estaleiro.encommenda(std::move(pedido));
+        if (!pedidos_da_playlist.empty())
+          recado_da_playlist = std::to_string(pedidos_da_playlist.size()) +
+                              " faixas encomendadas";
+      }
+      aviso_da_rede = recado_da_playlist;
     }
     // A varredura concluiu: o navegador recarrega UMA vez. A bandeira do acervo novo
     // CONSOME-SE na leitura, donde isto corre uma vez por varredura.
@@ -1593,11 +1660,38 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             }
           }
         } else if (!termo_em_curso.empty()) {
+          const std::string url = termo_em_curso;
+          if (nucleo::eh_playlist_url(url)) {
+            const nucleo::Fonte fonte =
+                !nucleo::id_da_playlist(url).empty()
+                    ? nucleo::Fonte::Spotify
+                    : (url.find("music.youtube.com") != std::string::npos
+                           ? nucleo::Fonte::YouTubeMusic
+                           : nucleo::Fonte::YouTube);
+            {
+              std::lock_guard<std::mutex> chave(tranca_do_termo);
+              url_da_playlist = url;
+              fonte_da_playlist = fonte;
+            }
+            baixa_playlist_ao_chegar.store(true);
+            if (fonte == nucleo::Fonte::Spotify) {
+              {
+                std::lock_guard<std::mutex> chave(tranca_do_termo);
+                url_da_lista = url;
+              }
+              pede_catalogo.store(true);
+              aviso_da_rede = "a ler a playlist do Spotify...";
+            } else {
+              pede_playlist.store(true);
+              aviso_da_rede = "a ler a playlist...";
+            }
+            return true;
+          }
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
           // declarado, conta o andamento, e a tela lê-o: duas encommendas seguidas
           // não se atropelam, e a segunda espera em vez de disputar a rede.
           nucleo::Pedido pedido;
-          pedido.url = termo_em_curso;  // o resto vem da rede: o operador não disse
+          pedido.url = url;  // o resto vem da rede: o operador não disse
           estaleiro.encommenda(pedido);
         }
         return true;
@@ -1961,6 +2055,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
             mostra_letra.load(), varrida.load(),
             correio.geracao() + correio_do_catalogo.geracao() +
+                correio_da_playlist.geracao() +
                 correio_da_onda.geracao(),
             projector.rodando());
         if (agora != ultima_assignatura) {

@@ -193,6 +193,46 @@ std::vector<std::string> argumentos_da_sonda(const std::string& url,
   return ditos;
 }
 
+bool eh_playlist_url(const std::string& url) {
+  return !id_da_playlist(url).empty() ||
+         url.find("youtube.com/playlist?") != std::string::npos ||
+         url.find("list=") != std::string::npos;
+}
+
+std::vector<std::string> argumentos_da_playlist(const std::string& url,
+                                                bool com_cookie) {
+  std::vector<std::string> ditos{"yt-dlp"};
+  const std::vector<std::string> motor = bandeiras_do_motor(com_cookie);
+  ditos.insert(ditos.end(), motor.begin(), motor.end());
+  const std::vector<std::string> resto = {
+      "--no-warnings", "--flat-playlist", "--skip-download",
+      "--print", "%(webpage_url)s", "--", url};
+  ditos.insert(ditos.end(), resto.begin(), resto.end());
+  return ditos;
+}
+
+std::vector<std::string> le_urls_da_playlist(const std::string& sahida) {
+  std::vector<std::string> urls;
+  std::istringstream linhas(sahida);
+  std::string url;
+  while (std::getline(linhas, url)) {
+    const std::string aparada = apara(url);
+    if (!aparada.empty() && aparada != "NA") urls.push_back(aparada);
+  }
+  return urls;
+}
+
+bool busca_playlist_na_rede(const std::string& url,
+                            std::vector<std::string>* urls) {
+  if (urls == nullptr || url.empty() || !eh_playlist_url(url) ||
+      !id_da_playlist(url).empty())
+    return false;
+  std::string colhido;
+  if (corre(argumentos_da_playlist(url), &colhido) != 0) return false;
+  *urls = le_urls_da_playlist(colhido);
+  return true;
+}
+
 std::vector<std::string> argumentos_do_download(
     const std::string& url, const std::filesystem::path& molde,
     bool com_cookie) {
