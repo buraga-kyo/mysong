@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO COMMANDO — src/tui/commando.hpp
+//   TRACTADO DO COMMANDO, src/tui/commando.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A tradução de TECLA em ORDEM. Existe á parte da janella porque a janella não
 // se prova: ella abre terminal, abre motor e abre som. Esta peça é funcção pura
@@ -91,7 +91,7 @@ struct Ordem {
   bool relativo = false;
 };
 
-// ordem_da_tecla — a taboada. Não toca no tocador: devolve o que se HA DE fazer.
+// ordem_da_tecla, a taboada. Não toca no tocador: devolve o que se HA DE fazer.
 //
 // `digitando` diz que a barra de busca está aberta. Estando-o, TECLA ALGUMA da
 // taboada vale: o `n` que trocava de faixa passa a ser a letra `n` do termo. Sem
@@ -104,5 +104,5 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
 
 #endif  // MYSONG_TUI_COMMANDO_HPP
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

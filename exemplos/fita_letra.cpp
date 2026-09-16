@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO EXEMPLO DA FITA DA LETRA — exemplos/fita_letra.cpp
+//   TRACTADO DO EXEMPLO DA FITA DA LETRA, exemplos/fita_letra.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta o RIO da letra por cima do espectro, para se OLHAR e para se
 // INSPECCIONAR. Não é prova: é a peça que o olho do operador ha de julgar n'um
@@ -52,7 +52,7 @@ std::vector<nu::LinhaDaLetra> letra_de_dentro() {
           {20.0, "quinto verso d'esta prova"}};
 }
 
-// bandas_da_posição — a fita do espectro por baixo, armada da POSIÇÃO e não do
+// bandas_da_posição, a fita do espectro por baixo, armada da POSIÇÃO e não do
 // som: o exemplo não abre PipeWire, e ainda assim as barras hão de mexer entre
 // uma corrida e a seguinte, que é o que o olho precisa de ver por baixo do rio.
 std::vector<float> bandas_da_posicao(double posicao) {
@@ -128,5 +128,5 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DOS FIOS — testes/prova_tocador_fios.cpp
+//   TRACTADO DA PROVA DOS FIOS, testes/prova_tocador_fios.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Bate no MESMO tocador de mais de um fio ao mesmo tempo, mil voltas cada,
 // como a janella faz: o relogio n'um fio, as teclas n'outro. O oraculo de
@@ -153,5 +153,5 @@ TEST_CASE("tres fios, mil voltas: o barramento entra na conta") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

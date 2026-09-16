@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO TRANSPORTE — src/tui/transporte.hpp
+//   TRACTADO DO TRANSPORTE, src/tui/transporte.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A barra de baixo do mockup: os botões, a barra de progresso, o tempo e o
 // volume. Esta peça COMPÕE, e não conduz: não conhece Tocador, não conhece
@@ -60,18 +60,18 @@ struct Retracto {
   bool mudo = false;
 };
 
-// mm_ss — segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não
+// mm_ss, segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não
 // arredonda para cima: o operador que vê `02:05` ouviu dous minutos e cinco
 // segundos, e nunca um segundo que ainda não passou.
 std::string mm_ss(double segundos);
 
-// enchimento — quantas collunhas da barra estão cheias. `round`, e não `floor`:
+// enchimento, quantas collunhas da barra estão cheias. `round`, e não `floor`:
 // com `floor` a barra fica uma collunha atrás do som por metade do tempo, e a
 // ultima collunha só acende no fim exacto. Razão maior que um cinge-se em um, e
 // duração que não é positiva ou não é finita dá zero, sem divisão alguma.
 std::size_t enchimento(double posicao, double duracao, std::size_t largura);
 
-// linha_da_barra — a barra de progresso sozinha, em texto: o enchido, o vazio, e
+// linha_da_barra, a barra de progresso sozinha, em texto: o enchido, o vazio, e
 // nada mais. Sahe á parte do elemento para que a prova conte collunhas sem
 // atravessar o FTXUI.
 std::string linha_da_barra(const Retracto& retracto, std::size_t largura);
@@ -80,5 +80,5 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura);
 
 #endif  // MYSONG_TUI_TRANSPORTE_HPP
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS UNIDADES — src/api/unidades.cpp
+//   TRACTADO DAS UNIDADES, src/api/unidades.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. Arquivo algum d'aqui inclue `dbus/dbus.h`, e é essa a promessa:
 // a traducção prova-se em machina surda.
@@ -96,5 +96,5 @@ std::string url_do_arquivo(std::string_view caminho) {
 
 }  // namespace mysong::api
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

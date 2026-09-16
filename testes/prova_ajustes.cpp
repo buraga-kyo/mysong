@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DOS AJUSTES — testes/prova_ajustes.cpp
+//   TRACTADO DAS PROVAS DOS AJUSTES, testes/prova_ajustes.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o leitor e a precedencia SEM tocar em disco e sem tocar em ambiente: o
 // leitor recebe texto, e o resolvedor recebe os degraus já colhidos. É d'isto
@@ -52,7 +52,7 @@ namespace {
 // em disco, que é o que faz esta bateria correr egual em qualquer machina.
 const nu::Aferidor tudo_vale = [](const std::filesystem::path&) { return true; };
 
-// resolvido — corre o leitor e a escada n'um golpe, sobre o MESMO vaso, que é
+// resolvido, corre o leitor e a escada n'um golpe, sobre o MESMO vaso, que é
 // como o programa os corre.
 nu::Ajustes resolvido(std::string_view arquivo, nu::Degraus degraus,
                       const nu::Aferidor& afere = tudo_vale) {

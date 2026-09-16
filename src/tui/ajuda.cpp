@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   O CORPO DA AJUDA — src/tui/ajuda.cpp
+//   O CORPO DA AJUDA, src/tui/ajuda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra do que ajuda.hpp promette: a taboada, a legenda, a conta da janella
 // e a pintura. Nada aqui lê o mundo: nem tocador, nem banco, nem relogio.
@@ -101,7 +101,7 @@ std::string rotulo_da_tecla(const ftxui::Event& tecla) {
 
 namespace {
 
-// hertz — o numero em palavra de gente: «250 Hz», «1 kHz», «16 kHz».
+// hertz, o numero em palavra de gente: «250 Hz», «1 kHz», «16 kHz».
 std::string hertz(float valor) {
   const int inteiro = static_cast<int>(valor + 0.5f);
   if (inteiro < 1000) return std::to_string(inteiro) + " Hz";
@@ -150,7 +150,7 @@ constexpr std::size_t kLarguraDaAmostra = 5;
 ftxui::Color cor(tokens::Triade t) { return ftxui::Color::RGB(t.r, t.g, t.b); }
 ftxui::Color cor(std::string_view hex) { return cor(tokens::rgb(hex)); }
 
-// aparar — o texto á ESQUERDA da caixa de `largura` collunhas: enche de espaço
+// aparar, o texto á ESQUERDA da caixa de `largura` collunhas: enche de espaço
 // o que sobra, e corta com «…» o que não cabe. Mede-se em collunhas do
 // terminal, e não em pontos de codigo, que a seta e o acento não são um byte.
 std::string aparar(const std::string& texto, std::size_t largura) {
@@ -435,5 +435,5 @@ ftxui::Element flutuante_da_ajuda(const Ajuda& ajuda,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

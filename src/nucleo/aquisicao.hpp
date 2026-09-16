@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA AQUISIÇÃO — src/nucleo/aquisicao.hpp
+//   TRACTADO DA AQUISIÇÃO, src/nucleo/aquisicao.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A UNICA camada d'esta obra que toca a rede. Chama o `yt-dlp`, guarda o audio na
 // hierarchia do acervo, e escreve as etiquetas ELLA MESMA, com a taglib.
@@ -43,11 +43,11 @@ namespace mysong::nucleo {
 // de baixa, para que quem baixa não precise saber quem pediu.
 enum class Fonte { YouTube, YouTubeMusic, Spotify };
 
-// nome_da_fonte — a palavra que o cabeçalho da busca mostra. Vive aqui, e não na
+// nome_da_fonte, a palavra que o cabeçalho da busca mostra. Vive aqui, e não na
 // tela, pela mesma razão de razao_da_colheita: fonte nova sem nome não compila.
 std::string_view nome_da_fonte(Fonte fonte);
 
-// proxima_fonte — o ciclo fechado da tecla que troca: YouTube, YouTube Music,
+// proxima_fonte, o ciclo fechado da tecla que troca: YouTube, YouTube Music,
 // Spotify, e volta ao começo. A ordem prova-se, em vez de morar na tela.
 Fonte proxima_fonte(Fonte fonte);
 
@@ -77,7 +77,7 @@ struct Pedido {
   int ano = 0;
 };
 
-// saneia_nome — o nome que se ha de pôr no systema de arquivos. Tira a barra, o
+// saneia_nome, o nome que se ha de pôr no systema de arquivos. Tira a barra, o
 // NUL e o ponto inicial; apara os espaços das pontas; e corta o comprimento, que
 // o ext4 não aceita nome de mais de duzentos e cincoenta e cinco octetos. Nome
 // que se reduza a nada devolve «sem titulo», que é resposta e não erro: arquivo
@@ -111,13 +111,13 @@ struct EtiquetaRemota {
   int duracao = 0;
 };
 
-// resolve — junta o que o operador disse com o que a rede disse, e o operador
+// resolve, junta o que o operador disse com o que a rede disse, e o operador
 // GANHA sempre. O artista, faltando os dous, fica «Desconhecido»; e faltando o
 // operador mas havendo canal, é o CANAL que se usa, com a ressalva de que se
 // registra que se deduziu.
 Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota);
 
-// enriquece — o pedido com o album, o anno e o numero CANONICOS da ficha do
+// enriquece, o pedido com o album, o anno e o numero CANONICOS da ficha do
 // MusicBrainz por cima dos de hoje, que eram o nome da lista por album e a
 // posição na lista por numero (issue #57). Artista e titulo não se tocam: são o
 // que o operador vê e o que a busca usa. Campo que a ficha não diga fica como
@@ -125,7 +125,7 @@ Pedido resolve(const Pedido& pedido, const EtiquetaRemota& remota);
 // MusicBrainz não casou.
 Pedido enriquece(const Pedido& pedido, const FichaMB& ficha);
 
-// destino — o caminho na hierarchia do acervo: `<raiz>/Artista/Álbum/NN - Titulo`.
+// destino, o caminho na hierarchia do acervo: `<raiz>/Artista/Álbum/NN - Titulo`.
 // Sem numero, sahe `Artista/Álbum/Titulo`; sem album, `Artista/Titulo`. A extensão
 // NÃO entra: quem a põe é o yt-dlp, que é quem sabe em que fórma sahiu o audio.
 std::filesystem::path destino(const std::filesystem::path& raiz,
@@ -148,17 +148,17 @@ inline constexpr char kComponenteDoDesafio[] = "ejs:github";
 // serve ao video restricto por idade, e a nada mais.
 inline constexpr char kNavegadorDoCookie[] = "chrome";
 
-// bandeiras_do_motor — as bandeiras que TODA chamada ao yt-dlp carrega. Vivem n'uma
+// bandeiras_do_motor, as bandeiras que TODA chamada ao yt-dlp carrega. Vivem n'uma
 // função só para que sejam UM logar: quem as tirar d'aqui derruba as tres provas de
 // uma vez, e não uma só, que é como se sabe que a guarda está viva.
 std::vector<std::string> bandeiras_do_motor(bool com_cookie);
 
-// argumentos_da_sonda — o que se corre para PERGUNTAR pela URL, sem baixar. Seis
+// argumentos_da_sonda, o que se corre para PERGUNTAR pela URL, sem baixar. Seis
 // campos por `--print`, um por linha, na ordem em que le_etiqueta_remota os lê.
 std::vector<std::string> argumentos_da_sonda(const std::string& url,
                                              bool com_cookie = false);
 
-// argumentos_do_download — o que se corre para BAIXAR. `--no-overwrites` está lá
+// argumentos_do_download, o que se corre para BAIXAR. `--no-overwrites` está lá
 // de proposito, e é a segunda guarda: a primeira é a checagem do destino, e ter
 // as duas quer dizer que uma corrida entre duas aquisições não perde arquivo.
 // Traz tambem a miniatura, convertida e embutida; a razão está no corpo.
@@ -166,11 +166,11 @@ std::vector<std::string> argumentos_do_download(
     const std::string& url, const std::filesystem::path& molde,
     bool com_cookie = false);
 
-// le_etiqueta_remota — as seis linhas que a sonda imprimiu. Linha «NA» ou vazia é
+// le_etiqueta_remota, as seis linhas que a sonda imprimiu. Linha «NA» ou vazia é
 // campo que a rede não soube dizer.
 EtiquetaRemota le_etiqueta_remota(const std::string& sahida);
 
-// razao_da_colheita — a palavra que se mostra ao operador. Vive aqui, e não na
+// razao_da_colheita, a palavra que se mostra ao operador. Vive aqui, e não na
 // tela, para que quem acrescente um desfecho seja obrigado a nomeá-lo: o `switch`
 // é exhaustivo, e desfecho novo sem palavra não compila.
 std::string_view razao_da_colheita(Colheita colheita);
@@ -209,7 +209,7 @@ struct Achado {
   std::string id_spotify;
 };
 
-// codifica_para_url — o termo como pedaço de URL: todo byte fóra de
+// codifica_para_url, o termo como pedaço de URL: todo byte fóra de
 // [A-Za-z0-9._~-] sahe por cento e dous hexadecimaes. O `#` sobretudo: cru, elle
 // cortaria a consulta ao meio, que o fragmento da URL da musica é nosso.
 std::string codifica_para_url(std::string_view crua);
@@ -218,7 +218,7 @@ std::string codifica_para_url(std::string_view crua);
 // achado é uma sonda de rede (~1,3 s medidos), e dez respondem em ~17 s.
 inline constexpr int ACHADOS_DA_MUSICA = 10;
 
-// argumentos_da_busca — o que se corre, POR FONTE. YouTube: `ytsearchN:` com
+// argumentos_da_busca, o que se corre, POR FONTE. YouTube: `ytsearchN:` com
 // `--flat-playlist` (abrir cada resultado custaria N sondas). YouTubeMusic: a URL
 // de busca do music.youtube.com com o fragmento #songs (só a prateleira das
 // musicas; sem elle um album no meio expande a lista inteira d'elle) e SEM flat,
@@ -228,12 +228,12 @@ std::vector<std::string> argumentos_da_busca(const std::string& termo,
                                              int quantos, Fonte fonte,
                                              bool com_cookie = false);
 
-// le_achados — as linhas que a busca imprimiu, OITO por achado e nessa ordem. Lê-se
+// le_achados, as linhas que a busca imprimiu, OITO por achado e nessa ordem. Lê-se
 // por linha, e não por separador dentro da linha: titulo de video tras barra vertical,
 // tabulação e tudo o mais, e um separador seria enganado pelo primeiro d'elles.
 std::vector<Achado> le_achados(const std::string& sahida);
 
-// melhor_achado — o indice do achado que casa com o pedido, e MENOS UM não casando
+// melhor_achado, o indice do achado que casa com o pedido, e MENOS UM não casando
 // nenhum. As regras, e cada uma com o seu porque:
 //
 // 1. duração dentro da tolerancia. É o unico crivo que separa a faixa da versão
@@ -245,7 +245,7 @@ std::vector<Achado> le_achados(const std::string& sahida);
 int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
                   int tolerancia);
 
-// achado_mais_proximo — o indice do achado de duração mais proxima da pedida, e
+// achado_mais_proximo, o indice do achado de duração mais proxima da pedida, e
 // menos um sómente quando não ha achado algum. É o eleitor do caminho ISRC
 // (issue #57): o termo de busca já nomeia a GRAVAÇÃO, donde o titulo não entra
 // e distancia alguma exclue; a duração exacta do MusicBrainz é DESEMPATE, e não
@@ -253,14 +253,14 @@ int melhor_achado(const std::vector<Achado>& achados, const Pedido& pedido,
 // que a diga, vale o primeiro achado, que é o que a busca poz á frente.
 int achado_mais_proximo(const std::vector<Achado>& achados, int duracao);
 
-// encommenda_do_achado — o Pedido que o achado eleito dá, campo a campo: URL,
+// encommenda_do_achado, o Pedido que o achado eleito dá, campo a campo: URL,
 // artista, album, titulo CANONICO (a faixa, e não o titulo do video), numero,
 // ano e fonte. No achado da busca comum esses campos vêm vazios, donde o pedido
 // sahe só com URL e fonte, egual ao de hoje. A DURAÇÃO entra sómente no pedido
 // SEM URL: lá ella é o crivo do casamento (issue #13); havendo URL, nada decide.
 Pedido encommenda_do_achado(const Achado& achado);
 
-// achados_do_catalogo — a fonte Spotify da tela busca AQUI, no catalogo que a
+// achados_do_catalogo, a fonte Spotify da tela busca AQUI, no catalogo que a
 // issue #13 importou, e rede alguma se toca. O filtro é o da tela: titulo OU
 // artista, sem caixa. O album é o nome da LISTA (a pagina de embutir não publica
 // album), o numero é a posição, a duração arredonda-se de milesimos, e a URL vae
@@ -272,39 +272,39 @@ std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
 // elas vivem juntas no fim: o que se prova está acima, o que se não prova está
 // aqui, e o olho vê a fronteira de um relance.
 
-// corre — corre o commando e colhe a sahida. Não ha shell: `execvp` recebe o
+// corre, corre o commando e colhe a sahida. Não ha shell: `execvp` recebe o
 // vector tal e qual. Devolve o codigo de sahida, e menos um se nem se pôde
 // erguer o processo.
 int corre(const std::vector<std::string>& argumentos, std::string* colhido);
 
-// sonda_url — pergunta á rede o que ella sabe da URL. Falso quando o yt-dlp não
+// sonda_url, pergunta á rede o que ella sabe da URL. Falso quando o yt-dlp não
 // respondeu; ahi a etiqueta fica como estava.
 bool sonda_url(const std::string& url, EtiquetaRemota* remota);
 
-// eh_playlist_url — reconhece identificadores de playlist dos provedores já
+// eh_playlist_url, reconhece identificadores de playlist dos provedores já
 // suportados. Uma URL de faixa não deve cair no caminho de lote.
 bool eh_playlist_url(const std::string& url);
 
-// argumentos_da_playlist — enumera URLs sem baixar audio. O caminho individual
+// argumentos_da_playlist, enumera URLs sem baixar audio. O caminho individual
 // continua protegido por `--no-playlist`; só este caminho abre a lista.
 std::vector<std::string> argumentos_da_playlist(const std::string& url,
                                                 bool com_cookie = false);
 
-// le_urls_da_playlist — lê uma URL por linha e descarta respostas vazias.
+// le_urls_da_playlist, lê uma URL por linha e descarta respostas vazias.
 std::vector<std::string> le_urls_da_playlist(const std::string& sahida);
 
-// busca_playlist_na_rede — enumera uma playlist do YouTube ou YouTube Music.
+// busca_playlist_na_rede, enumera uma playlist do YouTube ou YouTube Music.
 // Spotify usa o catalogo público já existente, pois seu audio não é extraído.
 bool busca_playlist_na_rede(const std::string& url,
                             std::vector<std::string>* urls);
 
-// busca_na_rede — pergunta ao yt-dlp NA FONTE dita, e estampa-a nos achados: quem
+// busca_na_rede, pergunta ao yt-dlp NA FONTE dita, e estampa-a nos achados: quem
 // os consome ha de saber de onde vieram sem perguntar á tela. Vazio quando a rede
 // não respondeu, ou quando não ha achado: quem chama distingue-os pelo booleano.
 bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
                    std::vector<Achado>* achados);
 
-// baixa — o acto inteiro: resolve, monta o caminho, cria o directorio, chama o
+// baixa, o acto inteiro: resolve, monta o caminho, cria o directorio, chama o
 // yt-dlp, e escreve a etiqueta com a taglib. `gravado` recebe o caminho do
 // arquivo que ficou, quando ficou algum.
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
@@ -312,5 +312,5 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

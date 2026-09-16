@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MUSICBRAINZ — src/nucleo/musicbrainz.cpp
+//   TRACTADO DO MUSICBRAINZ, src/nucleo/musicbrainz.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. As puras primeiro (consultas e leituras), e a rede sozinha
 // no fim, á maneira do catalogo: o que se prova está acima, o que não se prova
@@ -45,7 +45,7 @@ std::size_t recolhe(char* pedaco, std::size_t tamanho, std::size_t quantos,
   return bytes;
 }
 
-// aspas_seguras — o texto dentro de aspas da consulta Lucene. Aspa e
+// aspas_seguras, o texto dentro de aspas da consulta Lucene. Aspa e
 // contra-barra escapam-se; sem isto, um titulo com aspa partiria a frase e o
 // resto do titulo viraria operador de busca.
 std::string aspas_seguras(std::string_view crua) {
@@ -251,7 +251,7 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
                                          const std::string& titulo) {
   // Os ISRCs primeiro, no tecto e na ordem do MB: uma gravação accumula ISRCs
   // de remasters, e nem todo está indexado no YouTube (MEDIDO: o de 1987 não
-  // acha nada, o de 2021 acha a art track da mesma gravação — audio egual).
+  // acha nada, o de 2021 acha a art track da mesma gravação, audio egual).
   std::vector<std::string> termos;
   for (const std::string& isrc : ficha.isrcs) {
     if (termos.size() >= kIsrcsPorFaixa) break;
@@ -355,5 +355,5 @@ bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

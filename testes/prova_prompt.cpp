@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO PROMPT — testes/prova_prompt.cpp
+//   PROVA DO PROMPT, testes/prova_prompt.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta o topo n'um écran de PAPEL e lê os bytes que sahiram. Terminal algum se
 // abre. Afere-se o que a issue #79 mandou provar: a trilha NÃO se substitue, o

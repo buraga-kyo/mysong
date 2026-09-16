@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA SUPERFÍCIE VIVA — exemplos/superficie_viva.cpp
+//   TRACTADO DA SUPERFÍCIE VIVA, exemplos/superficie_viva.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O binario com que o aceite d'esta issue se prova, á maneira do toca_tom que a
 // issue #3 deixou. Ergue o motor de carne, o tocador e o socket de commando, e bate
@@ -41,7 +41,7 @@
 
 namespace {
 
-// posto — o caminho que a variavel de ambiente disser, e vazio não a havendo.
+// posto, o caminho que a variavel de ambiente disser, e vazio não a havendo.
 std::filesystem::path posto(const char* nome) {
   const char* valor = std::getenv(nome);
   if (valor == nullptr || valor[0] == '\0') return {};
@@ -141,5 +141,5 @@ int main(int argc, char** argv) {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

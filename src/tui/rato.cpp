@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO RATO — src/tui/rato.cpp
+//   TRACTADO DO RATO, src/tui/rato.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação das duas taboadas. Vale aqui a regra do cabeçalho: cousa
 // alguma d'este arquivo sabe o que é um Navegador, um Menu ou um Tocador.
@@ -19,7 +19,7 @@ namespace mysong::tui {
 
 namespace {
 
-// fracao_na — onde, entre zero e um, o ponto cahiu dentro da caixa. A primeira
+// fracao_na, onde, entre zero e um, o ponto cahiu dentro da caixa. A primeira
 // collunha vale zero e a ultima vale um, e não meia collunha em cada ponta:
 // quem clica na ultima quer o fim da faixa, e não noventa e tantos por cento
 // d'ella. Caixa de uma collunha só, ou vazia, dá o principio.
@@ -174,5 +174,5 @@ RespostaDoArrasto gesto_do_arrasto(Arrasto& arrasto, const Alvo& alvo,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

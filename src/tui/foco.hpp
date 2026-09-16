@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO FOCO — src/tui/foco.hpp
+//   TRACTADO DO FOCO, src/tui/foco.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Que peça da tela tem o foco, e para onde a seta o leva (issue #107). As
 // setas deixam de voltar e de entrar: ellas ANDAM PELO LAYOUT, e o Enter e o
@@ -48,11 +48,11 @@ enum class Focavel {
 // taboada: é o que faz a tecla seguir ao seu fluxo de sempre.
 enum class Direcao { Nenhuma, Cima, Baixo, Esquerda, Dextra };
 
-// rumo_da_tecla — a taboada das quatro setas, e nada mais. O `j` e o `k` não
+// rumo_da_tecla, a taboada das quatro setas, e nada mais. O `j` e o `k` não
 // entram: elles andam na LISTA, e quem os cumpre é a taboada do commando.
 Direcao rumo_da_tecla(const ftxui::Event& tecla) noexcept;
 
-// caixa_da_peca — a caixa de cada peça, colhida das MESMAS que o rato lê. Uma
+// caixa_da_peca, a caixa de cada peça, colhida das MESMAS que o rato lê. Uma
 // só verdade sobre onde a peça está: caixa colhida a parte divergiria da do
 // dedo na primeira issue que mudasse a composição.
 ftxui::Box caixa_da_peca(const CaixasDaTela& caixas, Focavel qual) noexcept;
@@ -64,7 +64,7 @@ ftxui::Box caixa_da_peca(const CaixasDaTela& caixas, Focavel qual) noexcept;
 // mesma seta a fazer duas cousas em duas collunhas de distancia.
 inline constexpr int PESO_DE_TRAVES = 2;
 
-// salto — a peça mais proxima na direcção pedida, pela geometria dos CENTROS
+// salto, a peça mais proxima na direcção pedida, pela geometria dos CENTROS
 // das caixas, e SÓMENTE entre as que cruzam a corrente no eixo de través: a
 // seta anda no seu corredor, que peça posta ACIMA não está á esquerda ainda
 // que o centro d'ella caia mais á esquerda.
@@ -77,7 +77,7 @@ inline constexpr int PESO_DE_TRAVES = 2;
 Focavel salto(const CaixasDaTela& caixas, Focavel corrente,
               Direcao rumo) noexcept;
 
-// alvo_do_foco — a peça com foco DITA em Alvo do rato, para que o Enter e o
+// alvo_do_foco, a peça com foco DITA em Alvo do rato, para que o Enter e o
 // Espaço desaguem na taboada `gesto_do_alvo` sem caminho proprio. Dous
 // devolvem `Peca::Nada`, e é de proposito: a PAUTA, cujo Enter toca e cujo
 // Espaço pausa pela taboada de sempre, e o TRILHO, cujo clique carrega a
@@ -86,11 +86,11 @@ Focavel salto(const CaixasDaTela& caixas, Focavel corrente,
 // pediu.
 Alvo alvo_do_foco(Focavel qual) noexcept;
 
-// orla_do_foco — o quadro de glow_core em volta da capa que tem o foco. Vive
+// orla_do_foco, o quadro de glow_core em volta da capa que tem o foco. Vive
 // aqui, e não na sala: é pintura do FOCO, e a sala não sabe que ha foco.
 ftxui::Element orla_do_foco(ftxui::Element dentro);
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

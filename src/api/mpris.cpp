@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MPRIS — src/api/mpris.cpp
+//   TRACTADO DO MPRIS, src/api/mpris.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O encanamento da `libdbus`. A traducção de unidades NÃO vive aqui: vive em
 // `unidades.cpp`, e é lá que ella se prova.
@@ -43,7 +43,7 @@ void escreve_texto(DBusMessageIter* pae, const std::string& valor) {
   dbus_message_iter_append_basic(pae, DBUS_TYPE_STRING, &cru);
 }
 
-// escreve_variante — o valor embrulhado n'uma variante, que é o que o `Get` devolve.
+// escreve_variante, o valor embrulhado n'uma variante, que é o que o `Get` devolve.
 // A assignatura entra como cadeia porque a `libdbus` a pede assim.
 void escreve_variante_texto(DBusMessageIter* pae, const std::string& valor) {
   DBusMessageIter dentro;
@@ -84,7 +84,7 @@ void escreve_variante_bool(DBusMessageIter* pae, bool valor) {
 }
 
 
-// escreve_metadados — o `a{sv}` do `Metadata`. Quatro chaves, e as quatro que o
+// escreve_metadados, o `a{sv}` do `Metadata`. Quatro chaves, e as quatro que o
 // `playerctl metadata` mostra por defeito.
 void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
   DBusMessageIter variante, mapa;
@@ -127,7 +127,7 @@ void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
 }
 
 
-// escreve_propriedade — UMA propriedade, pelo nome. Falso quando o nome não é d'esta
+// escreve_propriedade, UMA propriedade, pelo nome. Falso quando o nome não é d'esta
 // Casa, e ahi quem chama devolve o erro nomeado que a especificação pede.
 bool escreve_propriedade(DBusMessageIter* pae, const std::string& interface,
                          const std::string& nome, nucleo::Tocador& tocador) {
@@ -186,7 +186,7 @@ bool escreve_propriedade(DBusMessageIter* pae, const std::string& interface,
 }
 
 
-// cumpre_metodo — os oito metodos do MPRIS. Falso quando o nome não é d'esta Casa.
+// cumpre_metodo, os oito metodos do MPRIS. Falso quando o nome não é d'esta Casa.
 //
 // As duas armadilhas que a issue nomeou: `Seek` é RELATIVO e `SetPosition` é
 // ABSOLUTO. Trocá-los faria a tecla de avanço saltar para o segundo cinco em vez de
@@ -293,7 +293,7 @@ constexpr const char* kIntrospecção =
 
 namespace {
 
-// responde_get_all — o `a{sv}` de TODAS as propriedades de uma interface. O
+// responde_get_all, o `a{sv}` de TODAS as propriedades de uma interface. O
 // `playerctl` chama-o antes de chamar `Get`, e uma Casa que sómente saiba `Get`
 // parece muda a elle.
 void responde_get_all(DBusMessage* resposta, const std::string& interface,
@@ -329,7 +329,7 @@ void responde_get_all(DBusMessage* resposta, const std::string& interface,
 
 namespace {
 
-// annuncia_mudanca — o `PropertiesChanged` das cinco que podem mudar. `Position` NÃO
+// annuncia_mudanca, o `PropertiesChanged` das cinco que podem mudar. `Position` NÃO
 // entra: é decreto da especificação do MPRIS, porque ella muda a todo instante e um
 // pregão por instante afogaria o barramento. Quem quer a posição chama `Get`.
 void annuncia_mudanca(DBusConnection* ligacao, nucleo::Tocador& tocador) {
@@ -427,7 +427,7 @@ const std::string& CasaDoMpris::razao() const noexcept { return punho_->razao; }
 
 namespace {
 
-// assenta_propriedade — o miolo do `Set`, já dentro da variante. Sae á parte para
+// assenta_propriedade, o miolo do `Set`, já dentro da variante. Sae á parte para
 // que cada propriedade que se ponha traga a sua guarda de typo ao lado do seu
 // effeito, em vez de as guardas todas se empilharem antes do primeiro effeito.
 DBusMessage* assenta_propriedade(CasaDoMpris::Punho& punho, DBusMessage* pedido,
@@ -474,7 +474,7 @@ DBusMessage* assenta_propriedade(CasaDoMpris::Punho& punho, DBusMessage* pedido,
                                 "essa propriedade não se põe");
 }
 
-// responde_propriedades — o `Get`, o `GetAll` e o `Set` da interface de propriedades.
+// responde_propriedades, o `Get`, o `GetAll` e o `Set` da interface de propriedades.
 DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedido,
                                    const std::string& membro) {
   DBusMessageIter leitor;
@@ -533,7 +533,7 @@ DBusMessage* responde_propriedades(CasaDoMpris::Punho& punho, DBusMessage* pedid
                                 "esta Casa não conhece esse metodo");
 }
 
-// responde_um — UMA mensagem. Mensagem que esta Casa não conheça recebe ERRO NOMEADO,
+// responde_um, UMA mensagem. Mensagem que esta Casa não conheça recebe ERRO NOMEADO,
 // e nunca silencio: cliente que espera resposta e não a recebe fica pendurado no seu
 // proprio prazo, e o operador vê o playerctl a travar sem razão dita.
 void responde_um(CasaDoMpris::Punho& punho, DBusMessage* pedido) {
@@ -605,5 +605,5 @@ void CasaDoMpris::pulsa() {
 
 }  // namespace mysong::api
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

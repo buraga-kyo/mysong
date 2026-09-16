@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO ESTALEIRO — src/nucleo/estaleiro.hpp
+//   TRACTADO DO ESTALEIRO, src/nucleo/estaleiro.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A FILA DAS BAIXAS, com limite declarado. Baixar é lento e é de rede, e o
 // operador que elege cinco faixas de seguida não ha de esperar pela primeira
@@ -52,7 +52,7 @@ struct Andamento {
   std::string ultima;  // a razão do ultimo desfecho; vazia quando nada acabou
 };
 
-// texto_do_andamento — a linha que a tela mostra. Funcção PURA, e por isso vive
+// texto_do_andamento, a linha que a tela mostra. Funcção PURA, e por isso vive
 // aqui e não na janella. Estaleiro quieto e sem historia devolve cadeia VAZIA:
 // é o que faz a tela calar-se em vez de mostrar «0 a baixar».
 std::string texto_do_andamento(const Andamento& andamento);
@@ -73,15 +73,15 @@ class Estaleiro {
   void encommenda(Pedido pedido);
   Andamento andamento() const;
 
-  // colheu — CONSOME a bandeira de «entrou faixa nova no disco». Sem o consumo, a
+  // colheu, CONSOME a bandeira de «entrou faixa nova no disco». Sem o consumo, a
   // tela varreria o disco a cada quadro para sempre.
   bool colheu();
 
-  // pico — o maior numero de obras simultaneas de toda a vida do estaleiro. Existe
+  // pico, o maior numero de obras simultaneas de toda a vida do estaleiro. Existe
   // para que o limite se AFIRA, e não se acredite.
   std::size_t pico() const;
 
-  // espera_a_fila — bloqueia até a fila esvaziar E as obras em voo acabarem. NÃO
+  // espera_a_fila, bloqueia até a fila esvaziar E as obras em voo acabarem. NÃO
   // fecha o estaleiro: elle continua a aceitar encommenda depois. Existe porque
   // fecha() ABANDONA a espera, donde encommendar e fechar em seguida perderia obra;
   // quem quer o desfecho de todas pede este, e sómente depois fecha.
@@ -89,7 +89,7 @@ class Estaleiro {
 
   void fecha();  // pára de aceitar, acorda os obreiros e espera-os
 
-  // fechado — verdadeiro depois de fecha() ter tomado a tranca. Existe para que o
+  // fechado, verdadeiro depois de fecha() ter tomado a tranca. Existe para que o
   // abandono da espera se possa AFERIR: quem prova espera por este punho, e sómente
   // então solta a obra em voo, donde a ordem dos passos deixa de ser sorte.
   bool fechado() const;
@@ -114,5 +114,5 @@ class Estaleiro {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO ANALISADOR — src/nucleo/analisador.hpp
+//   TRACTADO DO ANALISADOR, src/nucleo/analisador.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Colhe o som da PROPRIA musica, e de mais nada. Acha no grafo do PipeWire o nó
 // que o nosso mpv creou, e taponeia as portas de SAHIDA d'aquelle nó, com um
@@ -130,5 +130,5 @@ class Analisador final : public FonteDeBandas {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

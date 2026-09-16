@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO PROMPT — src/tui/prompt.hpp
+//   TRACTADO DO PROMPT, src/tui/prompt.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O MODO de digitar, e a LINHA do campo que d'elle depende. O campo tem linha
 // PROPRIA, e não uma disputada: até a issue #79 elle escrevia por cima da
@@ -38,18 +38,18 @@ namespace mysong::tui {
 enum class Modo { Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma,
                   Lista, TituloOutro, ConfirmaFaixa, NomeComEsta };
 
-// aceita_letra — o modo escreve no termo? Falso em Nada e em Confirma.
+// aceita_letra, o modo escreve no termo? Falso em Nada e em Confirma.
 bool aceita_letra(Modo modo) noexcept;
 
-// assenta_novidade — a tela pode tomar novidade de fio de fundo? SÓMENTE em
+// assenta_novidade, a tela pode tomar novidade de fio de fundo? SÓMENTE em
 // Nada: com o campo de pé a secção CONGELA, e o que chega espera (issue #79).
 bool assenta_novidade(Modo modo) noexcept;
 
-// rotulo_do_prompt — o que se escreve á esquerda do campo. O `contexto` é a
+// rotulo_do_prompt, o que se escreve á esquerda do campo. O `contexto` é a
 // fonte na Procura e o nome da lista no Confirma; os mais ignoram-no.
 std::string rotulo_do_prompt(Modo modo, std::string_view contexto);
 
-// elemento_do_campo — a linha do prompt, e sómente ella. A trilha sahiu da
+// elemento_do_campo, a linha do prompt, e sómente ella. A trilha sahiu da
 // composição na issue #102: quem diz onde se está é a chapa por cima da pauta,
 // e o campo ganha linha propria abaixo do trilho do progresso. Modo Nada dá
 // elemento vazio, que a sala não lhe reserva linha alguma.
@@ -58,5 +58,5 @@ ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
                                  std::size_t largura);
 
 }  // namespace mysong::tui
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

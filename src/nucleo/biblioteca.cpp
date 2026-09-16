@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA BIBLIOTHECA, LAVRA — src/nucleo/biblioteca.cpp
+//   TRACTADO DA BIBLIOTHECA, LAVRA, src/nucleo/biblioteca.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o cabecalho. É o UNICO arquivo d'esta obra que inclue sqlite3.h, e é
 // d'ahi que lhe vem a fronteira: quem consulta o acervo não herda o SQLite.
@@ -188,7 +188,7 @@ std::string escapa_curingas(std::string_view termo) {
 // Anda byte a byte, e sómente aceita a sequencia que TODA a regra do UTF-8
 // aceita: comprimento pelo primeiro byte, continuação em 10xxxxxx, e nem
 // sobrelongo, nem metade de par substituto, nem ponto fóra do plano. Byte que
-// não sirva vae-se e entra o U+FFFD, e anda-se UM byte — nunca o comprimento
+// não sirva vae-se e entra o U+FFFD, e anda-se UM byte, nunca o comprimento
 // que o byte quebrado prometteu, que é como se perde texto bom a seguir ao mau.
 std::string saneia_utf8(std::string_view crua) {
   std::string limpa;
@@ -573,5 +573,5 @@ const std::filesystem::path& Escriba::temporario() const noexcept {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

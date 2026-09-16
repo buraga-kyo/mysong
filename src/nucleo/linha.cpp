@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LINHA DE COMMANDO, LAVRA — src/nucleo/linha.cpp
+//   TRACTADO DA LINHA DE COMMANDO, LAVRA, src/nucleo/linha.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o que o cabeçalho promette. Varre o argv uma vez, e a RECUSA tem
 // precedencia: opção que a taboa não conhece pára a leitura ali mesmo, porque
@@ -84,5 +84,5 @@ O manual inteiro: man mysong
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

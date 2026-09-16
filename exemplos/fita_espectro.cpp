@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO EXEMPLO DA FITA DO ESPECTRO — exemplos/fita_espectro.cpp
+//   TRACTADO DO EXEMPLO DA FITA DO ESPECTRO, exemplos/fita_espectro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta a fita de barras verticaes para se OLHAR, e para se INSPECCIONAR. Não é
 // prova: é a peça que o olho do operador ha de julgar, n'um terminal com
@@ -33,7 +33,7 @@
 namespace es = mysong::tui;
 namespace tk = mysong::tui::tokens;
 
-// glifos — a cadeia partida em pontos de codigo, um por CÉLULLA. MÉDIOS-GRAVES
+// glifos, a cadeia partida em pontos de codigo, um por CÉLULLA. MÉDIOS-GRAVES
 // leva acento: contado em octetos, o nome sahiria mais largo do que occupa.
 std::vector<std::string> glifos(std::string_view texto) {
   std::vector<std::string> saida;
@@ -48,7 +48,7 @@ std::vector<std::string> glifos(std::string_view texto) {
   return saida;
 }
 
-// legenda — uma linha de rotulos por baixo, cada um na côr da batida do registro
+// legenda, uma linha de rotulos por baixo, cada um na côr da batida do registro
 // e sob as columnas que o vestem. O rotulo vem de FÓRA porque são DUAS linhas: o
 // nome da familia e a côr da batida d'ella não cabem juntos n'um bloco de quinze
 // collunhas, que é o que os medios-agudos occupão n'uma fita de setenta e duas.
@@ -76,7 +76,7 @@ std::string legenda(const es::Quadro& quadro,
   return linha + std::string(tk::repouso) + '\n';
 }
 
-// batidas — põe UMA banda de cada familia no alto, para que as quatro côres da
+// batidas, põe UMA banda de cada familia no alto, para que as quatro côres da
 // batida appareção n'uma corrida só. Toma a banda do MEIO de cada familia, que
 // junto da fronteira a côr da vizinha encostaria n'ella. O valor passa do
 // limiar ABSOLUTO, que é a regra que vale sem picos, e picos não os ha aqui:
@@ -144,5 +144,5 @@ int main(int argc, char** argv) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

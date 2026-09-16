@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA FILA, LAVRA — src/nucleo/fila.cpp
+//   TRACTADO DA FILA, LAVRA, src/nucleo/fila.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o que o cabecalho promette. Nada aqui abre arquivo, nada aqui fala
 // com o mpv, e nada aqui ergue excepção.
@@ -163,5 +163,5 @@ Repeticao Fila::repeticao() const noexcept { return repeticao_; }
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

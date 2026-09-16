@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA FILA — src/nucleo/fila.hpp
+//   TRACTADO DA FILA, src/nucleo/fila.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Guarda a ORDEM que o cliente definir, e anda por ella nos dous sentidos. É
 // fila NOSSA, e não playlist do mpv: delegar a ordem ao mpv seria entregar-lhe
@@ -35,7 +35,7 @@ namespace mysong::nucleo {
 // outra bandeira é o que se lê errado n'um switch.
 enum class Repeticao { Nenhuma, Uma, Todas };
 
-// nome_da_repeticao — o nome na lingua d'esta Casa, que é a que o socket fala.
+// nome_da_repeticao, o nome na lingua d'esta Casa, que é a que o socket fala.
 inline std::string_view nome_da_repeticao(Repeticao modo) noexcept {
   switch (modo) {
     case Repeticao::Uma: return "uma";
@@ -57,7 +57,7 @@ class Fila {
   // vazia() se pergunta primeiro.
   std::size_t indice() const noexcept;
 
-  // A faixa corrente. Cadeia vazia quando a fila está vazia — resposta, e não
+  // A faixa corrente. Cadeia vazia quando a fila está vazia, resposta, e não
   // erro. A vista vale enquanto a fila não se alterar.
   std::string_view corrente() const noexcept;
 
@@ -110,5 +110,5 @@ class Fila {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DA FITA — testes/prova_arrowline.cpp
+//   TRACTADO DAS PROVAS DA FITA, testes/prova_arrowline.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova a taboada chromatica e a fita arrowline. Nenhum caso abre terminal
 // nem janella: a fita compõe-se em PEDAÇOS, e é por elles que se prova.
@@ -14,8 +14,8 @@
 //                   sustenta.
 // Q.E.D. .......... provado o par tinta/fundo de cada junção, a continuidade
 //                   da fita deixa de depender do olho de quem a lê. O que o
-//                   olho ainda deve julgar — se a fonte resolve o glifo, se o
-//                   rasterizador deixa filete — vae dito por extenso na SPEC,
+//                   olho ainda deve julgar, se a fonte resolve o glifo, se o
+//                   rasterizador deixa filete, vae dito por extenso na SPEC,
 //                   e nenhuma d'estas provas o allega.
 // ══════════════════════════════════════════════════════════════════════════
 #include <doctest/doctest.h>
@@ -164,7 +164,7 @@ TEST_CASE("o losango não se exprime: a fita tem um só glifo de encaixe") {
   // fita elege UM glifo ao nascer, pelo seu sentido, e serve-se d'elle em toda
   // junção, remate inclusive. Não havendo por onde entrar um segundo, as duas
   // pontas não se encostam. Prova-se pois a unicidade, que é o que a obra pode
-  // perder num descuido — eleger o glifo por junção, e não por fita.
+  // perder num descuido, eleger o glifo por junção, e não por fita.
   //
   // Este caso é o GUARDA da eleição, e desde a #20 é guarda sem limite a
   // declarar: houve uma porta, Fita::glifo(), por onde se podia passar cadeia
@@ -220,5 +220,5 @@ TEST_CASE("a côr veste-se em sequencia SGR de truecolor") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

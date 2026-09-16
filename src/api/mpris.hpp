@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MPRIS — src/api/mpris.hpp
+//   TRACTADO DO MPRIS, src/api/mpris.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Publica `org.mpris.MediaPlayer2.mysong` no barramento de sessão. Com elle, o
 // `playerctl` commanda o mysong; e com o `playerctl`, as teclas de midia que o
@@ -50,5 +50,5 @@ class CasaDoMpris {
 
 }  // namespace mysong::api
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

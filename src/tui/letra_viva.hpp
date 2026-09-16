@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LETRA VIVA — src/tui/letra_viva.hpp
+//   TRACTADO DA LETRA VIVA, src/tui/letra_viva.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O RIO da letra (issue #109). A letra deixa de se alternar com o espectro e
 // passa a morar POR CIMA d'elle: cada linha assoma na base do painel ainda sem
@@ -36,7 +36,7 @@
 
 namespace mysong::tui {
 
-// linha_de_leitura — o TERÇO do alto onde a linha chega no instante d'ella. Um
+// linha_de_leitura, o TERÇO do alto onde a linha chega no instante d'ella. Um
 // terço, e não o meio: o que vem tem de caber por baixo, que é o vão da subida,
 // e o que já passou por cima, que é o vão do apagar.
 std::size_t linha_de_leitura(std::size_t altura);
@@ -53,7 +53,7 @@ inline constexpr double NASCIMENTO_MAXIMO = 4.0;
 // de carimbos eguaes de facto pede.
 inline constexpr double NASCIMENTO_MINIMO = 0.25;
 
-// nascimento_da_linha — quantos segundos ANTES do instante d'ella a linha
+// nascimento_da_linha, quantos segundos ANTES do instante d'ella a linha
 // `qual` assoma na base. A primeira conta o intervallo desde o zero da faixa,
 // que é o instante anterior que ella tem: regra UNA para todas, e não um caso á
 // parte que a bateria teria de provar duas vezes.
@@ -75,7 +75,7 @@ struct LinhaViva {
   std::string_view tinta = tokens::text_faint;
   double resolvida = 0.0;         // a fracção de glyphos já resolvidos, em [0,1]
   bool corrente = false;          // está na linha de leitura, e é a que se canta
-  // SOBE — nasceu na base e ainda não chegou. UMA sómente em cada quadro, que o
+  // SOBE, nasceu na base e ainda não chegou. UMA sómente em cada quadro, que o
   // nascimento se cinge ao intervallo desde a anterior: duas a subir juntas não
   // ha. É por ella que a chapa da PROXIMA se adianta.
   bool sobe = false;
@@ -95,12 +95,12 @@ struct QuadroDaLetra {
   bool vazio() const noexcept { return linhas.empty(); }
 };
 
-// glifos_da_linha — a cadeia partida em pontos de codigo, um por CÉLULLA. Conta
+// glifos_da_linha, a cadeia partida em pontos de codigo, um por CÉLULLA. Conta
 // por CODEPOINT, e não por largura de columna: o glypho largo (CJK, emoji) sahe
 // contado por um, e é o mesmo debito que a pauta d'esta Casa já carrega.
 std::vector<std::string> glifos_da_linha(std::string_view texto);
 
-// embaralha — os glyphos que ainda se não resolveram, tirados das PROPRIAS
+// embaralha, os glyphos que ainda se não resolveram, tirados das PROPRIAS
 // letras da linha. Os resolvidos são os do MEIO, e a fórma abre-se do centro
 // para as pontas conforme a linha sobe. O branco CONSERVA-SE branco, que é o que
 // deixa a fórma das palavras a ler-se antes das letras.
@@ -115,7 +115,7 @@ std::string embaralha(const std::vector<std::string>& glifos, double resolvida,
 // contador, a mesma posição daria fitas differentes e a pureza cahia.
 inline constexpr int QUADROS_DO_EMBARALHO = 8;
 
-// quadro_da_letra — o rio n'uma posição. A linha `i` nasce na base
+// quadro_da_letra, o rio n'uma posição. A linha `i` nasce na base
 // `nascimento_da_linha` segundos antes do instante d'ella e sobe LINEARMENTE até
 // a linha de leitura, onde chega no instante exacto; ahi fica em text_bright até
 // que a seguinte chegue, e d'ahi sobe UMA linha por segundo, em text_muted e
@@ -128,16 +128,16 @@ QuadroDaLetra quadro_da_letra(const std::vector<nucleo::LinhaDaLetra>& linhas,
                               double posicao, std::size_t largura,
                               std::size_t altura);
 
-// linha_corrente_do_rio — a linha que se canta, ou nada. Funcção NOMEADA, e não
+// linha_corrente_do_rio, a linha que se canta, ou nada. Funcção NOMEADA, e não
 // campo a que se chegue por conta: a issue irmã da letra em XIROD pende d'ella.
 const LinhaViva* linha_corrente_do_rio(const QuadroDaLetra& quadro);
 
-// linha_que_sobe_do_rio — a que nasceu na base e ainda sobe, ou nada. Serve á
+// linha_que_sobe_do_rio, a que nasceu na base e ainda sobe, ou nada. Serve á
 // chapa da PROXIMA (issue #110), que se rasteriza ao nascer d'ella para estar
 // prompta no instante em que a voz a canta.
 const LinhaViva* linha_que_sobe_do_rio(const QuadroDaLetra& quadro);
 
-// caixa_da_corrente — o rectangulo que a linha corrente occupa, em coordenadas
+// caixa_da_corrente, o rectangulo que a linha corrente occupa, em coordenadas
 // do RECTANGULO DO ESPECTRO e não da tela: quem a põe na tela somma-lhe o canto
 // do painel, que é o unico que sabe onde o painel começa. Vazio quando não ha
 // linha corrente, e por ahi se sabe que chapa alguma se ha de pôr.
@@ -163,7 +163,7 @@ struct ChapaDaLetra {
   std::size_t cellulas_adiantadas = 0;
 };
 
-// ordem_da_chapa_da_letra — a decisão, PURA pelo molde do `ordens_das_chapas`
+// ordem_da_chapa_da_letra, a decisão, PURA pelo molde do `ordens_das_chapas`
 // do cabeçalho: o foco e o `l` entram em TODO quadro, e não sómente no do
 // evento, que o FTXUI desenha logo depois de correr os eventos. O `l` entra POR
 // SI, e não pela via de o rio vir vazio: alavanca do operador é facto do mundo,
@@ -176,7 +176,7 @@ ChapaDaLetra ordem_da_chapa_da_letra(const QuadroDaLetra& rio,
                                      bool letreiro_de_pe, bool foco_dentro,
                                      bool mostra_letra);
 
-// pedido_da_chapa_da_letra — o que se manda rasterizar: o verso em text_bright
+// pedido_da_chapa_da_letra, o que se manda rasterizar: o verso em text_bright
 // sobre o fundo do painel, que é a tinta do brilho cheio da linha de leitura. O
 // verso e as cellas vão SOLTOS, e não a ordem inteira, por a mesma funcção
 // servir á chapa que se põe e á que se adianta.
@@ -193,7 +193,7 @@ struct CelulaDoRio {
   bool letra = false;
 };
 
-// tapete_do_rio — as célullas já compostas, em vector chato de largura vezes
+// tapete_do_rio, as célullas já compostas, em vector chato de largura vezes
 // altura, pela medida do QUADRO DO ESPECTRO. A célulla com letra é a que tem
 // glypho que não é branco: o branco entre as palavras deixa passar a barra, que
 // é o que faz o rio parecer sahir do espectro em vez de assentar n'uma tarja.
@@ -203,12 +203,12 @@ struct CelulaDoRio {
 std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
                                        const QuadroDaLetra& letra);
 
-// sequencia_do_rio — os BYTES da célulla: o fundo, depois a tinta, depois o
+// sequencia_do_rio, os BYTES da célulla: o fundo, depois a tinta, depois o
 // glypho, sem repouso pelo meio. A célulla que não é de letra não escreve fundo
 // algum, que fundo escripto em toda a tela apagaria a transparencia do terminal.
 std::string sequencia_do_rio(const CelulaDoRio& celula);
 
-// elemento_do_rio — o espectro e a letra n'um só elemento.
+// elemento_do_rio, o espectro e a letra n'um só elemento.
 //
 // POR QUE NÃO `dbox`: o `text` do FTXUI escreve TODA célulla que o seu texto
 // tem, e o espaço é célulla escripta. Posta a letra por cima em dbox, a linha
@@ -245,7 +245,7 @@ inline constexpr std::size_t FILEIRAS_DO_VERSO = 2;
 inline constexpr std::size_t FILEIRA_DO_CORRENTE = 0;
 inline constexpr std::size_t FILEIRA_DO_SEGUINTE = FILEIRAS_DA_LETRA - 1;
 
-// elemento_da_letra_parada — o bloco pintado, com UM verso. `corrente` é o que
+// elemento_da_letra_parada, o bloco pintado, com UM verso. `corrente` é o que
 // o `nucleo::linha_corrente` devolveu: menos um quer dizer «ainda não começou»,
 // e ahi mostra-se o PRIMEIRO, que é o que vem a caminho. Faixa sem letra dá
 // bloco VAZIO (fileiras em branco), e não recado algum: letra que não ha não se
@@ -277,21 +277,21 @@ struct AssignaturaDaChapa {
   }
 };
 
-// assignatura_da — a assignatura de uma ordem de chapa.
+// assignatura_da, a assignatura de uma ordem de chapa.
 AssignaturaDaChapa assignatura_da(const ChapaDaLetra& ordem);
 
-// limpa_antes_de_por — se a chapa nova pede que se TIRE a que está. Pede quando
+// limpa_antes_de_por, se a chapa nova pede que se TIRE a que está. Pede quando
 // ha uma na tela e ella é OUTRA; não pede quando é a mesma (senão a fita
 // piscaria a cada quadro), nem quando não ha chapa alguma posta.
 bool limpa_antes_de_por(const AssignaturaDaChapa& posta,
                         const AssignaturaDaChapa& nova, bool ha_posta) noexcept;
 
-// verso_do_bloco — o texto do verso corrente, já cortado á largura, que é o que
+// verso_do_bloco, o texto do verso corrente, já cortado á largura, que é o que
 // a lousa manda rasterizar. Vazio quando não ha verso a mostrar.
 std::string verso_do_bloco(const std::vector<nucleo::LinhaDaLetra>& linhas,
                            int corrente, std::size_t largura);
 
-// ordem_da_chapa_parada — a ordem que a lousa recebe para o bloco: a chapa do
+// ordem_da_chapa_parada, a ordem que a lousa recebe para o bloco: a chapa do
 // verso corrente, de DUAS fileiras, centrada na largura do bloco. As tres
 // condições são as de sempre (letreiro de pé, foco dentro, letra á vista), e a
 // quarta é haver verso. Sem ellas, manda-se TIRAR, que chapa esquecida na tela
@@ -308,5 +308,5 @@ ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linh
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

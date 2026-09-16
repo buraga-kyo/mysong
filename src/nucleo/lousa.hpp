@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LOUSA — src/nucleo/lousa.hpp
+//   TRACTADO DA LOUSA, src/nucleo/lousa.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A LOUSA é uma janella de X11 posta POR CIMA do terminal, e não desenho no
 // terminal: quem a segura é o `ueberzugpp`, erguido em filho proprio, a quem
@@ -30,14 +30,14 @@
 
 namespace mysong::nucleo {
 
-// argumentos_da_lousa — o que se corre, pelo precedente do argumentos_do_chafa.
+// argumentos_da_lousa, o que se corre, pelo precedente do argumentos_do_chafa.
 // `layer` é o modo de janella persistente; `--silent` manda o erro d'elle ao
 // buraco, que esta Casa corre debaixo de uma tela do FTXUI e linha de aviso no
 // meio do quadro estraga-o; `-o x11` é a sahida MEDIDA n'esta machina, a mesma
 // que o yazi escolhe. A de wayland existe, e fica para quando houver Wayland.
 std::vector<std::string> argumentos_da_lousa();
 
-// escapado_em_json — as aspas, a barra invertida e os de controle. Á parte, e
+// escapado_em_json, as aspas, a barra invertida e os de controle. Á parte, e
 // pura: aspa no nome do album partiria a linha ao meio, e o filho calava-se.
 //
 // O LIMITE fica dito, pelo molde do `#` no mysong.conf: nome de arquivo em
@@ -47,7 +47,7 @@ std::vector<std::string> argumentos_da_lousa();
 // tudo; o protocolo não se corrompe, que a linha continua a ser UMA.
 std::string escapado_em_json(std::string_view texto);
 
-// ordem_de_por e ordem_de_tirar — as DUAS ordens do protocolo, cada uma n'UMA
+// ordem_de_por e ordem_de_tirar, as DUAS ordens do protocolo, cada uma n'UMA
 // linha, que é como o filho as lê. O canto é o do TERMINAL, e não o do painel:
 // dentro do tmux o Überzug++ somma o deslocamento (elle lê o TMUX_PANE).
 // MEDIDO em 03/09: contam de ZERO, e a imagem cabe guardando a proporção.
@@ -63,7 +63,7 @@ struct Parecer {
   std::string razao;
 };
 
-// parecer_da_lousa — a decisão, e é PURA: o mundo entra por dous bools, pela
+// parecer_da_lousa, a decisão, e é PURA: o mundo entra por dous bools, pela
 // razão do Inquerito da sonda. Sem elles, o caminho da recusa não se observaria
 // n'esta machina, que tem DISPLAY e tem o programa.
 //
@@ -72,18 +72,18 @@ struct Parecer {
 // programa não é palpite nenhum, e nem o `Sim` a atravessa: o exec falharia.
 Parecer parecer_da_lousa(ModoDaLousa modo, bool ha_display, bool ha_programa);
 
-// ha_display e versao_da_lousa — as duas perguntas ao MUNDO, e por isso á parte
+// ha_display e versao_da_lousa, as duas perguntas ao MUNDO, e por isso á parte
 // do parecer. A segunda corre `ueberzugpp --version` e devolve o que elle disse
 // («ueberzugpp 2.9.8» n'esta machina), ou vazio quando o programa não está: uma
 // chamada responde ás duas cousas que o diagnostico precisa de saber.
 bool ha_display();
 std::string versao_da_lousa();
 
-// texto_da_lousa — a linha do --sonda, e pura pelo precedente do
+// texto_da_lousa, a linha do --sonda, e pura pelo precedente do
 // texto_dos_ajustes: escape algum sahe d'aqui.
 std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 
-// signaes_da_lousa — os signaes de sahida que a lousa AMARRA emquanto está de
+// signaes_da_lousa, os signaes de sahida que a lousa AMARRA emquanto está de
 // pé: HUP, INT, QUIT e TERM. São os que matam o processo pela acção padrão
 // d'elles e que se podem apanhar. O SIGKILL e o SIGSTOP não entram, e não por
 // esquecimento: apanhál-os é impossivel, e pedil-o ao systema é um «não» calado
@@ -92,10 +92,10 @@ std::string texto_da_lousa(const Parecer& parecer, std::string_view versao);
 // PURA, e a bateria afere-a sem erguer processo nem instalar tratador algum.
 const std::vector<int>& signaes_da_lousa();
 
-// signal_amarrado — se aquelle numero está na lista acima.
+// signal_amarrado, se aquelle numero está na lista acima.
 bool signal_amarrado(int signal) noexcept;
 
-// COLLUNHA_DO_EMPURRAO — onde nasce a janella que nada mostra. Negativa para
+// COLLUNHA_DO_EMPURRAO, onde nasce a janella que nada mostra. Negativa para
 // cahir fóra de todo terminal, e não MAIS negativa por uma razão medida: a
 // coordenada de uma janella do X11 é inteiro de dezasseis bits com signal, e o
 // producto d'esta collunha pela largura da cella tem de caber n'elle. Com
@@ -115,7 +115,7 @@ inline constexpr int COLLUNHA_DO_EMPURRAO = -1500;
 inline constexpr std::size_t LARGURA_DO_EMPURRAO = 64;
 inline constexpr std::size_t ALTURA_DO_EMPURRAO = 32;
 
-// lados_do_empurrao — quantos pixeis a imagem toma DENTRO d'essa caixa, pela
+// lados_do_empurrao, quantos pixeis a imagem toma DENTRO d'essa caixa, pela
 // mesma reducção que o Überzug++ faz. PURA, e é o que a bateria afere: lado
 // ZERO é o que o faz abortar, e nenhum dos dous ha de chegar lá.
 Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept;
@@ -123,7 +123,7 @@ Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept;
 // A ORDEM que o pintor da a lousa quanto á capa, e as duas unicas que ha.
 enum class OrdemDaCapa { Tira, Poe };
 
-// ordem_da_capa — a decisão, e é PURA para que a bateria a afira sem tela. O
+// ordem_da_capa, a decisão, e é PURA para que a bateria a afira sem tela. O
 // `foco_dentro` manda em TODO quadro, e não sómente no quadro do evento, e é
 // isso que a corrige: o FTXUI DESENHA logo depois de executar os eventos, d'onde
 // um `tira_tudo` posto no tratador do foco desfaz-se no desenho seguinte, e a
@@ -149,19 +149,19 @@ class Lousa {
 
   bool disponivel() const noexcept;
 
-  // poe — a imagem no rectangulo, em célullas do canto do TERMINAL. Repetida
+  // poe, a imagem no rectangulo, em célullas do canto do TERMINAL. Repetida
   // com os MESMOS numeros não manda ordem alguma: o Überzug++ redimensiona a
   // cada `add`, e o pintor pediria vinte por segundo de uma capa parada.
   bool poe(std::string_view identidade, const std::filesystem::path& imagem,
            int collunha, int linha, std::size_t largura,
            std::size_t altura) noexcept;
 
-  // tira e tira_tudo — o `remove`. O segundo serve ao foco que se perde e á
+  // tira e tira_tudo, o `remove`. O segundo serve ao foco que se perde e á
   // sahida, e é elle que promette não deixar fantasma na tela.
   bool tira(std::string_view identidade) noexcept;
   void tira_tudo() noexcept;
 
-  // empurra — uma ordem que NADA mostra, e que existe por uma MEDIÇÃO: o
+  // empurra, uma ordem que NADA mostra, e que existe por uma MEDIÇÃO: o
   // Überzug++ (o 2.9.8 e o 2.9.10) não desenha a janella de UMA linha de
   // altura no instante em que a cria, e ella fica preta até que outro `add` o
   // faça redesenhar a tela toda. A de duas linhas desenha-se sósinha; a de uma
@@ -172,12 +172,12 @@ class Lousa {
   // de logar a cada empurrão para o deduplicador do `poe` o deixar passar.
   void empurra(const std::filesystem::path& imagem) noexcept;
 
-  // escritas — quantas ordens sahiram pelo cano. É por ella que quem chama
+  // escritas, quantas ordens sahiram pelo cano. É por ella que quem chama
   // sabe se o quadro mexeu na lousa: sómente ahi o empurrão tem que fazer.
   std::size_t escritas() const noexcept { return escritas_; }
 
   const Parecer& parecer() const noexcept { return parecer_; }
-  // descartadas — as ordens que o cano cheio engoliu. A janella di-las no
+  // descartadas, as ordens que o cano cheio engoliu. A janella di-las no
   // stderr ao sahir, pelo molde da linha da vigilia: o --sonda é outra corrida
   // do programa e lousa viva alguma tem, d'onde ali o numero seria sempre zero.
   std::size_t descartadas() const noexcept { return descartadas_; }
@@ -199,5 +199,5 @@ class Lousa {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DA API, BANDA PURA — testes/prova_api.cpp
+//   TRACTADO DA PROVA DA API, BANDA PURA, testes/prova_api.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o jsonzinho e o protocolo em MACHINA SURDA: sem socket, sem barramento,
 // sem placa de som e sem arquivo em disco. É onde dezeseis verbos e todo o
@@ -659,5 +659,5 @@ TEST_CASE("os dous modos assentam-se pelo socket, e sahem no retracto") {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

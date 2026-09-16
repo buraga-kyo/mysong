@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO PROTOCOLO, LAVRA — src/api/protocolo.cpp
+//   TRACTADO DO PROTOCOLO, LAVRA, src/api/protocolo.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o cabecalho. Não inclue socket algum, nem cabecalho de systema: fala
 // com o Tocador abstracto e com o jsonzinho, e é d'ahi que lhe vem a inteira
@@ -234,8 +234,8 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
   if (verbo == "anterior") return conforme(tocador.anterior(), "anterior");
   // «parar» PAUSA, hoje. O nucleo não tem parada distincta da pausa, e alargar a
   // sua interface seria editar src/nucleo/tocador.hpp, que a tarefa irmã está a
-  // reescrever. Das tres sahidas — não ter o verbo, mentir que para, ou tê-lo com
-  // o effeito que ha e dizê-lo — esta é a unica que não deixa o cliente a crer em
+  // reescrever. Das tres sahidas, não ter o verbo, mentir que para, ou tê-lo com
+  // o effeito que ha e dizê-lo, esta é a unica que não deixa o cliente a crer em
   // cousa falsa. O documento o declara com estas palavras; e o NOME do verbo já é
   // o certo, donde quando Tocador::parar() existir muda-se esta linha e o cliente
   // do outro lado não muda uma letra.
@@ -421,5 +421,5 @@ std::string responde(Tocador& tocador, const Arredores& arredores,
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

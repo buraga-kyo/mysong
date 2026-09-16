@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO MENU DE CONTEXTO — testes/prova_menu_contexto.cpp
+//   PROVA DO MENU DE CONTEXTO, testes/prova_menu_contexto.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A taboada de dentro do menu (issue #96), sem terminal e sem tela: o estado
 // arma-se á mão e afere-se o pedido que cada tecla devolve. Ella apanha o item

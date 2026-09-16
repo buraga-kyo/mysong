@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO FOCO — src/tui/foco.cpp
+//   TRACTADO DO FOCO, src/tui/foco.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra do que foco.hpp promette: a taboada das setas, a caixa de cada peça,
 // e o salto pela geometria dos centros.
@@ -44,7 +44,7 @@ int centro_y2(const ftxui::Box& caixa) noexcept {
   return caixa.y_min + caixa.y_max;
 }
 
-// cruza — se dous arcos se tocam. A seta anda no seu CORREDOR: candidata que
+// cruza, se dous arcos se tocam. A seta anda no seu CORREDOR: candidata que
 // não cruze a peça corrente no eixo de TRAVÉS não é candidata alguma.
 bool cruza(int a_min, int a_max, int b_min, int b_max) noexcept {
   return a_min <= b_max && b_min <= a_max;
@@ -159,5 +159,5 @@ ftxui::Element orla_do_foco(ftxui::Element dentro) {
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

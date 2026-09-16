@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LETRA VIVA — src/tui/letra_viva.cpp
+//   TRACTADO DA LETRA VIVA, src/tui/letra_viva.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra do que src/tui/letra_viva.hpp declara. O contracto, o dominio e os
 // invariantes moram lá, e não se repetem aqui.
@@ -13,13 +13,13 @@
 namespace mysong::tui {
 namespace {
 
-// cingido — o valor no intervallo fechado. Mora aqui, e não em tokens: aquelle
+// cingido, o valor no intervallo fechado. Mora aqui, e não em tokens: aquelle
 // cinge alfa, e alfa é caso d'este, e não o contrario.
 double cingido(double valor, double baixo, double alto) {
   return valor < baixo ? baixo : (valor > alto ? alto : valor);
 }
 
-// e_branco — o glypho que o embaralho CONSERVA. É o espaço, e é elle que deixa
+// e_branco, o glypho que o embaralho CONSERVA. É o espaço, e é elle que deixa
 // a fórma das palavras a ler-se antes de as letras se resolverem: mexido, a
 // linha viraria uma barra de lixo e o olho não veria verso nenhum a chegar.
 bool e_branco(const std::string& glifo) { return glifo == " "; }
@@ -58,7 +58,7 @@ std::vector<std::string> glifos_da_linha(std::string_view texto) {
 
 namespace {
 
-// mistura_do_acaso — a mistura de bits do splitmix64. Gerador do systema NÃO ha
+// mistura_do_acaso, a mistura de bits do splitmix64. Gerador do systema NÃO ha
 // n'esta obra, e por isso se escreve: `rand()` daria fita differente a cada
 // corrida, e prova alguma se poderia fazer d'ella. Da mesma semente sahe sempre
 // o mesmo numero, e a semente é a POSIÇÃO, que é o que a pureza exige.
@@ -114,7 +114,7 @@ std::string_view tinta_da_subida(double fracao) {
   return tokens::text_bright;
 }
 
-// posta_na_tela — o texto da linha, cortado á largura e CENTRADO. O corte remata
+// posta_na_tela, o texto da linha, cortado á largura e CENTRADO. O corte remata
 // em reticencias, e a collunha é a que sobra repartida em duas: linha comprida
 // não empurra as outras nem sahe do painel.
 void posta_na_tela(const std::string& texto, std::size_t largura,
@@ -353,7 +353,7 @@ ftxui::Element elemento_do_rio(const Quadro& espectro,
 
 namespace {
 
-// aparado — o verso cortado á largura, com «…» a fechar, medido em COLLUNHAS do
+// aparado, o verso cortado á largura, com «…» a fechar, medido em COLLUNHAS do
 // terminal: ha letra com kanji e com emoji, e aquellas valem duas.
 std::string aparado(const std::string& verso, std::size_t largura) {
   if (largura == 0) return {};
@@ -377,7 +377,7 @@ std::string aparado(const std::string& verso, std::size_t largura) {
   return feito + "\u2026";
 }
 
-// ao_centro — o verso centrado na largura, com o fundo do painel de um lado ao
+// ao_centro, o verso centrado na largura, com o fundo do painel de um lado ao
 // outro: verso encostado á esquerda leria-se como lista, e isto não é lista.
 ftxui::Element ao_centro(const std::string& verso, std::string_view tinta,
                          std::size_t largura, bool forte) {
@@ -394,7 +394,7 @@ ftxui::Element ao_centro(const std::string& verso, std::string_view tinta,
   return forte ? std::move(feito) | ftxui::bold : feito;
 }
 
-// verso_de — o texto de um indice que pode não existir. Fóra da letra dá vazio,
+// verso_de, o texto de um indice que pode não existir. Fóra da letra dá vazio,
 // e a fileira sahe em branco: é o que se vê no principio e no fim da musica.
 std::string verso_de(const std::vector<nucleo::LinhaDaLetra>& linhas, int qual) {
   if (qual < 0 || static_cast<std::size_t>(qual) >= linhas.size()) return {};
@@ -480,5 +480,5 @@ ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linh
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

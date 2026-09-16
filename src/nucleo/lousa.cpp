@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LOUSA — src/nucleo/lousa.cpp
+//   TRACTADO DA LOUSA, src/nucleo/lousa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. As puras primeiro; o filho e o cano no fim.
 //
@@ -76,7 +76,7 @@ void solta_os_signaes() {
     ::sigaction(qual, &o_de_antes[qual], nullptr);
 }
 
-// ergue — o fork com CANO na entrada do filho: devolve o pid, e menos um
+// ergue, o fork com CANO na entrada do filho: devolve o pid, e menos um
 // quando não vae. SOCKETPAR, e não `pipe`: escrevendo-se n'um cano cujo leitor
 // morreu, o systema manda SIGPIPE e o padrão d'elle mata o processo; com o
 // socket, o MSG_NOSIGNAL desliga isso SEM tocar no tratador global.
@@ -327,7 +327,7 @@ OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
              : OrdemDaCapa::Tira;
 }
 
-// lados_do_empurrao — a reducção do Überzug++ em duas linhas: cabe por dentro,
+// lados_do_empurrao, a reducção do Überzug++ em duas linhas: cabe por dentro,
 // proporção guardada. Escripta aqui, e não sómente confiada, porque é d'ella
 // que se prova que lado algum chega a zero.
 Medida lados_do_empurrao(Medida imagem, Medida cellula) noexcept {
@@ -391,5 +391,5 @@ std::string texto_da_lousa(const Parecer& parecer, std::string_view versao) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

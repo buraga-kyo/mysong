@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO EXEMPLO DA FITA DA CAPA — exemplos/fita_capa.cpp
+//   TRACTADO DO EXEMPLO DA FITA DA CAPA, exemplos/fita_capa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta a capa no terminal, com os MESMOS argumentos que o painel usa, para se
 // comparar o render de hontem com o de hoje sem abrir o tocador. Prova de
@@ -32,7 +32,7 @@ namespace tk = mysong::tui::tokens;
 
 namespace {
 
-// medida_de — o `LARGURAxALTURA`, e sómente elle. Numero mal escripto, sobra
+// medida_de, o `LARGURAxALTURA`, e sómente elle. Numero mal escripto, sobra
 // depois d'elle, ou zero, recusam-se aqui: a queixa nossa nomeia o argumento, e
 // a do chafa («Size must be at least 1x1») não.
 bool medida_de(std::string_view texto, std::size_t* collunas,
@@ -50,7 +50,7 @@ bool medida_de(std::string_view texto, std::size_t* collunas,
   return true;
 }
 
-// tela_de — as corridas em SGR crú. A tinta sahe IMMEDIATAMENTE antes do glifo
+// tela_de, as corridas em SGR crú. A tinta sahe IMMEDIATAMENTE antes do glifo
 // que veste, sem repouso pelo meio, e o repouso vem sómente ao fim da linha: é
 // o arranjo da fita do espectro, e é elle que fecha a emenda entre corridas
 // vizinhas de côres differentes. Funcção PURA: não escreve byte algum.
@@ -116,5 +116,5 @@ int main(int argc, char** argv) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

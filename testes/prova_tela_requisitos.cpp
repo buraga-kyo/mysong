@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DA TELA — testes/prova_tela_requisitos.cpp
+//   TRACTADO DAS PROVAS DA TELA, testes/prova_tela_requisitos.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova a tela dos requisitos SEM abrir terminal algum: pinta-se o quadro num
 // écran de papel, de largura escolhida, e afere-se o que elle diz.
@@ -61,7 +61,7 @@ nu::Inquerito faltando(std::initializer_list<std::string_view> chaves) {
   return inquerito;
 }
 
-// pintar — o écran de papel: largura escolhida, altura quanto o quadro pedir.
+// pintar, o écran de papel: largura escolhida, altura quanto o quadro pedir.
 std::string pintar(const nu::Relatorio& relatorio, int largura) {
   // A prova compara as côres RGB exactas. O terminal de ctest pode declarar
   // sómente 256 côres, o que faria o FTXUI converter as côres e falsamente
@@ -85,7 +85,7 @@ std::string sequencia_da_tinta(std::string_view token) {
          ftxui::Color::RGB(cor.r, cor.g, cor.b).Print(false) + "m";
 }
 
-// larguras_visiveis — conta as COLLUNAS de cada linha, e não os bytes: as
+// larguras_visiveis, conta as COLLUNAS de cada linha, e não os bytes: as
 // sequencias de escape não occupam célula, e caractere acentuado gasta dous
 // bytes numa collunha só, e o FTXUI remata cada linha em \r\n, de sorte que o
 // retorno de carro tambem se salta. Contar bytes daria falso alarme em toda

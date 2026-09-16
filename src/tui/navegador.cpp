@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO NAVEGADOR — src/tui/navegador.cpp
+//   TRACTADO DO NAVEGADOR, src/tui/navegador.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. Uma regra governa tudo: TODA mudança de vista passa por
 // refaz_vista(), e é ella que apara o eleito. Donde não ha caminho por onde o
@@ -25,7 +25,7 @@ namespace mysong::tui {
 
 namespace {
 
-// contem_sem_caixa — a comparação do filtro. Sem caixa, que o operador que busca
+// contem_sem_caixa, a comparação do filtro. Sem caixa, que o operador que busca
 // «bach» não ha de escrever «Bach» para achar o que já vê na tela. Sem dobra de
 // acento, de proposito: dobrar acento em UTF-8 pede taboa que esta Casa não tem,
 // e prometter menos é melhor que prometter e falhar no «á» contra o «a».
@@ -529,5 +529,5 @@ void Navegador::recarrega() {
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

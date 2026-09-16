@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LETRA — src/nucleo/letra.hpp
+//   TRACTADO DA LETRA, src/nucleo/letra.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Busca a letra no LRCLIB e grava-a em `.lrc` ao lado do audio. A busca acontece
 // UMA vez, no momento do download; escutar NUNCA toca a rede. É decisão do
@@ -32,27 +32,27 @@ struct Letra {
   std::string plana;
 };
 
-// escapa_para_url — o que se põe n'um parametro de consulta. Espaço vira `%20`, e
+// escapa_para_url, o que se põe n'um parametro de consulta. Espaço vira `%20`, e
 // tudo o que não é letra, digito, hyphen, ponto, sublinhado ou til vira `%XX`.
 // Sem isto, um titulo com `&` partiria a consulta em duas.
 std::string escapa_para_url(std::string_view crua);
 
-// url_da_busca — o `/api/search` do LRCLIB, com os campos que se tiverem. Usa-se
+// url_da_busca, o `/api/search` do LRCLIB, com os campos que se tiverem. Usa-se
 // o `search` e não o `get`: o `get` exige casamento EXACTO de artista, titulo,
 // album e duração, e acerto exacto é raro n'um acervo que veio do YouTube.
 std::string url_da_busca(std::string_view artista, std::string_view titulo);
 
-// primeiro_objecto — o primeiro objecto de UM arranjo JSON, em texto. O
+// primeiro_objecto, o primeiro objecto de UM arranjo JSON, em texto. O
 // `/api/search` devolve arranjo, e o jsonzinho d'esta Casa lê objecto PLANO de um
 // nivel: recorta-se pois o primeiro, respeitando aspas e contra-barra, para que
 // uma chave que contenha `}` não engane o recorte. Vazio quando não ha objecto.
 std::string primeiro_objecto(std::string_view arranjo);
 
-// le_resposta — a Letra que o corpo tras. Corpo que não seja objecto plano, ou que
+// le_resposta, a Letra que o corpo tras. Corpo que não seja objecto plano, ou que
 // não traga letra alguma, dá Letra vazia: é resposta, e não erro.
 Letra le_resposta(std::string_view corpo);
 
-// caminho_do_lrc — o `.lrc` ao lado do audio: mesma pasta, mesmo nome, outra
+// caminho_do_lrc, o `.lrc` ao lado do audio: mesma pasta, mesmo nome, outra
 // extensão. É onde o tocador o ha de procurar, e onde os outros tocadores o põem.
 std::filesystem::path caminho_do_lrc(const std::filesystem::path& audio);
 
@@ -65,7 +65,7 @@ struct LinhaDaLetra {
   std::string texto;
 };
 
-// analysa_lrc — as linhas de um `.lrc`, em ordem de tempo. Linha sem carimbo
+// analysa_lrc, as linhas de um `.lrc`, em ordem de tempo. Linha sem carimbo
 // ignora-se; carimbo sem texto CONSERVA-SE, com texto vazio, porque é assim que o
 // LRCLIB marca o silencio entre estrophes e é isso que faz a linha anterior sahir
 // da tela na hora certa.
@@ -74,24 +74,24 @@ struct LinhaDaLetra {
 // como o fórmato diz «esta mesma linha repete-se»: sahem duas linhas.
 std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto);
 
-// linha_corrente — o indice da linha que vale n'um instante, ou menos um antes da
+// linha_corrente, o indice da linha que vale n'um instante, ou menos um antes da
 // primeira. As linhas HÃO DE vir ordenadas, que é como analysa_lrc as devolve.
 int linha_corrente(const std::vector<LinhaDaLetra>& linhas, double posicao);
 
-// le_lrc_do_disco — as linhas do `.lrc` que estiver ao lado do audio. Vazio quando
+// le_lrc_do_disco, as linhas do `.lrc` que estiver ao lado do audio. Vazio quando
 // não ha arquivo, e isso não é erro: a maior parte do acervo não tem letra.
 std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
 
 // ── E AGORA O QUE TOCA A REDE. Uma funcção só, e no fim.
 
-// busca_letra — pergunta ao LRCLIB. FALSO quando a rede não respondeu; letra
+// busca_letra, pergunta ao LRCLIB. FALSO quando a rede não respondeu; letra
 // vazia com verdadeiro quer dizer que respondeu e não ha letra, que é caso
 // ordinario e não erro. O prazo é de OITO segundos: quem baixa uma faixa não ha de
 // esperar por um serviço de letra mais do que isso.
 bool busca_letra(std::string_view artista, std::string_view titulo,
                  Letra* letra);
 
-// grava_lrc — escreve a letra sincronizada em `.lrc` ao lado do audio. Não grava a
+// grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio. Não grava a
 // PLANA: `.lrc` é fórmato de letra com tempo, e pôr letra sem tempo n'um `.lrc`
 // faria todo tocador do mundo mostrar a musica inteira n'uma linha. Falso quando
 // não ha letra sincronizada, e ahi arquivo algum se cria.
@@ -99,5 +99,5 @@ bool grava_lrc(const std::filesystem::path& audio, const Letra& letra);
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

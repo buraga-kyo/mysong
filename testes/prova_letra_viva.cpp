@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DO RIO — testes/prova_letra_viva.cpp
+//   TRACTADO DAS PROVAS DO RIO, testes/prova_letra_viva.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o rio da letra da issue #109, e a chapa em XIROD da linha corrente da
 // issue #110, que d'elle pende e por isso aqui mora. Caso algum abre terminal,
@@ -59,7 +59,7 @@ constexpr std::size_t kAltura = 12;
 constexpr std::size_t kLeitura = 4;
 constexpr std::size_t kBase = 11;
 
-// d_ella — a linha viva de tal verso, ou nada. Busca-se pelo `qual`, e não pela
+// d_ella, a linha viva de tal verso, ou nada. Busca-se pelo `qual`, e não pela
 // ordem no vector: quem morre no alto sae do quadro, e o indice deslocava-se.
 const tui::LinhaViva* d_ella(const tui::QuadroDaLetra& quadro,
                              std::size_t qual) {
@@ -262,13 +262,13 @@ TEST_CASE("a mesma posição dá o mesmo quadro") {
 
 namespace {
 
-// barras — o quadro do espectro com TODAS as bandas cheias, donde toda célulla
+// barras, o quadro do espectro com TODAS as bandas cheias, donde toda célulla
 // é bloco cheio. É contra este chão que se lê o que o rio esconde.
 tui::Quadro barras() {
   return tui::compor(std::vector<float>(24, 1.0f), kLargura, kAltura);
 }
 
-// papel — o écran de papel, que é como esta Casa prova desenho sem terminal.
+// papel, o écran de papel, que é como esta Casa prova desenho sem terminal.
 ftxui::Screen papel(ftxui::Element quadro) {
   ftxui::Screen ecran =
       ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(kLargura)),
@@ -277,7 +277,7 @@ ftxui::Screen papel(ftxui::Element quadro) {
   return ecran;
 }
 
-// kComVao — um verso com vão no meio, para se aferir que o branco entre as
+// kComVao, um verso com vão no meio, para se aferir que o branco entre as
 // palavras deixa passar a barra e não vira tarja.
 const std::vector<nu::LinhaDaLetra> kComVao = {{10.0, "ab cd"}};
 
@@ -370,7 +370,7 @@ namespace {
 // geometria da sala de verdade prova-se em caso proprio, adeante.
 const tui::Rectangulo kPainel = {84, 2, kLargura, kAltura};
 
-// da_chapa — a ordem com o letreiro de pé, o foco dentro e o `l` a mostrar, que
+// da_chapa, a ordem com o letreiro de pé, o foco dentro e o `l` a mostrar, que
 // é o estado em que a chapa se põe. Os tres bools ficam soltos nos casos que
 // provam justamente a falta de cada um d'elles.
 tui::ChapaDaLetra da_chapa(const tui::QuadroDaLetra& rio) {
@@ -608,5 +608,5 @@ TEST_CASE("com a chapa de pé a fileira do verso sae em branco") {
   CHECK(linha_de(sem, 2, 20) == "       fghij        ");
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

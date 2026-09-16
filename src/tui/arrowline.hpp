@@ -1,12 +1,12 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA FITA ARROWLINE — src/tui/arrowline.hpp
+//   TRACTADO DA FITA ARROWLINE, src/tui/arrowline.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Compõe a FITA: enfiada de segmentos de borda esquerda RETA e ponta AFIADA á
 // direita, encaixados um no outro por um glifo de junção.
 //
 // ADVERTÊNCIA DE FIDELIDADE, que se leia antes de tudo: no RADICAL-OS o
 // arrowline não é glifo, é polygono traçado em cairo por shapes.powerline, e o
-// angulo da diagonal é grandeza derivada, atan(tip / (h/2)) — cerca de 41,6
+// angulo da diagonal é grandeza derivada, atan(tip / (h/2)), cerca de 41,6
 // graus da vertical com os tokens vivos. Em terminal de célullas isso não se
 // copia: ha o glifo U+E0B0, cujo angulo a fonte já decidiu, e a célulla é
 // indivisivel, de sorte que o sobrepôr de -T nem se propõe. É TRADUCÇÃO, e não
@@ -22,7 +22,7 @@
 //
 // DOMÍNIO ......... a enfiada de segmentos, cada um com rotulo, fundo e tinta.
 // CONTRA-DOMÍNIO .. a sequencia ordenada de PEDAÇOS, inspeccionavel sem
-//                   terminal e sem a janella — o que torna a regra (b)
+//                   terminal e sem a janella, o que torna a regra (b)
 //                   asserção verificavel, em vez de boa intenção.
 // INVARIANTE ...... dous, e o segundo é ESTRUCTURAL.
 //                   (i) fita de N segmentos emitte exactamente N menos um
@@ -55,11 +55,11 @@ namespace mysong::tui {
 // Os glifos da fita, da JetBrainsMono Nerd Font, que esta Casa EXIGE instalada.
 // U+E0B0 aponta á dextra; U+E0B2, á esquerda. NUNCA os dous no mesmo sentido de
 // fita. Sem a fonte, o terminal desenha quadrículo vazio, o chamado tofu: é o
-// que se vê, está dito no README, e não se contorna por codigo — adivinhar a
+// que se vê, está dito no README, e não se contorna por codigo, adivinhar a
 // presença da fonte por largura de glifo é heurística que engana.
 // Escrevem-se por PONTO DE CODIGO, e não pelo glifo cru: moram na area de uso
 // privado, onde editor, tubo e terminal os engolem sem dar signal, e o que
-// resta é cadeia vazia — falha que passaria calada por toda a fita.
+// resta é cadeia vazia, falha que passaria calada por toda a fita.
 inline constexpr std::string_view kPontaDextra = "\ue0b0";
 inline constexpr std::string_view kPontaEsquerda = "\ue0b2";
 
@@ -88,7 +88,7 @@ struct Pedaco {
   bool cauda = false;
 };
 
-// rebaixar — desce ao degrau de CENTENA seguinte da rampa violeta, que é dizer
+// rebaixar, desce ao degrau de CENTENA seguinte da rampa violeta, que é dizer
 // DOUS assentos do arranjo, e não um: os intermedios (v600, v800) o olho não
 // distingue da vizinhança. É a regra (c), o enchimento sob a orla. Assim v500
 // dá v700, e v700 dá v900. No degrau mais fundo satura, em vez de sahir da
@@ -112,5 +112,5 @@ class Fita {
 }  // namespace mysong::tui
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

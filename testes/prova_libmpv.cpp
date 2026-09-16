@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DA TABOA DA LIBMPV — testes/prova_libmpv.cpp
+//   TRACTADO DAS PROVAS DA TABOA DA LIBMPV, testes/prova_libmpv.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova os modos de FALHAR do carregamento, e não só o caminho felix. Faz-se por
 // carregar_taboa, e nunca por libmpv(), porque aquella se repete e esta abre uma
@@ -91,5 +91,5 @@ TEST_CASE("o binario da tela traz o motor e NÃO liga a libmpv") {
   CHECK(dynamica.find("mpv") == std::string::npos);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

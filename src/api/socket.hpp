@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO SOCKET — src/api/socket.hpp
+//   TRACTADO DO SOCKET, src/api/socket.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O BRAÇO do protocolo: o transporte, e sómente elle. Não sabe que verbos ha,
 // nem que a resposta é JSON; sabe abrir uma porta no systema de arquivos, colher
@@ -105,5 +105,5 @@ class Servidor {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

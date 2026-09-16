@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO CATALOGO — src/nucleo/catalogo.cpp
+//   TRACTADO DO CATALOGO, src/nucleo/catalogo.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. O recorte do JSON vem de api/jsonzinho.hpp, e não se repete
 // aqui: a letra da issue #14 já usa o mesmo.
@@ -143,5 +143,5 @@ bool busca_catalogo(std::string_view crua, Catalogo* catalogo) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO ESTALEIRO — src/nucleo/estaleiro.cpp
+//   TRACTADO DO ESTALEIRO, src/nucleo/estaleiro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. Uma tranca guarda TUDO o que os obreiros vêem, e nada d'esse
 // estado se lê fóra d'ella: contador lido sem tranca é contador que a machina
@@ -22,14 +22,14 @@ namespace mysong::nucleo {
 
 namespace {
 
-// junta — acrescenta um pedaço á lista, com a virgula sómente quando ha o que
+// junta, acrescenta um pedaço á lista, com a virgula sómente quando ha o que
 // separar. Existe para que a virgula não appareça no principio da linha.
 void junta(std::string* dito, const std::string& pedaco) {
   if (!dito->empty()) *dito += ", ";
   *dito += pedaco;
 }
 
-// plural — «uma colhida», «duas colhidas». A concordancia faz parte do recado.
+// plural, «uma colhida», «duas colhidas». A concordancia faz parte do recado.
 std::string plural(std::size_t quantas, const std::string& singular) {
   return std::to_string(quantas) + " " + singular + (quantas == 1 ? "" : "s");
 }
@@ -176,5 +176,5 @@ void Estaleiro::obreiro() {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

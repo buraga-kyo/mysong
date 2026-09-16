@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DA BIBLIOTHECA — testes/prova_biblioteca.cpp
+//   TRACTADO DAS PROVAS DA BIBLIOTHECA, testes/prova_biblioteca.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o ÍNDICE, e não o disco: nenhum caso d'este arquivo abre arquivo de
 // audio, chama ffmpeg, ou toca taglib. As faixas entram amarradas á mão, o que
@@ -493,5 +493,5 @@ TEST_CASE("a faixa nova entra ao fim, a apagada fecha o buraco, e o disco guarda
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

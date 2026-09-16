@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO FOCO — testes/prova_foco.cpp
+//   PROVA DO FOCO, testes/prova_foco.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A taboada das setas (issue #107) sobre uma geometria FIXA: as caixas são as
 // da tela d'elle, de 167 por 67, escriptas á mão. Prova-se cada seta de cada
@@ -57,7 +57,7 @@ tui::CaixasDaTela tela_d_elle() {
   return caixas;
 }
 
-// salto_de — o atalho que faz a taboada caber n'uma linha por caso.
+// salto_de, o atalho que faz a taboada caber n'uma linha por caso.
 Focavel salto_de(Focavel d_onde, Direcao rumo) {
   return tui::salto(tela_d_elle(), d_onde, rumo);
 }
@@ -336,5 +336,5 @@ TEST_CASE("a capa com foco ganha orla de glow_core") {
   CHECK(tela.PixelAt(1, 1).character == "a");
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

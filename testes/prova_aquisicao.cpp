@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA AQUISIÇÃO — testes/prova_aquisicao.cpp
+//   PROVA DA AQUISIÇÃO, testes/prova_aquisicao.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Caso algum d'esta bateria toca a rede. O que se afere é o que se HA DE correr,
 // e o que se HA DE gravar: as cinco funcções puras. O `fork` e o `exec` provam-se
@@ -17,7 +17,7 @@ namespace nu = mysong::nucleo;
 
 namespace {
 
-// um_achado — o achado com os tres campos de que os casos dos eleitores vivem:
+// um_achado, o achado com os tres campos de que os casos dos eleitores vivem:
 // titulo, duração e URL. Existe por causa da juncção das duas tarefas irmãs: o
 // Achado ganhou os campos da musica (issue #56) e o id do track (issue #57), e a
 // inicialização por lista deixava-os sem menção, que o compilador accusa com
@@ -76,7 +76,7 @@ TEST_CASE("o corte pelo comprimento recúa até ao byte lider") {
   }
 }
 
-// resolve — o operador GANHA sempre, e o canal é o ultimo recurso.
+// resolve, o operador GANHA sempre, e o canal é o ultimo recurso.
 TEST_CASE("o operador ganha da rede, campo a campo") {
   nu::EtiquetaRemota remota;
   remota.titulo = "Titulo Da Rede";
@@ -375,7 +375,7 @@ TEST_CASE("o anno absurdo da rede não estoura as contas") {
 
 namespace {
 
-// tem — a bandeira e o seu valor, na ordem, e não a bandeira solta em qualquer
+// tem, a bandeira e o seu valor, na ordem, e não a bandeira solta em qualquer
 // logar. Bandeira sem valor é bandeira que o yt-dlp recusa.
 bool tem(const std::vector<std::string>& ditos, const std::string& bandeira,
          const std::string& valor) {
@@ -718,5 +718,5 @@ TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
   CHECK(nu::Pedido{}.ano == 0);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

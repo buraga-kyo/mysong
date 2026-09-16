@@ -1,11 +1,11 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO DESENHO DO ESPECTRO — src/tui/espectro.hpp
+//   TRACTADO DO DESENHO DO ESPECTRO, src/tui/espectro.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Converte as QUANTAS_BANDAS magnitudes que o analisador colhe na FITA de
 // barras verticaes da §7.4.9. Aqui não se colhe som: a colheita é do
 // src/nucleo/espectro.*, e este manuscripto sómente DESENHA o que ella entrega.
 //
-// A SPEC QUE MANDA, e que se transcreve porque NÃO É VERSIONADA — mora em
+// A SPEC QUE MANDA, e que se transcreve porque NÃO É VERSIONADA, mora em
 // ~/.config/awesome/DESIGN_SYSTEM.md, §7.4.9, linhas 968 a 970, e diz isto e
 // nada mais, verbatim:
 //   «Barras verticais (EQ) ou rows de canais (Master, Capture, Front…).»
@@ -83,7 +83,7 @@ inline constexpr double MEIA_VIDA_DO_PICO_S = 1.5;
 // piscaria justamente onde não ha o que mostrar.
 inline constexpr float PISO_DO_QUENTE = 0.5f;
 
-// avanca_picos — o PICO RECENTE de cada banda, que é o UNICO estado d'esta obra
+// avanca_picos, o PICO RECENTE de cada banda, que é o UNICO estado d'esta obra
 // e mora no CHAMADOR: `compor` fica pura, e o quadro continua a repetir-se.
 //   picos[b] = max(bandas[b], picos[b] * pow(0,5, segundos / MEIA_VIDA)).
 // Sobe de IMMEDIATO ao valor corrente, que é o que faz a batida ser batida, e
@@ -111,12 +111,12 @@ inline constexpr float FRONTEIRA_DOS_GRAVES = 250.0f;
 inline constexpr float FRONTEIRA_DOS_MEDIOS_GRAVES = 1000.0f;
 inline constexpr float FRONTEIRA_DOS_MEDIOS_AGUDOS = 4000.0f;
 
-// registro_da_banda — o registro em que cae o CENTRO da banda. Funcção pura, e é
+// registro_da_banda, o registro em que cae o CENTRO da banda. Funcção pura, e é
 // a UNICA regra de pertença d'esta obra: quem quiser saber a familia de uma
 // banda pergunta aqui, e jamais conta indices por fóra.
 Registro registro_da_banda(float centro_em_hertz);
 
-// tinta_do_registro — a côr da BATIDA FORTE do registro, e devolve o TOKEN e
+// tinta_do_registro, a côr da BATIDA FORTE do registro, e devolve o TOKEN e
 // não a tríade porque quem a veste pede o hexadecimal do design system. Rosa
 // glow_hot nos graves, cyan data5 nos medios-graves, laranja
 // data3 nos medios-agudos e amarello data2 nos agudos: é o Postulado do Poente
@@ -124,7 +124,7 @@ Registro registro_da_banda(float centro_em_hertz);
 // espectro É uma série de dados.
 std::string_view tinta_do_registro(Registro registro);
 
-// nome_do_registro — o rótulo em caixa alta, para a legenda que o olho lê. Mora
+// nome_do_registro, o rótulo em caixa alta, para a legenda que o olho lê. Mora
 // aqui, ao pé da côr, para que nome e tinta tenham UMA verdade só: legenda que
 // se escrevesse no exemplo divergiria da tela no dia em que a côr mudasse.
 std::string_view nome_do_registro(Registro registro);
@@ -152,7 +152,7 @@ struct Celula {
   bool pinta = false;
 };
 
-// mesma_tinta — a Triade não tem egualdade propria, e não se lha acrescenta em
+// mesma_tinta, a Triade não tem egualdade propria, e não se lha acrescenta em
 // tokens.hpp, que é lavra alheia e já mergeada. Compara-se aqui.
 inline bool mesma_tinta(tokens::Triade a, tokens::Triade b) {
   return a.r == b.r && a.g == b.g && a.b == b.b;
@@ -172,19 +172,19 @@ struct Quadro {
   // fronteira lêem assim a MESMA verdade que a tinta leu.
   std::vector<Registro> registros;
 
-  // em — a célulla da linha e da collunha. Fóra de limite devolve célulla vazia,
+  // em, a célulla da linha e da collunha. Fóra de limite devolve célulla vazia,
   // e não estoura: assim a prova pode varrer largura + 1 sem armar guarda.
   const Celula& em(std::size_t linha, std::size_t collunha) const;
 };
 
-// oitavos — a magnitude em DEGRAUS, e é a conta que se prova exacta. Devolve
+// oitavos, a magnitude em DEGRAUS, e é a conta que se prova exacta. Devolve
 // inteiro em [0, DEGRAUS_POR_CELULA * altura]. Lixo entra e não sahe: negativa
 // vale zero, acima do teto vale o teto, e NÃO FINITA vale zero. Esta ultima
 // escreve-se ANTES do cingir, e de propósito: comparação com NaN é sempre
 // falsa, d'onde um cingir escripto ingenuamente deixaria o NaN passar ao floor.
 int oitavos(float magnitude, std::size_t altura);
 
-// glifo_do_degrau — o bloco de k oitavos, em U+2580 + k. Zero dá a célulla
+// glifo_do_degrau, o bloco de k oitavos, em U+2580 + k. Zero dá a célulla
 // vazia; acima de oito cinge-se a oito, que é o bloco cheio.
 std::string glifo_do_degrau(int degrau);
 
@@ -194,7 +194,7 @@ std::string glifo_do_degrau(int degrau);
 // o pé no painel sem o deixar competir com o topo, que é o que canta.
 inline constexpr double ALFA_DA_BASE = 0.55;
 
-// tinta_da_linha — o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
+// tinta_da_linha, o GRADIENTE, ancorado ao PAINEL. `desde_a_base` conta da
 // base para cima, de sorte que zero dá a BASE exacta e `altura - 1` dá o v500
 // exacto. Painel de uma célulla só dá a base, que é d'onde a §7.4.9 ancora a
 // rampa. Não recebe magnitude alguma NEM REGISTRO algum, e é n'isto que o
@@ -202,7 +202,7 @@ inline constexpr double ALFA_DA_BASE = 0.55;
 // em toda a fita, e nada n'ella pode variar de columna para columna.
 tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
 
-// centros_das_bandas — os CENTROS em hertz, colhidos das bordas em RAIAS que o
+// centros_das_bandas, os CENTROS em hertz, colhidos das bordas em RAIAS que o
 // nucleo::Espectro abre. A borda b vale `b * hertz_por_raia`, e o centro da
 // banda é a media GEOMETRICA das duas bordas d'ella, que é o meio da banda na
 // escala logarithmica em que ellas foram assentadas. Media arithmetica poria o
@@ -211,13 +211,13 @@ tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura);
 std::vector<float> centros_das_bandas(
     const std::vector<std::size_t>& bordas_em_raias, float hertz_por_raia);
 
-// centros_da_escala — os centros de `quantas` bandas pela MESMA escala
+// centros_da_escala, os centros de `quantas` bandas pela MESMA escala
 // logarithmica que o nucleo assenta, de HERTZ_MINIMO a HERTZ_MAXIMO. Serve a
 // quem tem as bandas e não alcança as bordas: o punho do analisador não as
 // abre, e a escala é do CONTRACTO, e não da transformada que ha por baixo.
 std::vector<float> centros_da_escala(std::size_t quantas);
 
-// compor — o QUADRO. Não guarda estado: as mesmas bandas na mesma largura dão o
+// compor, o QUADRO. Não guarda estado: as mesmas bandas na mesma largura dão o
 // mesmo quadro, hoje e depois de dez redimensionamentos. Não presume que as
 // bandas sejam QUANTAS_BANDAS: conta o tamanho REAL do vector, que presumir o
 // vinte e quatro seria ler fóra de limite no dia em que o contracto mudasse.
@@ -235,12 +235,12 @@ Quadro compor(const std::vector<float>& bandas, std::size_t largura,
               const std::vector<float>& centros_em_hertz = {},
               const std::vector<float>& picos = {});
 
-// sequencia_da_celula — os BYTES da célulla: a tinta imediatamente antes do
+// sequencia_da_celula, os BYTES da célulla: a tinta imediatamente antes do
 // glifo, sem repouso pelo meio, ou a ordem de repouso quando não se pinta. Mora
 // aqui, e não no exemplo, para que emissão e quadro tenham UMA verdade só.
 std::string sequencia_da_celula(const Celula& celula);
 
-// elemento_do_espectro — o quadro em FTXUI, para a issue #7 o encaixar na
+// elemento_do_espectro, o quadro em FTXUI, para a issue #7 o encaixar na
 // janella. Derivação fina, e regra de desenho alguma se acrescenta aqui: o que
 // divergir do quadro é defeito, e não decisão.
 ftxui::Element elemento_do_espectro(const Quadro& quadro);
@@ -250,5 +250,5 @@ ftxui::Element elemento_do_espectro(const Quadro& quadro);
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA MARCA — src/nucleo/marca.hpp
+//   TRACTADO DA MARCA, src/nucleo/marca.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Declara a MARCA do programa: o nome pelo qual esta obra se annuncia a quem
 // a invoca. É a primeira matéria do núcleo, e a única de que ele se occupa
@@ -33,5 +33,5 @@ std::string_view marca() noexcept;
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

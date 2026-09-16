@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA CAPA — src/nucleo/capa.cpp
+//   TRACTADO DA CAPA, src/nucleo/capa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. As puras primeiro; o chafa e a taglib no fim.
 //
@@ -64,7 +64,7 @@ std::string chave_do_cache(const std::filesystem::path& faixa,
 
 namespace {
 
-// de_dous e de_quatro — inteiros GRANDES-PRIMEIRO, que é a ordem do JPEG e a do
+// de_dous e de_quatro, inteiros GRANDES-PRIMEIRO, que é a ordem do JPEG e a do
 // PNG. Sem guarda de tamanho: os dous chamadores conferem-no antes.
 std::size_t de_dous(std::string_view octetos, std::size_t onde) {
   return (static_cast<std::size_t>(static_cast<unsigned char>(octetos[onde]))
@@ -77,7 +77,7 @@ std::size_t de_quatro(std::string_view octetos, std::size_t onde) {
 }
 
 
-// medida_do_jpeg — anda pelos segmentos até o SOF, que é o unico que traz o
+// medida_do_jpeg, anda pelos segmentos até o SOF, que é o unico que traz o
 // quadro. SOF são as marcas C0 a CF menos a C4, a C8 e a CC, que carregam
 // taboas de Huffman, extensão e taboas arithmeticas: corpo d'outra especie.
 // Andar é preciso porque o APIC do yt-dlp traz o JFIF, e ás vezes o EXIF,
@@ -304,7 +304,7 @@ bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos) {
 
 namespace {
 
-// extrahe_embutida — a mesma arte, posta n'um temporario para que o chafa a possa
+// extrahe_embutida, a mesma arte, posta n'um temporario para que o chafa a possa
 // abrir. O chafa lê arquivo, e não memoria, e é só por isso que este passo existe.
 //
 // Grava-se em `$XDG_RUNTIME_DIR`, e não em `/tmp`: arte de album é dado do
@@ -374,7 +374,7 @@ std::size_t Galeria::quantos_renders() const noexcept { return renders_; }
 
 namespace {
 
-// cabeca_do_arquivo — o que a medida pede: sessenta e quatro mil octetos, que
+// cabeca_do_arquivo, o que a medida pede: sessenta e quatro mil octetos, que
 // chegam para o SOF do JPEG, que vem depois do JFIF e ás vezes do EXIF.
 std::string cabeca_do_arquivo(const std::filesystem::path& caminho) {
   std::ifstream entrada(caminho, std::ios::binary);
@@ -385,7 +385,7 @@ std::string cabeca_do_arquivo(const std::filesystem::path& caminho) {
   return cabeca;
 }
 
-// escreve_no_cache — a arte em arquivo UMA vez: o nome vem do CONTEUDO, d'onde
+// escreve_no_cache, a arte em arquivo UMA vez: o nome vem do CONTEUDO, d'onde
 // arquivo de mesmo nome já tem os octetos e não se torna a escrever.
 //
 // Por TEMPORARIO e RENAME, e não direito ao nome final: quem acha o arquivo
@@ -444,7 +444,7 @@ std::size_t Arquivario::quantos_escriptos() const noexcept { return escriptos_; 
 
 namespace {
 
-// aplica_sgr — lê UM escape do chafa e assenta a côr na corrida que vem. Sómente os
+// aplica_sgr, lê UM escape do chafa e assenta a côr na corrida que vem. Sómente os
 // codigos que o chafa emitte: 38;2;R;G;B, 48;2;R;G;B, 39, 49, 0 e 7. Codigo que não se
 // conheça ignora-se, e não se lança: o chafa é ferramenta alheia e pode mudar.
 void aplica_sgr(std::string_view escape, Corrida* corrida,
@@ -498,7 +498,7 @@ void aplica_sgr(std::string_view escape, Corrida* corrida,
   }
 }
 
-// assenta — fecha a corrida na lista. Invertida, a troca faz-se n'uma CÓPIA, e
+// assenta, fecha a corrida na lista. Invertida, a troca faz-se n'uma CÓPIA, e
 // jamais no `corrente`: aquelle é a côr que ATRAVESSA para a corrida seguinte, e
 // trocá-lo alli faria a tinta de uma vazar por fundo da outra. Entrada que o
 // expunha: `ESC[7m ESC[38;2;1;2;3m A ESC[38;2;9;9;9m B`, onde o B sahia com o
@@ -551,5 +551,5 @@ std::vector<Corrida> analysa_sgr(std::string_view linha) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

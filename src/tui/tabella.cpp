@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA TABELLA — src/tui/tabella.cpp
+//   TRACTADO DA TABELLA, src/tui/tabella.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A pintura. Vale a regra do cabeçalho: pinta e sahe.
 //
@@ -33,7 +33,7 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
          ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// cortar — a cadeia nos primeiros `largura` CODEPOINTS, e não bytes nem
+// cortar, a cadeia nos primeiros `largura` CODEPOINTS, e não bytes nem
 // collunhas: o glypho largo (CJK, emoji) conta por um valendo duas. Sem a
 // conta por codepoint, um titulo com acentos sahiria mais curto do que a conta
 // diz e a tabella perderia o alinhamento das columnas.
@@ -60,7 +60,7 @@ std::string cortar(const std::string& crua, std::size_t largura,
   return feita;
 }
 
-// apara — o corte, enchido de espaços até `largura`. É o enchimento que alinha
+// apara, o corte, enchido de espaços até `largura`. É o enchimento que alinha
 // as columnas da tabella, e é por isso que elle existe.
 std::string apara(const std::string& crua, std::size_t largura) {
   std::size_t contadas = 0;
@@ -73,11 +73,11 @@ std::string apara(const std::string& crua, std::size_t largura) {
 // o que aparta a pauta da orla e do divisor sem gastar collunha de traço.
 constexpr std::size_t kMargem = 1, kMarcador = 1, kNumero = 3, kVao = 2;
 constexpr std::size_t kRegua = 6, kTempo = 5, kConta = 4;
-// kTituloMinimo — abaixo d'isto o titulo não diz nada, e columna nova que o
+// kTituloMinimo, abaixo d'isto o titulo não diz nada, e columna nova que o
 // levasse a menos seria columna que cega a linha para enfeitar a folha.
 constexpr std::size_t kTituloMinimo = 8;
 
-// repete — o glypho tantas vezes. Não vale `std::string(n, c)`: o glypho da
+// repete, o glypho tantas vezes. Não vale `std::string(n, c)`: o glypho da
 // régua tem tres octetos, e aquelle constructor repete OCTETO, d'onde sahiria
 // lixo em vez de barra.
 std::string repete(std::string_view glypho, std::size_t quantas) {
@@ -86,7 +86,7 @@ std::string repete(std::string_view glypho, std::size_t quantas) {
   return feita;
 }
 
-// a_direita — o texto encostado á DIREITA da columna. O № e o tempo lêem-se
+// a_direita, o texto encostado á DIREITA da columna. O № e o tempo lêem-se
 // pela ultima cella, e alinhal-os á esquerda faria a vista saltar de linha
 // para linha conforme o numero tivesse um algarismo ou tres.
 std::string a_direita(const std::string& texto, std::size_t collunhas) {
@@ -200,6 +200,37 @@ ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
+ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
+                                 int maior, bool eleita, bool soa,
+                                 std::size_t largura,
+                                 const nucleo::CapaPintada* capa) {
+  const std::size_t largura_da_capa = 9;
+  const std::size_t largura_do_texto =
+      largura > largura_da_capa + 1 ? largura - largura_da_capa - 1 : largura;
+  const std::size_t largura_real = largura_do_texto;
+  ftxui::Element titulo = elemento_da_linha(
+      pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura_real);
+  const std::string autor = "  " + apara_collunhas(
+      linha.autor, largura_real > 2 ? largura_real - 2 : largura_real);
+  const std::string_view tinta = eleita ? tokens::panel : tokens::text_body;
+  ftxui::Element baixo = pinta(apara_collunhas(autor, largura_real), tinta);
+  if (eleita) {
+    const tokens::Triade fundo =
+        tokens::rgb(soa ? tokens::glow_core : tokens::v600);
+    baixo = std::move(baixo) |
+            ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+  }
+  ftxui::Element texto = ftxui::vbox({std::move(titulo), std::move(baixo)});
+  static const nucleo::CapaPintada nenhuma;
+  const nucleo::CapaPintada& imagem = capa == nullptr ? nenhuma : *capa;
+  ftxui::Element miniatura = elemento_da_capa(imagem, 8, 3) |
+                             ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 8);
+  return ftxui::hbox({std::move(miniatura), ftxui::text(" "),
+                      std::move(texto)}) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                     static_cast<int>(ALTURA_DA_FAIXA));
+}
+
 std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
                                      const Medidas& medidas, int maior,
                                      bool soa) {
@@ -295,7 +326,9 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t largura,
                                    const std::string& tocando,
                                    std::vector<ftxui::Box>* caixas,
-                                   const Arrasto* arrasto) {
+                                   const Arrasto* arrasto,
+                                   bool estilo_spotify,
+                                   nucleo::Galeria* galeria) {
   // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
   // antecipada que deixasse as caixas do quadro anterior faria o clique
   // acertar linhas que já não estão na tela.
@@ -310,10 +343,19 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
 
   // As columnas e a maior linha da fatia sahem d'uma conta só, que a bateria
   // interroga sem écran. A pintura d'aqui em diante é traducção, e não decisão.
-  const std::size_t fim_da_fatia = std::min(primeira + altura, vista.size());
+  const bool em_faixas = estilo_spotify && secao_de_faixas(navegador.secao());
+  const std::size_t por_item = em_faixas ? ALTURA_DA_FAIXA : 1;
+  const std::size_t quantos = std::max<std::size_t>(1, altura / por_item);
+  const std::size_t fim_da_fatia = std::min(primeira + quantos, vista.size());
   int maior = 0;
-  const Medidas medidas =
-      medidas_da_fatia(navegador, primeira, fim_da_fatia, largura, &maior);
+  Medidas medidas = medidas_da_fatia(navegador, primeira, fim_da_fatia,
+                                     largura, &maior);
+  if (em_faixas) {
+    const bool pela_conta = navegador.secao() == Secao::Artistas ||
+                            navegador.secao() == Secao::Albuns ||
+                            navegador.secao() == Secao::Rois;
+    medidas = medidas_da_pauta(largura, false, pela_conta);
+  }
 
   std::vector<ftxui::Element> linhas;
   // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
@@ -339,9 +381,16 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                         i == arrasto->origem;
     const bool sob_a_mao = arrasto != nullptr && arrasto->pegou &&
                            arrasto->andou && i == arrasto->alvo;
-    ftxui::Element pintada = elemento_da_linha(
-        pedacos_da_linha(linha, medidas, maior, soa), eleita && !na_mao, soa,
-        largura);
+    const nucleo::CapaPintada* capa = nullptr;
+    if (em_faixas && galeria != nullptr && !linha.chave.empty())
+      capa = &galeria->capa(linha.chave, 8, 3);
+    ftxui::Element pintada =
+        em_faixas
+            ? elemento_da_faixa(linha, medidas, maior, eleita && !na_mao,
+                                soa, largura, capa)
+            : elemento_da_linha(
+                  pedacos_da_linha(linha, medidas, maior, soa),
+                  eleita && !na_mao, soa, largura);
     if (na_mao) pintada = pintada | ftxui::dim;
     if (sob_a_mao) {
       const tokens::Triade cama = tokens::rgb(tokens::raised);
@@ -441,5 +490,5 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

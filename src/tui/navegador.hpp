@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO NAVEGADOR — src/tui/navegador.hpp
+//   TRACTADO DO NAVEGADOR, src/tui/navegador.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A máquina de estados da navegação: em que secção se está, o que está á vista,
 // qual a linha eleita, e o que acontece a cada ordem. Não pinta, não conhece
@@ -92,21 +92,21 @@ class Navegador {
   void ao_principio() noexcept;
   void ao_fim() noexcept;
 
-  // entra — desce um degrau. VERDADEIRO quando o degrau era uma FAIXA, que é o
+  // entra, desce um degrau. VERDADEIRO quando o degrau era uma FAIXA, que é o
   // signal para quem chama mandar tocar; nesse caso `caminho_eleito` diz qual.
   bool entra();
 
-  // volta — sobe um degrau. Falso quando já se está no alto, e ahi nada muda.
+  // volta, sobe um degrau. Falso quando já se está no alto, e ahi nada muda.
   bool volta();
 
-  // mostra_rede — põe na tela os ACHADOS que vieram de FÓRA da bibliotheca, e
+  // mostra_rede, põe na tela os ACHADOS que vieram de FÓRA da bibliotheca, e
   // passa á secção Rede: o texto é a faixa canonica quando a fonte a deu, senão o
   // titulo; o autor é o artista, senão o canal (issue #56). A lista guarda-se
   // inteira, é ella a fonte da vista n'esta secção, e o `origem` de cada linha
   // liga-a ao seu achado.
   void mostra_rede(std::vector<nucleo::Achado> achados);
 
-  // ha_achado / achado_eleito — o achado da linha eleita, e SÓMENTE na Rede. O
+  // ha_achado / achado_eleito, o achado da linha eleita, e SÓMENTE na Rede. O
   // laço é o `origem` da linha, e não o indice da vista: com filtro posto os dous
   // desencontram-se, e encommendar-se-hia o achado errado. E URL não é caminho:
   // confundi-los poria endereço de rede na fila do motor.
@@ -115,7 +115,7 @@ class Navegador {
 
   // ── O CATALOGO DO SPOTIFY (issue #13) ─────────────────────────────────────
 
-  // mostra_catalogo — põe na tela o catalogo que se leu, ANTES de se baixar cousa
+  // mostra_catalogo, põe na tela o catalogo que se leu, ANTES de se baixar cousa
   // alguma: é o que a tarefa pede quando manda devolver a lista para se conferir.
   void mostra_catalogo(nucleo::Catalogo catalogo);
 
@@ -133,7 +133,7 @@ class Navegador {
 
   // ── AS LISTAS (issue #10) ─────────────────────────────────────────────────
 
-  // mostra_rois — passa á secção da lista das listas, relendo-a do banco.
+  // mostra_rois, passa á secção da lista das listas, relendo-a do banco.
   void mostra_rois();
 
   // O ALVO: a ultima lista em que se entrou. Sobrevive a sahir d'ella, e é isso que
@@ -176,7 +176,7 @@ class Navegador {
   // existirem. Chama-se depois de a varredura concluir.
   void recarrega();
 
-  // vai_para — a entrada pela BARRA (issue #80). Troca a secção reusando as
+  // vai_para, a entrada pela BARRA (issue #80). Troca a secção reusando as
   // fontes que o navegador JÁ tem: busca alguma se dispara, catalogo algum se
   // relê. FALSO no degrau sem chão (Albuns sem artista na trilha, Faixas sem
   // album, Rede sem achados, Lista sem catalogo) e em NoRol, que não é degrau
@@ -185,7 +185,7 @@ class Navegador {
   // novo, o mesmo que a tecla de atalho faz.
   bool vai_para(Secao alvo);
 
-  // vai_para_rol — a entrada n'UMA lista pela barra (issue #93). Abre o dentro
+  // vai_para_rol, a entrada n'UMA lista pela barra (issue #93). Abre o dentro
   // d'ella sem passar pela lista das listas, que é o que a barra da bibliotheca
   // pede: o nome n'ella É a lista, e não um atalho para a sala onde ellas moram.
   // E elege-a por ALVO do `a`, como entrar por `P` e Enter já elegia.
@@ -196,7 +196,7 @@ class Navegador {
  private:
   void refaz_vista();
 
-  // id_do_eleito — o id da lista eleita na secção Rois, e zero não havendo.
+  // id_do_eleito, o id da lista eleita na secção Rois, e zero não havendo.
   int id_do_eleito() const;
 
   const nucleo::Biblioteca& livraria_;
@@ -219,5 +219,5 @@ class Navegador {
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

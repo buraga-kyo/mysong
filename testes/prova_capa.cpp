@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA CAPA — testes/prova_capa.cpp
+//   PROVA DA CAPA, testes/prova_capa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A busca do arquivo e a chave do cache provam-se sem imagem alguma. O render pelo
 // chafa prova-se á mão, e o PR diz o que se viu.
@@ -66,7 +66,7 @@ const std::string& png_de_um_pixel() {
   return kPng;
 }
 
-// lavra_a_etiqueta — põe um APIC na faixa, pela MESMA taglib com que a obra o lê.
+// lavra_a_etiqueta, põe um APIC na faixa, pela MESMA taglib com que a obra o lê.
 // O corpo do arquivo é um quadro de MPEG minimo: basta para a taglib o aceitar, e
 // faixa que toque não é o que este caso afere.
 bool lavra_a_etiqueta(const std::filesystem::path& faixa, const std::string& arte) {
@@ -538,5 +538,5 @@ TEST_CASE("o fim do invertido desfaz a marca, e sómente ella") {
   CHECK(duas[1].r_fundo == -1);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

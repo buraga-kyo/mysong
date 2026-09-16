@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LIXEIRA, LAVRA — src/nucleo/lixeira.cpp
+//   TRACTADO DA LIXEIRA, LAVRA, src/nucleo/lixeira.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o cabeçalho. As tres regras da especificação freedesktop vivem aqui, e
 // sómente aqui: o nome do par, o percent-encoding do `Path=`, e a data local.
@@ -150,5 +150,5 @@ DaLixeira manda_a_lixeira(const std::filesystem::path& caminho) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

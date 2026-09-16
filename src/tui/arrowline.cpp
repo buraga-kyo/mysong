@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LAVRA DA FITA — src/tui/arrowline.cpp
+//   TRACTADO DA LAVRA DA FITA, src/tui/arrowline.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Lavra o que arrowline.hpp promette. A regra vae escripta lá; aqui é a obra.
 // DOMÍNIO ......... os segmentos acumulados por junta(), na ordem em que se
@@ -46,7 +46,7 @@ Fita& Fita::junta(Segmento segmento) {
   return *this;
 }
 
-// compor — Regra (b): a junção herda a tinta do segmento que ella SEGUE e toma
+// compor, Regra (b): a junção herda a tinta do segmento que ella SEGUE e toma
 // por fundo o que a segue; na fita que aponta á ESQUERDA vale o espelho. Um
 // sentido por fita: os dous lavrariam o losango que a regra (a) proscreve.
 std::vector<Pedaco> Fita::compor() const {
@@ -95,5 +95,5 @@ std::size_t Fita::largura_exigida() const {
 }  // namespace mysong::tui
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

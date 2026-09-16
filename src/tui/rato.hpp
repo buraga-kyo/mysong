@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO RATO — src/tui/rato.hpp
+//   TRACTADO DO RATO, src/tui/rato.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A tradução de COORDENADA em alvo, e de alvo em GESTO (issue #95). Vive á
 // parte da janella pela razão do commando: a janella abre terminal, motor e som
@@ -25,7 +25,7 @@
 
 namespace mysong::tui {
 
-// caixa_por_pintar — a caixa de quem ainda se não pintou. `x_max` menor que
+// caixa_por_pintar, a caixa de quem ainda se não pintou. `x_max` menor que
 // `x_min` é o vazio que o FTXUI reconhece, e o `Contain` d'elle recusa tudo.
 inline ftxui::Box caixa_por_pintar() noexcept { return {0, -1, 0, -1}; }
 
@@ -52,7 +52,7 @@ struct CaixasDoCabecalho {
   ftxui::Box trilho = caixa_por_pintar();
 };
 
-// CaixasDaTela — o que o quadro ANTERIOR deixou escripto. Enchem-se DENTRO de
+// CaixasDaTela, o que o quadro ANTERIOR deixou escripto. Enchem-se DENTRO de
 // quem pinta cada peça, e não na composição da janella: assim quem move os
 // paineis não move os cliques, e a assignatura de quem pinta ganha parametro
 // de omissão, que é o que deixa as tarefas irmãs entrar sem quebrar nada.
@@ -102,7 +102,7 @@ struct Alvo {
   double fracao = 0.0;
 };
 
-// alvo_do_ponto — a geometria, e nada mais: que peça está debaixo de (x, y).
+// alvo_do_ponto, a geometria, e nada mais: que peça está debaixo de (x, y).
 // O ponto é o que o `Event::Mouse` entrega, e elle JÁ chega na conta do `Box`:
 // medido no FTXUI v7.0.3, o parser guarda o argumento cru do SGR, que conta de
 // um, e o laço da tela tira-lhe o `cursor_x_`, que vale um em tela cheia. Nada
@@ -158,7 +158,7 @@ struct RespostaDoArrasto {
   std::size_t para = 0;  // sómente no Larga
 };
 
-// gesto_do_arrasto — a máquina, PURA salvo pelo `arrasto` que ella governa.
+// gesto_do_arrasto, a máquina, PURA salvo pelo `arrasto` que ella governa.
 // `pode` diz se a vista corrente se deixa arrumar (o acervo e o dentro de uma
 // lista sim; artistas, albuns e achados da rede não, que alli a ordem não é do
 // operador). O botão que desce fóra de linha alguma não pega; o que sobe na
@@ -188,7 +188,7 @@ struct GestoDoRato {
   double alvo = 0.0;
 };
 
-// gesto_do_alvo — a taboada. SÓMENTE `Pressed` conta: o soltar chega sempre, que
+// gesto_do_alvo, a taboada. SÓMENTE `Pressed` conta: o soltar chega sempre, que
 // o modo 1000 manda o `m` do SGR, e a mexida não chega, que o 1003 se não liga;
 // ignoram-se os dous, e o segundo por não depender de o terminal se comportar.
 // O botão DIREITO abre o menu (issue #96), e sómente sobre uma linha da pauta:
@@ -200,5 +200,5 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

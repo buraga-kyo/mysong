@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DOS AJUSTES — src/nucleo/ajustes.cpp
+//   TRACTADO DOS AJUSTES, src/nucleo/ajustes.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A obra dos ajustes, em partes que se não misturam: o LEITOR, que parte o
 // texto em pares e nada sabe do mundo; o RESOLVEDOR, que escolhe entre os
@@ -21,7 +21,7 @@
 
 namespace mysong::nucleo {
 
-// nome_da_origem — a palavra do --sonda. Switch exhaustivo, e não taboa: origem
+// nome_da_origem, a palavra do --sonda. Switch exhaustivo, e não taboa: origem
 // nova accende aviso do compilador em vez de sahir calada como «sem nome».
 std::string_view nome_da_origem(Origem origem) {
   switch (origem) {
@@ -33,7 +33,7 @@ std::string_view nome_da_origem(Origem origem) {
   return "origem sem nome";
 }
 
-// queixa — accrescenta, até o tecto. Alcançado elle, deixa-se UMA linha a dizer
+// queixa, accrescenta, até o tecto. Alcançado elle, deixa-se UMA linha a dizer
 // que ha mais: é o que faz um binario passado como conf caber n'uma tela.
 void Ajustes::queixa(std::string dito) {
   if (queixas.size() < QUEIXAS_NO_MAXIMO) {
@@ -43,7 +43,7 @@ void Ajustes::queixa(std::string dito) {
   ++queixas_de_mais;
 }
 
-// aparar — tira os brancos das DUAS pontas, e sómente das pontas: branco no
+// aparar, tira os brancos das DUAS pontas, e sómente das pontas: branco no
 // MEIO do valor é do valor, que caminho com espaço é caminho legitimo.
 std::string_view aparar(std::string_view texto) {
   const auto branco = [](char letra) {
@@ -55,7 +55,7 @@ std::string_view aparar(std::string_view texto) {
   return texto;
 }
 
-// corta_commentario — o `#` abre commentario até o fim da linha, em QUALQUER
+// corta_commentario, o `#` abre commentario até o fim da linha, em QUALQUER
 // ponto, e não ha aspas nem escape que o façam literal. O limite é DECLARADO, e
 // não descuido: caminho que traga cerquilha fica inexprimivel, e regra com
 // excepção seria regra que o operador não adivinha olhando o proprio arquivo.
@@ -65,7 +65,7 @@ std::string_view corta_commentario(std::string_view linha) {
   return linha.substr(0, cerquilha);
 }
 
-// ler_pares — o LEITOR do formato: linhas «chave = valor», com o `#` a abrir
+// ler_pares, o LEITOR do formato: linhas «chave = valor», com o `#` a abrir
 // commentario, os brancos aparados nas pontas, e a linha vazia ignorada. A
 // chave repetida NÃO se resolve aqui: os pares sahem na ordem em que vieram, e
 // quem os consome adeante toma o ultimo, que é o costume de todo arquivo de
@@ -118,7 +118,7 @@ std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes) {
 
 namespace {
 
-// egual_sem_caixa — compara cego á caixa, em ASCII, e faz a caixa á mão pela
+// egual_sem_caixa, compara cego á caixa, em ASCII, e faz a caixa á mão pela
 // razão que o contem_insensivel da sonda já tem escripta: sob locale turco o
 // 'I' desce a caractere que não é 'i', e «YouTube» fugiria da comparação por
 // motivo que ninguem havia de suspeitar.
@@ -133,7 +133,7 @@ bool egual_sem_caixa(std::string_view esta, std::string_view aquella) {
   return true;
 }
 
-// inteiro_de — o numero INTEIRAMENTE consumido, e nunca o prefixo d'elle: «70
+// inteiro_de, o numero INTEIRAMENTE consumido, e nunca o prefixo d'elle: «70
 // lixo» não é setenta. Vae por from_chars, e não por stoi: aquelle accusa o
 // estouro em vez de o dobrar, e não lança; excepção pela borda d'este modulo
 // derrubaria a obra por causa de um erro de dedo no arquivo do operador.
@@ -149,7 +149,7 @@ std::optional<int> inteiro_de(std::string_view texto) {
 
 }  // namespace
 
-// fonte_de — as tres da issue #56, e sómente ellas. Nome que não é nenhuma
+// fonte_de, as tres da issue #56, e sómente ellas. Nome que não é nenhuma
 // d'ellas devolve vazio, e não a primeira da lista: acceitar por approximação
 // faria o operador buscar no Spotify a pensar que buscava no YouTube.
 std::optional<Fonte> fonte_de(std::string_view texto) {
@@ -159,7 +159,7 @@ std::optional<Fonte> fonte_de(std::string_view texto) {
   return std::nullopt;
 }
 
-// chave_da_fonte — o inverso do fonte_de, e as duas listas hão de bater. Ficam
+// chave_da_fonte, o inverso do fonte_de, e as duas listas hão de bater. Ficam
 // visinhas de proposito: fonte nova acrescentada n'uma e esquecida na outra
 // accende aviso do compilador nos dous switches, e não em nenhum.
 std::string_view chave_da_fonte(Fonte fonte) {
@@ -171,7 +171,7 @@ std::string_view chave_da_fonte(Fonte fonte) {
   return "fonte sem nome";
 }
 
-// sextantes_de — as tres palavras, e sómente ellas. Nome que não é nenhuma
+// sextantes_de, as tres palavras, e sómente ellas. Nome que não é nenhuma
 // devolve vazio, e a queixa fica com quem chama, pela regra do fonte_de.
 std::optional<Sextantes> sextantes_de(std::string_view texto) {
   if (egual_sem_caixa(texto, "auto")) return Sextantes::Auto;
@@ -189,7 +189,7 @@ std::string_view chave_dos_sextantes(Sextantes sextantes) {
   return "valor sem nome";
 }
 
-// lousa_de e chave_da_lousa — as mesmas tres palavras do sextante, e de
+// lousa_de e chave_da_lousa, as mesmas tres palavras do sextante, e de
 // proposito: quem já sabe escrever `capa_sextantes = nao` escreve `lousa = nao`
 // sem consultar cousa alguma. Nome que não é nenhuma d'ellas devolve vazio, e a
 // queixa fica com quem chama, pela regra do fonte_de.
@@ -215,7 +215,7 @@ std::optional<int> volume_de(std::string_view texto) {
   return numero;
 }
 
-// baixas_de — de uma até o tecto, e zero recusa-se: obreiro nenhum é fila que
+// baixas_de, de uma até o tecto, e zero recusa-se: obreiro nenhum é fila que
 // nunca anda, e o operador ficaria a ver a baixa «na espera» para sempre sem
 // entender por que. O tecto está no cabeçalho, com a razão d'elle.
 std::optional<std::size_t> baixas_de(std::string_view texto) {
@@ -224,7 +224,7 @@ std::optional<std::size_t> baixas_de(std::string_view texto) {
   return static_cast<std::size_t>(*numero);
 }
 
-// resolver — a ESCADA, assentada de baixo para cima: o padrão primeiro, e o
+// resolver, a ESCADA, assentada de baixo para cima: o padrão primeiro, e o
 // arquivo a escrever por cima. Percorrer os pares na ORDEM em que vieram é o
 // que faz a chave repetida valer a ultima, sem regra propria para isso: a
 // segunda occorrencia sobrescreve a primeira, e é tudo.
@@ -316,7 +316,7 @@ void resolver(const Degraus& degraus,
   }
 }
 
-// caminho_da_configuracao — o mesmo desenho do caminho_do_indice, com UMA
+// caminho_da_configuracao, o mesmo desenho do caminho_do_indice, com UMA
 // differença dita de proposito: aquelle CREA o directorio, porque o índice é
 // nosso e nasce d'esta obra; este não crea cousa alguma, porque o arquivo é do
 // operador. Directorio creado por nós, vazio, faria o operador crer que a obra
@@ -334,7 +334,7 @@ std::filesystem::path caminho_da_configuracao() {
   return raiz / "mysong" / "mysong.conf";
 }
 
-// ler_o_arquivo — abre para LEITURA, e não ha n'esta unidade uma segunda porta
+// ler_o_arquivo, abre para LEITURA, e não ha n'esta unidade uma segunda porta
 // que escreva. O tecto de tamanho existe porque o caminho pode apontar para
 // cousa que não é configuração: sem elle, um binario de meio giga viraria meio
 // giga de cadeia na pilha antes de a primeira linha se ler.
@@ -363,7 +363,7 @@ EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
   return EstadoDoArquivo::Lido;
 }
 
-// padrao_do_acervo — o chão da escada, e o mesmo de sempre: `~/Música`. Sem
+// padrao_do_acervo, o chão da escada, e o mesmo de sempre: `~/Música`. Sem
 // HOME, devolve vazio, e ahi a varredura não acha nada, que é o que já succedia.
 std::filesystem::path padrao_do_acervo() {
   const char* const casa = std::getenv("HOME");
@@ -371,7 +371,7 @@ std::filesystem::path padrao_do_acervo() {
   return std::filesystem::path(casa) / "Música";
 }
 
-// eh_acervo — a UNICA bandeira que esta lavra accrescenta. Repetida, vale a
+// eh_acervo, a UNICA bandeira que esta lavra accrescenta. Repetida, vale a
 // ultima, pela mesma regra da chave repetida do arquivo; e `--acervo=` sem
 // caminho dá caminho vazio, que a aferição recusa e a queixa nomeia, em vez de
 // se tratar como se a bandeira não tivesse sido escripta.
@@ -382,7 +382,7 @@ bool eh_acervo(std::string_view argumento, std::optional<std::string>* acervo) {
   return true;
 }
 
-// ajustes_do_systema — a montagem. Tudo o que toca o mundo está n'estas vinte
+// ajustes_do_systema, a montagem. Tudo o que toca o mundo está n'estas vinte
 // linhas, e tudo o mais d'este arquivo é puro: é o que faz a bateria alcançar
 // o formato inteiro e a precedencia inteira sem tocar disco nem ambiente.
 Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
@@ -414,7 +414,7 @@ Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento) {
 
 namespace {
 
-// nome_do_estado — a palavra do arquivo no diagnostico. O caso «ausente» diz
+// nome_do_estado, a palavra do arquivo no diagnostico. O caso «ausente» diz
 // tambem o que succedeu por causa d'elle, que é a duvida seguinte de quem lê.
 std::string_view nome_do_estado(EstadoDoArquivo estado) {
   switch (estado) {
@@ -425,7 +425,7 @@ std::string_view nome_do_estado(EstadoDoArquivo estado) {
   return "estado sem nome";
 }
 
-// numero_da_linha — o «linha N» com que a queixa começa, e ZERO quando ella
+// numero_da_linha, o «linha N» com que a queixa começa, e ZERO quando ella
 // não é de linha alguma, como a do arquivo que se não leu e a da bandeira.
 std::size_t numero_da_linha(const std::string& queixa) {
   constexpr std::string_view prefixo = "linha ";
@@ -436,7 +436,7 @@ std::size_t numero_da_linha(const std::string& queixa) {
   return numero > 0 ? static_cast<std::size_t>(numero) : 0;
 }
 
-// largura — conta CARACTERES, e não bytes. «Música» tem seis letras e sete
+// largura, conta CARACTERES, e não bytes. «Música» tem seis letras e sete
 // bytes, e guarnecendo-se por byte a columna sahia torta justamente na linha
 // do acervo, que é a que traz acento com mais frequencia.
 std::size_t largura(std::string_view texto) {
@@ -446,7 +446,7 @@ std::size_t largura(std::string_view texto) {
   return conta;
 }
 
-// linha_do_ajuste — a chave guarnecida á largura da maior, o valor, e a origem
+// linha_do_ajuste, a chave guarnecida á largura da maior, o valor, e a origem
 // entre parenthesis. O valor NÃO se trunca: caminho cortado n'um diagnostico é
 // o defeito, e não o remedio.
 void linha_do_ajuste(std::string* texto, std::string_view chave,
@@ -516,5 +516,5 @@ std::string texto_dos_ajustes(const Ajustes& ajustes) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

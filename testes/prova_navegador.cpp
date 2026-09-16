@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO NAVEGADOR — testes/prova_navegador.cpp
+//   PROVA DO NAVEGADOR, testes/prova_navegador.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Percorre o caminho inteiro do aceite, de Artistas a uma faixa, sobre um índice
 // que esta bateria escreve. Sem terminal, sem motor, sem som.
@@ -313,7 +313,7 @@ TEST_CASE("a rolagem rola o menos que baste, e não perde a posição") {
 // A unica cujas linhas não vêm da bibliotheca. Os casos abaixo guardam a fronteira
 // entre ella e o acervo, que é o que impede uma URL de cahir na fila do motor.
 
-// achado — um achado da busca comum, como mostra_rede o recebe (issue #56): sem
+// achado, um achado da busca comum, como mostra_rede o recebe (issue #56): sem
 // os campos da musica, donde o texto sahe do titulo e o autor do canal.
 nu::Achado achado(const std::string& titulo, const std::string& canal,
                   int duracao, const std::string& url) {
@@ -407,7 +407,7 @@ TEST_CASE("recarregar na rede não mexe na vista, e voltar sahe da secção") {
 // A navegação das listas prova-se contra um Roleiro de verdade, n'uma cova propria:
 // o banco d'ellas entra por parâmetro, como o do índice.
 
-// CovaDoRol — o banco das listas, á parte do índice. São dous arquivos porque são
+// CovaDoRol, o banco das listas, á parte do índice. São dous arquivos porque são
 // dous bancos, e a razão está no tractado do rol.
 class CovaDoRol {
  public:
@@ -814,5 +814,5 @@ TEST_CASE("a lista que já não existe recusa a entrada, e nada se muta") {
   CHECK(textos(navegador) == antes);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

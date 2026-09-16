@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MOTOR MPV, LAVRA — src/nucleo/motor.cpp
+//   TRACTADO DO MOTOR MPV, LAVRA, src/nucleo/motor.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A UNICA unidade de traducção do reino que inclue mpv/client.h. Todo o resto
 // do nucleo fala com o Motor abstracto, e por isso todo o resto se prova sem
@@ -307,5 +307,5 @@ void MotorMpv::bombear() {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

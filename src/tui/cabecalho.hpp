@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO CABEÇALHO — src/tui/cabecalho.hpp
+//   TRACTADO DO CABEÇALHO, src/tui/cabecalho.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A fita do pé, na ordem d'elle (issue #134): as tres abas, os tres botões do
 // transporte, a ONDA da faixa ao meio, e á direita o tempo, o volume, os dous
@@ -38,26 +38,26 @@ namespace mysong::tui {
 // linha é uma só e o agrupamento continua a um `o` de distancia.
 enum class Aba { MySong, Playlists, Download };
 
-// secao_da_aba — a secção em que cada aba abre: MY SONG é o acervo plano,
+// secao_da_aba, a secção em que cada aba abre: MY SONG é o acervo plano,
 // PLAYLISTS é a lista das listas, DOWNLOAD é a busca na rede.
 Secao secao_da_aba(Aba aba) noexcept;
 
-// aba_da_secao — o caminho de volta, para a fita accender onde se ESTÁ. Dentro
+// aba_da_secao, o caminho de volta, para a fita accender onde se ESTÁ. Dentro
 // de uma lista accende PLAYLISTS, e no catalogo accende DOWNLOAD: são degraus
 // de DENTRO da aba, e não salas á parte.
 Aba aba_da_secao(Secao secao) noexcept;
 
-// aba_seguinte — o Tab: MY SONG, PLAYLISTS, DOWNLOAD, e torna ao principio.
+// aba_seguinte, o Tab: MY SONG, PLAYLISTS, DOWNLOAD, e torna ao principio.
 Aba aba_seguinte(Aba corrente) noexcept;
 
-// vista_seguinte — o `o` dentro das MY SONG: faixas, artistas, albuns, e torna
+// vista_seguinte, o `o` dentro das MY SONG: faixas, artistas, albuns, e torna
 // ás faixas. Os ÁLBUNS pedem artista A QUE DESCER, que a bibliotheca lista os
 // albuns D'ELLE e não os do acervo inteiro: dos ARTISTAS entra-se no eleito, e
 // é essa a terceira vista. Não havendo eleito, o cyclo salta-a, que vista sem
 // chão seria tecla a não fazer nada.
 Secao vista_seguinte(Secao corrente, bool ha_artista) noexcept;
 
-// nome_da_vista — a palavra que a chapa diz da vista: FAIXAS, ARTISTAS,
+// nome_da_vista, a palavra que a chapa diz da vista: FAIXAS, ARTISTAS,
 // ÁLBUNS. Vazia fóra das MY SONG, que lá a vista se não cycla.
 std::string nome_da_vista(Secao secao);
 
@@ -70,7 +70,7 @@ struct OrdemDaAba {
   Aba aba = Aba::MySong;  // sómente no Vai; nas demais fica no principio
 };
 
-// ordem_da_aba — a taboada: `1` `2` `3` vão á aba, o Tab e o Shift+Tab cyclam
+// ordem_da_aba, a taboada: `1` `2` `3` vão á aba, o Tab e o Shift+Tab cyclam
 // as abas, e o `o` cycla a vista. Nenhuma d'estas teclas estava tomada, e o
 // Tab abria a barra que esta issue apaga.
 OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept;
@@ -86,15 +86,15 @@ struct PinturaDaAba {
   std::string_view fundo;
 };
 
-// pintura_da_aba — o par de côres de cada degrau, e o UNICO logar que o diz.
+// pintura_da_aba, o par de côres de cada degrau, e o UNICO logar que o diz.
 PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept;
 
-// palavra_da_aba — a palavra de MARCA sósinha, sem o glifo e sem a guarnição.
+// palavra_da_aba, a palavra de MARCA sósinha, sem o glifo e sem a guarnição.
 // É ella, e sómente ella, que sahe em XIROD: a chapa não cobre o icone nem as
 // setas da fita, que aquelle é glifo da fonte do terminal e estas são junção.
 std::string palavra_da_aba(Aba aba);
 
-// caixa_da_palavra — as cellas da PALAVRA dentro da caixa do segmento. Tira o
+// caixa_da_palavra, as cellas da PALAVRA dentro da caixa do segmento. Tira o
 // flanco que o `rotulo_da_aba` põe adeante (o espaço, o glifo, o espaço) e o
 // espaço que põe atraz; caixa por pintar, ou segmento sem palavra que sobre,
 // responde VAZIA, e ahi o pintor não tem chapa que pôr. A ALTURA sahe INTACTA:
@@ -102,23 +102,23 @@ std::string palavra_da_aba(Aba aba);
 // chapa em XIROD tira as suas.
 ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept;
 
-// estado_da_aba — o degrau de uma aba, dada a corrente e a peça com foco
+// estado_da_aba, o degrau de uma aba, dada a corrente e a peça com foco
 // (issue #107). O FOCO GANHA da corrente: quem anda com as setas ha de ver
 // ONDE está a mão, e onde se ESTÁ diz-o tambem a chapa por cima da pauta.
 EstadoDaAba estado_da_aba(Aba qual, Aba corrente, Focavel foco) noexcept;
 
-// aba_com_foco — a aba que tem o foco, ou vazio quando elle está fóra da fita.
+// aba_com_foco, a aba que tem o foco, ou vazio quando elle está fóra da fita.
 // É o punho que o `ordens_das_chapas` pede: assim a chapa em XIROD da aba
 // focada sahe do MESMO degrau que pinta a cella debaixo d'ella.
 std::optional<Aba> aba_com_foco(Focavel foco) noexcept;
 
-// rotulo_da_aba — a palavra da aba com o seu glifo e a guarnição dos flancos.
+// rotulo_da_aba, a palavra da aba com o seu glifo e a guarnição dos flancos.
 // UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a
 // pintura d'esta palavra, e rotulo espalhado por dous ramos dar-lhe-hia duas
 // verdades sobre o que a aba diz.
 std::string rotulo_da_aba(Aba aba);
 
-// elemento_da_aba — a palavra JÁ PINTADA, corrente ou não. Vive apartada da
+// elemento_da_aba, a palavra JÁ PINTADA, corrente ou não. Vive apartada da
 // fita pela mesma razão: quem puzer imagem por cima da cella troca aqui, e a
 // composição da linha não muda uma linha.
 ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
@@ -136,7 +136,7 @@ struct ContaDaFita {
 // em que uma onda ainda se lê como onda. Menos que isso a direita cede antes.
 inline constexpr std::size_t MEIO_MINIMO = 12;
 
-// conta_da_fita — o meio toma o que as FIXAS (abas e botões) e a ponta direita
+// conta_da_fita, o meio toma o que as FIXAS (abas e botões) e a ponta direita
 // deixam; não sobrando ao meio as MEIO_MINIMO collunhas, a direita cede do FIM
 // para o principio, INTEIRA: o HELP, o REPETIR, o EMBARALHAR, o volume e o
 // tempo. As fixas ficam sempre: fita que nem para ellas chega apara-se no
@@ -146,7 +146,7 @@ inline constexpr std::size_t MEIO_MINIMO = 12;
 ContaDaFita conta_da_fita(std::size_t largura, std::size_t fixas,
                           const std::vector<std::size_t>& direita);
 
-// elemento_do_cabecalho — a linha inteira, com a caixa de cada peça. Largura
+// elemento_do_cabecalho, a linha inteira, com a caixa de cada peça. Largura
 // zero dá elemento vazio, e nunca quadro roto. Punho nullo nas caixas quer
 // dizer «esta chamada não quer saber», e a linha sahe a mesma, cella a cella.
 // A `onda` são os pontos da envolvente da faixa (issue #131), que o meio
@@ -182,10 +182,10 @@ struct ChapaDaAba {
   std::size_t linhas = 1;
 };
 
-// identidade_da_chapa — o nome por que a lousa conhece a janella de cada aba.
+// identidade_da_chapa, o nome por que a lousa conhece a janella de cada aba.
 std::string_view identidade_da_chapa(Aba aba) noexcept;
 
-// ordens_das_chapas — a decisão, PURA pelo molde exacto do `ordem_da_capa`: o
+// ordens_das_chapas, a decisão, PURA pelo molde exacto do `ordem_da_capa`: o
 // foco entra em TODO quadro, e não sómente no do evento, que o FTXUI desenha
 // logo depois de correr os eventos e um tira_tudo no tratador desfaz-se no
 // desenho seguinte. O `com_foco` é da issue irmã das setas: punho nullo quer
@@ -195,12 +195,12 @@ std::vector<ChapaDaAba> ordens_das_chapas(const CaixasDoCabecalho& caixas,
                                           bool foco_dentro,
                                           const Aba* com_foco = nullptr);
 
-// pedido_da_chapa — o que se manda rasterizar: a palavra, as côres do degrau,
+// pedido_da_chapa, o que se manda rasterizar: a palavra, as côres do degrau,
 // e a CAIXA em cellas, larga e alta. Aqui se casam a tinta da chapa e a da
 // cella, e aqui se casam tambem a altura da caixa e o corpo da palavra.
 nucleo::PedidoDaChapa pedido_da_chapa(const ChapaDaAba& ordem);
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO EXEMPLO DA FITA — exemplos/fita_arrowline.cpp
+//   TRACTADO DO EXEMPLO DA FITA, exemplos/fita_arrowline.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta uma fita de TRES segmentos, para se olhar. Não é prova: é a peça que o
 // olho ha de julgar, n'um Alacritty com JetBrainsMono Nerd Font.
@@ -43,5 +43,5 @@ int main() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MOTOR — src/nucleo/motor.hpp
+//   TRACTADO DO MOTOR, src/nucleo/motor.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Declara o MOTOR: a potencia que faz sahir som de um arquivo, e as ordens a
 // que ella responde. Não é o tocador, que governa a fila; é só a potencia.
@@ -74,7 +74,7 @@ inline double aparar_busca(double alvo, double duracao) noexcept {
 enum class Aviso { FaixaMudou, EstadoMudou, PosicaoAndou, FalhouAoTocar };
 
 // O pregão: o aviso, e o retracto do mundo no instante em que se deu. Vae por
-// valor e completo, de sorte que o ouvinte nada precise interrogar de volta —
+// valor e completo, de sorte que o ouvinte nada precise interrogar de volta,
 // interrogar de volta seria o ouvinte conhecer o nucleo, e não sómente o
 // nucleo ignorar o ouvinte.
 struct Evento {
@@ -168,5 +168,5 @@ class MotorMpv final : public Motor {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

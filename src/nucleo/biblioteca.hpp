@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA BIBLIOTHECA — src/nucleo/biblioteca.hpp
+//   TRACTADO DA BIBLIOTHECA, src/nucleo/biblioteca.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Guarda o ÍNDICE do acervo, e sómente elle: não abre arquivo de audio, não
 // conhece taglib, não sabe o que é um directorio de artista. Quem varre o disco
@@ -44,7 +44,7 @@ namespace mysong::nucleo {
 
 // A MÁSCARA do que se DEDUZIU do caminho, porque a issue manda registrar a
 // dedução e não sómente praticá-la. Zero quer dizer que a etiqueta disse tudo;
-// e a consulta que interessa ao operador — que faixas entraram sem etiqueta? —
+// e a consulta que interessa ao operador, que faixas entraram sem etiqueta?,
 // é «WHERE deduzido != 0», mais curta que a disjunção de quatro columnas.
 enum Deduzido : unsigned {
   kDeduziuNada = 0u,
@@ -99,7 +99,7 @@ enum class Desfecho {
 std::string saneia_utf8(std::string_view crua);
 
 // A BIBLIOTHECA: o lado que LÊ. Abre o banco em sómente-leitura, e banco
-// ausente é resposta vazia e não erro — o acervo que ainda não se varreu é
+// ausente é resposta vazia e não erro, o acervo que ainda não se varreu é
 // caso legitimo, e não avaria. Nenhuma consulta lança pela borda.
 //
 // TRANCADA POR DENTRO, á maneira do Tocador da issue #50: o socket de commando
@@ -177,7 +177,7 @@ class Escriba {
  public:
   // `limite_de_paginas` é a INJECÇÃO com que a prova simula disco cheio: zero é
   // sem limite, e n > 0 permitte n paginas addicionaes depois do esquema, ao
-  // cabo das quaes o SQLite devolve SQLITE_FULL — o mesmo codigo, pelo mesmo
+  // cabo das quaes o SQLite devolve SQLITE_FULL, o mesmo codigo, pelo mesmo
   // caminho, que devolve com o systema de arquivos cheio de verdade.
   Escriba(std::filesystem::path banco, long limite_de_paginas = 0);
   ~Escriba();
@@ -212,5 +212,5 @@ class Escriba {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

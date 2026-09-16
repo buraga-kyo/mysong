@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DO DESENHO — testes/prova_espectro_tui.cpp
+//   TRACTADO DAS PROVAS DO DESENHO, testes/prova_espectro_tui.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova a fita de barras verticaes da §7.4.9. Caso algum abre terminal: o
 // desenho resolve-se em QUADRO, e é pelo quadro que se prova.
@@ -92,12 +92,12 @@ TEST_CASE("o degrau vae de zero a cheio, e o lixo não passa") {
 
 namespace {
 
-// bandas_uniformes — as QUANTAS_BANDAS todas no mesmo valor.
+// bandas_uniformes, as QUANTAS_BANDAS todas no mesmo valor.
 std::vector<float> bandas_uniformes(float valor) {
   return std::vector<float>(mysong::nucleo::QUANTAS_BANDAS, valor);
 }
 
-// centros_em — as QUANTAS_BANDAS todas no mesmo hertz, para PRENDER o registro
+// centros_em, as QUANTAS_BANDAS todas no mesmo hertz, para PRENDER o registro
 // da fita a um só. Os casos da rampa afirmam a RAMPA, e não a fronteira, que tem
 // caso proprio: sem isto, cada columna cahiria n'uma familia differente.
 std::vector<float> centros_em(float hertz) {
@@ -112,7 +112,7 @@ constexpr const char* kCinco = "\u2585";  // cinco oitavos
 constexpr const char* kUm = "\u2581";     // um oitavo, o piso do silencio
 constexpr const char* kVazio = " ";
 
-// cor — a tríade em côr do FTXUI, que é como a tela a guarda. Recebe TRÍADE e
+// cor, a tríade em côr do FTXUI, que é como a tela a guarda. Recebe TRÍADE e
 // não token porque os degraus do meio da rampa nascem de tokens::mistura, e
 // nome na paleta não têm.
 ftxui::Color cor(tk::Triade c) { return ftxui::Color::RGB(c.r, c.g, c.b); }
@@ -754,7 +754,7 @@ TEST_CASE("painel sem largura ou sem altura dá quadro vazio") {
 
 namespace {
 
-// sem_escape — a linha despida do escape e do retorno de carro, que é o que
+// sem_escape, a linha despida do escape e do retorno de carro, que é o que
 // ella MOSTRA. Compara-se a linha INTEIRA contra a esperada, e a egualdade diz
 // posição e contagem n'uma asserção só, sem se contar codepoint algum.
 std::string sem_escape(const std::string& linha) {

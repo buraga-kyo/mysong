@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MENU DE CONTEXTO — src/tui/menu_contexto.cpp
+//   TRACTADO DO MENU DE CONTEXTO, src/tui/menu_contexto.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação do estado, da taboada e da pintura. Vale aqui a regra do
 // rato: cousa alguma d'este arquivo sabe o que é um Navegador ou um Tocador.
@@ -41,7 +41,7 @@ constexpr std::size_t kFileteAntesDe = 3;
 // de nome comprido faça o menu sahir da metade da pauta.
 constexpr std::size_t kNomeMinimo = 7, kNomeMaximo = 24;
 
-// collunhas — as que a cadeia toma na tela. Pergunta-se ao FTXUI, e não se
+// collunhas, as que a cadeia toma na tela. Pergunta-se ao FTXUI, e não se
 // contam bytes nem codepoints: o acento do portuguez toma dous bytes e uma
 // collunha só, e a orla da direita sahiria torta em toda faixa acentuada.
 std::size_t collunhas(std::string_view crua) {
@@ -62,7 +62,7 @@ std::size_t campo_das_listas(const MenuDeContexto& menu) {
   return std::min(maior, kNomeMaximo);
 }
 
-// anda — o eleito uma casa, EM RODA. A volta ao principio é o que o menu do
+// anda, o eleito uma casa, EM RODA. A volta ao principio é o que o menu do
 // tmux d'elle faz, e é o que poupa á mão sete setas para tornar ao alto de uma
 // lista de listas comprida. Zero itens fica em zero, que não ha onde andar.
 std::size_t anda(std::size_t onde, std::size_t quantos, bool desce) noexcept {
@@ -71,7 +71,7 @@ std::size_t anda(std::size_t onde, std::size_t quantos, bool desce) noexcept {
   return onde == 0 ? quantos - 1 : onde - 1;
 }
 
-// pinta — o texto na tinta e o fundo por baixo d'elle. TODA cella do menu se
+// pinta, o texto na tinta e o fundo por baixo d'elle. TODA cella do menu se
 // pinta: elle flutua, e cella por pintar deixaria ver a pauta por dentro.
 ftxui::Element pinta(const std::string& texto, std::string_view tinta,
                      std::string_view fundo) {
@@ -80,14 +80,14 @@ ftxui::Element pinta(const std::string& texto, std::string_view tinta,
          ftxui::bgcolor(ftxui::Color::RGB(f.r, f.g, f.b));
 }
 
-// repete — o glifo n vezes. `std::string(n, c)` não serve: o «─» tem tres bytes.
+// repete, o glifo n vezes. `std::string(n, c)` não serve: o «─» tem tres bytes.
 std::string repete(std::string_view glifo, std::size_t quantos) {
   std::string feita;
   for (std::size_t i = 0; i < quantos; ++i) feita += glifo;
   return feita;
 }
 
-// apara — a cadeia cortada em `largura` COLLUNHAS e enchida de espaços até
+// apara, a cadeia cortada em `largura` COLLUNHAS e enchida de espaços até
 // ellas: o enchimento é que põe a orla da direita sempre na mesma collunha.
 std::string apara(std::string_view crua, std::size_t largura) {
   std::string feita;
@@ -106,7 +106,7 @@ std::string apara(std::string_view crua, std::size_t largura) {
   return feita;
 }
 
-// orla_com_titulo — a linha de cima, com o rotulo METTIDO na propria orla. É o
+// orla_com_titulo, a linha de cima, com o rotulo METTIDO na propria orla. É o
 // gesto do menu do tmux d'elle, que alli põe o nome da janella; aqui vae o
 // nome da faixa, em text_heading, para que se saiba sobre QUAL se escolhe.
 ftxui::Element orla_com_titulo(std::string_view titulo, std::size_t largura) {
@@ -118,7 +118,7 @@ ftxui::Element orla_com_titulo(std::string_view titulo, std::size_t largura) {
                             tokens::line_base, tokens::panel)});
 }
 
-// linha_do_filete — o traço que aparta o que ESTRAGA cousa gravada do que a não
+// linha_do_filete, o traço que aparta o que ESTRAGA cousa gravada do que a não
 // estraga. Sahe em line_dim, mais apagado que a orla: elle divide, e não fecha;
 // os dous cantos ficam na tinta da orla, que d'ella são e não do traço.
 ftxui::Element linha_do_filete(std::size_t largura) {
@@ -133,7 +133,7 @@ ftxui::Element linha_da_base(std::size_t largura) {
                tokens::panel);
 }
 
-// linha_do_item — a orla, o rotulo, a marca do submenu, e a orla. O ELEITO é um
+// linha_do_item, a orla, o rotulo, a marca do submenu, e a orla. O ELEITO é um
 // BLOCO v600 de tinta v50, que é o `menu-selected-style` do tmux d'elle byte a
 // byte. A orla NÃO entra no bloco: ella é do chrome, e não do item. E a `marca`
 // vazia tira a collunha d'ella, que a caixa das listas não tem marca alguma.
@@ -153,7 +153,7 @@ ftxui::Element linha_do_item(std::string_view rotulo, std::size_t campo,
        pinta("│", tokens::line_base, tokens::panel)});
 }
 
-// caixa_das_listas — o submenu, e elle é caixa PROPRIA á direita da outra, e
+// caixa_das_listas, o submenu, e elle é caixa PROPRIA á direita da outra, e
 // não a mesma caixa a trocar de conteudo. Com as duas á vista lê-se de onde se
 // veio e para onde se vae, e a seta esquerda tem visivelmente para onde tornar.
 ftxui::Element caixa_das_listas(const MenuDeContexto& menu) {
@@ -323,5 +323,5 @@ ftxui::Element flutuante_do_menu(const MenuDeContexto& menu,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

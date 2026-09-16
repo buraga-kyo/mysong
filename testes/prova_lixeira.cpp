@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA LIXEIRA — testes/prova_lixeira.cpp
+//   PROVA DA LIXEIRA, testes/prova_lixeira.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Corre inteira em directorio temporario: a raiz da lixeira entra por
 // parâmetro, donde prova alguma manda cousa á lixeira de quem nos usa. O que

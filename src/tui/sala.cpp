@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA SALA — src/tui/sala.cpp
+//   TRACTADO DA SALA, src/tui/sala.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra das peças que o sala.hpp declara. Compõe, e sahe.
 //
@@ -16,24 +16,25 @@
 
 #include <ftxui/screen/string.hpp>
 
+#include "tui/arrowline.hpp"
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
 
 namespace mysong::tui {
 namespace {
-// kMarcadorLinhas — a área do marcador. Seis, e não o tecto: a capa de 16 por
+// kMarcadorLinhas, a área do marcador. Seis, e não o tecto: a capa de 16 por
 // 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
 // diria «não ha capa» mais alto do que o painel diz a musica.
 constexpr std::size_t kMarcadorLinhas = 6;
 
-// pinta — o texto na tinta do token. Côr crua não entra n'esta obra.
+// pinta, o texto na tinta do token. Côr crua não entra n'esta obra.
 ftxui::Element pinta(const std::string& texto, std::string_view token) {
   const tokens::Triade c = tokens::rgb(token);
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// substantivo_da — o que se conta, em caixa alta. Singular SEM o `s`.
+// substantivo_da, o que se conta, em caixa alta. Singular SEM o `s`.
 const char* substantivo_da(Especie especie, bool um) {
   switch (especie) {
     case Especie::Artistas: return um ? "ARTISTA" : "ARTISTAS";
@@ -64,7 +65,7 @@ constexpr std::size_t kLetraLinhas = 3;
 // pauta é onde se navega, e a chapa diz sómente onde se está.
 constexpr std::size_t kPautaLinhasMinimas = 3;
 
-// reparte_o_corpo — as duas metades, dado o alto e a altura que sobraram. Sahe
+// reparte_o_corpo, as duas metades, dado o alto e a altura que sobraram. Sahe
 // á parte da conta do alto por ser a lavra que a tela ESTREITA muda: abaixo do
 // limiar não ha painel algum, e a pauta toma a tela toda, como hoje.
 void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
@@ -193,7 +194,9 @@ Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
   // que elle queria era o CENTRO, que fica (o grupo das abas no meio da
   // largura, e o texto centrado em cada segmento). Da altura sahe tambem a
   // chapa em XIROD, que por isso torna a uma fileira sem se lhe tocar.
-  std::size_t campo = campo_aberto ? 1u : 0u, fita = 1, rodape = 1;
+  // O rodapé de dicas morreu: a barra conserva os controles, e a linha
+  // `? ... F10 ...` não deve mais consumir altura da lista.
+  std::size_t campo = campo_aberto ? 1u : 0u, fita = 1, rodape = 0;
   const auto pe = [&] { return campo + fita + rodape; };
   if (altura < pe() + 1) rodape = 0;
   // O CAMPO fecha a escada: cede quando, ficando, deixaria o corpo sem fileira
@@ -264,7 +267,7 @@ std::string texto_da_chapa(const Chapa& chapa) {
   return dito;
 }
 
-// esquerda_da_chapa — o que se pinta á ESQUERDA: o texto, e as encommendas
+// esquerda_da_chapa, o que se pinta á ESQUERDA: o texto, e as encommendas
 // logo depois d'elle quando as ha. Serve á pintura e á conta do espaço, para
 // que as duas leiam a MESMA cadeia e não divirjam de uma collunha.
 static std::string esquerda_da_chapa(const Chapa& chapa) {
@@ -285,6 +288,15 @@ std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura) {
 ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  if (chapa.contador_de_sons) {
+    const std::string texto = " " + std::to_string(chapa.quantas) + " sons " +
+                              std::string(kPontaDextra);
+    return pinta(texto, tokens::text_heading) |
+           ftxui::bold |
+           ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+           ftxui::size(ftxui::WIDTH, ftxui::EQUAL,
+                       static_cast<int>(largura));
+  }
   // A chapa lê-se em TRES pesos, e não n'um: ONDE se está carrega, a conta
   // apaga-se, e a VISTA sahe em chip, que é o que d'ella se cycla. Os bytes são
   // os do `texto_da_chapa`, cella por cella: quem conta o espaço do recado lê
@@ -355,7 +367,7 @@ ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
 
 namespace {
 
-// aparada — o texto cortado a `largura` collunhas do terminal, com «…» a
+// aparada, o texto cortado a `largura` collunhas do terminal, com «…» a
 // fechar. Conta collunhas pelo `string_width`, e não pontos de codigo: ha
 // titulo com kanji e com emoji, que valem duas.
 std::string aparada(const std::string& texto, std::size_t largura) {
@@ -429,5 +441,5 @@ ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

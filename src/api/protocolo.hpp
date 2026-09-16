@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO PROTOCOLO — src/api/protocolo.hpp
+//   TRACTADO DO PROTOCOLO, src/api/protocolo.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O CEREBRO do socket, e sómente o cerebro: uma linha entra, uma linha sahe.
 // Socket algum se nomeia aqui, nem descriptor, nem cliente; d'isso cuida o
@@ -80,5 +80,5 @@ std::string responde(nucleo::Tocador& tocador, const Arredores& arredores,
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

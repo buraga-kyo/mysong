@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO ESPIA DAS BANDAS — exemplos/espia_bandas.cpp
+//   TRACTADO DO ESPIA DAS BANDAS, exemplos/espia_bandas.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O INSTRUMENTO DO ACEITE. A bateria prova a mathematica em machina surda;
 // este binario prova o que ella não alcança: que as bandas vêm do nó do NOSSO
@@ -132,5 +132,5 @@ int main(int argc, char** argv) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

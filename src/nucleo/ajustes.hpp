@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DOS AJUSTES — src/nucleo/ajustes.hpp
+//   TRACTADO DOS AJUSTES, src/nucleo/ajustes.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O que o operador ajusta n'esta obra, e de ONDE cada ajuste veio. O arquivo
 // d'elle entra aqui, e d'aqui sahe RESOLVIDO: quem consome não pergunta ao
@@ -36,7 +36,7 @@ namespace mysong::nucleo {
 // padrão da Casa. A ordem da declaração É a da precedencia.
 enum class Origem { Argumento, Ambiente, Arquivo, Padrao };
 
-// nome_da_origem — a palavra que o --sonda escreve. Vive aqui, e não na tela,
+// nome_da_origem, a palavra que o --sonda escreve. Vive aqui, e não na tela,
 // pela razão do nome_da_fonte: origem nova sem nome não compila.
 std::string_view nome_da_origem(Origem origem);
 
@@ -106,7 +106,7 @@ struct Ajustes {
   // marca d'ellas não entre na ordenação por linha e cahia no topo da lista.
   std::size_t queixas_de_mais = 0;
 
-  // queixa — accrescenta uma queixa, até o tecto. Passado o tecto, cala-se e
+  // queixa, accrescenta uma queixa, até o tecto. Passado o tecto, cala-se e
   // deixa UMA linha a dizer quantas ficaram de fóra.
   void queixa(std::string dito);
 };
@@ -120,40 +120,40 @@ struct Par {
   std::string valor;
 };
 
-// aparar e corta_commentario — as duas partidas de uma linha. Sahem do namespace
+// aparar e corta_commentario, as duas partidas de uma linha. Sahem do namespace
 // anonymo por serem DECLARADAS aqui, pela razão do nomeado_na_forcagem da sonda:
 // a bateria prova-as uma a uma, e não sómente por dentro do leitor.
 std::string_view aparar(std::string_view texto);
 std::string_view corta_commentario(std::string_view linha);
 
-// ler_pares — o LEITOR. Recebe o TEXTO do arquivo, e nunca um caminho: é d'isto
+// ler_pares, o LEITOR. Recebe o TEXTO do arquivo, e nunca um caminho: é d'isto
 // que vem a bateria provar o formato inteiro sem tocar em disco. Devolve os
 // pares na ORDEM em que vieram, e as queixas ficam nos ajustes.
 std::vector<Par> ler_pares(std::string_view texto, Ajustes* ajustes);
 
-// fonte_de — a fonte da busca pelo nome que o operador escreve. Vazio quando o
+// fonte_de, a fonte da busca pelo nome que o operador escreve. Vazio quando o
 // nome não é uma das tres, e a QUEIXA fica com quem chama: a recusa e a razão
 // d'ella hão de morar n'um logar só.
 std::optional<Fonte> fonte_de(std::string_view texto);
 
-// chave_da_fonte — o INVERSO do fonte_de: a palavra tal como se escreve no
+// chave_da_fonte, o INVERSO do fonte_de: a palavra tal como se escreve no
 // arquivo, e não o nome de mostrar da aquisição. O --sonda ha de dizer o que o
 // operador digitaria, para que elle possa copiar do diagnostico para o arquivo.
 std::string_view chave_da_fonte(Fonte fonte);
 
-// sextantes_de e chave_dos_sextantes — a palavra do arquivo e o inverso d'ella,
+// sextantes_de e chave_dos_sextantes, a palavra do arquivo e o inverso d'ella,
 // visinhos pela razão do fonte_de: valor novo esquecido n'um dos dous accende
 // aviso do compilador nos dous switches, e não passa calado.
 std::optional<Sextantes> sextantes_de(std::string_view texto);
 std::string_view chave_dos_sextantes(Sextantes sextantes);
 
-// lousa_de e chave_da_lousa — a palavra do arquivo e o inverso d'ella, visinhas
+// lousa_de e chave_da_lousa, a palavra do arquivo e o inverso d'ella, visinhas
 // pela razão do sextantes_de: valor novo esquecido n'uma das duas accende aviso
 // do compilador nos dous switches, e não passa calado.
 std::optional<ModoDaLousa> lousa_de(std::string_view texto);
 std::string_view chave_da_lousa(ModoDaLousa modo);
 
-// volume_de e baixas_de — os dous numeros. Vazio quando o texto não é inteiro
+// volume_de e baixas_de, os dous numeros. Vazio quando o texto não é inteiro
 // INTEIRAMENTE consumido, ou quando cae fóra do que a chave admitte: o volume
 // de zero a cem, e as baixas de uma até o tecto.
 std::optional<int> volume_de(std::string_view texto);
@@ -176,43 +176,43 @@ struct Degraus {
 // provar o caminho da recusa sem creçar directorio algum em disco.
 using Aferidor = std::function<bool(const std::filesystem::path&)>;
 
-// resolver — a ESCADA. Puro quanto ao mundo: não abre arquivo, não lê ambiente.
+// resolver, a ESCADA. Puro quanto ao mundo: não abre arquivo, não lê ambiente.
 // Escreve no MESMO vaso em que o leitor lavrou as queixas d'elle, para que a
 // lista sahia n'uma ordem só e o tecto d'ella conte a somma, e não uma parcella.
 void resolver(const Degraus& degraus,
               const std::filesystem::path& padrao_do_acervo,
               const Aferidor& ha_directorio, Ajustes* ajustes);
 
-// caminho_da_configuracao — `$XDG_CONFIG_HOME/mysong/mysong.conf`, e sem a
+// caminho_da_configuracao, `$XDG_CONFIG_HOME/mysong/mysong.conf`, e sem a
 // variavel `~/.config/mysong/mysong.conf`, pelo precedente exacto do
 // caminho_do_indice. Directorio algum se cria e arquivo algum se escreve: este
 // arquivo é do operador, e a obra sómente o lê. Sem HOME, devolve vazio, que se
 // trata como arquivo ausente.
 std::filesystem::path caminho_da_configuracao();
 
-// ler_o_arquivo — a UNICA porta de disco d'este modulo, e ella SÓ LÊ. Ausente
+// ler_o_arquivo, a UNICA porta de disco d'este modulo, e ella SÓ LÊ. Ausente
 // cala-se, que é o caso normal e a issue manda que seja calado; presente que se
 // não deixa ler lavra queixa, que não é o mesmo caso.
 EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
                               std::string* texto, Ajustes* ajustes);
 
-// padrao_do_acervo — `~/Música`, o chão da escada. Vive aqui, e não na janella,
+// padrao_do_acervo, `~/Música`, o chão da escada. Vive aqui, e não na janella,
 // para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
 std::filesystem::path padrao_do_acervo();
 
-// eh_acervo — diz se o argumento é o `--acervo=<caminho>` e, sendo-o, põe o
+// eh_acervo, diz se o argumento é o `--acervo=<caminho>` e, sendo-o, põe o
 // caminho no destino. Devolvendo verdadeiro, o argumento NÃO é faixa. Vive
 // aqui, e não no main, por duas razões: prova-se sem se armar vector de char*,
 // e a janella fica com duas linhas em vez de um bloco de leitura de bandeira.
 bool eh_acervo(std::string_view argumento, std::optional<std::string>* acervo);
 
-// ajustes_do_systema — a MONTAGEM, e a unica funcção d'este modulo que toca o
+// ajustes_do_systema, a MONTAGEM, e a unica funcção d'este modulo que toca o
 // mundo: lê o ambiente, abre o arquivo, e afere o directorio com o filesystem
 // de verdade. Chama-se UMA vez, no main, antes de fio algum se erguer: ler
 // ambiente com fios a correr é corrida, e os consumidores recebem cópia.
 Ajustes ajustes_do_systema(const std::optional<std::string>& do_argumento);
 
-// texto_dos_ajustes — o que o --sonda accrescenta ao relatorio dos requisitos:
+// texto_dos_ajustes, o que o --sonda accrescenta ao relatorio dos requisitos:
 // uma linha por chave, com o valor em vigor e a ORIGEM d'elle, mais o arquivo
 // considerado e as queixas. Funcção PURA, e por isso vive aqui e não na tela,
 // pelo precedente do texto_do_andamento. Escape algum sahe d'aqui.
@@ -220,5 +220,5 @@ std::string texto_dos_ajustes(const Ajustes& ajustes);
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

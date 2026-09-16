@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO CORREIO — testes/prova_correio.cpp
+//   PROVA DO CORREIO, testes/prova_correio.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Sem fios e sem tela: o que se afere é a conta das duas gerações, que é o que faz
 // a colheita consumir e a substituição funccionar.
@@ -73,5 +73,5 @@ TEST_CASE("colher sem querer o conteudo tambem consome") {
   CHECK_FALSE(correio.colhe(nullptr, nullptr));
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

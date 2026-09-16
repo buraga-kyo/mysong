@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO LETREIRO — src/nucleo/letreiro.cpp
+//   TRACTADO DO LETREIRO, src/nucleo/letreiro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra. As puras primeiro; o que corre o pango-view e escreve em disco fica
 // no fim, pelo molde da lousa e o do arquivo da capa.
@@ -24,7 +24,7 @@
 
 namespace mysong::nucleo {
 
-// argumentos_do_letreiro — o `--font` leva a familia e o corpo n'UM argumento,
+// argumentos_do_letreiro, o `--font` leva a familia e o corpo n'UM argumento,
 // que é como o Pango descreve fonte; o resto vae um por argumento, e shell
 // alguma os torna a partir. Ordem d'elles pelo `argumentos_do_chafa`: o que
 // governa primeiro, o alvo por ultimo.
@@ -47,7 +47,7 @@ std::vector<std::string> argumentos_do_letreiro(
           pedido.texto};
 }
 
-// margem_da_chapa — regra de tres, e nada mais: a caixa mede `cellulas` vezes
+// margem_da_chapa, regra de tres, e nada mais: a caixa mede `cellulas` vezes
 // a largura da cella por `linhas` vezes a altura d'ella, e a chapa ha de ter
 // essa razão; d'onde a altura ALVO é a largura crua dividida pela razão da
 // caixa. O que falta reparte-se em duas, que a folga vae em cima e em baixo.
@@ -64,7 +64,7 @@ std::size_t margem_da_chapa(Medida crua, std::size_t cellulas,
   return alvo > crua.altura ? (alvo - crua.altura) / 2 : 0;
 }
 
-// chave_do_letreiro — o FNV-1a da Casa, o mesmo que dá nome á arte em cache.
+// chave_do_letreiro, o FNV-1a da Casa, o mesmo que dá nome á arte em cache.
 std::string chave_do_letreiro(const PedidoDaChapa& pedido) {
   // Os campos costuram-se com o octeto NULLO, que em nenhum d'elles apparece:
   // sem costura, texto «AB» com tinta «C» e texto «A» com tinta «BC» dariam a
@@ -109,7 +109,7 @@ bool ha_pango_view() {
 
 bool ha_familia_da_marca() { return familia_installada(FAMILIA_DA_MARCA); }
 
-// texto_do_letreiro — a razão vae de pé ou deitado, e é ella a linha inteira:
+// texto_do_letreiro, a razão vae de pé ou deitado, e é ella a linha inteira:
 // de pé ella diz «Xirod, pango-view», que é o que a issue pede á lettra.
 std::string texto_do_letreiro(const Parecer& parecer) {
   return "\n  letreiro: " + parecer.razao + "\n";
@@ -117,7 +117,7 @@ std::string texto_do_letreiro(const Parecer& parecer) {
 
 namespace {
 
-// cabeca_do_arquivo — os primeiros octetos, que é quanto o `medida_da_imagem`
+// cabeca_do_arquivo, os primeiros octetos, que é quanto o `medida_da_imagem`
 // da capa precisa para dizer a largura e a altura sem decodificar imagem.
 std::string cabeca_do_arquivo(const std::filesystem::path& onde) {
   std::ifstream entrada(onde, std::ios::binary);
@@ -128,7 +128,7 @@ std::string cabeca_do_arquivo(const std::filesystem::path& onde) {
   return cabeca;
 }
 
-// desfaz — apaga o temporario e responde vazio, que é o que toda queda d'aqui
+// desfaz, apaga o temporario e responde vazio, que é o que toda queda d'aqui
 // tem a fazer: chapa a meio no cache seria chapa rota para sempre.
 std::filesystem::path desfaz(const std::filesystem::path& meio) {
   std::error_code erro;
@@ -136,7 +136,7 @@ std::filesystem::path desfaz(const std::filesystem::path& meio) {
   return {};
 }
 
-// rasteriza — o pango-view DUAS vezes, e é aqui que a margem se cumpre: folga
+// rasteriza, o pango-view DUAS vezes, e é aqui que a margem se cumpre: folga
 // não se adivinha sem medir, e a medida só apparece depois de a palavra estar
 // desenhada. As duas corridas dão-se UMA vez na vida do cache.
 //
@@ -192,5 +192,5 @@ const std::filesystem::path& Letreiro::chapa(const PedidoDaChapa& pedido) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

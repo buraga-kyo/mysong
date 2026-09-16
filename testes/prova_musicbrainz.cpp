@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO MUSICBRAINZ — testes/prova_musicbrainz.cpp
+//   PROVA DO MUSICBRAINZ, testes/prova_musicbrainz.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Caso algum d'esta bateria toca a rede. Os corpos são recortes VERBATIM das
 // respostas vivas do ws/2 colhidas em 2026-08-27 (gravação 8f3471b5, a de
@@ -333,5 +333,5 @@ TEST_CASE("o agente do MB nomeia a obra: nome, versão e contato") {
   CHECK(agente.size() > espaco + 3);   // e ha contato entre os parentheses
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

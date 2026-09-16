@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA MARCA, LAVRA — src/nucleo/marca.cpp
+//   TRACTADO DA MARCA, LAVRA, src/nucleo/marca.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o que o cabecalho promette: guarda o texto da marca e o entrega.
 //
@@ -27,5 +27,5 @@ std::string_view marca() noexcept {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

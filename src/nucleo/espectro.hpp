@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO ESPECTRO — src/nucleo/espectro.hpp
+//   TRACTADO DO ESPECTRO, src/nucleo/espectro.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A MATHEMATICA, e nada mais: recebe amostras, devolve bandas. Não sabe de
 // PipeWire, não sabe de mpv, não abre linha de execução propria. É de
@@ -183,5 +183,5 @@ class Espectro {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
