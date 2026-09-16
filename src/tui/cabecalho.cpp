@@ -424,22 +424,14 @@ Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando) {
 // direita para a esquerda: o HELP cede primeiro (o `?` continua a abri-lo),
 // depois o REPETIR, e o tempo por ultimo, que é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
 // fundo, que é a emenda visivel que o aceite proscreve.
-Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
-                     Focavel foco, bool animacao_travada,
-                     bool mostrar_animacao) {
+std::vector<Segmento> segmentos_da_direita(const Retracto& retracto,
+                                           Focavel foco, bool animacao_travada,
+                                           bool mostrar_animacao) {
   const bool repete = retracto.repeticao != nucleo::Repeticao::Nenhuma;
-  // A Casa CALADA por ordem (issue #106) não é o volume zero por escolha:
-  // aquella diz a palavra, e este mostra o numero como todo outro volume. As
-  // duas medem as MESMAS oito collunhas, donde a fita não anda quando o
-  // operador cala o som.
   const bool calado = retracto.mudo;
   const bool no_zero = retracto.volume == 0;
   const std::string tempo =
       " " + mm_ss(retracto.posicao) + " / " + mm_ss(retracto.duracao) + " ";
-  // O volume vae a TRES algarismos, enchido á esquerda. Sem o enchimento, cada
-  // `-` encolhia o segmento de uma collunha e deslocava as quatro peças da
-  // direita, e com ellas o nome da faixa: a fita andava debaixo do olho de
-  // quem só queria baixar o som.
   const std::string conta = std::to_string(retracto.volume);
   const std::string som =
       calado ? " " + std::string(kMudo) + " MUDO "
@@ -453,13 +445,6 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
                       ? kRepetirUma
                       : kRepetirTodas) +
       " REPETIR ";
-  // Aceso é glow_core, apagado é text_muted, e o segmento fica PRESENTE nos
-  // dous casos: modo que sommisse mudaria a largura da linha a cada tecla, e o
-  // nome da faixa saltaria de logar debaixo do olho.
-  // O TEMPO não leva foco: elle DIZ, e não faz. Os outros tres acendem-se
-  // quando a mão pousa n'elles, e o segmento aceso guarda o mesmo logar.
-  // O HELP (issue #133) é a ponta: um botão como os outros, que o Enter e o
-  // clique apertam, e que se veste de foco pelo mesmo `aceso`.
   const std::string anima = animacao_travada ? " 󰏤 PARADO " : " 󰐊 ANIMA ";
   const Segmento todos[6] = {
       {tempo, tokens::raised, tokens::text_bright},
@@ -479,13 +464,21 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
       aceso({" " + std::string(kAjuda) + " HELP ", tokens::raised,
              tokens::text_primary},
             foco == Focavel::Ajuda)};
-  Fita fita(Sentido::Esquerda);
+  std::vector<Segmento> fita;
   if (mostrar_animacao) {
-    for (std::size_t i = 0; i < quantas && i < 6; ++i) fita.junta(todos[i]);
+    for (std::size_t i = 0; i < 6; ++i) fita.push_back(todos[i]);
   } else {
     const std::size_t indices_sem_animacao[5] = {0, 1, 2, 3, 5};
-    for (std::size_t i = 0; i < quantas && i < 5; ++i)
-      fita.junta(todos[indices_sem_animacao[i]]);
+    for (std::size_t i = 0; i < 5; ++i)
+      fita.push_back(todos[indices_sem_animacao[i]]);
+  }
+  return fita;
+}
+
+Fita fita_da_direita(const std::vector<Segmento>& segs, std::size_t quantas) {
+  Fita fita(Sentido::Esquerda);
+  for (std::size_t i = 0; i < quantas && i < segs.size(); ++i) {
+    fita.junta(segs[i]);
   }
   return fita;
 }
@@ -563,18 +556,15 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
   if (largura == 0 || altura == 0) return ftxui::text("");
   const Fita esquerda = fita_da_esquerda(
       corrente, foco, retracto.estado == nucleo::Estado::Tocando);
-  // Compõe-se de novo a cada volta, e não se apara a que ha: aparar partiria o
-  // par de côres de um segmento ao meio.
-  std::vector<std::size_t> pede(mostrar_animacao ? 7 : 6, 0);
-  for (std::size_t q = 1; q < pede.size(); ++q)
-    pede[q] = fita_da_direita(retracto, q, foco, animacao_travada,
-                              mostrar_animacao)
-                  .largura_exigida();
+  const std::vector<Segmento> segs_direita = segmentos_da_direita(
+      retracto, foco, animacao_travada, mostrar_animacao);
+  std::vector<std::size_t> pede(segs_direita.size() + 1, 0);
+  for (std::size_t q = 1; q < pede.size(); ++q) {
+    pede[q] = fita_da_direita(segs_direita, q).largura_exigida();
+  }
   const ContaDaFita conta =
       conta_da_fita(largura, esquerda.largura_exigida(), pede);
-  const Fita direita =
-      fita_da_direita(retracto, conta.quantas, foco, animacao_travada,
-                      mostrar_animacao);
+  const Fita direita = fita_da_direita(segs_direita, conta.quantas);
   return ftxui::hbox(
       {pintar_fita(
            esquerda.compor(), caixas_da_esquerda(caixas),
