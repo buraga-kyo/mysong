@@ -220,39 +220,38 @@ TEST_CASE("as duas metades repartem a tela, com a collunha do divisor pelo meio"
 
 TEST_CASE("a tela de cento e sessenta e sete por sessenta e sete") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
-  // O corpo abre na PRIMEIRA linha da tela (issue #125), e o pé toma as DUAS
-  // ultimas: a fita rasa da issue #129 e o rodapé. O trilho morreu na #134, e
-  // a fileira d'elle tornou á lista.
+  // O corpo abre na PRIMEIRA linha da tela, e o pé toma somente a fita rasa:
+  // o rodapé de dicas foi retirado, e a fileira voltou á lista.
   CHECK(sala.chapa.y == 0);
   CHECK(sala.pauta.y == 1);
-  CHECK(sala.pauta.altura == 64);
+  CHECK(sala.pauta.altura == 65);
   CHECK(sala.campo.vazio());  // sem campo aberto, linha alguma se lhe reserva
-  CHECK(sala.cabecalho.y == 65);
+  CHECK(sala.cabecalho.y == 66);
   CHECK(sala.cabecalho.altura == 1);
-  CHECK(sala.rodape.y == 66);
+  CHECK(sala.rodape.vazio());
   // A FICHA na primeira fileira do painel (issue #134), e a capa por baixo. O
   // tecto da capa: quarenta e cinco por cento das sessenta e quatro que sobram
   // trunca em vinte e oito, e o que resta pertence ao espectro.
   CHECK(sala.ficha.y == 0);
   CHECK(sala.ficha.altura == 1);
   CHECK(sala.capa.y == 1);
-  CHECK(sala.capa.altura == 28);
+  CHECK(sala.capa.altura == 29);
   // O BLOCO DA LETRA (issue #157) mora entre a capa e o espectro: cinco
   // fileiras, e o espectro principia debaixo d'elle.
-  CHECK(sala.letra.y == 29);
+  CHECK(sala.letra.y == 30);
   CHECK(sala.letra.altura == 3);
-  CHECK(sala.espectro.y == 32);
+  CHECK(sala.espectro.y == 33);
   CHECK(sala.espectro.altura == 33);
 }
 
 TEST_CASE("o campo aberto tira uma linha ao corpo, por cima da fita") {
   const tui::Sala com = tui::sala_da_tela(167, 67, true);
-  CHECK(com.campo.y == 64);
+  CHECK(com.campo.y == 65);
   CHECK(com.campo.largura == 167);
   CHECK(com.chapa.y == 0);  // o corpo continua a abrir na primeira linha
-  CHECK(com.pauta.altura == 63);
-  CHECK(com.cabecalho.y == 65);
-  CHECK(com.rodape.y == 66);
+  CHECK(com.pauta.altura == 64);
+  CHECK(com.cabecalho.y == 66);
+  CHECK(com.rodape.vazio());
 }
 
 // A INVARIANTE de altura, corrida de DOZE a SETENTA linhas, que é o arco que a
@@ -271,12 +270,12 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
       CHECK(sala.cabecalho.altura == 1);  // a fita rasa da issue #129
       // O corpo abre na PRIMEIRA linha; o pé toma as ultimas, e o campo é a
       // mais alta d'ellas quando está aberto.
-      const std::size_t pe = 2 + (campo ? 1u : 0u);
+      const std::size_t pe = 1 + (campo ? 1u : 0u);
       CHECK(sala.chapa.y == 0);
-      CHECK(sala.pauta.y == 1);
-      CHECK(sala.rodape.y == alta - 1);
-      CHECK(sala.cabecalho.y == alta - 2);
-      if (campo) CHECK(sala.campo.y == alta - 3);
+      CHECK(sala.pauta.y == (sala.chapa.vazio() ? 0 : 1));
+      CHECK(sala.rodape.vazio());
+      CHECK(sala.cabecalho.y == alta - 1);
+      if (campo) CHECK(sala.campo.y == alta - 2);
       CHECK(sala.pauta.y + sala.pauta.altura == alta - pe);
       CHECK(sala.pauta.largura + (sala.painel.vazio() ? 0 : 1) +
                 sala.painel.largura ==
@@ -310,20 +309,20 @@ TEST_CASE("de doze a setenta linhas a sala fecha a tela sem vão nem sobreposiç
 TEST_CASE("em tela baixa cede o rodapé, e sómente depois o campo") {
   const tui::Sala cinco = tui::sala_da_tela(167, 5, false);
   CHECK(cinco.cabecalho.altura == 1);  // rasa em toda altura (issue #129)
-  CHECK(cinco.rodape.y == 4);
+  CHECK(cinco.rodape.vazio());
   CHECK(cinco.pauta.altura == 3);
   // Tres linhas: o pé inteiro ainda cabe, e o corpo fica com a d'elle.
   const tui::Sala tres = tui::sala_da_tela(167, 3, false);
-  CHECK(tres.rodape.y == 2);
-  CHECK(tres.cabecalho.y == 1);
-  CHECK(tres.pauta.altura == 1);
-  // Duas: o rodapé sae, e a fita é a ultima a ficar.
+  CHECK(tres.rodape.vazio());
+  CHECK(tres.cabecalho.y == 2);
+  CHECK(tres.pauta.altura == 2);
+  // Duas: a fita é a ultima a ficar.
   const tui::Sala duas = tui::sala_da_tela(167, 2, false);
   CHECK(duas.rodape.vazio());
   CHECK(duas.cabecalho.y == 1);
   CHECK(duas.pauta.altura == 1);
-  // Com o campo aberto em tres linhas, o rodapé cede e o campo fica; em duas,
-  // cede tambem o campo, que ficando deixaria a lista sem fileira.
+  // Com o campo aberto em tres linhas, o campo fica; em duas, cede tambem,
+  // que ficando deixaria a lista sem fileira.
   const tui::Sala tres_com = tui::sala_da_tela(167, 3, true);
   CHECK(tres_com.rodape.vazio());
   CHECK(tres_com.campo.y == 1);
@@ -345,8 +344,8 @@ TEST_CASE("o espectro toma o que a capa não gastou") {
   const tui::Sala sala = tui::sala_da_tela(167, 67, false);
   // A conta desconta a ficha, a capa que se gastou DE FACTO e o bloco da letra
   // (issue #157), que mora entre as duas.
-  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 33);
-  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 50);
+  CHECK(tui::espectro_abaixo_da(sala, 28).altura == 34);
+  CHECK(tui::espectro_abaixo_da(sala, 11).altura == 51);
   CHECK(tui::espectro_abaixo_da(sala, 11).y == sala.capa.y + 11 + 3);
   CHECK(tui::espectro_abaixo_da(sala, 0).altura == sala.painel.altura - 1 - 3);
   // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em

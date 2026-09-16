@@ -1282,8 +1282,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                             termo_em_curso,
                                             sala.campo.largura));
     tudo.push_back(std::move(fita));
-    if (!sala.rodape.vazio())
-      tudo.push_back(ftxui::text(kDicas) | ftxui::dim);
     ftxui::Element corpo = ftxui::vbox(std::move(tudo));
     if (menu.aberto) {
       // A LINHA ALVO em coordenadas da tela. Vem da SALA, e não das caixas do

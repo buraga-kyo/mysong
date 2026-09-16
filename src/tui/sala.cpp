@@ -193,7 +193,9 @@ Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto) {
   // que elle queria era o CENTRO, que fica (o grupo das abas no meio da
   // largura, e o texto centrado em cada segmento). Da altura sahe tambem a
   // chapa em XIROD, que por isso torna a uma fileira sem se lhe tocar.
-  std::size_t campo = campo_aberto ? 1u : 0u, fita = 1, rodape = 1;
+  // O rodapé de dicas morreu: a barra conserva os controles, e a linha
+  // `? ... F10 ...` não deve mais consumir altura da lista.
+  std::size_t campo = campo_aberto ? 1u : 0u, fita = 1, rodape = 0;
   const auto pe = [&] { return campo + fita + rodape; };
   if (altura < pe() + 1) rodape = 0;
   // O CAMPO fecha a escada: cede quando, ficando, deixaria o corpo sem fileira
