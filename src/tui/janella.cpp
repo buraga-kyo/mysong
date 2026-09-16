@@ -900,9 +900,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         tela.dimx > 0 ? static_cast<std::size_t>(tela.dimx) : 0,
         tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
         digita != Digita::Nada);
-    primeira_linha =
-        tui::primeira_a_mostrar(navegador.eleito(), navegador.vista().size(),
-                                sala.pauta.altura, primeira_linha);
+    const std::size_t altura_por_faixa =
+        tui::secao_de_faixas(navegador.secao()) ? tui::ALTURA_DA_FAIXA : 1;
+    primeira_linha = tui::primeira_a_mostrar(
+        navegador.eleito(), navegador.vista().size(),
+        sala.pauta.altura / altura_por_faixa, primeira_linha);
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
 
     // A letra e a ficha relêem-se sómente quando a faixa muda.
@@ -1233,7 +1235,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
          // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
          tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                   sala.pauta.largura, retracto.titulo,
-                                  &caixas.linhas, &arrasto) |
+                                  &caixas.linhas, &arrasto, true) |
              ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                          static_cast<int>(sala.pauta.altura)) |
              ftxui::reflect(caixas.pauta)})};
@@ -1268,12 +1270,15 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       // pauta faz, e não outra: a linha visivel é a absoluta menos a rolagem.
       ftxui::Box linha_alvo = tui::caixa_por_pintar();
       if (menu.faixa >= primeira_linha &&
-          menu.faixa - primeira_linha < sala.pauta.altura)
+          menu.faixa - primeira_linha < sala.pauta.altura / altura_por_faixa)
         linha_alvo = {
             static_cast<int>(sala.pauta.x),
             static_cast<int>(sala.pauta.x + sala.pauta.largura) - 1,
-            static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha),
-            static_cast<int>(sala.pauta.y + menu.faixa - primeira_linha)};
+            static_cast<int>(sala.pauta.y +
+                             (menu.faixa - primeira_linha) * altura_por_faixa),
+            static_cast<int>(sala.pauta.y +
+                             (menu.faixa - primeira_linha + 1) *
+                                 altura_por_faixa - 1)};
       corpo = ftxui::dbox(
           {std::move(corpo),
            tui::flutuante_do_menu(

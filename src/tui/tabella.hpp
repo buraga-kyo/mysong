@@ -31,6 +31,14 @@
 
 namespace mysong::tui {
 
+inline constexpr std::size_t ALTURA_DA_FAIXA = 2;
+
+inline bool secao_de_faixas(Secao secao) noexcept {
+  return secao == Secao::Busca || secao == Secao::Faixas ||
+         secao == Secao::NoRol || secao == Secao::Lista ||
+         secao == Secao::Rede;
+}
+
 // apara_collunhas, a cadeia em EXACTAMENTE `collunhas` cellas do terminal: o
 // que sobeja corta-se e a ultima cella leva «…», e o que falta enche-se de
 // espaço. Conta-se por CELLA, e não por codepoint: o glypho CJK toma duas, e a
@@ -146,7 +154,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t largura,
                                    const std::string& tocando = {},
                                    std::vector<ftxui::Box>* caixas = nullptr,
-                                   const Arrasto* arrasto = nullptr);
+                                   const Arrasto* arrasto = nullptr,
+                                   bool estilo_spotify = false);
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
 // vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.
