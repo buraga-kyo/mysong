@@ -200,6 +200,26 @@ ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(largura));
 }
 
+ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
+                                 int maior, bool eleita, bool soa,
+                                 std::size_t largura) {
+  ftxui::Element titulo = elemento_da_linha(
+      pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura);
+  const std::string autor = "  " + apara_collunhas(
+      linha.autor, largura > 2 ? largura - 2 : largura);
+  const std::string_view tinta = eleita ? tokens::panel : tokens::text_body;
+  ftxui::Element baixo = pinta(apara_collunhas(autor, largura), tinta);
+  if (eleita) {
+    const tokens::Triade fundo =
+        tokens::rgb(soa ? tokens::glow_core : tokens::v600);
+    baixo = std::move(baixo) |
+            ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+  }
+  return ftxui::vbox({std::move(titulo), std::move(baixo)}) |
+         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                     static_cast<int>(ALTURA_DA_FAIXA));
+}
+
 std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
                                      const Medidas& medidas, int maior,
                                      bool soa) {
@@ -295,7 +315,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t largura,
                                    const std::string& tocando,
                                    std::vector<ftxui::Box>* caixas,
-                                   const Arrasto* arrasto) {
+                                   const Arrasto* arrasto,
+                                   bool estilo_spotify) {
   // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
   // antecipada que deixasse as caixas do quadro anterior faria o clique
   // acertar linhas que já não estão na tela.
@@ -310,10 +331,19 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
 
   // As columnas e a maior linha da fatia sahem d'uma conta só, que a bateria
   // interroga sem écran. A pintura d'aqui em diante é traducção, e não decisão.
-  const std::size_t fim_da_fatia = std::min(primeira + altura, vista.size());
+  const bool em_faixas = estilo_spotify && secao_de_faixas(navegador.secao());
+  const std::size_t por_item = em_faixas ? ALTURA_DA_FAIXA : 1;
+  const std::size_t quantos = std::max<std::size_t>(1, altura / por_item);
+  const std::size_t fim_da_fatia = std::min(primeira + quantos, vista.size());
   int maior = 0;
-  const Medidas medidas =
-      medidas_da_fatia(navegador, primeira, fim_da_fatia, largura, &maior);
+  Medidas medidas = medidas_da_fatia(navegador, primeira, fim_da_fatia,
+                                     largura, &maior);
+  if (em_faixas) {
+    const bool pela_conta = navegador.secao() == Secao::Artistas ||
+                            navegador.secao() == Secao::Albuns ||
+                            navegador.secao() == Secao::Rois;
+    medidas = medidas_da_pauta(largura, false, pela_conta);
+  }
 
   std::vector<ftxui::Element> linhas;
   // Dimensiona-se ANTES do laço, pela razão da barra: o `reflect` guarda
@@ -339,9 +369,13 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                         i == arrasto->origem;
     const bool sob_a_mao = arrasto != nullptr && arrasto->pegou &&
                            arrasto->andou && i == arrasto->alvo;
-    ftxui::Element pintada = elemento_da_linha(
-        pedacos_da_linha(linha, medidas, maior, soa), eleita && !na_mao, soa,
-        largura);
+    ftxui::Element pintada =
+        em_faixas
+            ? elemento_da_faixa(linha, medidas, maior, eleita && !na_mao,
+                                soa, largura)
+            : elemento_da_linha(
+                  pedacos_da_linha(linha, medidas, maior, soa),
+                  eleita && !na_mao, soa, largura);
     if (na_mao) pintada = pintada | ftxui::dim;
     if (sob_a_mao) {
       const tokens::Triade cama = tokens::rgb(tokens::raised);
