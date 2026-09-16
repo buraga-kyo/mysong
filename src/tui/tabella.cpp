@@ -202,20 +202,31 @@ ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
 
 ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
                                  int maior, bool eleita, bool soa,
-                                 std::size_t largura) {
+                                 std::size_t largura,
+                                 const nucleo::CapaPintada* capa) {
+  const std::size_t largura_da_capa = 8;
+  const std::size_t largura_do_texto =
+      largura > largura_da_capa + 1 ? largura - largura_da_capa - 1 : largura;
+  const std::size_t largura_real = largura_do_texto;
   ftxui::Element titulo = elemento_da_linha(
-      pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura);
+      pedacos_da_linha(linha, medidas, maior, soa), eleita, soa, largura_real);
   const std::string autor = "  " + apara_collunhas(
-      linha.autor, largura > 2 ? largura - 2 : largura);
+      linha.autor, largura_real > 2 ? largura_real - 2 : largura_real);
   const std::string_view tinta = eleita ? tokens::panel : tokens::text_body;
-  ftxui::Element baixo = pinta(apara_collunhas(autor, largura), tinta);
+  ftxui::Element baixo = pinta(apara_collunhas(autor, largura_real), tinta);
   if (eleita) {
     const tokens::Triade fundo =
         tokens::rgb(soa ? tokens::glow_core : tokens::v600);
     baixo = std::move(baixo) |
             ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
   }
-  return ftxui::vbox({std::move(titulo), std::move(baixo)}) |
+  ftxui::Element texto = ftxui::vbox({std::move(titulo), std::move(baixo)});
+  static const nucleo::CapaPintada nenhuma;
+  const nucleo::CapaPintada& imagem = capa == nullptr ? nenhuma : *capa;
+  ftxui::Element miniatura = elemento_da_capa(imagem, 6, 2) |
+                             ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 8);
+  return ftxui::hbox({std::move(miniatura), ftxui::text(" "),
+                      std::move(texto)}) |
          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                      static_cast<int>(ALTURA_DA_FAIXA));
 }
@@ -316,7 +327,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    const std::string& tocando,
                                    std::vector<ftxui::Box>* caixas,
                                    const Arrasto* arrasto,
-                                   bool estilo_spotify) {
+                                   bool estilo_spotify,
+                                   nucleo::Galeria* galeria) {
   // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
   // antecipada que deixasse as caixas do quadro anterior faria o clique
   // acertar linhas que já não estão na tela.
@@ -369,10 +381,13 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                         i == arrasto->origem;
     const bool sob_a_mao = arrasto != nullptr && arrasto->pegou &&
                            arrasto->andou && i == arrasto->alvo;
+    const nucleo::CapaPintada* capa = nullptr;
+    if (em_faixas && galeria != nullptr && !linha.chave.empty())
+      capa = &galeria->capa(linha.chave, 6, 2);
     ftxui::Element pintada =
         em_faixas
             ? elemento_da_faixa(linha, medidas, maior, eleita && !na_mao,
-                                soa, largura)
+                                soa, largura, capa)
             : elemento_da_linha(
                   pedacos_da_linha(linha, medidas, maior, soa),
                   eleita && !na_mao, soa, largura);

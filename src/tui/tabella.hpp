@@ -155,7 +155,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    const std::string& tocando = {},
                                    std::vector<ftxui::Box>* caixas = nullptr,
                                    const Arrasto* arrasto = nullptr,
-                                   bool estilo_spotify = false);
+                                   bool estilo_spotify = false,
+                                   nucleo::Galeria* galeria = nullptr);
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
 // vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.

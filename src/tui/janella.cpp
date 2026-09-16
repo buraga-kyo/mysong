@@ -1235,7 +1235,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
          // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
          tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                   sala.pauta.largura, retracto.titulo,
-                                  &caixas.linhas, &arrasto, true) |
+                                  &caixas.linhas, &arrasto, true, &galeria) |
              ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                          static_cast<int>(sala.pauta.altura)) |
              ftxui::reflect(caixas.pauta)})};
