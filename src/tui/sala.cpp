@@ -16,6 +16,7 @@
 
 #include <ftxui/screen/string.hpp>
 
+#include "tui/arrowline.hpp"
 #include "tui/sala.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
@@ -288,8 +289,8 @@ ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
   if (chapa.contador_de_sons) {
-    const std::string texto = " " + std::to_string(chapa.quantas) +
-                              " sons >";
+    const std::string texto = " " + std::to_string(chapa.quantas) + " sons " +
+                              std::string(kPontaDextra);
     return pinta(texto, tokens::text_heading) |
            ftxui::bold |
            ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |

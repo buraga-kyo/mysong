@@ -31,7 +31,7 @@
 
 namespace mysong::tui {
 
-inline constexpr std::size_t ALTURA_DA_FAIXA = 2;
+inline constexpr std::size_t ALTURA_DA_FAIXA = 3;
 
 inline bool secao_de_faixas(Secao secao) noexcept {
   return secao == Secao::Busca || secao == Secao::Faixas ||

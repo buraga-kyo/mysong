@@ -204,7 +204,7 @@ ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
                                  int maior, bool eleita, bool soa,
                                  std::size_t largura,
                                  const nucleo::CapaPintada* capa) {
-  const std::size_t largura_da_capa = 8;
+  const std::size_t largura_da_capa = 9;
   const std::size_t largura_do_texto =
       largura > largura_da_capa + 1 ? largura - largura_da_capa - 1 : largura;
   const std::size_t largura_real = largura_do_texto;
@@ -223,7 +223,7 @@ ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
   ftxui::Element texto = ftxui::vbox({std::move(titulo), std::move(baixo)});
   static const nucleo::CapaPintada nenhuma;
   const nucleo::CapaPintada& imagem = capa == nullptr ? nenhuma : *capa;
-  ftxui::Element miniatura = elemento_da_capa(imagem, 6, 2) |
+  ftxui::Element miniatura = elemento_da_capa(imagem, 8, 3) |
                              ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 8);
   return ftxui::hbox({std::move(miniatura), ftxui::text(" "),
                       std::move(texto)}) |
@@ -383,7 +383,7 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                            arrasto->andou && i == arrasto->alvo;
     const nucleo::CapaPintada* capa = nullptr;
     if (em_faixas && galeria != nullptr && !linha.chave.empty())
-      capa = &galeria->capa(linha.chave, 6, 2);
+      capa = &galeria->capa(linha.chave, 8, 3);
     ftxui::Element pintada =
         em_faixas
             ? elemento_da_faixa(linha, medidas, maior, eleita && !na_mao,
