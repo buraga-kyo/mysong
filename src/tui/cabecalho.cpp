@@ -242,7 +242,7 @@ Segmento aceso(Segmento peca, bool tem_foco) {
 // proposito, que peça focada e peça eleita não são a mesma cousa.
 PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept {
   switch (estado) {
-    case EstadoDaAba::Corrente: return {tokens::v50, tokens::v600};
+    case EstadoDaAba::Corrente: return {tokens::vacuo, tokens::launcher_glow};
     case EstadoDaAba::ComFoco: return {tokens::panel, tokens::glow_core};
     case EstadoDaAba::Apagada: break;
   }

@@ -196,7 +196,7 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
   for (const int x : {14, 2, 40, 70, 145})
     CHECK(tela.PixelAt(x, 1).background_color ==
           tela.PixelAt(x, 0).background_color);
-  CHECK(tela.PixelAt(14, 1).background_color == cor(tk::v600));
+  CHECK(tela.PixelAt(14, 1).background_color == cor(tk::launcher_glow));
   CHECK(tela.PixelAt(40, 1).background_color == cor(tk::panel_hi));
   CHECK(tela.PixelAt(70, 1).background_color == cor(tk::panel));
   // E a seta da junção repete-se em baixo, senão os dous fundos encostavam-se
@@ -212,8 +212,8 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
 TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, {}, 167), 167);
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::v600));
-  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::v50));
+  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::launcher_glow));
+  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::vacuo));
   CHECK(tela.PixelAt(2, 0).background_color == cor(tk::raised));
   CHECK(tela.PixelAt(2, 0).foreground_color == cor(tk::text_primary));
   CHECK(tela.PixelAt(28, 0).background_color == cor(tk::raised));

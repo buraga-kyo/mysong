@@ -75,6 +75,9 @@ if(EXISTS "${MYSONG_FTXUI_APP}")
     if(NOT MYSONG_FTXUI_PATCH_RESULT EQUAL 0)
       message(FATAL_ERROR "Não consegui aplicar a emenda de redraw do FTXUI")
     endif()
+    execute_process(
+      COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_ftxui_sync.py" "${MYSONG_FTXUI_APP}"
+    )
   endif()
 endif()
 

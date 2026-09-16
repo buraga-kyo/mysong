@@ -300,7 +300,7 @@ TEST_CASE("a aba com foco governa tambem a chapa em XIROD que a cobre") {
   const std::vector<tui::ChapaDaAba> sem =
       tui::ordens_das_chapas(caixas.cabecalho, tui::Aba::MySong, true, true);
   CHECK(sem[0].estado == tui::EstadoDaAba::Corrente);
-  CHECK(tui::pedido_da_chapa(sem[0]).fundo == std::string(tk::v600));
+  CHECK(tui::pedido_da_chapa(sem[0]).fundo == std::string(tk::launcher_glow));
 }
 
 TEST_CASE("o meio da fita com foco accende o andado, e o que falta fica quieto") {

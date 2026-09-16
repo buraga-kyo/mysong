@@ -289,11 +289,16 @@ ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
   if (chapa.contador_de_sons) {
-    const std::string texto = " " + std::to_string(chapa.quantas) + " sons " +
-                              std::string(kPontaDextra);
-    return pinta(texto, tokens::text_heading) |
-           ftxui::bold |
-           ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+    const tokens::Triade fundo_laranja = tokens::rgb(tokens::launcher_glow);
+    const std::string texto = " " + std::to_string(chapa.quantas) + " sons ";
+    ftxui::Element barra = pinta(texto, tokens::vacuo) |
+                           ftxui::bold |
+                           ftxui::bgcolor(ftxui::Color::RGB(fundo_laranja.r, fundo_laranja.g, fundo_laranja.b));
+    ftxui::Element ponta = pinta(std::string(kPontaDextra), tokens::launcher_glow) |
+                           ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+    // Precisa ocupar o restante da largura com o fundo escuro normal.
+    ftxui::Element vazio = ftxui::text("") | ftxui::size(ftxui::WIDTH, ftxui::GREATER_THAN, 0) | ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b));
+    return ftxui::hbox({std::move(barra), std::move(ponta), std::move(vazio)}) |
            ftxui::size(ftxui::WIDTH, ftxui::EQUAL,
                        static_cast<int>(largura));
   }

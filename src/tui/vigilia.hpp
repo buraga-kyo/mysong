@@ -27,18 +27,24 @@ class Vigilia {
 
   // ganha, os olhos voltaram; vindo de adormecida arma-se o despertar.
   void ganha() {
+    tem_foco_.store(true);
     if (estado_.exchange(Estado::Desperta) == Estado::Adormecida)
       acordou_.store(true);
   }
 
   // perde, ninguem olha; o relogio deixa de pedir repintura.
   void perde() {
+    tem_foco_.store(false);
     if (!anima_sem_foco_.load()) estado_.store(Estado::Adormecida);
   }
 
   // pede_batida, o relogio pergunta antes de conferir a assignatura.
   bool pede_batida() const {
     return !trava_animacao_.load() && estado_.load() != Estado::Adormecida;
+  }
+
+  bool tem_foco() const {
+    return tem_foco_.load();
   }
 
   // alterna_trava, comando manual que congela a animação sem afetar o audio.
@@ -69,6 +75,7 @@ class Vigilia {
   std::atomic<bool> acordou_{false};
   std::atomic<bool> anima_sem_foco_{false};
   std::atomic<bool> trava_animacao_{false};
+  std::atomic<bool> tem_foco_{true};
 };
 
 // O GESTO do foco, tal como o FTXUI v7.0.3 o entrega. O parser d'elle não

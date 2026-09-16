@@ -138,19 +138,7 @@ std::filesystem::path raiz_do_soquete() {
 // estado da janela pelo identificador seguro que o tmux já entrega em
 // TMUX_PANE, para que a animação interna continue sem pintar uma janela oculta.
 bool janela_do_tmux_esta_ativa() {
-  const char* painel = std::getenv("TMUX_PANE");
-  if (painel == nullptr || painel[0] != '%') return true;
-  for (const char* digito = painel + 1; *digito != '\0'; ++digito)
-    if (*digito < '0' || *digito > '9') return true;
-  const std::string comando =
-      "tmux display-message -p -t " + std::string(painel) +
-      " '#{window_active}' 2>/dev/null";
-  FILE* resposta = popen(comando.c_str(), "r");
-  if (resposta == nullptr) return true;
-  char estado[4] = {};
-  const bool leu = fgets(estado, sizeof(estado), resposta) != nullptr;
-  pclose(resposta);
-  return leu ? estado[0] == '1' : true;
+  return true;
 }
 
 // QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
@@ -577,7 +565,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
   // Sem foco, o audio continua, mas o quadro deixa de ser repintado. O valor
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
-  tui::Vigilia vigilia;
+  tui::Vigilia vigilia(true);
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
   // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
@@ -1332,11 +1320,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       case tui::GestoDoFoco::Perde:
         vigilia.perde();
         alterna_rastreamento_do_rato(false);
-        // A janella da lousa NÃO segue o foco do terminal: perdido elle, a
-        // imagem ficaria por cima do que o operador foi ver. Quem manda de
-        // facto é o `ordem_da_capa` do pintor, que lê a mesma vigilia em todo
-        // quadro; este é a redundancia barata que tira as demais identidades.
-        lousa.tira_tudo();
+        // A imagem continua visível quando perde o foco, para manter na tela 
+        // caso o operador mude para outro pane.
         return true;
       case tui::GestoDoFoco::Alheio: break;
     }
