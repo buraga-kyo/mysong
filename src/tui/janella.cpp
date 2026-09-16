@@ -371,32 +371,6 @@ void cumprir(const tui::Ordem& ordem, nucleo::Tocador& tocador,
   }
 }
 
-// AS DICAS do rodapé, n'uma linha. Ficam aqui, e não no meio da composição:
-// ellas mudam a cada issue que dá tecla nova, e assim quem as procura sabe
-// onde estão. As tres primeiras são as da issue #102, que são as unicas
-// teclas d'esta tela que ninguem conhece de outra casa.
-// Coube em CENTO E QUINZE collunhas emquanto as dicas eram nove, e o piso do
-// esboço é cento e vinte. Linha que transborde apara-se em silencio, e o que se
-// perde é o FIM; por isso o fim é o README, que é onde mora o que não coube.
-//
-// As seis de funcção (issue #106) entraram, e para lhes caber o logar sahiram
-// o Enter, o espaço e o `n`/`p`, que dizem o que o F7, o F6 e o F8 já dizem, e
-// sahiu o `o` da vista, que a chapa por cima da pauta annuncia por si.
-//
-// O `m` do menu (issue #96) entrou, e para lhe caber o logar o ponto do meio
-// cedeu o passo a DOUS ESPAÇOS, que é o separador do proprio esboço da tela.
-//
-// E declara-se o que se MEDIU, que a promessa das cento e vinte já se não
-// cumpre: com as setas e o Enter da issue #107 a linha ficou em cento e
-// quarenta e duas collunhas, e o `m` com o ponto punha-a em cento e cincoenta
-// e uma. Com os dous espaços mede cento e quarenta, que é MENOS do que ella
-// media sem o `m`; menos do que isso pedia apagar dica que uma lavra irmã
-// acabou de escrever. Em tela de cento e vinte perde-se o FIM, e o fim é o
-// README, que é justamente onde mora o que na linha não coube.
-constexpr const char* kDicas =
-    "? HELP  ↑↓←→ anda  Enter aperta  1 2 3 abas  Tab cicla"
-    "  F6 F7 F8 transporte  F9 mudo  F10 F11 volume  q sahe";
-
 // A CADENCIA do relogio. Cincoenta milesimos, que são vinte quadros por segundo:
 // o bastante para a barra andar sem salto visivel, e longe do sessenta que faz a
 // fita tremer por diff de buffer. O risco do tremor está declarado no plano, e
@@ -965,6 +939,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                     navegador.nome_do_catalogo());
     chapa.quantas = navegador.vista().size();
     chapa.especie = tui::especie_da_secao(navegador.secao());
+    chapa.contador_de_sons = tui::secao_de_faixas(navegador.secao());
     for (const tui::Linha& qual : navegador.vista())
       chapa.duracao += qual.duracao;
     chapa.vista = tui::nome_da_vista(navegador.secao());
@@ -1250,7 +1225,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         sala.cabecalho.largura, &caixas.cabecalho, foco, sala.cabecalho.altura,
         vigilia.animacao_travada(), true);
     // A ORDEM da tela nova (issue #125): o corpo abre na PRIMEIRA linha, e o pé
-    // toma as ultimas, de cima para baixo o campo, a fita e as dicas. O trilho
+    // toma o campo e a fita. O trilho
     // morreu na issue #134: a onda no meio da fita é o progresso.
     std::vector<ftxui::Element> tudo = {
         ftxui::hbox(std::move(metades)) |

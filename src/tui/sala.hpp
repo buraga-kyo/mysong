@@ -69,6 +69,7 @@ struct Chapa {
   // as linhas se lêem toma-se por linha da lista, e o dedo tenta elegel-o.
   std::string conselho;
   std::string recado;  // o aviso da rede, o filtro posto, a varredura
+  bool contador_de_sons = false;  // a barra curta `X sons >` das vistas de faixas
 };
 
 // espaco_do_recado, quantas collunhas sobram á direita depois do texto e das
@@ -107,7 +108,7 @@ struct Sala {
   Rectangulo capa;       // por baixo da ficha, ATÉ quarenta e cinco por cento
   Rectangulo letra;      // o bloco da letra, PARADO, abaixo da capa (#157)
   Rectangulo espectro;   // o que sobra do painel, abaixo da letra
-  Rectangulo rodape;     // UMA linha de dicas, no pé
+  Rectangulo rodape;     // reservado, sem linha de dicas
 };
 
 // sala_da_tela, todos os numeros da composição, n'uma conta só, para que a

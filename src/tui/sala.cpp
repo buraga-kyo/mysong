@@ -287,6 +287,15 @@ std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura) {
 ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   if (largura == 0) return ftxui::emptyElement();
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
+  if (chapa.contador_de_sons) {
+    const std::string texto = " " + std::to_string(chapa.quantas) +
+                              " sons >";
+    return pinta(texto, tokens::text_heading) |
+           ftxui::bold |
+           ftxui::bgcolor(ftxui::Color::RGB(fundo.r, fundo.g, fundo.b)) |
+           ftxui::size(ftxui::WIDTH, ftxui::EQUAL,
+                       static_cast<int>(largura));
+  }
   // A chapa lê-se em TRES pesos, e não n'um: ONDE se está carrega, a conta
   // apaga-se, e a VISTA sahe em chip, que é o que d'ella se cycla. Os bytes são
   // os do `texto_da_chapa`, cella por cella: quem conta o espaço do recado lê
