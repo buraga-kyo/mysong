@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   A CARNE DO ANALISADOR — src/nucleo/analisador.cpp
+//   A CARNE DO ANALISADOR, src/nucleo/analisador.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O TRACTADO vive no cabeçalho. Aqui mora o PipeWire, e sómente aqui: é esta a
 // unica unidade de traducção da Casa que inclue pipewire.h.
@@ -433,5 +433,5 @@ void Analisador::pulsa() {
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

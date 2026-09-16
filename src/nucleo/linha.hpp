@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LINHA DE COMMANDO — src/nucleo/linha.hpp
+//   TRACTADO DA LINHA DE COMMANDO, src/nucleo/linha.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Lê os argumentos com que a obra foi invocada e diz o que ella ha de fazer.
 // Funcção PURA: não lê ambiente, não abre tela e não sonda cousa alguma.
@@ -47,5 +47,5 @@ std::string texto_da_ajuda();
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

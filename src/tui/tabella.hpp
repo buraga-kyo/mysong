@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA TABELLA — src/tui/tabella.hpp
+//   TRACTADO DA TABELLA, src/tui/tabella.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta o que o Navegador diz: a pauta com a fatia que a rolagem elegeu, a
 // letra e a capa. Não decide nada; a decisão toda vive no navegador, e é lá
@@ -31,7 +31,7 @@
 
 namespace mysong::tui {
 
-// apara_collunhas — a cadeia em EXACTAMENTE `collunhas` cellas do terminal: o
+// apara_collunhas, a cadeia em EXACTAMENTE `collunhas` cellas do terminal: o
 // que sobeja corta-se e a ultima cella leva «…», e o que falta enche-se de
 // espaço. Conta-se por CELLA, e não por codepoint: o glypho CJK toma duas, e a
 // conta por codepoint dava-lhe uma, d'onde a columna do titulo transbordava e
@@ -53,7 +53,7 @@ struct Medidas {
   bool pela_conta = false;   // a vista que conta nomes: artistas, albuns, listas
 };
 
-// medidas_da_pauta — as columnas na largura que ha. As de largura fixa cedem
+// medidas_da_pauta, as columnas na largura que ha. As de largura fixa cedem
 // por ORDEM DE SERVIÇO, da menos util para a mais: primeiro o artista, depois a
 // régua, depois o tempo, e por fim o №. O titulo fica até ao fim, que sem elle
 // a linha não diz cousa alguma.
@@ -62,7 +62,7 @@ struct Medidas {
 // columnas de baixo desalinhavam das de cima e a pauta parecia quebrada.
 Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta);
 
-// medidas_da_fatia — as medidas da fatia que se vae pintar, e por `maior` o que
+// medidas_da_fatia, as medidas da fatia que se vae pintar, e por `maior` o que
 // mede a maior linha d'ella (a duração, ou a conta na vista que conta nomes).
 // Os dous decidem-se pela FATIA, e não por linha: por linha, as columnas de
 // baixo desalinhavam das de cima, e a régua de cada uma media contra si
@@ -70,7 +70,7 @@ Medidas medidas_da_pauta(std::size_t largura, bool ha_autor, bool pela_conta);
 Medidas medidas_da_fatia(const Navegador& navegador, std::size_t primeira,
                          std::size_t fim, std::size_t largura, int* maior);
 
-// cheias_da_regua — quantas cellas da régua se pintam cheias, dado o que a
+// cheias_da_regua, quantas cellas da régua se pintam cheias, dado o que a
 // linha mede e o que mede a MAIOR da fatia á vista. É textura de HUD: o olho
 // compara as linhas entre si, e não com relogio algum.
 //
@@ -97,7 +97,7 @@ struct PedacoDaPauta {
   bool negrito = false;
 };
 
-// pedacos_da_linha — a linha inteira, columna a columna, na ordem em que se
+// pedacos_da_linha, a linha inteira, columna a columna, na ordem em que se
 // pinta. `maior` é o que mede a maior da fatia á vista, que é o que dá a régua;
 // `soa` diz se é esta a faixa que o motor toca, que lhe põe o «▶» e lhe accende
 // o titulo. A ELEITA não entra aqui: ella é tinta, e não texto.
@@ -105,7 +105,7 @@ std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
                                             const Medidas& medidas, int maior,
                                             bool soa);
 
-// elemento_da_linha — os pedaços vestidos de tinta. A ELEITA vira BLOCO: fundo
+// elemento_da_linha, os pedaços vestidos de tinta. A ELEITA vira BLOCO: fundo
 // de orla a orla, e TODO o texto n'uma tinta só. É o gesto do sitio do Plano
 // Artistico, onde o cursor sobre a palavra do menu a engole n'um bloco solido;
 // aqui o bloco é violeta, que é a palheta d'esta Casa.
@@ -115,7 +115,7 @@ std::vector<PedacoDaPauta> pedacos_da_linha(const Linha& linha,
 ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
                                  bool eleita, bool soa, std::size_t largura);
 
-// conselho_do_vazio — o que se diz quando a pauta não tem linha alguma, e a
+// conselho_do_vazio, o que se diz quando a pauta não tem linha alguma, e a
 // TECLA que o desfaz. É POR SECÇÃO: um conselho só dizia «varra o acervo»
 // dentro de uma lista escolhida á mão, que é mandar o operador ao logar errado.
 //
@@ -166,7 +166,7 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
                                 std::size_t collunas, std::size_t linhas,
                                 ftxui::Box* caixa = nullptr);
 
-// caret_do_campo — a cella de UMA collunha onde o cursor do terminal pousa
+// caret_do_campo, a cella de UMA collunha onde o cursor do terminal pousa
 // emquanto ha prompt aberto. É o UNICO logar d'esta obra que pede foco, e é de
 // proposito: o `Render` do FTXUI elege UM nó focado por quadro e cala os outros
 // sem aviso, donde dous pedidos seriam um pedido a perder-se em silencio.
@@ -179,5 +179,5 @@ ftxui::Element caret_do_campo();
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

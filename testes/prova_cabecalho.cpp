@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO CABEÇALHO — testes/prova_cabecalho.cpp
+//   PROVA DO CABEÇALHO, testes/prova_cabecalho.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A linha do alto (issue #102) em écran de PAPEL, lida cella a cella, e as
 // taboadas puras das teclas. Terminal algum se abre: o Retracto arma-se á mão.
@@ -20,7 +20,7 @@ namespace tui = mysong::tui;
 
 namespace {
 
-// linha_do — o cabeçalho pintado, lido cella a cella. O `ToString` metteria
+// linha_do, o cabeçalho pintado, lido cella a cella. O `ToString` metteria
 // escape no meio dos bytes, e contar bytes seria contar a tinta.
 ftxui::Screen papel(ftxui::Element quadro, int largura, int altura = 1) {
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
@@ -29,7 +29,7 @@ ftxui::Screen papel(ftxui::Element quadro, int largura, int altura = 1) {
   return ecran;
 }
 
-// pedaco — as `quantas` cellas a partir da collunha `x`, na fileira zero. Por
+// pedaco, as `quantas` cellas a partir da collunha `x`, na fileira zero. Por
 // CELLA, e não por byte: `substr` n'uma cadeia UTF-8 contaria octetos, e o
 // glifo de tres bytes desalinharia todo indice depois do primeiro.
 std::string pedaco(const ftxui::Screen& ecran, int x, int quantas,
@@ -422,5 +422,5 @@ TEST_CASE("o segmento do volume diz MUDO, e nas mesmas oito collunhas") {
   CHECK(quieto.PixelAt(125, 0).foreground_color == cor(tk::text_muted));
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

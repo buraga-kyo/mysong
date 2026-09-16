@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DE FUMO — testes/fumo_marca.cpp
+//   TRACTADO DA PROVA DE FUMO, testes/fumo_marca.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A primeira prova da Casa. Não se propõe a examinar o núcleo inteiro: propõe
 // a demonstrar que a BATERIA RODA de verdade, o que é coisa differente de
@@ -34,5 +34,5 @@ TEST_CASE("a marca se escreve em terminal pelado") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

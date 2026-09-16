@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LIXEIRA — src/nucleo/lixeira.hpp
+//   TRACTADO DA LIXEIRA, src/nucleo/lixeira.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Apagar uma faixa é MANDÁ-LA Á LIXEIRA, e nunca desligá-la do disco: o que se
 // apaga por engano volta pela porta do gerenciador de arquivos. Segue-se a
@@ -52,5 +52,5 @@ DaLixeira manda_a_lixeira(const std::filesystem::path& caminho);
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

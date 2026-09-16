@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA TABOA DA LIBMPV — src/nucleo/libmpv.hpp
+//   TRACTADO DA TABOA DA LIBMPV, src/nucleo/libmpv.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A libmpv NÃO se liga a binário algum d'esta obra: carrega-se por dlopen, e as
 // suas funcções chamam-se por esta taboa de ponteiros. É o que faz valer a
@@ -53,5 +53,5 @@ const TaboaDaLibmpv* libmpv(std::string* razao = nullptr);
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

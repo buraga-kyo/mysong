@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA AJUDA — src/tui/ajuda.hpp
+//   TRACTADO DA AJUDA, src/tui/ajuda.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O HELP (issue #133): a janella que diz TODOS os atalhos que esta Casa
 // conhece e explica as côres do espectro. Flutua por cima do corpo, sem lhe
@@ -49,12 +49,12 @@ struct GrupoDaAjuda {
   std::vector<LinhaDaAjuda> linhas;
 };
 
-// taboada_da_ajuda — TODOS os atalhos, em grupos: TOCADOR, NAVEGAÇÃO, FAIXA,
+// taboada_da_ajuda, TODOS os atalhos, em grupos: TOCADOR, NAVEGAÇÃO, FAIXA,
 // PLAYLISTS, DOWNLOAD, RATO. Funcção pura, e a UNICA verdade do que o HELP
 // diz: o README transcreve-a, e a bateria confere-a contra as taboadas.
 std::vector<GrupoDaAjuda> taboada_da_ajuda();
 
-// rotulo_da_tecla — o nome por que a taboada chama cada tecla: a lettra
+// rotulo_da_tecla, o nome por que a taboada chama cada tecla: a lettra
 // mesma, «espaço», «Enter», «Esc», «Backspace», «Tab», «Shift+Tab»,
 // «Delete», «F1» a «F12», as quatro setas, «Home», «End», «PgUp», «PgDn».
 // Vazio para tecla que não tem nome, e é o que a bateria usa para achar cada
@@ -70,7 +70,7 @@ struct AmostraDaAjuda {
   std::string nota;
 };
 
-// legenda_do_espectro — a barra violeta, o topo em rosa na batida forte, e os
+// legenda_do_espectro, a barra violeta, o topo em rosa na batida forte, e os
 // quatro registros com os hertz d'elles, SEM côr propria (issue #167): a fita
 // tem UMA côr de batida, e é o rosa. Os hertz vêm das fronteiras de
 // tui/espectro.hpp: legenda escripta á mão divergiria da tela no dia em que uma
@@ -103,33 +103,33 @@ inline constexpr std::size_t LARGURA_DA_COLLUNHA = 52;
 inline constexpr std::size_t VAO_ENTRE_COLLUNHAS = 2;
 inline constexpr std::size_t MAXIMO_DE_COLLUNHAS = 3;
 
-// medida_da_ajuda — a conta inteira, sem pintar. Tela sem largura ou com menos
+// medida_da_ajuda, a conta inteira, sem pintar. Tela sem largura ou com menos
 // de quatro linhas dá medida vazia, e ahi não ha janella que pôr.
 MedidaDaAjuda medida_da_ajuda(std::size_t largura_da_tela,
                               std::size_t altura_da_tela);
 
-// rolagem_maxima — quanto se pode rolar: o conteudo que não cabe, ou zero.
+// rolagem_maxima, quanto se pode rolar: o conteudo que não cabe, ou zero.
 std::size_t rolagem_maxima(const MedidaDaAjuda& medida) noexcept;
 
 // O passo da pagina: quantas linhas o PgUp e o PgDn andam.
 inline constexpr std::size_t PASSO_DA_PAGINA = 10;
 
-// alterna_a_ajuda — abre fechada, fecha aberta; abrir começa do alto.
+// alterna_a_ajuda, abre fechada, fecha aberta; abrir começa do alto.
 void alterna_a_ajuda(Ajuda& ajuda) noexcept;
 
-// tecla_na_ajuda — com a ajuda ABERTA: fecha (Escape, `?`, F1, Enter,
+// tecla_na_ajuda, com a ajuda ABERTA: fecha (Escape, `?`, F1, Enter,
 // Backspace, `q`), rola (setas, `j`/`k`, PgUp/PgDn, Home/End) ou ENGOLE a
 // tecla. Devolve VERDADEIRO sempre que a ajuda estava aberta, que é dizer
 // «consumida»; fechada, devolve falso e não toca em nada.
 bool tecla_na_ajuda(Ajuda& ajuda, const ftxui::Event& tecla,
                     std::size_t rolagem_maxima) noexcept;
 
-// rato_na_ajuda — com a ajuda ABERTA: a roda rola, o clique FÓRA da caixa
+// rato_na_ajuda, com a ajuda ABERTA: a roda rola, o clique FÓRA da caixa
 // fecha, e o resto engole-se. Devolve verdadeiro quando estava aberta.
 bool rato_na_ajuda(Ajuda& ajuda, const ftxui::Box& caixa,
                    const ftxui::Mouse& rato, std::size_t rolagem_maxima) noexcept;
 
-// flutuante_da_ajuda — a janella, para o `dbox` por cima do corpo: vazia com a
+// flutuante_da_ajuda, a janella, para o `dbox` por cima do corpo: vazia com a
 // ajuda fechada. `caixa`, não nulla, recebe a caixa da janella, que é a que o
 // clique de fóra consulta.
 ftxui::Element flutuante_da_ajuda(const Ajuda& ajuda,
@@ -139,5 +139,5 @@ ftxui::Element flutuante_da_ajuda(const Ajuda& ajuda,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

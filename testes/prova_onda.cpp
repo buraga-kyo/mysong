@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA ONDA — testes/prova_onda.cpp
+//   PROVA DA ONDA, testes/prova_onda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A conta da envolvente, a chave e o formato do cache, a dobra e a linha em
 // écran de PAPEL. O ffmpeg não corre aqui: afere-se o argv que se HA DE
@@ -33,7 +33,7 @@ namespace tui = mysong::tui;
 
 namespace {
 
-// seno — um seno de amplitude dada, com `por_volta` amostras por volta. A
+// seno, um seno de amplitude dada, com `por_volta` amostras por volta. A
 // volta divide o balde de proposito: assim a RMS de cada balde é a mesma até
 // ao ultimo bit, e a prova da normalização não depende de tolerancia larga.
 std::vector<std::int16_t> seno(std::size_t quantas, double amplitude,
@@ -244,7 +244,7 @@ TEST_CASE("a onda vazia não se guarda, nem se lê de arquivo que não ha") {
 
 namespace {
 
-// escreve_cru — o arquivo do cache lavrado Á MÃO, que é o que deixa aferir a
+// escreve_cru, o arquivo do cache lavrado Á MÃO, que é o que deixa aferir a
 // RECUSA sem se correr o ffmpeg: cada maneira de o corromper põe-se de
 // propósito, octeto por octeto.
 std::filesystem::path escreve_cru(const Cova& cova, const std::string& nome,
@@ -311,7 +311,7 @@ TEST_CASE("dobrar fecha a largura exacta de uma a duzentas collunhas") {
 
 namespace {
 
-// papel — o écran de mentira, da largura pedida e de UMA fileira.
+// papel, o écran de mentira, da largura pedida e de UMA fileira.
 ftxui::Screen papel(ftxui::Element quadro, int largura) {
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
                                               ftxui::Dimension::Fixed(1));
@@ -319,7 +319,7 @@ ftxui::Screen papel(ftxui::Element quadro, int largura) {
   return ecran;
 }
 
-// pedaco — as cellas por GLIFO, e não por octeto: `substr` n'uma cadeia UTF-8
+// pedaco, as cellas por GLIFO, e não por octeto: `substr` n'uma cadeia UTF-8
 // contaria bytes, e o bloco de tres desalinharia todo indice depois do
 // primeiro.
 std::string pedaco(const ftxui::Screen& ecran, int x, int quantas) {

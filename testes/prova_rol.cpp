@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO ROL — testes/prova_rol.cpp
+//   PROVA DO ROL, testes/prova_rol.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Corre inteira em directorio temporario: o caminho do banco entra por parâmetro,
 // donde prova alguma pode tocar as listas de quem nos usa. O que ella afere é a
@@ -238,5 +238,5 @@ TEST_CASE("a faixa apagada sae de todas as listas, e a ordem fecha o buraco") {
         std::vector<std::string>{"/a/outra.mp3", "/a/uma.mp3"});
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

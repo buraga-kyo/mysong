@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   A CARNE DO ESPECTRO — src/nucleo/espectro.cpp
+//   A CARNE DO ESPECTRO, src/nucleo/espectro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O TRACTADO vive no cabeçalho. Aqui mora a fftw3, e sómente aqui: é esta a
 // unica unidade de traducção da Casa que inclue fftw3.h.
@@ -221,5 +221,5 @@ std::size_t Espectro::banda_de(float hertz) const {
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

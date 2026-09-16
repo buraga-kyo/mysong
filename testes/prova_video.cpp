@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO PROJECTOR — testes/prova_video.cpp
+//   PROVA DO PROJECTOR, testes/prova_video.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Janella alguma se abre nesta bateria: o que se afere é o que se HA DE correr e o
 // que se HA DE mandar. A janella de verdade prova-se á mão, com `pgrep` e `xprop`. E
@@ -187,5 +187,5 @@ TEST_CASE("falta o mpv no caminho: a fita diz o nome d'essa falta") {
       nu::caminho_do_soquete(cova.raiz(), static_cast<long>(::getpid()))));
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

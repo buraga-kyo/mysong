@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO COMMANDO — src/tui/commando.cpp
+//   TRACTADO DO COMMANDO, src/tui/commando.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A taboada. Uma tecla, uma linha; e tecla que não está na taboada cahe em
 // Ordem::Nada, que não chama cousa alguma.
@@ -18,7 +18,7 @@ namespace mysong::tui {
 
 namespace {
 
-// aparar_busca — o alvo da busca dentro do arco da faixa. Duração que não presta
+// aparar_busca, o alvo da busca dentro do arco da faixa. Duração que não presta
 // dá zero: buscar n'uma faixa cuja duração o mpv ainda não sabe é pedir o
 // principio, e não é pedir um numero de sorte.
 double aparar_busca(double pedido, double duracao) {
@@ -179,5 +179,5 @@ Ordem ordem_da_tecla(const ftxui::Event& tecla, const Retracto& retracto,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

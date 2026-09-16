@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA VARREDURA — src/nucleo/varredura.hpp
+//   TRACTADO DA VARREDURA, src/nucleo/varredura.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Quem percorre o disco. Lê as etiquetas com taglib, deduz do caminho o que a
 // etiqueta calar, e entrega as faixas ao Escriba da bibliotheca. Não sabe de
@@ -47,7 +47,7 @@ struct Progresso {
   std::size_t raizes_falhadas = 0;   // ausente, ou sem permissão
 };
 
-// deriva_do_caminho — o que o caminho diz de uma faixa. Funcção pura, e por isso
+// deriva_do_caminho, o que o caminho diz de uma faixa. Funcção pura, e por isso
 // aferivel contra alvo escripto á mão sem disco algum. O artista é o componente
 // logo sob a raiz; o album é o directorio que contem o arquivo; e do nome do
 // arquivo tira-se `NN - Titulo`. Arquivo directamente na raiz não tem artista
@@ -59,12 +59,12 @@ struct Progresso {
 Faixa deriva_do_caminho(const std::filesystem::path& caminho,
                         const std::filesystem::path& raiz);
 
-// extensao_de_audio — se a extensão é das que se offerecem á taglib. Filtra-se
+// extensao_de_audio, se a extensão é das que se offerecem á taglib. Filtra-se
 // ANTES de abrir: offerecer todo arquivo á taglib faria a varredura abrir cada
 // PNG e cada texto do acervo para nada.
 bool extensao_de_audio(std::string_view extensao);
 
-// extensao_que_interessa — audio OU video. A varredura entra pelas duas: faixa de
+// extensao_que_interessa, audio OU video. A varredura entra pelas duas: faixa de
 // video que não esteja no índice não se pode eleger na tela, e sem se eleger a
 // janella da issue #17 não abre para cousa alguma.
 //
@@ -82,7 +82,7 @@ struct DoTitulo {
   std::string razao;   // vazio quando feito
 };
 
-// renomeia_titulo — grava a TITLE da etiqueta pelo `TagLib::FileRef`, que é o
+// renomeia_titulo, grava a TITLE da etiqueta pelo `TagLib::FileRef`, que é o
 // mesmo punho generico por onde a varredura a LÊ: assim o que se escreve e o
 // que se torna a ler são a mesma cousa em mp3, m4a, opus e flac, sem um ramo
 // por fórmato. O NOME DO ARQUIVO não muda, e é decisão e não descuido: o `.lrc`
@@ -127,5 +127,5 @@ class Varredura {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

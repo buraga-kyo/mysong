@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA CAPA — src/nucleo/capa.hpp
+//   TRACTADO DA CAPA, src/nucleo/capa.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Acha a capa do album e converte-a em texto de terminal pelo `chafa`, em
 // MEIO-BLOCO. Meio-bloco é o TECTO d'esta machina, e não escolha preguiçosa: o
@@ -33,12 +33,12 @@ namespace mysong::nucleo {
 // preferem. A lista é fechada, e a ordem é a convenção que os ripadores usam.
 const std::vector<std::string>& nomes_de_capa();
 
-// capa_ao_lado — o arquivo de capa que estiver na pasta da faixa, pela ordem dos
+// capa_ao_lado, o arquivo de capa que estiver na pasta da faixa, pela ordem dos
 // nomes preferidos. Vazio quando não ha nenhum. Não desce nem sobe: capa de album
 // vive junto das faixas d'elle, e ir buscá-la mais longe traria a do album vizinho.
 std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa);
 
-// arte_embutida — os OCTETOS do PRIMEIRO quadro APIC da etiqueta. Vazio quando a
+// arte_embutida, os OCTETOS do PRIMEIRO quadro APIC da etiqueta. Vazio quando a
 // faixa não tem etiqueta, não tem APIC, ou não é MP3 de todo: arquivo que a taglib
 // não reconheça sahe vazio, e não lança.
 //
@@ -56,7 +56,7 @@ std::filesystem::path capa_ao_lado(const std::filesystem::path& faixa);
 // operador pode trocar sem reescrever o MP3, e por isso é o que elle manda.
 std::string arte_embutida(const std::filesystem::path& faixa);
 
-// embute_arte — o ESPELHO de escripta do arte_embutida (issue #83): assenta
+// embute_arte, o ESPELHO de escripta do arte_embutida (issue #83): assenta
 // os octetos como quadro APIC de capa da FRENTE, com o mime lido do CONTEUDO
 // (JPEG ou PNG pelos octetos de guarda; outro formato recusa-se sem tocar o
 // arquivo, que gravar a pagina de erro de um servidor dentro da etiqueta é
@@ -66,7 +66,7 @@ std::string arte_embutida(const std::filesystem::path& faixa);
 // por isso que quem chama só o faz em faixa que não tinha capa alguma.
 bool embute_arte(const std::filesystem::path& faixa, std::string_view octetos);
 
-// chave_do_cache — o que identifica um render. É a PASTA da faixa mais o tamanho,
+// chave_do_cache, o que identifica um render. É a PASTA da faixa mais o tamanho,
 // e não o caminho da faixa: as faixas de um album partilham a capa, e usar o
 // caminho faria converter uma vez por faixa em vez de uma por album.
 std::string chave_do_cache(const std::filesystem::path& faixa,
@@ -78,7 +78,7 @@ struct Medida {
   std::size_t largura = 0, altura = 0;
 };
 
-// medida_da_imagem — a largura e a altura lidas do CABEÇALHO dos octetos, sem
+// medida_da_imagem, a largura e a altura lidas do CABEÇALHO dos octetos, sem
 // se decodificar imagem alguma. Conhece o JPEG e o PNG, que são os dous que o
 // APIC d'este acervo traz e os que a Casa embute; de todo o mais devolve zero,
 // e quem chama toma isso por «não sei» e não por «vazia». PURA, e é d'ahi que
@@ -95,7 +95,7 @@ struct Retangulo {
 // e este é sómente o padrão da Casa: quem trocar de fonte troca um numero.
 inline constexpr Medida CELLULA_DA_CASA{9, 20};
 
-// rectangulo_da_capa — quantas célullas a imagem toma dentro do tecto, GUARDADA
+// rectangulo_da_capa, quantas célullas a imagem toma dentro do tecto, GUARDADA
 // A PROPORÇÃO. A célulla é mais alta que larga, e sem essa razão na conta a
 // capa quadrada pediria o dobro das linhas que toma. Medida por ler (formato
 // que este modulo não conhece) toma o tecto inteiro, que o Überzug++ encolhe a
@@ -107,31 +107,31 @@ inline constexpr Medida CELLULA_DA_CASA{9, 20};
 Retangulo rectangulo_da_capa(Medida imagem, std::size_t tecto_collunas,
                              std::size_t tecto_linhas, Medida cellula);
 
-// somma_dos_octetos — o FNV-1a de sessenta e quatro bits, em hexadecimal. Não é
+// somma_dos_octetos, o FNV-1a de sessenta e quatro bits, em hexadecimal. Não é
 // criptographia e não precisa de ser: o que se quer é que duas capas
 // differentes não caiam no mesmo arquivo do cache. Vae aqui, e não em
 // bibliotheca, porque nenhuma d'esta Casa o traz e são seis linhas.
 std::string somma_dos_octetos(std::string_view octetos);
 
-// extensao_da_capa — «jpg» ou «png», pelo CONTEUDO e por extensão nenhuma, pela
+// extensao_da_capa, «jpg» ou «png», pelo CONTEUDO e por extensão nenhuma, pela
 // regra do embute_arte: o APIC declara um mime que ninguem afere. Vazio de todo
 // o mais, e ahi a capa não vae ao cache.
 std::string_view extensao_da_capa(std::string_view octetos);
 
-// raiz_do_cache — `$XDG_CACHE_HOME/mysong`, e sem a variavel `~/.cache/mysong`.
+// raiz_do_cache, `$XDG_CACHE_HOME/mysong`, e sem a variavel `~/.cache/mysong`.
 // Vazia sem uma e sem HOME, que ahi cache não ha. Á parte por serem DOUS os
 // que escrevem n'este cache, a arte embutida e a chapa do letreiro, e raiz
 // lida em dous logares divergiria no dia em que uma d'ellas mudasse.
 std::filesystem::path raiz_do_cache();
 
-// caminho_da_capa_em_cache — `$XDG_CACHE_HOME/mysong/capas/<somma>.<extensão>`,
+// caminho_da_capa_em_cache, `$XDG_CACHE_HOME/mysong/capas/<somma>.<extensão>`,
 // e sem a variavel `~/.cache/mysong/capas/`, pelo precedente exacto do
 // caminho_da_configuracao. Vazio sem HOME, e vazio quando os octetos não são
 // imagem que se conheça. Directorio algum se cria aqui: quem escreve é quem
 // cria, e esta funcção sómente diz ONDE.
 std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos);
 
-// ha_sextante_na_fonte — diz se a fonte d'esta machina desenha o SEXTANTE
+// ha_sextante_na_fonte, diz se a fonte d'esta machina desenha o SEXTANTE
 // (U+1FB00), o glypho de duas por tres sub-célullas com que o chafa dobra os
 // degraus por célulla. Pergunta-se ao fontconfig pela classe «nerd», que é a
 // que a sonda já exige; sem glypho, o sextante sahiria quadrículo vazio, e ahi
@@ -142,7 +142,7 @@ std::filesystem::path caminho_da_capa_em_cache(std::string_view octetos);
 // por render.
 bool ha_sextante_na_fonte();
 
-// sextante_de — resolve a alavanca do operador n'um bool. `Auto` é a regra da
+// sextante_de, resolve a alavanca do operador n'um bool. `Auto` é a regra da
 // Casa, que pergunta á fonte; `Sim` e `Nao` são a vontade d'elle, e essa não se
 // discute: quem olha o terminal é elle, e a fonte de substituição pode desenhar
 // o sextante muito bem sem que o fontconfig o saiba dizer.
@@ -154,7 +154,7 @@ bool ha_sextante_na_fonte();
 // nome esperando a funcção e obtiver o bool, ou o contrario.
 bool sextante_de(Sextantes ajuste);
 
-// argumentos_do_chafa — o que se corre. Os symbolos, a geometria em collunhas
+// argumentos_do_chafa, o que se corre. Os symbolos, a geometria em collunhas
 // por linhas, e o trabalho no maximo.
 //
 // O `com_sextante` entra por PARAMETRO, e sem valor padrão: com padrão, esta
@@ -186,11 +186,11 @@ struct CapaPintada {
   bool achada = false;
 };
 
-// analysa_sgr — parte uma linha de sahida do chafa em corridas. Funcção PURA, e por
+// analysa_sgr, parte uma linha de sahida do chafa em corridas. Funcção PURA, e por
 // isso aferivel contra linhas escriptas á mão sem chamar o chafa.
 std::vector<Corrida> analysa_sgr(std::string_view linha);
 
-// pinta_imagem — renderiza um ARQUIVO no tamanho pedido, e é o que a Galeria
+// pinta_imagem, renderiza um ARQUIVO no tamanho pedido, e é o que a Galeria
 // faz depois de achar a imagem. Sahe d'ella (issue #94) para o fita_capa a
 // alcançar sem faixa, sem etiqueta e sem cache. Tamanho zero, chafa ausente e
 // imagem recusada devolvem `achada` falso; nada lança.
@@ -253,5 +253,5 @@ class Galeria {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

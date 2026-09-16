@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO CABEÇALHO — src/tui/cabecalho.cpp
+//   TRACTADO DO CABEÇALHO, src/tui/cabecalho.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra do que cabecalho.hpp promette. As taboadas primeiro, a fita depois.
 //
@@ -119,7 +119,7 @@ std::string nome_da_vista(Secao secao) {
   return {};
 }
 
-// ordem_da_aba — a taboada das teclas. Os algarismos e o `o` estavam livres, e
+// ordem_da_aba, a taboada das teclas. Os algarismos e o `o` estavam livres, e
 // o Tab vagou com a barra: era elle que a abria. Tecla que não está aqui é
 // Alheia, e Alheio NÃO é queda de taboada: é o que faz o atalho de sempre
 // continuar a valer sem se repetir n'este arquivo.
@@ -142,7 +142,7 @@ OrdemDaAba ordem_da_aba(const ftxui::Event& tecla) noexcept {
 
 namespace {
 
-// vestir — o texto com o par de côres do token, na ALTURA que a fita pedir.
+// vestir, o texto com o par de côres do token, na ALTURA que a fita pedir.
 // Côr crua não entra n'esta obra. O fundo cobre as DUAS linhas e o texto fica
 // na de CIMA sem que se pinte fileira de espaços: medido no FTXUI v7.0.3, o
 // `bgcolor` assenta a côr na caixa INTEIRA antes de descer ao filho, e o `text`
@@ -156,7 +156,7 @@ ftxui::Element vestir(const std::string& texto, std::string_view tinta,
          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura));
 }
 
-// vestir_todas — o texto repetido em TODAS as fileiras, e não sómente na de
+// vestir_todas, o texto repetido em TODAS as fileiras, e não sómente na de
 // cima. É o que a junção pede: o `vestir` assenta o fundo na caixa inteira mas
 // escreve o glifo n'uma fileira só, e seta pintada sómente em cima deixaria o
 // fundo do visinho a entrar em quadrado por baixo d'ella, que é a emenda
@@ -170,7 +170,7 @@ ftxui::Element vestir_todas(const std::string& texto, std::string_view tinta,
   return ftxui::vbox(std::move(fileiras));
 }
 
-// pintar_fita — os pedaços em elementos, com a caixa de CADA segmento pendurada
+// pintar_fita, os pedaços em elementos, com a caixa de CADA segmento pendurada
 // pela ORDEM em que a fita o juntou, e não pelo glifo que elle mostra. A irmã
 // do letreiro troca a palavra da aba por uma imagem, e caixa achada por texto
 // perder-se-hia n'essa troca sem que nada o accusasse.
@@ -221,7 +221,7 @@ std::string_view tinta_da_aba(EstadoDaAba estado) {
   return pintura_da_aba(estado).tinta;
 }
 
-// aceso — o segmento vestido de FOCO (issue #107). As côres sahem do MESMO
+// aceso, o segmento vestido de FOCO (issue #107). As côres sahem do MESMO
 // `pintura_da_aba` que veste as abas e as chapas em XIROD: par de côres lido em
 // dous logares divergiria na primeira issue que mexesse n'um d'elles. Não sendo
 // a peça a que tem o foco, devolve-se intacta.
@@ -235,7 +235,7 @@ Segmento aceso(Segmento peca, bool tem_foco) {
 
 }  // namespace
 
-// pintura_da_aba — a corrente é BLOCO SOLIDO, v600 com texto v50, que é o
+// pintura_da_aba, a corrente é BLOCO SOLIDO, v600 com texto v50, que é o
 // gesto do site d'elle onde o que está sob a mão vira bloco cheio; a apagada
 // fica no `raised`, que é o degrau de repouso do chrome; e a que tem o FOCO
 // accende em glow_core com a tinta do painel, distincta da corrente de
@@ -290,7 +290,7 @@ std::string_view identidade_da_chapa(Aba aba) noexcept {
 
 namespace {
 
-// caixa_do_segmento — a caixa nomeada de cada aba. Por nome e não por indice,
+// caixa_do_segmento, a caixa nomeada de cada aba. Por nome e não por indice,
 // que peça nova nas caixas deslocaria o indice em silencio.
 const ftxui::Box& caixa_do_segmento(const CaixasDoCabecalho& caixas, Aba aba) {
   switch (aba) {
@@ -390,7 +390,7 @@ ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
 
 namespace {
 
-// fita_da_esquerda — as FIXAS, n'uma fita só: as tres abas e, coladas a ellas,
+// fita_da_esquerda, as FIXAS, n'uma fita só: as tres abas e, coladas a ellas,
 // os tres botões do transporte (tocar, anterior, seguinte). Uma fita e não
 // duas, de proposito: a junção entre a ultima aba e o primeiro botão sahe da
 // mesma regra que as outras, e fita apartada rematava em preto no meio da
@@ -419,7 +419,7 @@ Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando) {
   return fita;
 }
 
-// fita_da_direita — o tempo, o volume, os dous modos e o HELP, em setas para a
+// fita_da_direita, o tempo, o volume, os dous modos e o HELP, em setas para a
 // ESQUERDA, e sómente as `quantas` primeiras. Quem não cabe sahe INTEIRO, e da
 // direita para a esquerda: o HELP cede primeiro (o `?` continua a abri-lo),
 // depois o REPETIR, e o tempo por ultimo, que é a ordem do menos util ao mais. Aparar ao meio partiria um par de tinta e
@@ -490,7 +490,7 @@ Fita fita_da_direita(const Retracto& retracto, std::size_t quantas,
   return fita;
 }
 
-// caixas_da — os punhos das caixas na ORDEM em que a fita junta os segmentos.
+// caixas_da, os punhos das caixas na ORDEM em que a fita junta os segmentos.
 // Punho nullo em toda a lista quer dizer «esta chamada não quer saber».
 std::vector<ftxui::Box*> caixas_da_esquerda(CaixasDoCabecalho* c) {
   if (c == nullptr) return {};
@@ -527,7 +527,7 @@ ContaDaFita conta_da_fita(std::size_t largura, std::size_t fixas,
 
 namespace {
 
-// elemento_do_meio — a ONDA da faixa (issue #131), ou a barra chata do
+// elemento_do_meio, a ONDA da faixa (issue #131), ou a barra chata do
 // progresso emquanto onda não ha: quem decide é o `elemento_da_onda`, que
 // recebe os pontos e a posição, e pinta o andado em v600 (glow_core com o
 // foco) e o que falta em line_dim, sobre o fundo `panel` que é o da tela por
@@ -595,5 +595,5 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

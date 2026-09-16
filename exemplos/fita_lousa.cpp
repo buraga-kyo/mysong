@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO EXEMPLO DA FITA DA LOUSA — exemplos/fita_lousa.cpp
+//   TRACTADO DO EXEMPLO DA FITA DA LOUSA, exemplos/fita_lousa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Põe uma imagem no rectangulo pedido, espera, e tira-a. É a prova do OLHO da
 // lousa sem se abrir o tocador: o que se vê aqui é o que o painel ha de
@@ -28,7 +28,7 @@ namespace nu = mysong::nucleo;
 
 namespace {
 
-// par_de — o `AxB`, e sómente elle. Zero admitte-se, ao contrario do que faz o
+// par_de, o `AxB`, e sómente elle. Zero admitte-se, ao contrario do que faz o
 // fita_capa: o canto do terminal É a collunha zero, e recusál-o tiraria da
 // prova justamente a posição mais fácil de conferir.
 bool par_de(std::string_view texto, long* um, long* outro) {
@@ -93,5 +93,5 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

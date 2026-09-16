@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA TELA DOS REQUISITOS — src/tui/tela_requisitos.cpp
+//   TRACTADO DA TELA DOS REQUISITOS, src/tui/tela_requisitos.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A obra da tela. Nada se sonda aqui: recebe-se o relatorio já colhido e
 // mostra-se, ou em texto puro, ou em quadro pintado.
@@ -33,7 +33,7 @@ std::string_view rotulo_da_gravidade(nucleo::Gravidade gravidade) {
                                                      : "aviso      ";
 }
 
-// tinta — verte o token de côr no que o FTXUI pinta. Côr alguma se escreve por
+// tinta, verte o token de côr no que o FTXUI pinta. Côr alguma se escreve por
 // literal nesta tela: sahem todas da taboada de tui::tokens.
 ftxui::Color tinta(std::string_view token) {
   const tokens::Triade cor = tokens::rgb(token);
@@ -42,7 +42,7 @@ ftxui::Color tinta(std::string_view token) {
 
 }  // namespace
 
-// texto_do_relatorio — o diagnostico. Diz TODOS os requisitos, e não sómente os
+// texto_do_relatorio, o diagnostico. Diz TODOS os requisitos, e não sómente os
 // que faltam: saber que a libmpv está presente é metade do valor d'isto.
 std::string texto_do_relatorio(const nucleo::Relatorio& relatorio) {
   std::string texto = "mysong: sonda dos requisitos do systema\n\n";
@@ -64,7 +64,7 @@ std::string texto_do_relatorio(const nucleo::Relatorio& relatorio) {
   return texto;
 }
 
-// texto_dos_avisos — as linhas curtas que precedem o tocador, sem o
+// texto_dos_avisos, as linhas curtas que precedem o tocador, sem o
 // interromper. NÃO espera tecla, e a razão vae dita por extenso para que
 // ninguem a reintroduza por zelo: aquella tecla não seria uma vez, seria em TODA
 // abertura do tocador, e quem a aperta todo dia aprende a apertá-la sem ler.
@@ -88,7 +88,7 @@ std::string texto_dos_avisos(const nucleo::Relatorio& relatorio) {
   return texto;
 }
 
-// elemento_dos_requisitos — o QUADRO. Escreve-se por paragrafo, e não por linha
+// elemento_dos_requisitos, o QUADRO. Escreve-se por paragrafo, e não por linha
 // rigida, de proposito: tela de erro que quebra em terminal estreito falha
 // exactamente quando alguem está com problema. O texto reflue, e nenhum remedio
 // se perde por córte.
@@ -128,5 +128,5 @@ ftxui::Element elemento_dos_requisitos(const nucleo::Relatorio& relatorio) {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

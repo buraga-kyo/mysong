@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA ONDA NA TELA — src/tui/onda.hpp
+//   TRACTADO DA ONDA NA TELA, src/tui/onda.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A onda da faixa n'UMA linha da fita, ao modo do SoundCloud: uma barra por
 // collunha, em blocos de um a oito oitavos, o que já tocou n'uma côr e o que
@@ -22,14 +22,14 @@
 
 namespace mysong::tui {
 
-// dobrar — os pontos fundidos á largura pedida, e devolve EXACTAMENTE
+// dobrar, os pontos fundidos á largura pedida, e devolve EXACTAMENTE
 // `largura` valores. Funde por MÁXIMO e não amostra, pela razão medida no
 // espectro: amostrar faria um pico desapparecer só porque o operador
 // estreitou a janella, e onda que apaga ao redimensionar lê-se como defeito.
 // Largura maior que a conta estica. Pontos vazios, ou largura zero, dão vazio.
 std::vector<float> dobrar(const std::vector<float>& pontos, std::size_t largura);
 
-// elemento_da_onda — a linha de `largura` cellas, uma de altura, fundo
+// elemento_da_onda, a linha de `largura` cellas, uma de altura, fundo
 // `tokens::panel`. Com pontos, cada cella é o bloco U+2581 a U+2588 do valor
 // dobrado, e NUNCA menos de um oitavo: sem esse piso, o trecho calado sahiria
 // em cella vazia e a base da onda desapparecia. Sem pontos, a cella é o traço
@@ -46,5 +46,5 @@ ftxui::Element elemento_da_onda(const std::vector<float>& pontos,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

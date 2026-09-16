@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA TABELLA — testes/prova_tabella.cpp
+//   PROVA DA TABELLA, testes/prova_tabella.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Pinta a tabella num écran de PAPEL, de largura escolhida, e lê os bytes que
 // sahiram. Terminal algum se abre. O que se afere é o alinhamento das columnas,
@@ -30,7 +30,7 @@ namespace tui = mysong::tui;
 
 namespace {
 
-// pintar — o écran de papel, lido CELLA A CELLA. Não se lê o `ToString`, e é de
+// pintar, o écran de papel, lido CELLA A CELLA. Não se lê o `ToString`, e é de
 // proposito: elle mette as sequencias de escape no meio dos bytes, e contar bytes
 // daria comprimentos differentes para linhas de egual largura, que a linha eleita
 // traz mais tinta que as outras. Contar byte seria contar a tinta. Perguntando ao
@@ -52,7 +52,7 @@ std::vector<std::string> pintar(const tui::Navegador& navegador,
   return linhas;
 }
 
-// aparadas — as collunhas de uma linha sem o enchimento de espaços da direita. É o
+// aparadas, as collunhas de uma linha sem o enchimento de espaços da direita. É o
 // que diz onde a tabella deixou de escrever, e é isso que se compara entre linhas.
 std::size_t escriptas(const std::string& linha) {
   std::size_t fim = linha.size();
@@ -125,7 +125,7 @@ TEST_CASE("o corte da pauta conta CELLAS, e o glypho largo vale duas") {
 
 namespace {
 
-// cellas_dos — a somma das larguras dos pedaços. É o invariante da pauta: os
+// cellas_dos, a somma das larguras dos pedaços. É o invariante da pauta: os
 // vãos e as margens tambem são pedaços, d'onde a somma HA DE dar a largura.
 std::size_t cellas_dos(const std::vector<tui::PedacoDaPauta>& pedacos) {
   std::size_t total = 0;
@@ -398,7 +398,7 @@ TEST_CASE("o conselho do vazio é por SECÇÃO, e a pauta fica vazia") {
 
 namespace {
 
-// com_som — a tabella com uma faixa a sôar, no écran de papel: aqui lê-se
+// com_som, a tabella com uma faixa a sôar, no écran de papel: aqui lê-se
 // tambem a CÔR da cella, que os dous signaes se distinguem pela tinta.
 ftxui::Screen com_som(const tui::Navegador& navegador,
                       const std::string& tocando) {
@@ -449,5 +449,5 @@ TEST_CASE("a faixa que sôa accende com signal proprio ao lado do da eleita") {
   CHECK(nada.PixelAt(1, 1).character != "▶");
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

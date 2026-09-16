@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA LETRA — src/nucleo/letra.cpp
+//   TRACTADO DA LETRA, src/nucleo/letra.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. As puras primeiro; o libcurl no fim, e sozinho.
 //
@@ -100,7 +100,7 @@ bool grava_lrc(const std::filesystem::path& audio, const Letra& letra) {
 
 namespace {
 
-// recolhe — o que o libcurl entrega, pedaço a pedaço. Assignatura fixada por elle.
+// recolhe, o que o libcurl entrega, pedaço a pedaço. Assignatura fixada por elle.
 std::size_t recolhe(char* pedaco, std::size_t largura, std::size_t quantos,
                     void* alvo) {
   const std::size_t medida = largura * quantos;
@@ -137,7 +137,7 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
 
 namespace {
 
-// carimbo — lê `[mm:ss.cc]` ou `[mm:ss]` no principio do que resta. Devolve falso
+// carimbo, lê `[mm:ss.cc]` ou `[mm:ss]` no principio do que resta. Devolve falso
 // quando não ha carimbo alli, e ahi `cursor` não se mexe.
 bool carimbo(std::string_view linha, std::size_t* cursor, double* tempo) {
   std::size_t i = *cursor;
@@ -227,5 +227,5 @@ std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO CATALOGO — testes/prova_catalogo.cpp
+//   PROVA DO CATALOGO, testes/prova_catalogo.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Caso algum d'esta bateria toca a rede. O corpo vae escripto Á MÃO, recortado da
 // pagina de embutir de VERDADE, e conserva o embrulho de tres niveis e o objecto
@@ -212,5 +212,5 @@ TEST_CASE("pedido SEM duração não casa com ninguem") {
                           nu::TOLERANCIA_DO_CASAMENTO) == -1);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

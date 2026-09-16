@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA SALA — src/tui/sala.hpp
+//   TRACTADO DA SALA, src/tui/sala.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A sala em DUAS METADES (issue #102): a pauta á esquerda, o painel á direita,
 // e o cabeçalho e o trilho por cima das duas. Aqui moram a chapa, o divisor, o
@@ -32,17 +32,17 @@ namespace mysong::tui {
 // um album e uma lista contam a MESMA cousa, e tres nomes dariam tres erros.
 enum class Especie { Faixas, Artistas, Albuns, Listas, Achados };
 
-// texto_da_duracao — a somma POR EXTENSO: `1h23`, `23min`, `45s`, e vazia no
+// texto_da_duracao, a somma POR EXTENSO: `1h23`, `23min`, `45s`, e vazia no
 // que não é positivo. `MM:SS` ao lado de «4 FAIXAS» lê-se como o tempo D'ELLA.
 std::string texto_da_duracao(int segundos);
 
-// texto_da_conta — «4 FAIXAS, 14min». Um sahe no singular e sem o `s`.
+// texto_da_conta, «4 FAIXAS, 14min». Um sahe no singular e sem o `s`.
 std::string texto_da_conta(std::size_t quantas, Especie especie, int duracao);
 
-// especie_da_secao — o que se conta em cada secção da aba corrente.
+// especie_da_secao, o que se conta em cada secção da aba corrente.
 Especie especie_da_secao(Secao secao);
 
-// onde_da_chapa — ONDE se está, na palavra da aba e nos degraus de dentro,
+// onde_da_chapa, ONDE se está, na palavra da aba e nos degraus de dentro,
 // apartados por «▸»: `MY SONG`, `PLAYLISTS ▸ Funk`, `ARTISTAS ▸ MXZI`. O
 // vocabulario FIXO vae em caixa alta; o nome vindo do acervo sahe VERBATIM,
 // que caixa alta byte a byte estragaria o UTF-8 acentuado do portuguez
@@ -71,17 +71,17 @@ struct Chapa {
   std::string recado;  // o aviso da rede, o filtro posto, a varredura
 };
 
-// espaco_do_recado — quantas collunhas sobram á direita depois do texto e das
+// espaco_do_recado, quantas collunhas sobram á direita depois do texto e das
 // encommendas. Quem monta o recado precisa d'esta conta ANTES de o montar:
 // juntar sem ella dá cadeia que a chapa corta a meio da palavra, e foi o que
 // se mediu nos dumps («busca prime», e o «(s)» perdido).
 std::size_t espaco_do_recado(const Chapa& chapa, std::size_t largura);
 
-// texto_da_chapa — «MY SONG, 42 FAIXAS, 1h29, FAIXAS». O recado NÃO entra: elle
+// texto_da_chapa, «MY SONG, 42 FAIXAS, 1h29, FAIXAS». O recado NÃO entra: elle
 // vae á direita da linha, e n'outra tinta.
 std::string texto_da_chapa(const Chapa& chapa);
 
-// elemento_da_chapa — a linha inteira: o texto á esquerda, o recado á direita
+// elemento_da_chapa, a linha inteira: o texto á esquerda, o recado á direita
 // quando ha, e o fundo do painel por baixo dos dous.
 ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura);
 
@@ -110,12 +110,12 @@ struct Sala {
   Rectangulo rodape;     // UMA linha de dicas, no pé
 };
 
-// sala_da_tela — todos os numeros da composição, n'uma conta só, para que a
+// sala_da_tela, todos os numeros da composição, n'uma conta só, para que a
 // bateria os interrogue sem terminal. `campo_aberto` é o prompt de digitar, que
 // pede linha propria ao pé e tira-a ao corpo (issue #125).
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
 
-// espectro_abaixo_da — o rectangulo do espectro depois de se saber quantas
+// espectro_abaixo_da, o rectangulo do espectro depois de se saber quantas
 // linhas a capa tomou DE FACTO, e já descontado o bloco da letra (issue #157). Conta a partir da CAPA, e não do painel: a
 // fileira da ficha (issue #134) é do painel e não é da arte. O `capa` da sala é TECTO: a capa de 16 por 9
 // sahe mais baixa que elle, e o que ella deixa pertence ao espectro. A conta
@@ -131,7 +131,7 @@ struct Ficha {
   std::string album;
 };
 
-// ficha_da_faixa — a ficha do caminho, com as etiquetas do indice quando as ha.
+// ficha_da_faixa, a ficha do caminho, com as etiquetas do indice quando as ha.
 // Sem etiqueta, o nome do arquivo serve de titulo: buraco na ficha faria o
 // painel dizer que nada toca na hora em que alguma cousa toca.
 Ficha ficha_da_faixa(const std::string& caminho, const std::string& titulo,
@@ -148,12 +148,12 @@ std::size_t linhas_da_arte(const nucleo::CapaPintada& capa, std::size_t tecto);
 ftxui::Element elemento_da_arte(const nucleo::CapaPintada& capa,
                                 std::size_t largura, std::size_t linhas);
 
-// elemento_do_divisor — a collunha que aparta as duas metades, em `line_dim`. É
+// elemento_do_divisor, a collunha que aparta as duas metades, em `line_dim`. É
 // collunha PROPRIA, e não orla do painel: orla custaria duas de cada lado, e
 // n'este painel ellas sahiriam todas da arte.
 ftxui::Element elemento_do_divisor(std::size_t altura);
 
-// elemento_do_painel — a metade direita: a arte no alto, CENTRADA na largura,
+// elemento_do_painel, a metade direita: a arte no alto, CENTRADA na largura,
 // e o que o chamador
 // quizer por baixo (o espectro, ou a letra quando o `l` a pede). Os dous entram
 // já compostos, para que esta peça não conheça nem um nem outra e a bateria
@@ -162,7 +162,7 @@ ftxui::Element elemento_do_divisor(std::size_t altura);
 ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
                                   std::size_t largura);
 
-// elemento_da_ficha — a fileira do alto do painel (issue #134): o titulo em
+// elemento_da_ficha, a fileira do alto do painel (issue #134): o titulo em
 // text_bright negrito e o artista em text_muted a seguir, ao CENTRO da largura,
 // e ambos medidos em COLLUNHAS do terminal. Não cabendo, cede primeiro o
 // artista (cortado, e depois inteiro) e só então o titulo corta com «…». Ficha
@@ -172,5 +172,5 @@ ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura);
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA LETRA — testes/prova_letra.cpp
+//   PROVA DA LETRA, testes/prova_letra.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Caso algum toca a rede. Os corpos vão escriptos á mão, com a fórma que o LRCLIB
 // de facto devolve, e a prova á mão contra o serviço vivo está no PR.
@@ -175,7 +175,7 @@ TEST_CASE("a linha corrente acha-se, e antes da primeira dá menos um") {
 
 namespace {
 
-// sem_escape — a linha despida do escape, que é o que ella MOSTRA.
+// sem_escape, a linha despida do escape, que é o que ella MOSTRA.
 std::string sem_escape(const std::string& linha) {
   std::string limpa;
   for (std::size_t i = 0; i < linha.size(); ++i) {
@@ -192,7 +192,7 @@ std::string sem_escape(const std::string& linha) {
   return limpa;
 }
 
-// as_linhas — o painel da letra pintado em écran de PAPEL, linha a linha.
+// as_linhas, o painel da letra pintado em écran de PAPEL, linha a linha.
 std::vector<std::string> as_linhas(
     const std::vector<nu::LinhaDaLetra>& letra, double posicao,
     std::size_t altura, std::size_t largura) {
@@ -253,5 +253,5 @@ TEST_CASE("o painel mostra o verso do instante, e as vizinhas em volta") {
   CHECK(sem[0].find("sem letra") != std::string::npos);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

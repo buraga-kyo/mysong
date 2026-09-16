@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO PROJECTOR — src/nucleo/video.cpp
+//   TRACTADO DO PROJECTOR, src/nucleo/video.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. Não ha shell em logar algum: o `execvp` recebe o vector tal e
 // qual, donde faixa chamada `; rm -rf ~` é nome de arquivo e não commando.
@@ -56,7 +56,7 @@ std::string minuscula(std::string_view crua) {
   return baixa;
 }
 
-// abre_soquete — o punho ligado ao soquete do mpv, e menos um não havendo. Tenta
+// abre_soquete, o punho ligado ao soquete do mpv, e menos um não havendo. Tenta
 // mais de uma vez, com pausa: o soquete nasce depois do processo.
 int abre_soquete(const std::filesystem::path& soquete) {
   for (int tentativa = 0; tentativa < kTentativasDoSoquete; ++tentativa) {
@@ -377,5 +377,5 @@ void Projector::fecha_travado() {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

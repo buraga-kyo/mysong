@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA SALA — testes/prova_sala.cpp
+//   PROVA DA SALA, testes/prova_sala.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A taboada pura da sala, e mais adiante os écrans de PAPEL d'ella, lidos
 // cella a cella. Terminal algum se abre, banco algum: os retractos que a sala
@@ -23,7 +23,7 @@ namespace tui = mysong::tui;
 
 namespace {
 
-// papel — o écran de PAPEL, lido cella a cella: o `ToString` metteria escape
+// papel, o écran de PAPEL, lido cella a cella: o `ToString` metteria escape
 // no meio dos bytes, e contar bytes seria contar a tinta.
 ftxui::Screen papel(ftxui::Element quadro, int largura, int altura) {
   ftxui::Screen ecran = ftxui::Screen::Create(ftxui::Dimension::Fixed(largura),
@@ -44,7 +44,7 @@ std::string linha_de(const ftxui::Screen& ecran, int y) {
   return dita;
 }
 
-// capa_de — a capa que o chafa devolveria, armada á mão. Chafa algum corre aqui.
+// capa_de, a capa que o chafa devolveria, armada á mão. Chafa algum corre aqui.
 nu::CapaPintada capa_de(std::size_t quantas, std::size_t largura) {
   nu::CapaPintada capa;
   capa.achada = quantas > 0;
@@ -53,7 +53,7 @@ nu::CapaPintada capa_de(std::size_t quantas, std::size_t largura) {
   return capa;
 }
 
-// collunha_de — a COLLUNHA em que tal glifo pousou, e menos um não o havendo.
+// collunha_de, a COLLUNHA em que tal glifo pousou, e menos um não o havendo.
 // Por cella, e não por byte: busca em cadeia mentiria com o glifo de tres bytes.
 int collunha_de(const ftxui::Screen& ecran, int y, const std::string& glifo) {
   for (int x = 0; x < ecran.dimx(); ++x)
@@ -552,5 +552,5 @@ TEST_CASE("a ficha do painel diz o titulo e o artista ao centro, e cede o artist
   CHECK(parada.PixelAt(6, 0).foreground_color == cor(tui::tokens::text_muted));
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO COVER ART ARCHIVE — testes/prova_caa.cpp
+//   PROVA DO COVER ART ARCHIVE, testes/prova_caa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // SEM REDE, do principio ao fim: a Consulta entra de mentira, os corpos são
 // recortes escriptos á mão sobre a fórma viva, e as faixas são fixtures
@@ -194,7 +194,7 @@ TEST_CASE("duvidosa recuo e rede muda explicam o casamento vazio") {
 
 namespace {
 
-// poe_mp3 — a fixture minima da prova da capa: um quadro de MPEG que a taglib
+// poe_mp3, a fixture minima da prova da capa: um quadro de MPEG que a taglib
 // aceita. Etiqueta não precisa: a caça lê o metadado da Faixa do ÍNDICE.
 std::filesystem::path poe_mp3(const Cova& cova, const std::string& nome) {
   const std::filesystem::path faixa = cova.raiz() / nome;
@@ -354,5 +354,5 @@ TEST_CASE("a memoria que recusa o assento apparece no relato") {
   CHECK(memoria.ja_procurada(faixa.string()));
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BRAGA US., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

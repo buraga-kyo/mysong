@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DA FILA — testes/prova_fila.cpp
+//   TRACTADO DA PROVA DA FILA, testes/prova_fila.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova a fila SEM mpv, sem placa de som e sem arquivo em disco: os caminhos
 // que se lhe entregam são cadeias que ella nunca abre. É metade do aceite que
@@ -100,7 +100,7 @@ TEST_CASE("a fila anda nos dous sentidos e volta ao ponto de partida") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 TEST_CASE("fila vazia responde, e não erra") {
   mysong::nucleo::Fila fila;
   CHECK(fila.vazia());

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO COVER ART ARCHIVE — src/nucleo/caa.hpp
+//   TRACTADO DO COVER ART ARCHIVE, src/nucleo/caa.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A capa que falta ao acervo que JÁ está no disco (issue #83). A issue #81
 // consertou a baixa nova: o yt-dlp embute a miniatura. Esta peça cuida do
@@ -35,7 +35,7 @@ struct sqlite3;
 
 namespace mysong::nucleo {
 
-// url_da_capa — a capa da FRENTE da release, na miniatura de quinhentos
+// url_da_capa, a capa da FRENTE da release, na miniatura de quinhentos
 // pixels (RULINGS R4 da issue). O front-500, e não o /front original: o
 // original pode ser PNG de varios mega-octetos, e embutir isso em cada MP3
 // incha o acervo para um painel que pinta meio-bloco de vinte collunas.
@@ -48,7 +48,7 @@ std::string url_da_capa(std::string_view release_mbid);
 // amanhã podem responder e por isso não se lembram; e o Recuo pára a caça.
 enum class DesfechoDaCapa { Achada, SemCapa, Transitoria, Recuo };
 
-// desfecho_da_capa — a leitura PURA do que consulta_mb_com_estado devolveu,
+// desfecho_da_capa, a leitura PURA do que consulta_mb_com_estado devolveu,
 // para que a bateria a afira sem rede alguma.
 DesfechoDaCapa desfecho_da_capa(DesfechoMB desfecho, long estado_http);
 
@@ -73,7 +73,7 @@ enum class CacaDeCapa {
                     // calado a corrida seguinte re-tentaria a rede ás cegas
 };
 
-// palavra_da_caca — a linha que o relato mostra. Switch exhaustivo: desfecho
+// palavra_da_caca, a linha que o relato mostra. Switch exhaustivo: desfecho
 // novo sem palavra não compila.
 std::string_view palavra_da_caca(CacaDeCapa desfecho);
 
@@ -83,7 +83,7 @@ std::string_view palavra_da_caca(CacaDeCapa desfecho);
 using ConsultaComEstado =
     std::function<DesfechoMB(const std::string&, std::string*, long*)>;
 
-// casa_release — o casamento SEM ISRC: resolve_gravacao pela busca (titulo e
+// casa_release, o casamento SEM ISRC: resolve_gravacao pela busca (titulo e
 // duração obrigam, artista entra quando ha; o crivo é o da #57), e d'ella o
 // MBID da release canonica. Vazio quando não casou, e `porque` diz o motivo,
 // com Recuo e RedeFalhou vindos do espião na Consulta. Casando, não se toca.
@@ -99,7 +99,7 @@ inline constexpr int kVersaoDaMemoria = 1;
 // queda de rede seria carimbar o acervo de «sem capa» por avaria de um dia.
 enum class Procurada { SemCapa, Duvidosa };
 
-// palavra_da_procurada — a palavra que se assenta no banco e se diz no
+// palavra_da_procurada, a palavra que se assenta no banco e se diz no
 // relato. Vive aqui pela regra do razao_da_colheita: desfecho novo sem
 // palavra não compila.
 std::string_view palavra_da_procurada(Procurada procurada);
@@ -120,11 +120,11 @@ class MemoriaDeCapas {
   bool aberta() const noexcept;
   int versao() const noexcept;
 
-  // ja_procurada — corrida anterior já decidiu esta faixa? É o que poupa a
+  // ja_procurada, corrida anterior já decidiu esta faixa? É o que poupa a
   // rede: quem já foi sem-capa ou duvidosa não volta á fila.
   bool ja_procurada(std::string_view caminho) const;
 
-  // lembra — assenta o desfecho definitivo, com o relogio de agora. Falso
+  // lembra, assenta o desfecho definitivo, com o relogio de agora. Falso
   // quando o banco recusou; caminho vazio não se assenta.
   bool lembra(std::string_view caminho, Procurada procurada);
 
@@ -137,7 +137,7 @@ class MemoriaDeCapas {
 
 // ── A CORRIDA ───────────────────────────────────────────────────────────────
 
-// caca_uma_faixa — a caça de UMA faixa, do filtro em casa ao quadro gravado:
+// caca_uma_faixa, a caça de UMA faixa, do filtro em casa ao quadro gravado:
 // capa que já ha e memoria poupam a rede; casa_release e o CAA gastam-na; e
 // os dous caches DA CORRIDA entram por parametro, para que duas irmãs da
 // mesma release baixem a arte uma vez só e o 404 d'ella se reuse sem esperar
@@ -160,7 +160,7 @@ struct SommaDaCaca {
   bool parou_por_recuo = false;
 };
 
-// caca_capas — a corrida inteira, na ordem dada: caça faixa a faixa, conta a
+// caca_capas, a corrida inteira, na ordem dada: caça faixa a faixa, conta a
 // somma, e PÁRA no primeiro recuo, sem tentar nem lembrar as restantes.
 SommaDaCaca caca_capas(const std::vector<Faixa>& faixas,
                        MemoriaDeCapas* memoria,
@@ -169,5 +169,5 @@ SommaDaCaca caca_capas(const std::vector<Faixa>& faixas,
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BRAGA US., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA VARREDURA — testes/prova_varredura.cpp
+//   PROVA DA VARREDURA, testes/prova_varredura.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Duas metades. A derivação do caminho prova-se em cadeias, sem disco algum; a
 // varredura prova-se sobre acervos que esta bateria FABRICA em directorio
@@ -60,7 +60,7 @@ class Cova {
 int Cova::semente_ = 0;
 
 
-// faz_wav — um WAV valido escripto byte a byte. Não se chama ffmpeg: prova que
+// faz_wav, um WAV valido escripto byte a byte. Não se chama ffmpeg: prova que
 // depende de programma externo falha por razão que não é a sua. Quarenta e quatro
 // octetos de cabeçalho, e silencio no corpo; a taglib abre-o e mede-lhe a
 // duração, que é tudo o que esta bateria precisa d'elle.
@@ -82,7 +82,7 @@ void faz_wav(const std::filesystem::path& onde, int segundos) {
   for (std::uint32_t i = 0; i < corpo; ++i) saida.put(static_cast<char>(0x80));
 }
 
-// poe_etiqueta — a etiqueta posta pela PROPRIA taglib. Cadeia vazia e numero zero
+// poe_etiqueta, a etiqueta posta pela PROPRIA taglib. Cadeia vazia e numero zero
 // querem dizer «não põe este campo», que é como se arma o caso da etiqueta
 // parcial sem escrever um arquivo á mão para cada combinação.
 void poe_etiqueta(const std::filesystem::path& onde, const std::string& artista,
@@ -180,7 +180,7 @@ TEST_CASE("a hierarchia lê-se do primeiro degrau e do ultimo") {
 
 namespace {
 
-// corre_ate_o_fim — chama passo() até elle dizer que acabou, e devolve QUANTOS
+// corre_ate_o_fim, chama passo() até elle dizer que acabou, e devolve QUANTOS
 // passos foram. A conta serve ao aceite: passos maiores ou eguaes ao numero de
 // arquivos prova que passo algum engoliu o acervo inteiro.
 std::size_t corre_ate_o_fim(nu::Varredura& varredura) {
@@ -606,5 +606,5 @@ TEST_CASE("renomear recusa titulo vazio, e a etiqueta fica como estava") {
   CHECK_FALSE(alheio.razao.empty());
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

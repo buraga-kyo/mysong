@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA SALA — src/tui/sala.cpp
+//   TRACTADO DA SALA, src/tui/sala.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lavra das peças que o sala.hpp declara. Compõe, e sahe.
 //
@@ -22,18 +22,18 @@
 
 namespace mysong::tui {
 namespace {
-// kMarcadorLinhas — a área do marcador. Seis, e não o tecto: a capa de 16 por
+// kMarcadorLinhas, a área do marcador. Seis, e não o tecto: a capa de 16 por
 // 9 sahe em cerca d'onze linhas n'um painel de 39, e moldura vazia de vinte
 // diria «não ha capa» mais alto do que o painel diz a musica.
 constexpr std::size_t kMarcadorLinhas = 6;
 
-// pinta — o texto na tinta do token. Côr crua não entra n'esta obra.
+// pinta, o texto na tinta do token. Côr crua não entra n'esta obra.
 ftxui::Element pinta(const std::string& texto, std::string_view token) {
   const tokens::Triade c = tokens::rgb(token);
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// substantivo_da — o que se conta, em caixa alta. Singular SEM o `s`.
+// substantivo_da, o que se conta, em caixa alta. Singular SEM o `s`.
 const char* substantivo_da(Especie especie, bool um) {
   switch (especie) {
     case Especie::Artistas: return um ? "ARTISTA" : "ARTISTAS";
@@ -64,7 +64,7 @@ constexpr std::size_t kLetraLinhas = 3;
 // pauta é onde se navega, e a chapa diz sómente onde se está.
 constexpr std::size_t kPautaLinhasMinimas = 3;
 
-// reparte_o_corpo — as duas metades, dado o alto e a altura que sobraram. Sahe
+// reparte_o_corpo, as duas metades, dado o alto e a altura que sobraram. Sahe
 // á parte da conta do alto por ser a lavra que a tela ESTREITA muda: abaixo do
 // limiar não ha painel algum, e a pauta toma a tela toda, como hoje.
 void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
@@ -264,7 +264,7 @@ std::string texto_da_chapa(const Chapa& chapa) {
   return dito;
 }
 
-// esquerda_da_chapa — o que se pinta á ESQUERDA: o texto, e as encommendas
+// esquerda_da_chapa, o que se pinta á ESQUERDA: o texto, e as encommendas
 // logo depois d'elle quando as ha. Serve á pintura e á conta do espaço, para
 // que as duas leiam a MESMA cadeia e não divirjam de uma collunha.
 static std::string esquerda_da_chapa(const Chapa& chapa) {
@@ -355,7 +355,7 @@ ftxui::Element elemento_do_painel(ftxui::Element arte, ftxui::Element baixo,
 
 namespace {
 
-// aparada — o texto cortado a `largura` collunhas do terminal, com «…» a
+// aparada, o texto cortado a `largura` collunhas do terminal, com «…» a
 // fechar. Conta collunhas pelo `string_width`, e não pontos de codigo: ha
 // titulo com kanji e com emoji, que valem duas.
 std::string aparada(const std::string& texto, std::size_t largura) {
@@ -429,5 +429,5 @@ ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

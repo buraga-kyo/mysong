@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA ONDA NA TELA — src/tui/onda.cpp
+//   TRACTADO DA ONDA NA TELA, src/tui/onda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação: a dobra primeiro, a pintura depois.
 //
@@ -94,5 +94,5 @@ ftxui::Element elemento_da_onda(const std::vector<float>& pontos,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

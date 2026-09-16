@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO ESTALEIRO — testes/prova_estaleiro.cpp
+//   PROVA DO ESTALEIRO, testes/prova_estaleiro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Caso algum d'esta bateria toca a rede. A OBRA entra por parametro, e no logar
 // d'ella põe-se aqui uma que se deixa SEGURAR: os casos param a obra a meio,
@@ -36,7 +36,7 @@ class Cancella {
     }
     sino_.notify_all();
   }
-  // chegaram — espera que `quantos` obreiros tenham CHEGADO á cancella. Sem isto o
+  // chegaram, espera que `quantos` obreiros tenham CHEGADO á cancella. Sem isto o
   // caso olharia o estaleiro antes de elle ter começado, e leria zero por engano.
   void chegaram(std::size_t quantos) {
     std::unique_lock<std::mutex> chave(tranca_);
@@ -205,5 +205,5 @@ TEST_CASE("o colhido duvidoso conta por duvidosa e levanta a bandeira") {
   CHECK(fim.ultima == "baixado por titulo, sem a gravação: confira");
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

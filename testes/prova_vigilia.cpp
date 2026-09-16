@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA VIGILIA — testes/prova_vigilia.cpp
+//   PROVA DA VIGILIA, testes/prova_vigilia.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A machina de dormir e acordar o desenho (issue #82), sem terminal: somno
 // cala a batida, despertar arma o quadro completo UMA vez que se consome.
@@ -96,5 +96,5 @@ TEST_CASE("a trava manual congela e volta a liberar a animação") {
   CHECK(v.pede_batida());
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO ROL — src/nucleo/rol.cpp
+//   TRACTADO DO ROL, src/nucleo/rol.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. Toda cadeia vae ao banco por AMARRAÇÃO, e jamais por
 // concatenação: é isso que faz uma lista chamada «Ária "Ré"» ser um nome, e não
@@ -43,7 +43,7 @@ constexpr char kEsquemaDoRol[] =
     "  ordem INTEGER NOT NULL, caminho TEXT NOT NULL,"
     "  PRIMARY KEY (rol, ordem));";
 
-// corre — a consulta com os inteiros amarrados primeiro e as cadeias depois. A
+// corre, a consulta com os inteiros amarrados primeiro e as cadeias depois. A
 // ordem é FIXA e a consulta acomoda-se a ella pelo indice explicito do SQLite,
 // `?1`, `?2`: assim a mesma amarração serve consulta que repita o mesmo valor em
 // tres logares, e não se conta ponto de interrogação á mão.
@@ -287,5 +287,5 @@ std::vector<std::string> Roleiro::faixas(int id) const {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

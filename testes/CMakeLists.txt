@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════
-#   TRACTADO DA BATERIA — testes/CMakeLists.txt
+#   TRACTADO DA BATERIA, testes/CMakeLists.txt
 # ══════════════════════════════════════════════════════════════════════════
 # DOMÍNIO ......... as fontes de prova deste directorio.
 # CONTRA-DOMÍNIO .. o alvo mysong_testes, e um caso registrado no ctest para
@@ -111,7 +111,7 @@ target_sources(mysong_testes PRIVATE prova_onda.cpp)
 # ─── A PROVA DO MPRIS (issue #29) ───────────────────────────────────────────
 target_sources(mysong_testes PRIVATE prova_unidades.cpp)
 
-#   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+#   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
 # ─── Provas da bibliotheca do acervo (issue #8) ──────────────────────────────

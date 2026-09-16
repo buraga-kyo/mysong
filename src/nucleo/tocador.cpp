@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO TOCADOR, LAVRA — src/nucleo/tocador.cpp
+//   TRACTADO DO TOCADOR, LAVRA, src/nucleo/tocador.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o cabecalho. Não inclue mpv algum: fala com o Motor abstracto e mais
 // nada, e é d'ahi que lhe vem a inteira provabilidade.
@@ -291,5 +291,5 @@ std::vector<float> Tocador::bandas() const {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

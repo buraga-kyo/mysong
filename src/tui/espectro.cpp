@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   O CORPO DO DESENHO DO ESPECTRO — src/tui/espectro.cpp
+//   O CORPO DO DESENHO DO ESPECTRO, src/tui/espectro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A conta que o tractado promette. Nada aqui abre terminal, lê ambiente ou
 // consulta relogio: d'onde toda affirmação d'este manuscripto se prova em
@@ -17,7 +17,7 @@ namespace mysong::tui {
 
 namespace {
 
-// cingido — a magnitude reduzida ao intervallo [0,1] que o contracto promette,
+// cingido, a magnitude reduzida ao intervallo [0,1] que o contracto promette,
 // e que esta Casa não confia. A ORDEM das duas guardas é o que importa: a
 // finitude PRIMEIRO, porque toda comparação com NaN é falsa, e um cingir
 // escripto na ordem natural (`m < 0 ? 0 : m > 1 ? 1 : m`) devolveria o NaN
@@ -148,7 +148,7 @@ const Celula& Quadro::em(std::size_t linha, std::size_t collunha) const {
 
 namespace {
 
-// valor_da_columna — A REPARTIÇÃO, e é UMA funcção para os DOUS regimes.
+// valor_da_columna, A REPARTIÇÃO, e é UMA funcção para os DOUS regimes.
 //
 // A collunha `c` de `largura` cobre o intervallo SEMI-ABERTO de bandas
 // [c * n / largura, (c + 1) * n / largura), e toma o MÁXIMO d'ellas.
@@ -193,7 +193,7 @@ float valor_da_columna(const std::vector<float>& bandas, std::size_t c,
   return pico;
 }
 
-// registro_da_columna — o registro que veste a columna INTEIRA. Toma o centro da
+// registro_da_columna, o registro que veste a columna INTEIRA. Toma o centro da
 // banda do MEIO do intervallo, e não o da banda que deu o pico: a côr é do
 // LOGAR, e não do nivel, pelo mesmo motivo por que o invariante (iii) ancora o
 // gradiente ao painel. Fosse do pico, a columna trocaria de côr a cada batida, e
@@ -206,7 +206,7 @@ Registro registro_da_columna(const std::vector<float>& centros, std::size_t c,
       centros[faixa.principio + (faixa.fim - faixa.principio - 1) / 2]);
 }
 
-// columna_quente — A BATIDA d'esta columna, e são DOUS regimes.
+// columna_quente, A BATIDA d'esta columna, e são DOUS regimes.
 //   Sem picos, o tecto ABSOLUTO de sempre. É o que conserva verdadeiro quanto
 //   se affirmou antes da issue #132, e serve a quem não guarda estado algum.
 //   Com picos, RELATIVO ao pico recente da columna: noventa por cento D'ELLE, e
@@ -248,7 +248,7 @@ tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
 
 namespace {
 
-// tinta_da_celula — A PRECEDENCIA da côr, e a ordem É a regra. Lê-se de cima
+// tinta_da_celula, A PRECEDENCIA da côr, e a ordem É a regra. Lê-se de cima
 // para baixo, e a primeira que responde ganha:
 //   1. MUDO vence tudo, quente inclusive. Mudo é ordem do operador, e ordem do
 //      operador não se deixa sobrepujar por leitura de sinal.
@@ -392,5 +392,5 @@ ftxui::Element elemento_do_espectro(const Quadro& quadro) {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

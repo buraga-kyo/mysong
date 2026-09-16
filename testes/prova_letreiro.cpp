@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO LETREIRO — testes/prova_letreiro.cpp
+//   PROVA DO LETREIRO, testes/prova_letreiro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A linha do pango-view, a margem que casa a proporção, a chave do cache, a
 // decisão de haver letreiro, e a ordem das tres chapas sobre um cabeçalho de

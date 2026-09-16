@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO JSONZINHO — src/api/jsonzinho.hpp
+//   TRACTADO DO JSONZINHO, src/api/jsonzinho.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O JSON d'esta Casa, e SÓ o d'esta Casa. Não é bibliotheca geral: é o
-// subconjunto PLANO que o protocolo do socket usa — um objecto de UM nivel, com
-// valores escalares — e mais nada. Declara-se só-cabeçalho, á maneira do
+// subconjunto PLANO que o protocolo do socket usa, um objecto de UM nivel, com
+// valores escalares, e mais nada. Declara-se só-cabeçalho, á maneira do
 // aparar_volume que mora no tractado do motor, para que unidade alguma se
 // compile por causa d'elle.
 //
@@ -19,7 +19,7 @@
 //                   uma e metade da seguinte: é este o defeito que o escape
 //                   existe para impedir, e não a elegancia.
 // Q.E.D. .......... o parser é ESTRICTO de proposito: rejeita tudo o que sae do
-//                   subconjunto. Rejeitar não é falhar — «json_malformado» é
+//                   subconjunto. Rejeitar não é falhar, «json_malformado» é
 //                   resposta legitima e prevista, e parser permissivo é que
 //                   seria o risco, porque acceitaria por adivinhação o que o
 //                   contracto não promette. Sendo ambas as bandas funcções
@@ -426,7 +426,7 @@ inline Mensagem analysa(std::string_view linha) {
 // tres funcções abaixo não a analysam inteira; recortam o que se quer, respeitando
 // aspas, contra-barra e FUNDO, que é o bastante e não pede leitor novo.
 
-// objectos_do_arranjo — os objectos de fundo UM de um arranjo, cada um em texto.
+// objectos_do_arranjo, os objectos de fundo UM de um arranjo, cada um em texto.
 // Vazio quando não ha arranjo, ou quando elle vem truncado: objecto meio não sahe.
 //
 // Vive AQUI, e não em quem o usa. A letra da issue #14 tinha o seu recorte, e o
@@ -456,7 +456,7 @@ inline std::vector<std::string> objectos_do_arranjo(std::string_view arranjo) {
   return achados;
 }
 
-// recorta_arranjo — o arranjo que a chave `"<nome>":[` abre, com os cochetes. Vazio
+// recorta_arranjo, o arranjo que a chave `"<nome>":[` abre, com os cochetes. Vazio
 // não havendo a chave, ou vindo o arranjo truncado. Acha a chave em QUALQUER fundo,
 // que é o que permitte pescar `trackList` de dentro de dez niveis de embrulho.
 inline std::string recorta_arranjo(std::string_view corpo, std::string_view nome) {
@@ -486,7 +486,7 @@ inline std::string recorta_arranjo(std::string_view corpo, std::string_view nome
   return {};
 }
 
-// recorta_objecto — o objecto que a chave `"<nome>":{` abre, com as chaves de
+// recorta_objecto, o objecto que a chave `"<nome>":{` abre, com as chaves de
 // fóra, achado em QUALQUER fundo. Vazio não havendo a chave, ou vindo truncado.
 // Irmão do recorta_arranjo, e vive aqui pela mesma razão d'elle: o MusicBrainz da
 // issue #57 tras a gravação embrulhada dentro da relação, e uma segunda cópia
@@ -518,7 +518,7 @@ inline std::string recorta_objecto(std::string_view corpo, std::string_view nome
   return {};
 }
 
-// textos_do_arranjo — os TEXTOS de fundo um de um arranjo, já desescapados. Serve
+// textos_do_arranjo, os TEXTOS de fundo um de um arranjo, já desescapados. Serve
 // ao `isrcs` do MusicBrainz, que é arranjo de cadeias e não de objectos. Cadeia de
 // dentro de objecto não sahe, e cadeia que não se deixe ler descarta-se sozinha.
 inline std::vector<std::string> textos_do_arranjo(std::string_view arranjo) {
@@ -546,7 +546,7 @@ inline std::vector<std::string> textos_do_arranjo(std::string_view arranjo) {
   return achados;
 }
 
-// texto_de_chave — o valor de texto de uma chave de FUNDO UM do objecto, já
+// texto_de_chave, o valor de texto de uma chave de FUNDO UM do objecto, já
 // desescapado. Vazio quando ella falta, ou quando o valor não é texto. O fundo
 // importa: `title` dentro de `audioPreview` não é o `title` da faixa.
 inline std::string texto_de_chave(std::string_view objecto, std::string_view nome) {
@@ -575,7 +575,7 @@ inline std::string texto_de_chave(std::string_view objecto, std::string_view nom
   return {};
 }
 
-// numero_de_chave — o mesmo, para numero. `fóra` fica intacto não havendo chave.
+// numero_de_chave, o mesmo, para numero. `fóra` fica intacto não havendo chave.
 inline bool numero_de_chave(std::string_view objecto, std::string_view nome,
                            double* fora) {
   const std::string agulha = "\"" + std::string(nome) + "\"";
@@ -606,5 +606,5 @@ inline bool numero_de_chave(std::string_view objecto, std::string_view nome,
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO SOCKET, LAVRA — src/api/socket.cpp
+//   TRACTADO DO SOCKET, LAVRA, src/api/socket.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o cabecalho. É a UNICA unidade da superfície que nomeia AF_UNIX, poll e
 // descriptor; o protocolo, que é o cerebro, nada d'isso conhece, e é d'essa
@@ -371,5 +371,5 @@ std::string texto_do_socket() {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

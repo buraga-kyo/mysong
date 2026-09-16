@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA AQUISIÇÃO — src/nucleo/aquisicao.cpp
+//   TRACTADO DA AQUISIÇÃO, src/nucleo/aquisicao.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. As cinco funcções puras primeiro; o `fork` e o `exec` depois,
 // e sozinhos no fim do arquivo, para que o olho veja de um relance quanto d'esta
@@ -41,7 +41,7 @@ namespace {
 // para o «NN - » que o numero põe á frente.
 constexpr std::size_t kMaxComponente = 240;
 
-// apara — tira os espaços das duas pontas. Nome com espaço á frente existe no
+// apara, tira os espaços das duas pontas. Nome com espaço á frente existe no
 // systema de arquivos e é fonte de confusão sem fim.
 std::string apara(std::string_view crua) {
   std::size_t principio = 0, fim = crua.size();
@@ -57,7 +57,7 @@ std::string apara(std::string_view crua) {
 // duração, e um dia é o tecto que esta Casa já lhe dá no casamento do catalogo.
 constexpr long kTectoDoInteiro = 86400;
 
-// inteiro_da_rede — o inteiro que uma linha de fonte alheia diz. Texto que não
+// inteiro_da_rede, o inteiro que uma linha de fonte alheia diz. Texto que não
 // seja digito de ponta a ponta dá ZERO, e não lança: a rede manda lixo, e zero
 // é como esta Casa diz «não se soube». Lê-se por strtol, e não pela leitura
 // antiga, que era comportamento INDEFINIDO em transbordo e vinte digitos vindos
@@ -388,7 +388,7 @@ bool sonda_url(const std::string& url, EtiquetaRemota* remota) {
 
 namespace {
 
-// escreve_etiqueta — a etiqueta que esta Casa manda, e não a que a rede daria.
+// escreve_etiqueta, a etiqueta que esta Casa manda, e não a que a rede daria.
 // UTF8 EXPLICITO: `TagLib::String` construida de std::string assume LATIN-1, e
 // gravar «Máquina» assim fá-lo voltar «MÃ¡quina». Foi medido na issue #34.
 bool escreve_etiqueta(const std::filesystem::path& arquivo,
@@ -409,9 +409,9 @@ bool escreve_etiqueta(const std::filesystem::path& arquivo,
   return punho.save();
 }
 
-// acha_o_que_ficou — o yt-dlp põe a extensão, e nós não a sabemos de antemão.
+// acha_o_que_ficou, o yt-dlp põe a extensão, e nós não a sabemos de antemão.
 // Procura-se o irmão que principie pelo molde. Vazio quer dizer que nada ficou.
-// minuscula_ascii — a cadeia em caixa baixa, para as letras da taboa de ASCII. Não
+// minuscula_ascii, a cadeia em caixa baixa, para as letras da taboa de ASCII. Não
 // dobra acento, e é de proposito: dobrar acento em UTF-8 pede taboa que esta Casa
 // não tem, e prometter menos é melhor que prometter e falhar no «á» contra o «a».
 std::string minuscula_ascii(std::string_view crua) {
@@ -740,5 +740,5 @@ std::vector<Achado> le_achados(const std::string& sahida) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

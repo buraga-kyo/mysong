@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO RATO — testes/prova_rato.cpp
+//   PROVA DO RATO, testes/prova_rato.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // As duas taboadas do rato (issue #95), sem terminal e sem tela: as caixas
 // armam-se á mão, com as coordenadas escriptas, e o que se afere é o alvo que
@@ -133,7 +133,7 @@ TEST_CASE("sómente o botão esquerdo a descer governa alguma cousa") {
 
 namespace {
 
-// clicou — o gesto de um clique esquerdo n'um ponto, que é o que quasi todo
+// clicou, o gesto de um clique esquerdo n'um ponto, que é o que quasi todo
 // caso abaixo pergunta. Sem elle, a linha da chamada não cabe na medida.
 tui::GestoDoRato clicou(const tui::CaixasDaTela& caixas, int x, int y,
                         const tui::EstadoDoRato& estado) {
@@ -171,7 +171,7 @@ TEST_CASE("o clique elege a linha, e o clique na JÁ eleita toca-a") {
 
 namespace {
 
-// rodou — o gesto de um dente da roda n'um ponto.
+// rodou, o gesto de um dente da roda n'um ponto.
 tui::GestoDoRato rodou(const tui::CaixasDaTela& caixas, int x, int y, bool sobe,
                        const tui::EstadoDoRato& estado) {
   return tui::gesto_do_alvo(tui::alvo_do_ponto(caixas, x, y),
@@ -221,7 +221,7 @@ TEST_CASE("o cabeçalho, a capa e a busca dão o gesto que dizem") {
 
 namespace {
 
-// papel — o écran de PAPEL, com os escapes dentro. Compara-se o `ToString`, e
+// papel, o écran de PAPEL, com os escapes dentro. Compara-se o `ToString`, e
 // não as cellas nuas, de proposito: a côr entra na comparação, e caracter egual
 // com tinta differente já seria a caixa a mudar a pintura.
 std::string papel(ftxui::Element quadro, int largura, int altura) {
@@ -520,5 +520,5 @@ TEST_CASE("a mão que sae da pauta guarda o alvo que tinha") {
   CHECK(mao.pegou);
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

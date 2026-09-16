@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DAS UNIDADES — testes/prova_unidades.cpp
+//   PROVA DAS UNIDADES, testes/prova_unidades.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Bateria de machina SURDA: barramento algum se abre, e todos os alvos vão escriptos
 // á mão. É a lição que a issue mandou tirar, e é o que faz esta prova correr em
@@ -112,5 +112,5 @@ TEST_CASE("o repetir vae e volta nos tres nomes do MPRIS") {
   CHECK_FALSE(ap::repeticao_do_nome("track").has_value());  // a caixa importa
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

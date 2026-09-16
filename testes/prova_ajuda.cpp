@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA AJUDA — testes/prova_ajuda.cpp
+//   PROVA DA AJUDA, testes/prova_ajuda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O HELP (issue #133) afere-se sem terminal: a taboada contra as taboadas das
 // teclas, a medida contra a tela, a janella em écran de papel cella a cella, e
@@ -61,7 +61,7 @@ tui::Retracto tocando() {
   return r;
 }
 
-// tem_officio — se alguma das tres taboadas conhece a tecla: a do commando, a
+// tem_officio, se alguma das tres taboadas conhece a tecla: a do commando, a
 // das abas e a das setas. É o conjunto que o HELP promette nomear inteiro.
 bool tem_officio(const ftxui::Event& tecla) {
   if (tui::ordem_da_tecla(tecla, tocando()).verbo != tui::Verbo::Nada)
@@ -70,7 +70,7 @@ bool tem_officio(const ftxui::Event& tecla) {
   return tui::rumo_da_tecla(tecla) != tui::Direcao::Nenhuma;
 }
 
-// dita — se o rotulo apparece como PALAVRA inteira n'alguma linha da taboada.
+// dita, se o rotulo apparece como PALAVRA inteira n'alguma linha da taboada.
 bool dita(const std::string& rotulo) {
   for (const tui::GrupoDaAjuda& grupo : tui::taboada_da_ajuda())
     for (const tui::LinhaDaAjuda& linha : grupo.linhas) {
@@ -82,7 +82,7 @@ bool dita(const std::string& rotulo) {
   return false;
 }
 
-// ha_cella_com — se alguma cella da tela leva a tinta pedida.
+// ha_cella_com, se alguma cella da tela leva a tinta pedida.
 bool ha_cella_com(const ftxui::Screen& ecran, ftxui::Color tinta) {
   for (int y = 0; y < ecran.dimy(); ++y)
     for (int x = 0; x < ecran.dimx(); ++x)
@@ -324,5 +324,5 @@ TEST_CASE("fechada, a ajuda não pinta cella alguma e a caixa fica por pintar") 
     }
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

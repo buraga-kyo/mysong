@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════
-#   TRACTADO DA OBRA — CMakeLists.txt
+#   TRACTADO DA OBRA, CMakeLists.txt
 # ══════════════════════════════════════════════════════════════════════════
 # DOMÍNIO ......... arvore limpa deste repositorio, e rede que responda na
 #                   PRIMEIRA configuracao (dahi por diante, nao mais).
@@ -303,7 +303,7 @@ pkg_check_modules(DBUS REQUIRED IMPORTED_TARGET dbus-1)
 target_sources(mysong_core PRIVATE src/api/mpris.cpp)
 target_link_libraries(mysong_core PRIVATE PkgConfig::DBUS)
 
-#   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+#   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 # ══════════════════════════════════════════════════════════════════════════
 
 # ─── A BIBLIOTHECA DO ACERVO (issue #8) ─────────────────────────────────────

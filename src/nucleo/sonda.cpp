@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA SONDA — src/nucleo/sonda.cpp
+//   TRACTADO DA SONDA, src/nucleo/sonda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A obra da sonda, em duas partes que não se misturam: a TABOA dos requisitos
 // com a laçada que a percorre, que nada sabem do systema; e as tres consultas
@@ -55,7 +55,7 @@ const std::vector<Requisito>& requisitos() {
   return taboa;
 }
 
-// consultar — pergunta ao inquerito pela especie que o requisito declara. A
+// consultar, pergunta ao inquerito pela especie que o requisito declara. A
 // consulta VAZIA responde ausente: inquerito mal montado accusa falta, e nunca
 // dá por bom aquillo que não sabe.
 namespace {
@@ -69,7 +69,7 @@ bool consultar(const Inquerito& inquerito, const Requisito& requisito) {
 }
 }  // namespace
 
-// sondar — a laçada. Uma pergunta por requisito da taboa, na ordem d'ella, e
+// sondar, a laçada. Uma pergunta por requisito da taboa, na ordem d'ella, e
 // nada mais: não pinta, não escreve, não lê ambiente, não sahe do programa.
 Relatorio sondar(const Inquerito& inquerito) {
   Relatorio relatorio;
@@ -85,7 +85,7 @@ bool Relatorio::ha_falta() const {
   return false;
 }
 
-// ha_impedimento — a pergunta que decide se o programa abre. Aviso não conta
+// ha_impedimento, a pergunta que decide se o programa abre. Aviso não conta
 // aqui, e impedimento conta ainda que venha acompanhado de avisos.
 bool Relatorio::ha_impedimento() const {
   for (const Veredicto& estado : estados)
@@ -95,7 +95,7 @@ bool Relatorio::ha_impedimento() const {
   return false;
 }
 
-// faltas — os impedimentos adeante dos avisos, cada grupo na ordem da taboa.
+// faltas, os impedimentos adeante dos avisos, cada grupo na ordem da taboa.
 // Duas passagens, e não ordenação: ordenar pediria comparador estavel para dar
 // exactamente este resultado, por mais palavras e menos evidencia.
 std::vector<Veredicto> Relatorio::faltas() const {
@@ -109,7 +109,7 @@ std::vector<Veredicto> Relatorio::faltas() const {
 
 namespace {
 
-// contem_insensivel — busca a agulha no palheiro, cega á caixa em ASCII. Faz-se
+// contem_insensivel, busca a agulha no palheiro, cega á caixa em ASCII. Faz-se
 // á mão, e não por std::tolower, porque aquelle depende do locale corrente: sob
 // locale turco o 'I' desce a caractere que não é 'i', e a familia "NERD" fugiria
 // da busca por razão que ninguem havia de suspeitar. Nome de familia de fonte é
@@ -131,7 +131,7 @@ bool contem_insensivel(std::string_view palheiro, std::string_view agulha) {
   return false;
 }
 
-// ha_familia_de_fonte — pergunta ao fontconfig se alguma familia installada
+// ha_familia_de_fonte, pergunta ao fontconfig se alguma familia installada
 // traz a agulha no nome.
 //
 // DO LIMITE, que se declara aqui e se repete na tela: o fontconfig sabe o que
@@ -178,12 +178,12 @@ bool alguma_familia(std::string_view agulha,
   return achou;
 }
 
-// ha_familia_de_fonte — o nome basta, e nada mais se pergunta á fonte.
+// ha_familia_de_fonte, o nome basta, e nada mais se pergunta á fonte.
 bool ha_familia_de_fonte(std::string_view agulha) {
   return alguma_familia(agulha, [](FcPattern*) { return true; });
 }
 
-// ha_bibliotheca — tenta CARREGAR a bibliotheca pelo seu soname, e logo a
+// ha_bibliotheca, tenta CARREGAR a bibliotheca pelo seu soname, e logo a
 // solta. Perguntar por dlopen devolve a ausencia como RESPOSTA, e não como morte
 // antes da primeira linha.
 //
@@ -214,7 +214,7 @@ bool ha_bibliotheca(std::string_view soname) {
   return true;
 }
 
-// ha_executavel — procura o nome nos directorios do PATH e exige permissão de
+// ha_executavel, procura o nome nos directorios do PATH e exige permissão de
 // EXECUÇÃO, e não mera existencia: arquivo que está lá e não corre é ausente
 // para quem precisa correr, e directorio homonymo tambem o é, dahi a exigencia
 // de arquivo regular. PATH ausente do ambiente trata-se como cadeia vazia; e
@@ -272,7 +272,7 @@ bool nomeado_na_forcagem(std::string_view chave) {
   return false;
 }
 
-// familia_com_glypho — a MESMA passagem pelas fontes installadas, com o
+// familia_com_glypho, a MESMA passagem pelas fontes installadas, com o
 // predicado a perguntar pelo charset. Pelo FcFontList, e NUNCA pelo
 // FcFontMatch: aquelle lista o que está installado; este CASA, e casando
 // devolve fonte de substituição quando a pedida não existe. Medi-o n'esta
@@ -289,7 +289,7 @@ bool familia_com_glypho(std::string_view agulha, char32_t ponto) {
   });
 }
 
-// familia_installada — a mesma consulta que a taboa dos requisitos faz, aberta
+// familia_installada, a mesma consulta que a taboa dos requisitos faz, aberta
 // a quem não é requisito: a XIROD não tranca porta alguma, e por isso não entra
 // n'aquella taboa, mas o letreiro precisa de saber se ella está.
 bool familia_installada(std::string_view agulha) {
@@ -298,7 +298,7 @@ bool familia_installada(std::string_view agulha) {
 
 namespace {
 
-// forcado — traduz especie e alvo na chave da taboa, e pergunta pela forçagem.
+// forcado, traduz especie e alvo na chave da taboa, e pergunta pela forçagem.
 // A consulta recebe o ALVO, e a forçagem nomeia a CHAVE, que é a que o operador
 // digita: a taboa faz a ponte entre as duas.
 bool forcado(Especie especie, std::string_view alvo) {
@@ -310,7 +310,7 @@ bool forcado(Especie especie, std::string_view alvo) {
 
 }  // namespace
 
-// inquerito_do_systema — arma as tres consultas de verdade, cada uma guardada
+// inquerito_do_systema, arma as tres consultas de verdade, cada uma guardada
 // pela forçagem. A conjuncção corta curto: forçado ausente, nem se pergunta ao
 // systema, e assim a forçagem é fingimento COMPLETO, e não resposta que o
 // systema depois contradiga.
@@ -333,5 +333,5 @@ Inquerito inquerito_do_systema() {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

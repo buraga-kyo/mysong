@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO TRANSPORTE — src/tui/transporte.cpp
+//   TRACTADO DO TRANSPORTE, src/tui/transporte.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação das contas do tempo. Vale aqui a mesma regra do cabeçalho:
 // cousa alguma d'este arquivo sabe o que é um Tocador. Se um dia souber, a
@@ -66,5 +66,5 @@ std::string linha_da_barra(const Retracto& retracto, std::size_t largura) {
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

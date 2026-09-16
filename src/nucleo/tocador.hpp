@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO TOCADOR — src/nucleo/tocador.hpp
+//   TRACTADO DO TOCADOR, src/nucleo/tocador.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Casa a potencia com a ordem: toma um Motor emprestado e uma Fila propria, e
 // traduz «proxima» em «tocar a faixa que vem depois». É aqui que o estado se
@@ -151,5 +151,5 @@ class Tocador {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

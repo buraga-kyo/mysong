@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MENU DE CONTEXTO — src/tui/menu_contexto.hpp
+//   TRACTADO DO MENU DE CONTEXTO, src/tui/menu_contexto.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O menu que o botão direito e a tecla `m` abrem sobre uma faixa (issue #96).
 // Vive á parte da janella pela razão do rato: a janella abre terminal, motor e
@@ -62,14 +62,14 @@ struct MenuDeContexto {
   std::vector<nucleo::Rol> listas;
 };
 
-// abre_o_menu — o menu de pé sobre a faixa, no primeiro item e com o submenu
+// abre_o_menu, o menu de pé sobre a faixa, no primeiro item e com o submenu
 // fechado. Abrir SEMPRE do principio é decisão, e não descuido: menu que
 // lembrasse o item da vez passada poria o APAGAR debaixo do Enter de quem
 // acabou de apagar, e a segunda faixa hia-se sem que se lesse o que se escolheu.
 void abre_o_menu(MenuDeContexto& menu, std::size_t faixa, std::string titulo,
                  std::vector<nucleo::Rol> listas);
 
-// tecla_no_menu — a taboada de dentro, e o unico logar que muta o estado. TODA
+// tecla_no_menu, a taboada de dentro, e o unico logar que muta o estado. TODA
 // tecla se consome: as que a taboada não conhece devolvem Nada, e Nada quer
 // dizer «consumida, e nada mais ha a fazer». O evento do rato entra aqui
 // tambem: o botão a DESCER fecha o menu, e o a subir não, que o modo 1000 manda
@@ -91,18 +91,18 @@ struct CantoDoMenu {
   int x = 0, y = 0;
 };
 
-// ancora_do_menu — ABAIXO da linha da faixa, que é onde a mão o espera; não
+// ancora_do_menu, ABAIXO da linha da faixa, que é onde a mão o espera; não
 // cabendo abaixo, ACIMA d'ella; e nunca, em caso algum, fóra da tela.
 CantoDoMenu ancora_do_menu(const ftxui::Box& linha, MedidaDoMenu medida,
                            std::size_t largura_da_tela,
                            std::size_t altura_da_tela) noexcept;
 
-// elemento_do_menu — a CAIXA, e sómente ella: o chrome do RADICAL, com o fundo
+// elemento_do_menu, a CAIXA, e sómente ella: o chrome do RADICAL, com o fundo
 // panel, a orla line_base de cantos angulares, o titulo com o nome da faixa e o
 // item eleito em bloco v600 de tinta v50.
 ftxui::Element elemento_do_menu(const MenuDeContexto& menu);
 
-// flutuante_do_menu — a CAMADA da tela inteira, com a caixa no canto que a
+// flutuante_do_menu, a CAMADA da tela inteira, com a caixa no canto que a
 // ancora deu e o resto vazio. Vae no `dbox` por cima do corpo da sala: assim a
 // composição de baixo não sabe do menu, e o menu não lhe rouba linha alguma.
 ftxui::Element flutuante_do_menu(const MenuDeContexto& menu,
@@ -112,5 +112,5 @@ ftxui::Element flutuante_do_menu(const MenuDeContexto& menu,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

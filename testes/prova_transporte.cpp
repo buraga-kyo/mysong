@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO TRANSPORTE — testes/prova_transporte.cpp
+//   PROVA DO TRANSPORTE, testes/prova_transporte.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A lição d'esta bateria: alvo ESCRIPTO Á MÃO, e nunca calculado pela mesma
 // conta que a obra faz. Assertiva que compara o valor com a constante que o

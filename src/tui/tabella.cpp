@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA TABELLA — src/tui/tabella.cpp
+//   TRACTADO DA TABELLA, src/tui/tabella.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A pintura. Vale a regra do cabeçalho: pinta e sahe.
 //
@@ -33,7 +33,7 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
          ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// cortar — a cadeia nos primeiros `largura` CODEPOINTS, e não bytes nem
+// cortar, a cadeia nos primeiros `largura` CODEPOINTS, e não bytes nem
 // collunhas: o glypho largo (CJK, emoji) conta por um valendo duas. Sem a
 // conta por codepoint, um titulo com acentos sahiria mais curto do que a conta
 // diz e a tabella perderia o alinhamento das columnas.
@@ -60,7 +60,7 @@ std::string cortar(const std::string& crua, std::size_t largura,
   return feita;
 }
 
-// apara — o corte, enchido de espaços até `largura`. É o enchimento que alinha
+// apara, o corte, enchido de espaços até `largura`. É o enchimento que alinha
 // as columnas da tabella, e é por isso que elle existe.
 std::string apara(const std::string& crua, std::size_t largura) {
   std::size_t contadas = 0;
@@ -73,11 +73,11 @@ std::string apara(const std::string& crua, std::size_t largura) {
 // o que aparta a pauta da orla e do divisor sem gastar collunha de traço.
 constexpr std::size_t kMargem = 1, kMarcador = 1, kNumero = 3, kVao = 2;
 constexpr std::size_t kRegua = 6, kTempo = 5, kConta = 4;
-// kTituloMinimo — abaixo d'isto o titulo não diz nada, e columna nova que o
+// kTituloMinimo, abaixo d'isto o titulo não diz nada, e columna nova que o
 // levasse a menos seria columna que cega a linha para enfeitar a folha.
 constexpr std::size_t kTituloMinimo = 8;
 
-// repete — o glypho tantas vezes. Não vale `std::string(n, c)`: o glypho da
+// repete, o glypho tantas vezes. Não vale `std::string(n, c)`: o glypho da
 // régua tem tres octetos, e aquelle constructor repete OCTETO, d'onde sahiria
 // lixo em vez de barra.
 std::string repete(std::string_view glypho, std::size_t quantas) {
@@ -86,7 +86,7 @@ std::string repete(std::string_view glypho, std::size_t quantas) {
   return feita;
 }
 
-// a_direita — o texto encostado á DIREITA da columna. O № e o tempo lêem-se
+// a_direita, o texto encostado á DIREITA da columna. O № e o tempo lêem-se
 // pela ultima cella, e alinhal-os á esquerda faria a vista saltar de linha
 // para linha conforme o numero tivesse um algarismo ou tres.
 std::string a_direita(const std::string& texto, std::size_t collunhas) {
@@ -441,5 +441,5 @@ ftxui::Element elemento_da_capa(const nucleo::CapaPintada& capa,
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

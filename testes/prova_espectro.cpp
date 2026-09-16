@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DO ESPECTRO — testes/prova_espectro.cpp
+//   TRACTADO DA PROVA DO ESPECTRO, testes/prova_espectro.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova a MATHEMATICA em machina surda: sem PipeWire, sem placa de som, sem
 // mpv e sem arquivo em disco. O sinal é synthetico, feito aqui mesmo, e é isso

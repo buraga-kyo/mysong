@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA VIGILIA — src/tui/vigilia.hpp
+//   TRACTADO DA VIGILIA, src/tui/vigilia.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A machina que dorme e acorda o DESENHO (issue #82). A issue #78 mediu que
 // repintar n'um painel sem foco arrasta o cursor do painel do OPERADOR
@@ -25,23 +25,23 @@ class Vigilia {
   explicit Vigilia(bool anima_sem_foco = false)
       : anima_sem_foco_(anima_sem_foco) {}
 
-  // ganha — os olhos voltaram; vindo de adormecida arma-se o despertar.
+  // ganha, os olhos voltaram; vindo de adormecida arma-se o despertar.
   void ganha() {
     if (estado_.exchange(Estado::Desperta) == Estado::Adormecida)
       acordou_.store(true);
   }
 
-  // perde — ninguem olha; o relogio deixa de pedir repintura.
+  // perde, ninguem olha; o relogio deixa de pedir repintura.
   void perde() {
     if (!anima_sem_foco_.load()) estado_.store(Estado::Adormecida);
   }
 
-  // pede_batida — o relogio pergunta antes de conferir a assignatura.
+  // pede_batida, o relogio pergunta antes de conferir a assignatura.
   bool pede_batida() const {
     return !trava_animacao_.load() && estado_.load() != Estado::Adormecida;
   }
 
-  // alterna_trava — comando manual que congela a animação sem afetar o audio.
+  // alterna_trava, comando manual que congela a animação sem afetar o audio.
   bool alterna_trava() {
     const bool travada = !trava_animacao_.load();
     trava_animacao_.store(travada);
@@ -56,11 +56,11 @@ class Vigilia {
     anima_sem_foco_.store(habilitada);
   }
 
-  // acordou — VERDADEIRO uma vez por despertar; consome-se na leitura, como o
+  // acordou, VERDADEIRO uma vez por despertar; consome-se na leitura, como o
   // colheu() do estaleiro: o que mudou dormindo não se pintou.
   bool acordou() { return acordou_.exchange(false); }
 
-  // ha_noticia — se evento de foco algum chegou. A falta declara-se ao sahir.
+  // ha_noticia, se evento de foco algum chegou. A falta declara-se ao sahir.
   bool ha_noticia() const { return estado_.load() != Estado::SemNoticia; }
 
  private:
@@ -86,7 +86,7 @@ inline GestoDoFoco gesto_do_foco(const ftxui::Event& evento) {
   return GestoDoFoco::Alheio;
 }
 
-// eh_tecla_de_gente — tecla que terminal e tmux só entregam a painel FOCADO:
+// eh_tecla_de_gente, tecla que terminal e tmux só entregam a painel FOCADO:
 // chegar uma é prova de foco, e a vigilia adormecida acorda por ella. É a rede
 // de segurança do F3 disfarçado. A lista é o vocabulario inteiro da taboada; o
 // Event::Custom fica DE FORA, que é a batida do proprio relogio, e batida que
@@ -107,5 +107,5 @@ inline bool eh_tecla_de_gente(const ftxui::Event& evento) {
 }
 
 }  // namespace mysong::tui
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

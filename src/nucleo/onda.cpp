@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA ONDA — src/nucleo/onda.cpp
+//   TRACTADO DA ONDA, src/nucleo/onda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. As puras primeiro; o ffmpeg no fim, apartado, para que o
 // olho veja a fronteira de um relance.
@@ -198,7 +198,7 @@ bool le_onda(const std::filesystem::path& onde, Onda* onda) {
 
 namespace {
 
-// ha_no_caminho — o programa existe no PATH e corre. Lavra-se aqui, e não se
+// ha_no_caminho, o programa existe no PATH e corre. Lavra-se aqui, e não se
 // toma á sonda: alli a busca vive em namespace anonymo por ser da taboa dos
 // requisitos, e abrir aquelle modulo por quinze linhas custaria mais.
 bool ha_no_caminho(const char* nome) {
@@ -224,7 +224,7 @@ bool ha_no_caminho(const char* nome) {
   return false;
 }
 
-// corre_o_ffmpeg — fork e exec SEM shell: o stdout n'um cano, e o stdin com o
+// corre_o_ffmpeg, fork e exec SEM shell: o stdout n'um cano, e o stdin com o
 // stderr no buraco. O `corre` da aquisição faz quasi isto, e não serve por uma
 // cousa: alli o filho herda o stdin do pae, que n'esta Casa é o terminal que o
 // FTXUI governa. O `-nostdin` da linha de commando já o defende, e o
@@ -270,7 +270,7 @@ int corre_o_ffmpeg(const std::vector<std::string>& argumentos,
   return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
 
-// amostras_dos_octetos — o `s16le` em inteiros de dezasseis bits, pequeno
+// amostras_dos_octetos, o `s16le` em inteiros de dezasseis bits, pequeno
 // primeiro. Copia-se octeto a octeto, e NÃO se aponta um `int16_t*` para o
 // meio da cadeia: cadeia alguma promette alinhamento de dous octetos, e
 // reinterpretar o ponteiro seria andar por sorte n'esta architectura e cahir
@@ -323,5 +323,5 @@ Onda colhe_onda(const std::filesystem::path& faixa, std::string* razao) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

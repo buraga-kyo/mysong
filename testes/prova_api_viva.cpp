@@ -1,10 +1,10 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DA API, BANDA VIVA — testes/prova_api_viva.cpp
+//   TRACTADO DA PROVA DA API, BANDA VIVA, testes/prova_api_viva.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Aqui mora SÓ o que não se pode provar em machina surda: socket AF_UNIX de
 // verdade, aberto no systema de arquivos, com cliente de verdade do outro lado. É
-// pouco de proposito — os treze verbos e todo o enquadramento provam-se em
-// prova_api.cpp —, e o que fica são as cinco cousas que só o transporte pode
+// pouco de proposito, os treze verbos e todo o enquadramento provam-se em
+// prova_api.cpp, , e o que fica são as cinco cousas que só o transporte pode
 // errar.
 //
 // DOMÍNIO ......... descriptors e arquivos no systema, que é estado GLOBAL.
@@ -497,5 +497,5 @@ TEST_CASE("o arranque sem terminal responde inteiro sob o ambiente desviado") {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

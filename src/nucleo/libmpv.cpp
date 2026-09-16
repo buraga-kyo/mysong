@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO CARREGAMENTO DA LIBMPV — src/nucleo/libmpv.cpp
+//   TRACTADO DO CARREGAMENTO DA LIBMPV, src/nucleo/libmpv.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // DOMÍNIO ......... o soname da bibliotheca, e o carregador dinamico.
 // CONTRA-DOMÍNIO .. a taboa atada, ou nulo com razão que NOMEIA a falta.
@@ -98,5 +98,5 @@ const TaboaDaLibmpv* libmpv(std::string* razao) {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

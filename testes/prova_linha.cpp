@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DA LINHA DE COMMANDO — testes/prova_linha.cpp
+//   TRACTADO DAS PROVAS DA LINHA DE COMMANDO, testes/prova_linha.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Julga a leitura da linha SEM abrir terminal, motor nem som: é para isso que
 // a decisão sahiu do main() e foi morar no núcleo. Os casos escrevem á mão o

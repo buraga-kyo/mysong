@@ -47,4 +47,4 @@ int main(int argc, char** argv) {
   return relida == arte ? 0 : 1;
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BRAGA US., buraga-kyo ✒

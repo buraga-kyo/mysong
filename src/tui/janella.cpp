@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA JANELLA — src/tui/janella.cpp
+//   TRACTADO DA JANELLA, src/tui/janella.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A porta do programa. Sonda os requisitos ANTES de tudo, e sómente depois
 // decide: havendo impedimento, pinta a tela dos requisitos e sahe; havendo
@@ -93,7 +93,7 @@ namespace tui = mysong::tui;
 
 namespace {
 
-// caminho_do_indice — `$XDG_DATA_HOME/mysong/indice.sqlite3`, e sem elle
+// caminho_do_indice, `$XDG_DATA_HOME/mysong/indice.sqlite3`, e sem elle
 // `~/.local/share/...`. Cria-se o directorio com modo 0700, como no precedente
 // do agenda_index.py: o que o operador escuta é dado d'elle, e não do mundo.
 std::filesystem::path caminho_do_indice() {
@@ -114,7 +114,7 @@ std::filesystem::path caminho_do_indice() {
   return pasta / "indice.sqlite3";
 }
 
-// caminho_das_listas — `rol.sqlite3` ao lado do índice, e NÃO dentro d'elle: o
+// caminho_das_listas, `rol.sqlite3` ao lado do índice, e NÃO dentro d'elle: o
 // índice é reconstruido a cada varredura por temporario e rename, e taboa de lista
 // lá dentro sahiria com a varredura.
 std::filesystem::path caminho_das_listas(const std::filesystem::path& indice) {
@@ -122,7 +122,7 @@ std::filesystem::path caminho_das_listas(const std::filesystem::path& indice) {
   return indice.parent_path() / "rol.sqlite3";
 }
 
-// raiz_do_soquete — onde o soquete de commando da janella do video mora.
+// raiz_do_soquete, onde o soquete de commando da janella do video mora.
 // `$XDG_RUNTIME_DIR` primeiro, que é o logar que o systema apaga ao fim da sessão;
 // `/tmp` sem elle, que soquete tem de morar em algum logar e recusar abrir video
 // por falta de directorio de tempo seria recusa que ninguem entende.
@@ -132,7 +132,7 @@ std::filesystem::path raiz_do_soquete() {
   return std::filesystem::path("/tmp");
 }
 
-// janela_do_tmux_esta_ativa — focus-events informa foco do emulador, mas trocar
+// janela_do_tmux_esta_ativa, focus-events informa foco do emulador, mas trocar
 // de janela dentro do tmux não é uma troca de foco do terminal. Consulta-se o
 // estado da janela pelo identificador seguro que o tmux já entrega em
 // TMUX_PANE, para que a animação interna continue sem pintar uma janela oculta.
@@ -156,7 +156,7 @@ bool janela_do_tmux_esta_ativa() {
 // rolar muito, e o `--flat-playlist` faz d'isso uma sonda de rede só.
 constexpr int ACHADOS_POR_BUSCA = 15;
 
-// assignatura_do_visivel — uma cadeia barata que resume TUDO o que a tela mostra. O fio do
+// assignatura_do_visivel, uma cadeia barata que resume TUDO o que a tela mostra. O fio do
 // relogio sómente pede repintura quando ella muda.
 //
 // Sem isto, medido n'um pty de quarenta por cento e vinte: cento e trinta e oito KiB por
@@ -238,7 +238,7 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   return marca;
 }
 
-// retracto_do — colhe o instante do tocador n'uma cópia. O nucleo colhe o seu
+// retracto_do, colhe o instante do tocador n'uma cópia. O nucleo colhe o seu
 // proprio retracto de UMA tomada da tranca (issue #50); aqui só se veste a
 // tela por cima d'elle.
 tui::Retracto retracto_do(nucleo::Tocador& tocador,
@@ -264,7 +264,7 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   return retracto;
 }
 
-// apaga_a_faixa — o arquivo á LIXEIRA, e a faixa fóra do índice e de todas as
+// apaga_a_faixa, o arquivo á LIXEIRA, e a faixa fóra do índice e de todas as
 // listas. As tres peças juntam-se aqui porque é aqui que as tres se têm na mão.
 // Nada se desliga do disco: o que se apaga por engano volta pelo gerenciador.
 std::string apaga_a_faixa(const std::string& caminho,
@@ -280,7 +280,7 @@ std::string apaga_a_faixa(const std::string& caminho,
   return recado;
 }
 
-// renomeia_a_faixa — o titulo na ETIQUETA primeiro, e no índice depois. N'esta
+// renomeia_a_faixa, o titulo na ETIQUETA primeiro, e no índice depois. N'esta
 // ordem, e não na contraria: gravado o índice antes, a etiqueta que recusasse
 // deixava a pauta a mostrar nome que o arquivo não tem, e a proxima varredura
 // desfazia-o sem o operador entender porquê.
@@ -293,7 +293,7 @@ std::string renomeia_a_faixa(const std::string& caminho,
   return "agora chama-se «" + desfecho.titulo + "»";
 }
 
-// cumprir — a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
+// cumprir, a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
 // na taboada acende aviso do compilador aqui, e não passa calado.
 // O ROTEAMENTO das ordens de transporte. Havendo janella de video de pé, é ELLA
 // que pausa, retoma, busca e muda de volume: o motor de audio está calado, e mandar
@@ -403,7 +403,7 @@ constexpr const char* kDicas =
 // esta é a primeira defesa contra elle.
 constexpr int MILESIMOS_DO_QUADRO = 50;
 
-// encommenda_do_catalogo — o Pedido que uma faixa do catalogo dá. A URL vae VAZIA de
+// encommenda_do_catalogo, o Pedido que uma faixa do catalogo dá. A URL vae VAZIA de
 // proposito: é isso que manda a aquisição buscar o audio por si e casá-lo pela
 // duração. E as etiquetas vêm todas do CATALOGO, que é a razão de esta tarefa
 // existir: o metadado do YouTube põe o nome do canal por artista.
@@ -430,7 +430,7 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
   return pedido;
 }
 
-// erguer_tocador — o laço de verdade. Ergue o motor, o tocador e o analisador,
+// erguer_tocador, o laço de verdade. Ergue o motor, o tocador e o analisador,
 // enche a fila com o que veio da linha de commando, e pinta a barra de baixo com
 // o espectro por cima. Esta funcção NÃO se prova em bateria: ella abre terminal,
 // abre som e depende de relogio. O que se prova são as duas peças que ella usa,
@@ -1315,7 +1315,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
              &caixa_da_ajuda)});
   });
 
-  // vai_para_aba — o caminho das teclas `1` `2` `3`, n'um logar só. Sahe do
+  // vai_para_aba, o caminho das teclas `1` `2` `3`, n'um logar só. Sahe do
   // ramo d'ellas porque o clique na aba (issue #95) percorre o MESMO caminho:
   // duas copias d'estes recados divergiriam na primeira issue que mexesse
   // n'uma d'ellas, e o dedo veria um aviso e a tecla outro.
@@ -1328,12 +1328,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
   };
 
-  // abre_o_menu_na — o menu sobre a faixa de indice `qual`, que se ELEGE
+  // abre_o_menu_na, o menu sobre a faixa de indice `qual`, que se ELEGE
   // primeiro. Eleger ao abrir é o que o gerenciador de arquivos d'elle faz com
   // o botão direito, e é o que deixa o menu chamar as ordens que já existem:
   // ellas trabalham todas sobre a ELEITA, e menu que abrisse n'outra faixa
   // pediria um segundo caminho para cada uma d'ellas.
-  // elege_a_linha — leva a eleição ao indice pedido pelo sobe e pelo desce, que
+  // elege_a_linha, leva a eleição ao indice pedido pelo sobe e pelo desce, que
   // SATURAM. É o mesmo caminho que o clique já anda, e não punho novo.
   const auto elege_a_linha = [&](std::size_t qual) {
     while (navegador.eleito() != qual) {
@@ -1343,7 +1343,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     }
   };
 
-  // arruma_a_faixa — cumpre o que o arrasto pediu (issue #153). No ACERVO pela
+  // arruma_a_faixa, cumpre o que o arrasto pediu (issue #153). No ACERVO pela
   // ordem propria da bibliotheca (issue #152); dentro de uma LISTA pelos passos
   // que o `K` e o `J` já dão, um de cada vez, que é o punho que o roleiro tem.
   // Fóra d'essas duas vistas nada se move, e o arrasto nem chega aqui.
@@ -1391,7 +1391,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                      navegador.rois());
   };
 
-  // cria_a_lista_com — a lista NOVA já com a faixa eleita dentro, que é o que o
+  // cria_a_lista_com, a lista NOVA já com a faixa eleita dentro, que é o que o
   // item NOVA LISTA COM ESTA promette (issue #96). Vae pelo roleiro, e não pelo
   // `cria_rol` do navegador: esse não devolve o id da que nasceu, e sem o id
   // não ha onde juntar. Passa-se ás listas a seguir, como o `c` já passava:
@@ -1408,7 +1408,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     aviso_da_rede = "«" + nome + "» criada com a faixa";
   };
 
-  // junta_na_lista — a faixa eleita na lista de id `qual`, que é a que o submenu
+  // junta_na_lista, a faixa eleita na lista de id `qual`, que é a que o submenu
   // escolheu. Chama o roleiro, e não o `junta_ao_rol` do navegador: esse junta
   // na lista CORRENTE, e a corrente não é a que se escolheu; mudar a corrente
   // por um item de menu faria o `a` seguinte juntar n'outra lista sem que
@@ -2185,7 +2185,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   return 0;
 }
 
-// recusar_e_sahir — pinta a tela dos requisitos, espera tecla e sahe com codigo
+// recusar_e_sahir, pinta a tela dos requisitos, espera tecla e sahe com codigo
 // differente de zero. É a UNICA cousa que apparece havendo impedimento: o
 // tocador não se ergue nem por um quadro, e por isso esta funcção não o chama.
 // Aqui a espera de tecla fica, ao contrario do caminho do aviso: o programa não
@@ -2364,5 +2364,5 @@ int main(int argc, char** argv) {
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DE SOM — exemplos/toca_tom.cpp
+//   TRACTADO DA PROVA DE SOM, exemplos/toca_tom.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Toca som de VERDADE, e é a metade do aceite que o motor dublê não pode
 // provar. A bateria prova a mechanica; este binario prova o contracto com a
@@ -166,5 +166,5 @@ int main(int argc, char** argv) {
 
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

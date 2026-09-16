@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS CÔRES — src/tui/tokens.hpp
+//   TRACTADO DAS CÔRES, src/tui/tokens.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // Porta a "SUNCORE HUD, edição violeta" do RADICAL-OS a esta Casa. A fonte
 // versionada é ~/.config/awesome/src/theme/palette.lua, e este manuscripto é
@@ -56,7 +56,7 @@ constexpr std::string_view line_base = "#5b21b6", line_bright = "#7c3aed";
 constexpr std::string_view bevel_hi = "#9d6ff6", bevel_lo = "#160c28";
 constexpr std::string_view grid = "#3a1f63";
 
-// ── Séries de dados: aos gráphicos concede-se o espectro inteiro do poente —
+// ── Séries de dados: aos gráphicos concede-se o espectro inteiro do poente,
 // o violeta do núcleo (data1, soberano), amarello-sol, laranja, magenta, o
 // CYAN dos olhos do eidolon (data5) e o vermelho do quadro solar.
 constexpr std::string_view data1 = "#a855f7", data2 = "#ffd319", data3 = "#ff7a1a";
@@ -81,7 +81,7 @@ constexpr std::string_view data4_deep = "#8c1a58", data3_deep = "#8c430e";
 constexpr std::string_view graph_up = "#d8ff2f";
 
 // ── Receitas nomeadas de opacidade, portadas de palette.alpha: extirpam a
-// dispersão dos valores crus. No terminal ellas NÃO pintam sozinhas — não ha
+// dispersão dos valores crus. No terminal ellas NÃO pintam sozinhas, não ha
 // canal de opacidade; entram sempre por mistura(), sobre um fundo conhecido.
 namespace alfa {
 constexpr double panel = 0.92, panel_hi = 0.95, bar = 0.8, clock_bar = 0.85;
@@ -97,7 +97,7 @@ struct Triade {
   unsigned char r = 0, g = 0, b = 0;
 };
 
-// octeto — lê um par de dígitos hexadecimaes. Tolera-se caixa alta e baixa.
+// octeto, lê um par de dígitos hexadecimaes. Tolera-se caixa alta e baixa.
 constexpr unsigned octeto(char alto, char baixo) {
   const auto valor = [](char c) -> unsigned {
     return c <= '9' ? static_cast<unsigned>(c - '0')
@@ -106,7 +106,7 @@ constexpr unsigned octeto(char alto, char baixo) {
   return valor(alto) * 16u + valor(baixo);
 }
 
-// rgb — decompõe "#RRGGBB" na tríade, como o fazia palette.rgb para o cairo.
+// rgb, decompõe "#RRGGBB" na tríade, como o fazia palette.rgb para o cairo.
 // Tolera-se o prefixo '#' e o oitavo byte de opacidade: sómente a tríade se
 // restitue ao chamador, que é tudo quanto o terminal sabe pintar.
 constexpr Triade rgb(std::string_view hex) {
@@ -117,7 +117,7 @@ constexpr Triade rgb(std::string_view hex) {
           static_cast<unsigned char>(octeto(hex[4], hex[5]))};
 }
 
-// mistura — resolve a opacidade em côr OPACA, compondo `frente` sobre um
+// mistura, resolve a opacidade em côr OPACA, compondo `frente` sobre um
 // `fundo` CONHECIDO. É o analogo terminal de palette.a(hex, alpha): visto que
 // o SGR sómente aceita a tríade, a côr de oito dígitos jamais sahe d'aqui.
 // Confina-se o alfa ao intervallo fechado [0,1], tal como na fonte.
@@ -131,7 +131,7 @@ constexpr Triade mistura(std::string_view frente, std::string_view fundo,
   return {pesa(f.r, t.r), pesa(f.g, t.g), pesa(f.b, t.b)};
 }
 
-// sgr — a sequencia de escape que veste a célula. O papel 38 é a TINTA, com
+// sgr, a sequencia de escape que veste a célula. O papel 38 é a TINTA, com
 // que se pinta o glifo; o 48 é o FUNDO, que é a sua cama; e o repouso desfaz
 // ambos. As componentes escrevem-se em decimal, sem zero á esquerda.
 inline std::string sgr(int papel, Triade c) {
@@ -147,5 +147,5 @@ constexpr std::string_view repouso = "\x1b[0m";
 // ══════════════════════════════════════════════════════════════════════════
 //   Da lavra do eminente Doutor BRAGA US, Professor de Sciências Mathemáticas
 //   e Geómetra desta Casa. Manuscripto lavrado no Anno da Graça de MDCCCXCVIII.
-//                                                          — Braga Us ✒
+//, Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DO COMMANDO — testes/prova_commando.cpp
+//   PROVA DO COMMANDO, testes/prova_commando.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A taboada de tecla para ordem, aferida sem terminal, sem motor e sem som. O
 // alvo de cada linha está escripto á mão: nenhum caso pergunta á obra qual o
@@ -343,5 +343,5 @@ TEST_CASE("o volume das teclas de funcção cinge-se a zero e a cem") {
     CHECK(tui::ordem_da_tecla(tecla, retracto, true).verbo == tui::Verbo::Nada);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

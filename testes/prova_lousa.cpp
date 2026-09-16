@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   PROVA DA LOUSA — testes/prova_lousa.cpp
+//   PROVA DA LOUSA, testes/prova_lousa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // O protocolo do Überzug++, a conta do rectangulo e a decisão da alavanca,
 // tudo sem X11 vivo e sem se erguer processo algum: as tres cousas são
@@ -76,7 +76,7 @@ const std::string& png_de_cabecalho() {
 }
 
 
-// resolvido — o arquivo e o ambiente pela escada de precedencia, sem disco
+// resolvido, o arquivo e o ambiente pela escada de precedencia, sem disco
 // algum. É o arranjo do prova_ajustes, repetido aqui para que a chave da lousa
 // se prove ao lado da lousa e não no meio de uma prova alheia.
 nu::Ajustes resolvido(std::string_view arquivo, nu::Degraus degraus) {
@@ -336,5 +336,5 @@ TEST_CASE("a lista não traz repetido, que sigaction de repetido perde o de ante
   CHECK(std::unique(quaes.begin(), quaes.end()) == quaes.end());
 }
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

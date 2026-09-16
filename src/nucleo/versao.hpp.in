@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO NUMERO — src/nucleo/versao.hpp.in
+//   TRACTADO DO NUMERO, src/nucleo/versao.hpp.in
 // ══════════════════════════════════════════════════════════════════════════
 // Arquivo GERADO. O CMake substitue @PROJECT_VERSION@ pelo numero que o
 // project() declara e escreve o resultado na arvore de compilação, que é logar
@@ -22,5 +22,5 @@ constexpr std::string_view versao() noexcept { return "@PROJECT_VERSION@"; }
 }  // namespace mysong::nucleo
 
 // ══════════════════════════════════════════════════════════════════════════
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

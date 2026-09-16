@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA VARREDURA — src/nucleo/varredura.cpp
+//   TRACTADO DA VARREDURA, src/nucleo/varredura.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A implementação. A taglib mora aqui e sómente aqui, atras do punho oculto.
 //
@@ -48,7 +48,7 @@ std::string minuscula(std::string_view crua) {
 }
 
 
-// numero_e_titulo — parte `NN - Titulo` no numero e no titulo. Sem numero á
+// numero_e_titulo, parte `NN - Titulo` no numero e no titulo. Sem numero á
 // frente, o titulo é o nome inteiro e o numero fica zero, que quer dizer «sem
 // numero» e não «faixa zero». O separador aceita-se com ou sem espaços, e tanto
 // hyphen como ponto: `01 - Tear`, `01-Tear` e `01. Tear` sahem eguaes.
@@ -128,7 +128,7 @@ struct Varredura::Punho {
   std::unique_ptr<Biblioteca> antigo;
 };
 
-// lista_raiz — colhe os arquivos de UMA raiz. Directorio symbólico NÃO se desce:
+// lista_raiz, colhe os arquivos de UMA raiz. Directorio symbólico NÃO se desce:
 // é o que impede o laço de ligações de fazer a varredura girar sem fim, e conta
 // em `ligacoes_saltadas` para que o operador saiba que ficou cousa por ver.
 using Achado = std::pair<std::filesystem::path, std::filesystem::path>;
@@ -168,7 +168,7 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
   }
 }
 
-// le_etiqueta — sobrepõe á faixa derivada o que a etiqueta disser, e APAGA o bit
+// le_etiqueta, sobrepõe á faixa derivada o que a etiqueta disser, e APAGA o bit
 // da máscara de cada campo que ella disse. Falso quando taglib não abre o
 // arquivo: é o `.txt` renomeado para `.mp3`, e esse não entra no índice.
 bool le_etiqueta(const std::filesystem::path& caminho, Faixa* faixa) {
@@ -239,7 +239,7 @@ DoTitulo renomeia_titulo(const std::filesystem::path& caminho,
   return desfecho;
 }
 
-// trata_arquivo — um arquivo, um passo. Aqui vive o INCREMENTAL: hora e tamanho
+// trata_arquivo, um arquivo, um passo. Aqui vive o INCREMENTAL: hora e tamanho
 // eguaes aos do índice antigo copiam a linha em vez de a reler, e é onde o
 // primeiro scan gasta o seu tempo.
 bool trata_arquivo(const Achado& achado, Biblioteca& antigo, Escriba& escriba,
@@ -374,5 +374,5 @@ void Varredura::abandona() {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

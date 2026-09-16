@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DA PROVA DO TOCADOR — testes/prova_tocador.cpp
+//   TRACTADO DA PROVA DO TOCADOR, testes/prova_tocador.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova o tocador com um motor DUBLÊ: uma carne de mentira que obedece á
 // mesma interface e não abre mpv, nem placa de som, nem arquivo. É o que a
@@ -159,7 +159,7 @@ TEST_CASE("com a fila vazia a batida do fim nada encadeia") {
   CHECK(tocador.retracto().estado == mysong::nucleo::Estado::Parado);
 }
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 TEST_CASE("o motor recebe cada faixa da fila, nos dous sentidos") {
   MotorDuble duble;
   Tocador tocador(duble);

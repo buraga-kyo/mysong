@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO PROMPT — src/tui/prompt.cpp
+//   TRACTADO DO PROMPT, src/tui/prompt.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // A taboada dos modos, e a pintura do campo. O contracto está em prompt.hpp.
 // ══════════════════════════════════════════════════════════════════════════
@@ -21,7 +21,7 @@ ftxui::Element pinta(const std::string& texto, std::string_view token) {
   return ftxui::text(texto) | ftxui::color(ftxui::Color::RGB(c.r, c.g, c.b));
 }
 
-// collunhas — a conta de COLLUNHAS, e não de codepoints. O glifo largo (CJK,
+// collunhas, a conta de COLLUNHAS, e não de codepoints. O glifo largo (CJK,
 // emoji) vale DUAS, e contá-lo por uma punha o caret uma collunha ALÉM da
 // ultima: o FTXUI conta ahi `dimx - 1 - cursor_.x` e manda `ESC[-1D`, que é
 // escape mal formado a sahir ao terminal do operador. Até a issue #102 a folga
@@ -31,13 +31,13 @@ std::size_t collunhas(const std::string& crua) {
   return medida < 0 ? 0 : static_cast<std::size_t>(medida);
 }
 
-// larga_a_letra — as collunhas do codepoint que começa em `i` e acaba em `fim`.
+// larga_a_letra, as collunhas do codepoint que começa em `i` e acaba em `fim`.
 std::size_t larga_a_letra(const std::string& crua, std::size_t i,
                           std::size_t fim) {
   return collunhas(crua.substr(i, fim - i));
 }
 
-// rabo — o FIM da cadeia, em `largura` COLLUNHAS: é o par do `apara` da
+// rabo, o FIM da cadeia, em `largura` COLLUNHAS: é o par do `apara` da
 // tabella, que guarda o começo. Aqui guarda-se o fim, que é o que o operador
 // acabou de teclar.
 std::string rabo(const std::string& crua, std::size_t largura) {
@@ -53,7 +53,7 @@ std::string rabo(const std::string& crua, std::size_t largura) {
   return crua;
 }
 
-// cabeca — o COMEÇO da cadeia, nas mesmas COLLUNHAS: o par do rabo, para o
+// cabeca, o COMEÇO da cadeia, nas mesmas COLLUNHAS: o par do rabo, para o
 // rotulo que se apara á direita quando nem elle cabe. Do rotulo é o começo que
 // diz o officio; do termo, o fim é o que se acabou de teclar.
 std::string cabeca(const std::string& crua, std::size_t largura) {
@@ -168,5 +168,5 @@ ftxui::Element elemento_do_campo(Modo modo, std::string_view contexto,
 }
 
 }  // namespace mysong::tui
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO CORREIO — src/tui/correio.hpp
+//   TRACTADO DO CORREIO, src/tui/correio.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O RECADO que um fio de fundo deixa á tela. Um só cabe de cada vez: recado novo
 // substitue o velho, que ninguem quer ver a busca de antes chegar depois da de agora.
@@ -32,7 +32,7 @@ namespace mysong::tui {
 template <class Carga>
 class CorreioDe {
  public:
-  // poe — deixa o recado, substituindo o que houvesse.
+  // poe, deixa o recado, substituindo o que houvesse.
   void poe(std::vector<Carga> achados, std::string recado) {
     std::lock_guard<std::mutex> chave(tranca_);
     achados_ = std::move(achados);
@@ -40,7 +40,7 @@ class CorreioDe {
     ++posta_;
   }
 
-  // colhe — VERDADEIRO uma vez por recado posto. Colhido, o recado sahe d'aqui.
+  // colhe, VERDADEIRO uma vez por recado posto. Colhido, o recado sahe d'aqui.
   bool colhe(std::vector<Carga>* achados, std::string* recado) {
     std::lock_guard<std::mutex> chave(tranca_);
     if (colhida_ == posta_) return false;
@@ -54,7 +54,7 @@ class CorreioDe {
     return true;
   }
 
-  // geracao — quantos recados se pôz desde sempre. Cresce, e nunca decresce: é o que
+  // geracao, quantos recados se pôz desde sempre. Cresce, e nunca decresce: é o que
   // o fio do relogio compara para saber que ha repintura a pedir.
   unsigned long geracao() const {
     std::lock_guard<std::mutex> chave(tranca_);
@@ -75,5 +75,5 @@ using Correio = CorreioDe<Linha>;
 
 }  // namespace mysong::tui
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

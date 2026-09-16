@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO COVER ART ARCHIVE, LAVRA — src/nucleo/caa.cpp
+//   TRACTADO DO COVER ART ARCHIVE, LAVRA, src/nucleo/caa.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Cumpre o que o cabeçalho promette. As puras primeiro, e o que toca banco e
 // rede por baixo, á maneira do musicbrainz.cpp, que é o irmão d'esta peça.
@@ -30,7 +30,7 @@ constexpr char kEsquemaDaMemoria[] =
     "  caminho TEXT PRIMARY KEY, desfecho TEXT NOT NULL,"
     "  quando INTEGER NOT NULL);";
 
-// corre — a consulta com as cadeias por AMARRAÇÃO, nunca por concatenação: é
+// corre, a consulta com as cadeias por AMARRAÇÃO, nunca por concatenação: é
 // o desenho do rol, aparado ao que esta memoria usa (cadeia, e nada mais).
 bool corre(sqlite3* punho, const std::string& sql,
            const std::vector<std::string>& cadeias,
@@ -304,5 +304,5 @@ std::size_t MemoriaDeCapas::quantas() const {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BRAGA US., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

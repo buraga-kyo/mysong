@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO MUSICBRAINZ — src/nucleo/musicbrainz.hpp
+//   TRACTADO DO MUSICBRAINZ, src/nucleo/musicbrainz.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // A GRAVAÇÃO por traz da faixa (issue #57). O catalogo da issue #13 casava o
 // audio por titulo e duração, crivo que acceita cover e versão ao vivo; o que
@@ -61,34 +61,34 @@ struct FichaMB {
   int duracao_ms = 0;  // a duração exacta da gravação, em milesimos
 };
 
-// escapa_url — o percent-encoding do RFC 3986, proprio porque o do curl pede
+// escapa_url, o percent-encoding do RFC 3986, proprio porque o do curl pede
 // punho vivo. Sómente letra, cifra e `-._~` passam crus.
 std::string escapa_url(std::string_view crua);
 
-// url_da_consulta_pelo_link — a relação de URL do track do Spotify: casamento
+// url_da_consulta_pelo_link, a relação de URL do track do Spotify: casamento
 // EXACTO quando o MusicBrainz tem o link. Vazio sem identificador.
 std::string url_da_consulta_pelo_link(std::string_view id_do_track);
 
-// url_da_consulta_pela_busca — gravação por artista, titulo e duração (janella
+// url_da_consulta_pela_busca, gravação por artista, titulo e duração (janella
 // de doze segundos, a da tolerancia do casamento). Vazio sem titulo; sem
 // artista ou sem duração, a clausula que falta fica de fóra.
 std::string url_da_consulta_pela_busca(std::string_view artista,
                                        std::string_view titulo, int duracao_ms);
 
-// url_da_ficha — a gravação inteira por MBID: ISRCs, artistas e releases com
+// url_da_ficha, a gravação inteira por MBID: ISRCs, artistas e releases com
 // grupo e numeração. Vazio sem MBID.
 std::string url_da_ficha(std::string_view mbid);
 
-// le_gravacao_da_url — o MBID da gravação que o url-lookup aponta. Vazio quando
+// le_gravacao_da_url, o MBID da gravação que o url-lookup aponta. Vazio quando
 // o corpo não tras relação de gravação (404, truncado, alheio).
 std::string le_gravacao_da_url(std::string_view corpo);
 
-// le_ficha_da_gravacao — a ficha que o corpo do lookup tras: ISRCs na ordem do
+// le_ficha_da_gravacao, a ficha que o corpo do lookup tras: ISRCs na ordem do
 // MB, titulo, artista, duração exacta, e a release canonica (album, anno,
 // numero). Campo que o corpo não diga fica vazio ou zero.
 FichaMB le_ficha_da_gravacao(std::string_view corpo);
 
-// le_eleita_da_busca — o MBID eleito do corpo da busca: score ≥ 90, duração
+// le_eleita_da_busca, o MBID eleito do corpo da busca: score ≥ 90, duração
 // dentro da janella quando o catalogo a disse, e a de first-release-date mais
 // antiga entre as que passam. Vazio quando nenhuma passa.
 std::string le_eleita_da_busca(std::string_view corpo, int duracao_ms);
@@ -98,7 +98,7 @@ std::string le_eleita_da_busca(std::string_view corpo, int duracao_ms);
 // tecto uma ficha de oito ISRCs custaria oito buscas de rede.
 inline constexpr std::size_t kIsrcsPorFaixa = 3;
 
-// termos_de_busca — os termos com que a colheita busca o YouTube, NESTA ordem:
+// termos_de_busca, os termos com que a colheita busca o YouTube, NESTA ordem:
 // até kIsrcsPorFaixa ISRCs da ficha, e por derradeiro o termo de hoje (artista
 // e titulo), que é o ultimo recurso e sahe com a duvida confessada.
 std::vector<std::string> termos_de_busca(const FichaMB& ficha,
@@ -107,7 +107,7 @@ std::vector<std::string> termos_de_busca(const FichaMB& ficha,
 
 // ── E AGORA O QUE TOCA O MUNDO ──────────────────────────────────────────────
 
-// espera_a_vez_do_mb — o acelerador: segura o fio até haver um segundo inteiro
+// espera_a_vez_do_mb, o acelerador: segura o fio até haver um segundo inteiro
 // desde a ultima passagem, somados todos os fios do processo. Publico para que
 // a bateria o afira com relogio, sem rede alguma.
 void espera_a_vez_do_mb();
@@ -122,12 +122,12 @@ enum class DesfechoMB {
   Recuo,   // 429 ou 503: o servidor pediu menos trafego
 };
 
-// desfecho_da_resposta — a leitura do que a rede devolveu, PURA, para que a
+// desfecho_da_resposta, a leitura do que a rede devolveu, PURA, para que a
 // bateria a afira sem rede. `erro_do_curl` é o codigo do libcurl (zero é o
 // «correu bem» d'elle), e `estado` é o codigo HTTP.
 DesfechoMB desfecho_da_resposta(int erro_do_curl, long estado);
 
-// consulta_mb — pede a URL com o agente da obra, passando pelo acelerador, e
+// consulta_mb, pede a URL com o agente da obra, passando pelo acelerador, e
 // enche o corpo. Re-tento algum se faz aqui: uma fila de faixas a re-tentar
 // amplificaria a rajada que o acelerador impede.
 DesfechoMB consulta_mb(const std::string& url, std::string* corpo);
@@ -146,7 +146,7 @@ DesfechoMB consulta_mb_com_estado(const std::string& url, std::string* corpo,
 // afere QUANTAS e QUAES consultas a resolução gasta, sem tocar a rede.
 using Consulta = std::function<DesfechoMB(const std::string&, std::string*)>;
 
-// resolve_gravacao — a resolução inteira: pelo link do track quando o ha, pela
+// resolve_gravacao, a resolução inteira: pelo link do track quando o ha, pela
 // busca quando não; e a ficha da gravação eleita. Duração em MILESIMOS, como o
 // MB fala. Falso quando nada casou, e ahi quem chama confessa a duvida. Pedindo
 // o servidor RECUO no primeiro caminho, o segundo NÃO se gasta.
@@ -156,5 +156,5 @@ bool resolve_gravacao(const std::string& id_spotify, const std::string& artista,
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BRAGA US. — Braga Us ✒
+//   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DO LETREIRO — src/nucleo/letreiro.hpp
+//   TRACTADO DO LETREIRO, src/nucleo/letreiro.hpp
 // ══════════════════════════════════════════════════════════════════════════
 // O LETREIRO é a palavra de MARCA rasterizada em imagem. Terminal algum troca
 // de fonte por cella, e a XIROD do RADICAL-OS não é fonte de terminal: quem a
@@ -41,7 +41,7 @@ inline constexpr std::string_view FAMILIA_DA_LEITURA =
     "JetBrainsMono Nerd Font Mono";
 inline constexpr int CORPO_DA_MARCA = 22;
 
-// corpo_da_altura — o corpo que a caixa de `linhas` fileiras pede. O corpo da
+// corpo_da_altura, o corpo que a caixa de `linhas` fileiras pede. O corpo da
 // marca mediu-se contra UMA cella de vinte pixeis; a caixa da fita do pé tem
 // duas, que são quarenta, e pedir alli a mesma palavra no mesmo corpo daria ao
 // Überzug++ o dobro do AUMENTO, com o traço da XIROD a esfarelar. A razão
@@ -66,7 +66,7 @@ struct PedidoDaChapa {
   int corpo = CORPO_DA_MARCA;
 };
 
-// argumentos_do_letreiro — o que se corre, pelo precedente do
+// argumentos_do_letreiro, o que se corre, pelo precedente do
 // `argumentos_do_chafa`: a linha á parte e PURA, para que a bateria afira o
 // que se HA DE correr sem correr programa algum. O `-q` cala a janella que o
 // pango-view abriria, e o `--margin` leva DOUS numeros, que é como elle diz o
@@ -76,7 +76,7 @@ std::vector<std::string> argumentos_do_letreiro(
     const PedidoDaChapa& pedido, std::size_t margem,
     const std::filesystem::path& sahida);
 
-// margem_da_chapa — a folga, em pixeis, que casa a proporção da chapa com a
+// margem_da_chapa, a folga, em pixeis, que casa a proporção da chapa com a
 // da CAIXA. Sem ella o Überzug++, que encolhe guardando a proporção, deixaria
 // a chapa mais chata que a caixa: a palavra em XIROD é larga, e a caixa da
 // aba mede POUCAS cellas de altura, d'onde a largura manda na conta e a chapa
@@ -90,19 +90,19 @@ std::vector<std::string> argumentos_do_letreiro(
 std::size_t margem_da_chapa(Medida crua, std::size_t cellulas,
                             std::size_t linhas, Medida cellula);
 
-// chave_do_letreiro — o nome do arquivo em cache, e a somma de TODO o pedido:
+// chave_do_letreiro, o nome do arquivo em cache, e a somma de TODO o pedido:
 // texto, tintas, corpo, célullas e FILEIRAS. As duas medidas da caixa entram
 // porque a proporção sahe d'ellas, e chapa da mesma palavra em caixa mais
 // larga, ou mais alta, é outra imagem: a de uma linha servida no logar da de
 // duas viria do cache já feita, e sahiria esmagada.
 std::string chave_do_letreiro(const PedidoDaChapa& pedido);
 
-// caminho_da_chapa_em_cache — `$XDG_CACHE_HOME/mysong/letreiro/<chave>.png`,
+// caminho_da_chapa_em_cache, `$XDG_CACHE_HOME/mysong/letreiro/<chave>.png`,
 // ao lado das capas e pela mesma razão: o Überzug++ lê DISCO, e não memoria.
 // Vazio sem XDG_CACHE_HOME e sem HOME, que ahi cache não ha.
 std::filesystem::path caminho_da_chapa_em_cache(const PedidoDaChapa& pedido);
 
-// parecer_do_letreiro — a decisão, PURA pelo molde do `parecer_da_lousa`: o
+// parecer_do_letreiro, a decisão, PURA pelo molde do `parecer_da_lousa`: o
 // mundo entra por dous bools, para que o caminho da recusa se observe n'esta
 // machina, que tem os dous. O ajuste da LOUSA manda aqui, e chave propria não
 // se abriu: chapa sem lousa não tem onde se pôr, e duas alavancas para a mesma
@@ -113,7 +113,7 @@ Parecer parecer_do_letreiro(ModoDaLousa modo, bool ha_pango, bool ha_familia);
 bool ha_pango_view();
 bool ha_familia_da_marca();
 
-// texto_do_letreiro — a linha do --sonda, pura pelo precedente do
+// texto_do_letreiro, a linha do --sonda, pura pelo precedente do
 // `texto_da_lousa`: escape algum sahe d'aqui.
 std::string texto_do_letreiro(const Parecer& parecer);
 
@@ -130,7 +130,7 @@ class Letreiro {
   bool disponivel() const noexcept { return parecer_.de_pe; }
   const Parecer& parecer() const noexcept { return parecer_; }
 
-  // chapa — o caminho do PNG do pedido, rasterizado na PRIMEIRA vez e nunca
+  // chapa, o caminho do PNG do pedido, rasterizado na PRIMEIRA vez e nunca
   // mais. Vazio quando não ha letreiro, ou quando o pango-view falhou; e o
   // vazio GUARDA-SE tambem, que tornar a tentar a cada quadro seria erguer
   // processo vinte vezes por segundo por uma chapa que não ha de vir.
@@ -143,5 +143,5 @@ class Letreiro {
 
 }  // namespace mysong::nucleo
 
-//   Da lavra do eminente Doutor BURAGA KYO. — buraga-kyo ✒
+//   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

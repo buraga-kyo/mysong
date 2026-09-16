@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//   TRACTADO DAS PROVAS DA SONDA — testes/prova_sonda.cpp
+//   TRACTADO DAS PROVAS DA SONDA, testes/prova_sonda.cpp
 // ══════════════════════════════════════════════════════════════════════════
 // Prova a sonda dos requisitos pelos DOUS caminhos: com tudo presente e com o
 // que se queira ausente. Nenhum caso consulta o systema: nem fontconfig, nem
@@ -33,7 +33,7 @@ namespace nu = mysong::nucleo;
 
 namespace {
 
-// inquerito_faltando — arma um inquerito de dublê que responde AUSENTE sómente
+// inquerito_faltando, arma um inquerito de dublê que responde AUSENTE sómente
 // aos requisitos cujas chaves se nomeiam, e presente a todos os demais. A
 // traducção de alvo para chave faz-se pela taboa, tal como o binario a faz.
 nu::Inquerito inquerito_faltando(std::initializer_list<std::string_view> chaves) {
