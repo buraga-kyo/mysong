@@ -986,20 +986,18 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
     if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
                               !capa_do_painel.empty(),
-                              caixas.capa.x_max >= caixas.capa.x_min) ==
-        nucleo::OrdemDaCapa::Tira)
+                              true) ==
+        nucleo::OrdemDaCapa::Tira) {
       lousa.tira("capa");
-    else
-      // O canto é do quadro ANTERIOR e o rectangulo é d'este: encolhendo-se o
-      // terminal, o canto velho cae fóra da tela nova e a imagem sahia meia
-      // por fóra por um quadro. Cinge-se á borda, que atraso de um quadro se
-      // corrige na batida seguinte e imagem fóra da tela não se corrige.
-      lousa.poe("capa", capa_do_painel,
-                std::min(caixas.capa.x_min,
-                         std::max(0, static_cast<int>(sala.cabecalho.largura) -
-                                         static_cast<int>(
-                                             rectangulo.collunas))),
-                caixas.capa.y_min, rectangulo.collunas, rectangulo.linhas);
+    } else {
+      const int lousa_x = static_cast<int>(sala.capa.x) +
+                          (sala.capa.largura > rectangulo.collunas
+                               ? static_cast<int>(sala.capa.largura - rectangulo.collunas) / 2
+                               : 0);
+      const int lousa_y = static_cast<int>(sala.capa.y) + (capa_com_foco ? 1 : 0);
+      lousa.poe("capa", capa_do_painel, lousa_x, lousa_y,
+                rectangulo.collunas, rectangulo.linhas);
+    }
     caixas.capa = tui::caixa_por_pintar();
     // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
     // base d'elle e sobe por cima. Escondido o rio pelo `l`, o quadro d'elle sae
