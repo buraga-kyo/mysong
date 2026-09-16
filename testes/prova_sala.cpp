@@ -190,11 +190,11 @@ TEST_CASE("cada secção conta a sua especie") {
 // A GEOMETRIA nas larguras que a issue #102 nomeia, e de doze a setenta linhas.
 // Alvo escripto Á MÃO, e nunca a conta da obra repetida aqui: assertiva que
 // compara o valor com a formula que o produziu não pode falhar.
-TEST_CASE("a sala esconde o painel abaixo de cem collunhas de tela") {
+TEST_CASE("a sala esconde a pauta abaixo de cem collunhas de tela") {
   for (const std::size_t larga : {40, 60, 80, 99}) {
     const tui::Sala sala = tui::sala_da_tela(larga, 40, false);
-    CHECK(sala.painel.vazio());
-    CHECK(sala.pauta.largura == larga);  // a pauta toma a tela toda
+    CHECK(sala.pauta.vazio());
+    CHECK(sala.painel.largura == larga);  // o painel toma a tela toda
     CHECK(sala.divisor.vazio());
   }
   const tui::Sala justa = tui::sala_da_tela(100, 40, false);
@@ -310,32 +310,33 @@ TEST_CASE("em tela baixa cede o rodapé, e sómente depois o campo") {
   const tui::Sala cinco = tui::sala_da_tela(167, 5, false);
   CHECK(cinco.cabecalho.altura == 1);  // rasa em toda altura (issue #129)
   CHECK(cinco.rodape.vazio());
-  CHECK(cinco.pauta.altura == 3);
+  CHECK(cinco.painel.altura == 4);
+  CHECK(cinco.pauta.vazio());
   // Tres linhas: o pé inteiro ainda cabe, e o corpo fica com a d'elle.
   const tui::Sala tres = tui::sala_da_tela(167, 3, false);
   CHECK(tres.rodape.vazio());
   CHECK(tres.cabecalho.y == 2);
-  CHECK(tres.pauta.altura == 2);
+  CHECK(tres.painel.altura == 2);
   // Duas: a fita é a ultima a ficar.
   const tui::Sala duas = tui::sala_da_tela(167, 2, false);
   CHECK(duas.rodape.vazio());
   CHECK(duas.cabecalho.y == 1);
-  CHECK(duas.pauta.altura == 1);
+  CHECK(duas.painel.altura == 1);
   // Com o campo aberto em tres linhas, o campo fica; em duas, cede tambem,
   // que ficando deixaria a lista sem fileira.
   const tui::Sala tres_com = tui::sala_da_tela(167, 3, true);
   CHECK(tres_com.rodape.vazio());
   CHECK(tres_com.campo.y == 1);
   CHECK(tres_com.cabecalho.y == 2);
-  CHECK(tres_com.pauta.altura == 1);
+  CHECK(tres_com.painel.altura == 1);
   const tui::Sala duas_com = tui::sala_da_tela(167, 2, true);
   CHECK(duas_com.campo.vazio());
-  CHECK(duas_com.pauta.altura == 1);
-  // E de duas a onze linhas a lista NUNCA somme, com campo ou sem elle: é a
-  // promessa do aceite, e é ella que faz o campo ceder tambem.
+  CHECK(duas_com.painel.altura == 1);
+  // E de duas a onze linhas a ARTE NUNCA somme, com campo ou sem elle: é a
+  // promessa do aceite inverso, e é ella que faz o campo ceder tambem.
   for (std::size_t alta = 2; alta <= 11; ++alta)
     for (const bool campo : {false, true})
-      CHECK(tui::sala_da_tela(167, alta, campo).pauta.altura >= 1);
+      CHECK(tui::sala_da_tela(167, alta, campo).painel.altura >= 1);
 }
 
 // A SOBRA do espectro depois de se saber quanto a capa tomou DE FACTO. O
@@ -351,7 +352,7 @@ TEST_CASE("o espectro toma o que a capa não gastou") {
   // Capa mais alta que o tecto cinge-se n'elle: sem o cinge, a subtracção em
   // std::size_t daria numero enorme, e a peça pintaria bilhões de linhas.
   CHECK(tui::espectro_abaixo_da(sala, 99).altura == 33);
-  CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).vazio());
+  CHECK(tui::espectro_abaixo_da(tui::sala_da_tela(80, 40, false), 3).y == tui::sala_da_tela(80, 40, false).capa.y + 3 + 3);
 }
 
 // A ARTE não tem altura reservada: a de 16 por 9 sahe mais baixa que o tecto.

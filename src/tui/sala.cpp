@@ -72,38 +72,42 @@ void reparte_o_corpo(Sala& sala, std::size_t largura, std::size_t alto,
                      std::size_t corpo) {
   if (corpo == 0) return;
   std::size_t do_painel = 0;
-  // O painel pede a FICHA (uma fileira) e o espectro minimo por baixo d'ella.
+  std::size_t da_pauta = 0;
+  
   if (largura >= kLimiarDoPainel && corpo >= kEspectroMinimo + 1) {
-    // METADE e METADE, que é o que elle pediu. A collunha do divisor sahe da
-    // esquerda, donde em largura PAR a pauta fica uma mais estreita (a 120
-    // dá 59 e 60) e em largura IMPAR as duas ficam eguaes (a 167 dão 83).
+    // Tela larga: divide ao meio.
     do_painel = largura / 2;
-    // As duas guardas são CINTO DE SEGURANÇA, e hoje nenhuma pode correr: com
-    // o limiar em cem, a metade é sempre de cincoenta ou mais, e a pauta de
-    // quarenta e nove ou mais. Ficam para o dia em que o limiar baixar, que
-    // baixá-lo sem ellas poria painel de vinte collunhas na tela.
-    if (do_painel < kPainelMinimo ||
-        largura - do_painel - 1 < kPautaMinima)
-      do_painel = 0;
+    if (do_painel < kPainelMinimo || largura - do_painel - 1 < kPautaMinima) {
+      // Se a matemática quebrar os mínimos, prioriza a arte.
+      da_pauta = 0;
+      do_painel = largura;
+    } else {
+      da_pauta = largura - do_painel - 1;
+    }
+  } else {
+    // Tela estreita: mostra SÓ A ARTE.
+    da_pauta = 0;
+    do_painel = largura;
   }
-  const std::size_t da_pauta =
-      do_painel == 0 ? largura : largura - do_painel - 1;
+
   const bool ha_chapa = corpo >= kPautaLinhasMinimas + 1;
-  if (ha_chapa) sala.chapa = {0, alto, da_pauta, 1};
-  sala.pauta = {0, ha_chapa ? alto + 1 : alto, da_pauta,
-                ha_chapa ? corpo - 1 : corpo};
+  if (ha_chapa && da_pauta > 0) sala.chapa = {0, alto, da_pauta, 1};
+  if (da_pauta > 0) sala.pauta = {0, ha_chapa ? alto + 1 : alto, da_pauta, ha_chapa ? corpo - 1 : corpo};
+
   if (do_painel == 0) return;
-  sala.divisor = {da_pauta, alto, 1, corpo};
-  sala.painel = {da_pauta + 1, alto, do_painel, corpo};
+  if (da_pauta > 0) sala.divisor = {da_pauta, alto, 1, corpo};
+  
+  const std::size_t painel_x = da_pauta > 0 ? da_pauta + 1 : 0;
+  sala.painel = {painel_x, alto, do_painel, corpo};
   // A FICHA (issue #134) toma a primeira fileira do painel: o titulo e o
   // artista do que sôa, que deixaram a fita. A arte e o espectro repartem o
   // que sobra, pela mesma conta de antes sobre uma fileira a menos.
   sala.ficha = {sala.painel.x, alto, do_painel, 1};
   const std::size_t resto = corpo - 1;
   // O TECTO da capa: quarenta e cinco por cento do painel, e nunca tanto que
-  // deixe o espectro abaixo do minimo d'elle.
-  const std::size_t tecto =
-      std::min(resto * kCapaPorCento / 100, resto - kEspectroMinimo);
+  // deixe o espectro abaixo do minimo d'elle. (Evita underflow se resto < minimo)
+  const std::size_t espaço_espectro = resto >= kEspectroMinimo ? resto - kEspectroMinimo : 0;
+  const std::size_t tecto = std::min(resto * kCapaPorCento / 100, espaço_espectro);
   sala.capa = {sala.painel.x, alto + 1, do_painel, tecto};
   const std::size_t abaixo_da_capa = resto - tecto;
   // A LETRA (issue #157) entra INTEIRA ou não entra: bloco cortado ao meio

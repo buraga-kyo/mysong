@@ -1127,23 +1127,28 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // AS DUAS METADES. O `size` na altura mede EXACTAMENTE o que a sala contou,
     // pela razão que a composição velha ensinou: por menos, o pé da tela fica
     // em branco; por mais, o rodapé sahe d'ella.
-    std::vector<ftxui::Element> metades = {ftxui::vbox(
-        {tui::elemento_da_chapa(chapa, sala.chapa.largura),
-         // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
-         // da tabella: é a caixa que o FOCO lê para saltar ás visinhas.
-         //
-         // O cinge da ALTURA vem antes d'ella, e é o que a faz existir sempre:
-         // a pauta vazia da issue #111 devolve `emptyElement`, que não pede
-         // linha alguma, e caixa de altura zero não é candidata a salto. Sem o
-         // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
-         tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
-                                  sala.pauta.largura, retracto.titulo,
-                                  &caixas.linhas, &arrasto, true, &galeria) |
-             ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
-                         static_cast<int>(sala.pauta.altura)) |
-             ftxui::reflect(caixas.pauta)})};
+    std::vector<ftxui::Element> metades;
+    if (!sala.pauta.vazio() || !sala.chapa.vazio()) {
+      metades.push_back(ftxui::vbox(
+          {tui::elemento_da_chapa(chapa, sala.chapa.largura),
+           // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
+           // da tabella: é a caixa que o FOCO lê para saltar ás visinhas.
+           //
+           // O cinge da ALTURA vem antes d'ella, e é o que a faz existir sempre:
+           // a pauta vazia da issue #111 devolve `emptyElement`, que não pede
+           // linha alguma, e caixa de altura zero não é candidata a salto. Sem o
+           // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
+           tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
+                                    sala.pauta.largura, retracto.titulo,
+                                    &caixas.linhas, &arrasto, true, &galeria) |
+               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
+                           static_cast<int>(sala.pauta.altura)) |
+               ftxui::reflect(caixas.pauta)}));
+    }
     if (!sala.painel.vazio()) {
-      metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
+      if (!metades.empty()) {
+        metades.push_back(tui::elemento_do_divisor(sala.divisor.altura));
+      }
       metades.push_back(std::move(painel));
     }
     // A FITA leva a onda da faixa ao meio (issue #134), e com ella a caixa do
@@ -1155,11 +1160,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A ORDEM da tela nova (issue #125): o corpo abre na PRIMEIRA linha, e o pé
     // toma o campo e a fita. O trilho
     // morreu na issue #134: a onda no meio da fita é o progresso.
+    const int altura_do_meio = std::max(
+        static_cast<int>(sala.painel.altura),
+        static_cast<int>(sala.pauta.altura + (sala.chapa.vazio() ? 0 : 1)));
     std::vector<ftxui::Element> tudo = {
         ftxui::hbox(std::move(metades)) |
-        ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
-                    static_cast<int>(sala.pauta.altura +
-                                     (sala.chapa.vazio() ? 0 : 1)))};
+        ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, altura_do_meio)};
     if (!sala.campo.vazio())
       tudo.push_back(tui::elemento_do_campo(digita, contexto_do_campo,
                                             termo_em_curso,
