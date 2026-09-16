@@ -1108,35 +1108,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const int verso_corrente =
         mostra_letra.load() ? nucleo::linha_corrente(letra, retracto.posicao)
                             : -1;
-    // AS CHAPAS DAS ABAS (issue #108), pela MESMA lousa e com a mesma
-    // disciplina: a ordem sae do QUADRO, e as caixas são as do quadro
-    // anterior, que são as unicas que o `reflect` já encheu.
+    // As chapas XIROD das abas foram retiradas: os rótulos comuns da barra
+    // usam o negrito do terminal, e nenhuma imagem deve ficar pendurada.
     const std::size_t escritas = lousa.escritas();
     std::filesystem::path ultima_chapa;
-    // A aba com FOCO (issue #107) entra na ordem: assim a chapa em XIROD da
-    // aba focada sae do MESMO degrau que pinta a cella debaixo d'ella, e as
-    // duas não se desencontram. Vazio quer dizer que o foco está fóra da fita.
-    const std::optional<tui::Aba> focada = tui::aba_com_foco(foco);
-    for (const tui::ChapaDaAba& ordem : tui::ordens_das_chapas(
-             caixas.cabecalho, tui::aba_da_secao(navegador.secao()),
-             lousa.disponivel() && letreiro.disponivel(),
-             vigilia.pede_batida(), focada ? &*focada : nullptr)) {
-      const std::filesystem::path* chapa = nullptr;
-      if (ordem.poe) chapa = &letreiro.chapa(tui::pedido_da_chapa(ordem));
-      // Chapa que não veio TIRA a que estava, e não a deixa: a aba trocou de
-      // degrau, e a imagem velha mentiria sobre onde o operador está.
-      if (chapa == nullptr || chapa->empty()) {
-        lousa.tira(tui::identidade_da_chapa(ordem.aba));
-        continue;
-      }
-      // A caixa INTEIRA do rotulo (issue #126): a linha de partida é a de
-      // CIMA do segmento, e a chapa toma as fileiras que a ordem traz, que na
-      // fita do pé são duas. Pedida com altura UM, a imagem parava na fileira
-      // de cima e a de baixo ficava com o fundo pelado.
-      lousa.poe(tui::identidade_da_chapa(ordem.aba), *chapa, ordem.collunha,
-                ordem.linha, ordem.largura, ordem.linhas);
-      ultima_chapa = *chapa;
-    }
+    lousa.tira("aba_mysong");
+    lousa.tira("aba_playlists");
+    lousa.tira("aba_download");
     // A CHAPA DA LINHA CORRENTE (issue #110), ao lado das das abas e pela mesma
     // lousa: o verso que se canta cristaliza em XIROD sobre as cellas d'elle. O
     // mono continua pintado por baixo, e por isso sem lousa nada falta.
