@@ -85,6 +85,7 @@
 #include "tui/tabella.hpp"
 #include "tui/tela_requisitos.hpp"
 #include "tui/transporte.hpp"
+#include "tui/orquestrador.hpp"
 #include "tui/vigilia.hpp"
 
 namespace api = mysong::api;
@@ -411,93 +412,32 @@ nucleo::Pedido encommenda_do_catalogo(const nucleo::FaixaDoCatalogo& faixa,
 // e é por isso que ellas vivem fóra d'aqui.
 int erguer_tocador(const std::vector<std::string>& faixas,
                    const nucleo::Ajustes& ajustes) {
-  // O acervo em cópia: dous fios o lêem, e a cópia n'esta pilha vive mais que
-  // elles, que se juntam antes de esta funcção voltar.
-  const std::filesystem::path acervo = ajustes.acervo.valor;
-  std::string razao;
-  std::optional<nucleo::MotorMpv> motor = nucleo::MotorMpv::abrir(&razao);
-  if (!motor) {
-    // Motor que não abre não derruba o programa: diz o que houve e sahe. A
-    // fabrica devolve um vasio, e não um objecto meio-aberto a que se tivesse de
-    // perguntar se presta.
-    std::cerr << "mysong: a machina de som não abriu: " << razao << "\n";
+  std::filesystem::path banco = caminho_do_indice();
+  std::filesystem::path listas = caminho_das_listas(banco);
+  std::filesystem::path soquete = raiz_do_soquete();
+
+  tui::AppContext app(ajustes, banco, listas, soquete);
+  if (app.erro_fatal) {
+    std::cerr << "mysong: " << *app.erro_fatal << "\n";
     return 1;
   }
 
-  nucleo::Tocador tocador(*motor);
-  // O volume dos ajustes entra ANTES da primeira faixa: posto depois, ella já
-  // teria arrancado no volume de fabrica, e ouvir-se-ia o salto.
-  tocador.volume(ajustes.volume.valor);
-  nucleo::Analisador analisador;
-  if (analisador.vivo()) {
-    tocador.observa(analisador);
-  } else {
-    // Espectro é ornamento, e não requisito: sem elle o tocador toca. Diz-se o
-    // que falta, uma vez, e segue-se.
-    std::cerr << "mysong: sem espectro: " << analisador.razao() << "\n";
-  }
-
-  // O MPRIS. Barramento ausente não é falha: diz-se uma vez e o tocador segue, que é o
-  // mesmo padrão do analisador da issue #5.
-  api::CasaDoMpris mpris(tocador);
-  if (!mpris.viva())
-    std::cerr << "mysong: sem MPRIS: " << mpris.razao() << "\n";
-
-  // O SOCKET DE COMMANDO (issue #69). Ergue-se depois de o tocador estar de pé,
-  // e vive n'esta pilha: declarado ANTES dos fios, o destructor d'elle corre
-  // DEPOIS de todos se juntarem, e é elle quem fecha os clientes e desliga o
-  // arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o tocador
-  // sobe do mesmo modo, que é o padrão do MPRIS acima e do analisador da issue
-  // #5: porta que não abriu não cala musica que já toca.
-  // O bloco desceu para depois da livraria e do estaleiro; veja abaixo.
+  nucleo::Tocador& tocador = *app.tocador;
+  nucleo::Analisador& analisador = app.analisador;
+  api::CasaDoMpris& mpris = *app.mpris;
+  nucleo::Biblioteca& livraria = *app.livraria;
+  nucleo::Roleiro& roleiro = *app.roleiro;
+  nucleo::Projector& projector = *app.projector;
+  tui::Navegador& navegador = *app.navegador;
+  nucleo::Estaleiro& estaleiro = *app.estaleiro;
+  std::optional<api::Servidor>& servidor = app.servidor;
 
   for (const std::string& faixa : faixas) tocador.junta(faixa);
   if (!faixas.empty()) tocador.tocar_corrente();
 
-  // O ÍNDICE e a VARREDURA. A varredura corre em fio proprio e o navegador
-  // recarrega quando ella concluir: assim a tela abre de pronto, com o acervo da
-  // corrida anterior, em vez de esperar pelo disco.
-  const std::filesystem::path banco = caminho_do_indice();
-  nucleo::Biblioteca livraria(banco);
-  nucleo::Roleiro roleiro(caminho_das_listas(banco));
-  // O PROJECTOR do video. Vive nesta pilha, e o destructor d'elle FECHA a janella:
-  // é isso que faz `pgrep` sahir vazio depois de a TUI fechar.
-  nucleo::Projector projector(raiz_do_soquete());
-  tui::Navegador navegador(livraria, &roleiro);
   std::atomic<bool> varrida{false};
-  // O PEDIDO de varredura e o AVISO de que o acervo mudou. Bandeiras, e não fio novo
-  // por cada pedido: fio erguido de dentro do tratador de teclas e de dentro do fio da
-  // baixa mexeria no mesmo vector de fios de dous lados, e isso é corrida.
   std::atomic<bool> pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
-
-  // O ESTALEIRO das baixas. A obra que elle cumpre é a aquisição da issue #11, e é a
-  // MESMA para a URL colada á mão e para o achado eleito na rede: o caminho
-  // reaproveita-se inteiro, em vez de se duplicar.
-  nucleo::Estaleiro estaleiro(
-      ajustes.baixas_simultaneas.valor,
-      [acervo](const nucleo::Pedido& pedido, std::filesystem::path* ficou) {
-        return nucleo::baixa(acervo, pedido, ficou);
-      });
-
-  // O SOCKET DE COMMANDO (issue #69), e elle assenta AQUI, e não acima, por duas
-  // razões que se somam. A primeira: os Arredores que a issue #65 lhe deu
-  // apontam a livraria e o estaleiro, e acima d'esta linha elles ainda não
-  // existem. A segunda, que é a que morde: quem empresta ha de morrer DEPOIS de
-  // quem toma emprestado, e em C++ destroe-se ao contrario de como se declara,
-  // donde o servidor declarado abaixo d'elles é o primeiro dos tres a cahir.
-  //
-  // Continua declarado ANTES dos fios, que é o que faz o destructor d'elle
-  // correr DEPOIS de todos se juntarem: é elle quem fecha os clientes e desliga
-  // o arquivo, por qualquer caminho de sahida. Recusado, diz-se por que e o
-  // tocador sobe do mesmo modo, que é o padrão do MPRIS e do analisador: porta
-  // que não abriu não cala musica que já toca.
-  std::string razao_do_socket;
-  const api::Arredores arredores{&livraria, &estaleiro};
-  std::optional<api::Servidor> servidor = api::Servidor::abrir(
-      tocador, api::caminho_padrao_do_socket(), &razao_do_socket, arredores);
-  if (!servidor)
-    std::cerr << "mysong: sem socket de commando: " << razao_do_socket << "\n";
 
 
   // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
@@ -646,7 +586,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     while (!sahir.load()) {
       if (pede_varrer.exchange(false)) {
         varrida.store(false);
-        nucleo::Varredura varredura(banco, {acervo});
+        nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
         while (!sahir.load() && varredura.passo()) {
         }
         varrida.store(true);

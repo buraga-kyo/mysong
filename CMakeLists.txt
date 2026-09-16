@@ -78,7 +78,7 @@ if(EXISTS "${MYSONG_FTXUI_APP}")
   endif()
 endif()
 
-add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp)
+add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp src/tui/orquestrador.cpp)
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(mysong_core PRIVATE ${MYSONG_AVISOS})
 
