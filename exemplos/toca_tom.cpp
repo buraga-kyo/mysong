@@ -49,16 +49,6 @@ double relogio(nu::Tocador& tocador, nu::MotorMpv& motor, int millesimos,
   return ultima;
 }
 
-const char* nome_do_aviso(nu::Aviso aviso) {
-  switch (aviso) {
-    case nu::Aviso::FaixaMudou: return "faixa-mudou";
-    case nu::Aviso::EstadoMudou: return "estado-mudou";
-    case nu::Aviso::PosicaoAndou: return "posicao-andou";
-    case nu::Aviso::FalhouAoTocar: return "falhou-ao-tocar";
-  }
-  return "?";
-}
-
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -77,12 +67,6 @@ int main(int argc, char** argv) {
   std::printf("libmpv interface=%lu\n", nu::MotorMpv::versao_da_interface());
 
   nu::Tocador tocador(motor);
-  tocador.escuta([](const nu::Evento& evento) {
-    std::printf("    « %-15s estado=%-7s faixa=%s pos=%.2f %s\n",
-                nome_do_aviso(evento.aviso),
-                std::string(nu::nome_do_estado(evento.estado)).c_str(),
-                evento.faixa.c_str(), evento.posicao, evento.razao.c_str());
-  });
   for (int i = 1; i < argc; ++i) tocador.junta(argv[i]);
   std::printf("fila com %zu faixa(s)\n", tocador.retracto().tamanho);
 
@@ -142,13 +126,13 @@ int main(int argc, char** argv) {
     relogio(tocador, motor, 750, "adiante");
   }
   std::printf("  cheguei ao fim: proxima() recusa, faixa=%s\n",
-              tocador.retracto().faixa.c_str());
+              (tocador.retracto().faixa ? tocador.retracto().faixa->c_str() : ""));
 
   while (tocador.anterior()) {
     relogio(tocador, motor, 750, "atras");
   }
   std::printf("  voltei ao inicio: anterior() recusa, faixa=%s\n",
-              tocador.retracto().faixa.c_str());
+              (tocador.retracto().faixa ? tocador.retracto().faixa->c_str() : ""));
 
   std::printf("[C5b] buscar além do fim apara-se, e não estoura\n");
   tocador.buscar(999.0);

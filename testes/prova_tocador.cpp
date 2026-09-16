@@ -93,7 +93,7 @@ TEST_CASE("acabada a faixa, a seguinte entra na mesma batida") {
   const std::vector<std::string> esperado = {"uma.wav", "duas.wav"};
   CHECK(duble.tocados == esperado);
   CHECK(tocador.retracto().estado == mysong::nucleo::Estado::Tocando);
-  CHECK(tocador.retracto().faixa == "duas.wav");
+  CHECK((tocador.retracto().faixa ? *tocador.retracto().faixa : "") == "duas.wav");
 }
 
 TEST_CASE("sem repetição, acabada a ultima o tocador pára") {
@@ -176,7 +176,7 @@ TEST_CASE("o motor recebe cada faixa da fila, nos dous sentidos") {
   const std::vector<std::string> esperado = {"uma.wav", "duas.wav", "tres.wav",
                                              "duas.wav", "uma.wav"};
   CHECK(duble.tocados == esperado);
-  CHECK(tocador.retracto().faixa == "uma.wav");
+  CHECK((tocador.retracto().faixa ? *tocador.retracto().faixa : "") == "uma.wav");
 }
 
 TEST_CASE("na borda da fila NADA se manda ao motor") {
@@ -258,33 +258,7 @@ TEST_CASE("o motor que recusa não deixa o tocador a crer que toca") {
   CHECK(duble.tocados.empty());
 }
 
-TEST_CASE("o pregão chega a quem escuta") {
-  MotorDuble duble;
-  Tocador tocador(duble);
-  tocador.junta("uma.wav");
-
-  int faixas = 0;
-  int estados = 0;
-  int posicoes = 0;
-  tocador.escuta([&](const mysong::nucleo::Evento& evento) {
-    switch (evento.aviso) {
-      case Aviso::FaixaMudou: ++faixas; break;
-      case Aviso::EstadoMudou: ++estados; break;
-      case Aviso::PosicaoAndou: ++posicoes; break;
-      case Aviso::FalhouAoTocar: break;
-    }
-  });
-
-  CHECK(tocador.tocar_corrente());
-  duble.avanca(1.5);
-  tocador.pulsa();
-
-  CHECK(faixas == 1);
-  CHECK(estados == 1);
-  CHECK(posicoes == 1);
-}
-
-TEST_CASE("zero ouvintes não é erro: tudo corre igual") {
+TEST_CASE("pausar cala o motor e guarda a posição") {
   MotorDuble duble;
   Tocador tocador(duble);
   tocador.junta("uma.wav");
@@ -367,41 +341,6 @@ TEST_CASE("buscar apara-se pela duração, e recusa-se parado") {
   CHECK(duble.alvo_buscado == doctest::Approx(4.95));
   CHECK(tocador.buscar(-3.0));
   CHECK(duble.alvo_buscado == doctest::Approx(0.0));
-}
-
-// Nenhum pregão ha de levar meio retracto novo e meio velho. Aqui a faixa já
-// passou dos dous segundos e meio, logo «Tocando com posição zero» não pode ser
-// verdade, e «Parado com posição andada» tambem não: qualquer dos dous denuncia
-// pregão emittido pelo meio do assentamento.
-TEST_CASE("ao fim natural da faixa, pregão algum sahe com retracto composto") {
-  MotorDuble duble;
-  Tocador tocador(duble);
-  tocador.junta("uma.wav");
-  CHECK(tocador.tocar_corrente());
-  duble.avanca(2.5);
-  tocador.pulsa();  // antes de escutar: assenta a posição em dous e meio
-
-  int compostos = 0;
-  int estados = 0;
-  int posicoes = 0;
-  tocador.escuta([&](const mysong::nucleo::Evento& evento) {
-    const bool parado_mas_andado =
-        evento.estado == Estado::Parado && evento.posicao != 0.0;
-    const bool tocando_mas_no_zero =
-        evento.estado == Estado::Tocando && evento.posicao == 0.0;
-    if (parado_mas_andado || tocando_mas_no_zero) ++compostos;
-    if (evento.aviso == Aviso::EstadoMudou) ++estados;
-    if (evento.aviso == Aviso::PosicaoAndou) ++posicoes;
-  });
-
-  duble.acaba_na_proxima_batida();
-  tocador.pulsa();
-
-  CHECK(tocador.estado() == Estado::Parado);
-  CHECK(tocador.posicao() == doctest::Approx(0.0));
-  CHECK(estados == 1);
-  CHECK(posicoes == 1);
-  CHECK(compostos == 0);
 }
 
 // ── OS DOUS MODOS (issue #62) ────────────────────────────────────────────────

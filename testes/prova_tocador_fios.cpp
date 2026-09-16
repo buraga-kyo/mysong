@@ -67,10 +67,8 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
   // proprio, pela mesma razão dos campos do motor surdo: é a tranca que o ha de
   // serializar, e falhando ella um punho que seja, é aqui que o sanitizador
   // aponta.
-  unsigned long pregoes = 0;
   MotorSurdo motor;
   Tocador tocador(motor);
-  tocador.escuta([&pregoes](const Evento&) { ++pregoes; });
   tocador.junta("uma.wav");
   tocador.junta("duas.wav");
   CHECK(tocador.tocar_corrente());
@@ -108,7 +106,6 @@ TEST_CASE("dous fios, mil voltas: relogio e tela no mesmo tocador") {
   CHECK(fim.tamanho == 2 + VOLTAS / 10);
   CHECK(motor.bombeadas() == static_cast<unsigned long>(VOLTAS));
   CHECK((fim.volume >= 0 && fim.volume <= 100));
-  CHECK(pregoes > 0);  // o pregão chegou: o laço não correu sobre vector vazio
 }
 
 // O barramento de verdade corre hoje no fio do relogio, que é quem drena as
@@ -148,7 +145,7 @@ TEST_CASE("tres fios, mil voltas: o barramento entra na conta") {
 
   const Retracto fim = tocador.retracto();
   CHECK(fim.tamanho == 1);
-  CHECK(fim.faixa == "uma.wav");
+  CHECK((fim.faixa ? *fim.faixa : "") == "uma.wav");
   CHECK(motor.bombeadas() == static_cast<unsigned long>(VOLTAS));
 }
 

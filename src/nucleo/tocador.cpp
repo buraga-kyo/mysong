@@ -42,29 +42,10 @@ std::vector<std::string> Tocador::faixas(std::size_t* indice) const {
   return fila_.todas();
 }
 
-// Ouvinte vazio não se guarda: guardá-lo seria adiar para a hora do pregão uma
-// verificação que se faz de graça na hora do registro.
-void Tocador::escuta(Ouvinte ouvinte) {
-  std::lock_guard<std::mutex> chave(tranca_);
-  if (ouvinte) ouvintes_.push_back(std::move(ouvinte));
-}
-
-// O pregão. Leva o retracto inteiro, e lê o estado em vez de o adivinhar.
-void Tocador::annuncia(Aviso aviso, std::string razao) {
-  Evento evento;
-  evento.aviso = aviso;
-  evento.estado = estado_;
-  evento.faixa = std::string(fila_.corrente());
-  evento.posicao = ultima_posicao_;
-  evento.razao = std::move(razao);
-  for (const Ouvinte& ouvinte : ouvintes_) ouvinte(evento);
-}
-
-// Só annuncia se de facto mudou, e SEMPRE depois de assentar.
+// Só assenta se de facto mudou.
 void Tocador::assenta_estado(Estado novo) {
   if (novo == estado_) return;
   estado_ = novo;
-  annuncia(Aviso::EstadoMudou);
 }
 
 // Manda tocar o que a fila aponta. O volume corrente vae com a faixa nova, que
@@ -81,7 +62,6 @@ bool Tocador::tocar_corrente_trancado() {
   const std::string caminho(fila_.corrente());
   if (!motor_.tocar(caminho)) {
     assenta_estado(Estado::Parado);
-    annuncia(Aviso::FalhouAoTocar, "o motor recusou " + caminho);
     return false;
   }
   ultima_posicao_ = 0.0;
@@ -89,7 +69,6 @@ bool Tocador::tocar_corrente_trancado() {
   // operador, e mandá-lo cru faria o F8 desfazer o F9 sem ninguem lh'o pedir.
   motor_.volume(mudo_ ? 0 : volume_);
   assenta_estado(Estado::Tocando);
-  annuncia(Aviso::FaixaMudou);
   return true;
 }
 
@@ -184,7 +163,14 @@ Retracto Tocador::retracto() const {
   std::lock_guard<std::mutex> chave(tranca_);
   Retracto obra;
   obra.estado = estado_;
-  obra.faixa = std::string(fila_.corrente());
+  
+  std::string_view corrente = fila_.corrente();
+  if (corrente != ultima_faixa_vista_ || !faixa_cache_) {
+    faixa_cache_ = std::make_shared<const std::string>(corrente);
+    ultima_faixa_vista_ = corrente;
+  }
+  obra.faixa = faixa_cache_;
+
   obra.posicao = motor_.posicao();
   obra.duracao = motor_.duracao();
   obra.volume = volume_;
@@ -209,15 +195,11 @@ void Tocador::pulsa() {
   const Estado visto = motor_.estado();
   const double agora = motor_.posicao();
   const bool mudou_estado = visto != estado_;
-  const bool andou = agora != ultima_posicao_;
   const bool acabou = mudou_estado && estado_ == Estado::Tocando &&
                       visto == Estado::Parado;
 
   estado_ = visto;
   ultima_posicao_ = agora;
-
-  if (mudou_estado) annuncia(Aviso::EstadoMudou);
-  if (andou) annuncia(Aviso::PosicaoAndou);
 
   // O ENCADEAMENTO (issue #149). Acabada a faixa, a seguinte entra sósinha: é
   // o que o operador espera de um tocador, e até aqui a Casa tocava uma faixa

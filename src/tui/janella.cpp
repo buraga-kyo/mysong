@@ -200,7 +200,7 @@ std::string assignatura_do_visivel(nucleo::Tocador& tocador,
   marca += agora.embaralhado ? 'E' : '.';
   marca += static_cast<char>('0' + static_cast<int>(agora.repeticao));
   marca += ':';
-  marca += agora.faixa;
+  marca += agora.faixa ? *agora.faixa : "";
   marca += ':';
   // As bandas entram SEMPRE, desde a issue #109. Até ella, a letra tomava o logar
   // do espectro e o painel da letra pagava a animação que não mostrava; agora a
@@ -248,7 +248,7 @@ tui::Retracto retracto_do(nucleo::Tocador& tocador,
   retracto.repeticao = agora.repeticao;
   if (agora.tamanho > 0) {
     retracto.indice = agora.indice;
-    retracto.titulo = agora.faixa;
+    retracto.titulo = agora.faixa ? *agora.faixa : "";
   }
   return retracto;
 }

@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -39,7 +40,7 @@ namespace mysong::nucleo {
 // não atravessa a tranca.
 struct Retracto {
   Estado estado = Estado::Parado;
-  std::string faixa;      // vazia quando nenhuma faixa está em curso
+  std::shared_ptr<const std::string> faixa;      // vazia quando nenhuma faixa está em curso
   double posicao = 0.0;   // em segundos, contados do inicio da faixa
   double duracao = 0.0;
   int volume = 100;
@@ -80,9 +81,6 @@ class Tocador {
   bool alterna_embaralhar();
   void repetir(Repeticao modo);
   Repeticao cicla_repetir();
-
-  // Registra quem escuta. Zero ouvintes é caso legitimo.
-  void escuta(Ouvinte ouvinte);
 
   // Manda tocar a faixa corrente da fila. Falso em fila vazia.
   bool tocar_corrente();
@@ -138,12 +136,14 @@ class Tocador {
   mutable std::mutex tranca_;
   Motor& motor_;
   Fila fila_;
-  std::vector<Ouvinte> ouvintes_;
   Estado estado_ = Estado::Parado;
   int volume_ = 100;
   bool mudo_ = false;
   double ultima_posicao_ = 0.0;
   FonteDeBandas* fonte_ = nullptr;  // emprestada, e nullo é caso legitimo
+
+  mutable std::string_view ultima_faixa_vista_;
+  mutable std::shared_ptr<const std::string> faixa_cache_;
 };
 
 }  // namespace mysong::nucleo

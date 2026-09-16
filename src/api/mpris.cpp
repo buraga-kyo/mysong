@@ -94,7 +94,7 @@ void escreve_metadados(DBusMessageIter* pae, const nucleo::Tocador& tocador) {
   // De UMA tomada da tranca: faixa, indice e duração do mesmo momento.
   const nucleo::Retracto agora = tocador.retracto();
   const bool ha = agora.tamanho > 0;
-  const std::string& caminho = agora.faixa;
+  const std::string& caminho = agora.faixa ? *agora.faixa : "";
 
   const auto par = [&mapa](const char* chave, auto escriptor) {
     DBusMessageIter entrada;
@@ -586,16 +586,17 @@ void CasaDoMpris::pulsa() {
   // O mudo entra por si (issue #106): calar não mexe no volume guardado, donde
   // sem esta linha o F9 mudava o que o barramento diz e não o annunciava.
   const nucleo::Retracto agora = punho_->tocador.retracto();
+  const std::string faixa_atual = agora.faixa ? *agora.faixa : "";
   if (agora.estado != punho_->ultimo_estado ||
       agora.volume != punho_->ultimo_volume ||
       agora.mudo != punho_->ultimo_mudo ||
-      agora.faixa != punho_->ultima_faixa ||
+      faixa_atual != punho_->ultima_faixa ||
       agora.embaralhado != punho_->ultimo_embaralhado ||
       agora.repeticao != punho_->ultima_repeticao) {
     punho_->ultimo_estado = agora.estado;
     punho_->ultimo_volume = agora.volume;
     punho_->ultimo_mudo = agora.mudo;
-    punho_->ultima_faixa = agora.faixa;
+    punho_->ultima_faixa = faixa_atual;
     punho_->ultimo_embaralhado = agora.embaralhado;
     punho_->ultima_repeticao = agora.repeticao;
     annuncia_mudanca(punho_->ligacao, punho_->tocador);

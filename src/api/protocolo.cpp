@@ -84,7 +84,7 @@ std::string retracto(Tocador& tocador) {
   const nucleo::Retracto agora = tocador.retracto();
   Objecto obra = abre_acerto();
   obra.par("estado", texto(nucleo::nome_do_estado(agora.estado)));
-  obra.par("faixa", texto(agora.faixa));
+  obra.par("faixa", texto(agora.faixa ? *agora.faixa : ""));
   obra.par("posicao", duplo(agora.posicao));
   obra.par("duracao", duplo(agora.duracao));
   obra.par("volume", inteiro(agora.volume));
