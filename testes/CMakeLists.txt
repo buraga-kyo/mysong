@@ -187,6 +187,7 @@ target_sources(mysong_testes PRIVATE prova_rato.cpp)
 # ─── Prova da lousa (issue #103): por target_sources, a regra ───────────────
 target_sources(mysong_testes PRIVATE prova_lousa.cpp)
 target_sources(mysong_testes PRIVATE prova_geometria_da_janella.cpp)
+target_sources(mysong_testes PRIVATE prova_campainha.cpp)
 
 # ─── Prova do foco e das setas (issue #107): por target_sources, a regra ────
 # A geometria entra á mão, e não da sala: o que se afere é o SALTO, e sala que
