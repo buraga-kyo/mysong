@@ -202,6 +202,8 @@ struct CelulaDoRio {
 // janella e a sequencia SGR crua do exemplo. Duas composições dariam duas telas.
 std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
                                        const QuadroDaLetra& letra);
+void compoe_tapete_do_rio(const Quadro& espectro, const QuadroDaLetra& letra,
+                          std::vector<CelulaDoRio>* tapete);
 
 // sequencia_do_rio, os BYTES da célulla: o fundo, depois a tinta, depois o
 // glypho, sem repouso pelo meio. A célulla que não é de letra não escreve fundo

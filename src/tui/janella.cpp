@@ -73,6 +73,7 @@
 #include "tui/campainha.hpp"
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
+#include "tui/dinamica_do_espectro.hpp"
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
 #include "tui/geometria_da_janella.hpp"
@@ -534,10 +535,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
   // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou. A
   // tranca separa o avanço do relogio da leitura do pintor.
-  std::vector<float> picos;
-  std::mutex tranca_dos_picos;
-  std::chrono::steady_clock::time_point instante_dos_picos =
-      std::chrono::steady_clock::now();
+  tui::DinamicaDoEspectro dinamica_do_espectro;
 
   // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
   // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
@@ -817,7 +815,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                   d_ella.album);
       // Os PICOS morrem com a faixa (issue #132): o pico da que sahiu accendia
       // a primeira batida da que entra, e na côr da familia errada.
-      picos.clear();
+      dinamica_do_espectro.zera();
       // A CHAPA DO PRIMEIRO VERSO (issue #161) rasteriza-se assim que a faixa
       // muda, e não quando elle chega: o pango-view corre duas vezes na
       // primeira chamada, e esperá-lo com a musica já a andar é o que fazia a
@@ -952,11 +950,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // é conta de segundos. Calado, os picos zerão-se, que batida não ha no que
     // se não ouve.
     const std::vector<float> bandas = tocador.bandas();
-    std::vector<float> picos_do_quadro;
-    {
-      std::lock_guard<std::mutex> guarda(tranca_dos_picos);
-      picos_do_quadro = picos;
-    }
+    const std::vector<float> picos_do_quadro = dinamica_do_espectro.retrato();
     const tui::Quadro quadro = tui::compor(bandas, abaixo.largura,
                                            abaixo.altura, false,
                                            centros_em_hertz, picos_do_quadro);
@@ -1994,18 +1988,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           alterna_rastreamento_do_rato(janela_ativa_agora);
         });
       }
-      const std::chrono::steady_clock::time_point instante =
-          std::chrono::steady_clock::now();
-      const double lapso = std::chrono::duration<double>(
-          instante - instante_dos_picos).count();
-      instante_dos_picos = instante;
       const tui::Retracto retracto = retracto_do(tocador, projector);
       const std::vector<float> bandas = tocador.bandas();
-      {
-        std::lock_guard<std::mutex> guarda(tranca_dos_picos);
-        if (retracto.mudo) picos.clear();
-        tui::avanca_picos(picos, bandas, lapso);
-      }
+      dinamica_do_espectro.avanca(bandas, retracto.mudo);
       // SÓMENTE quando o que se vê muda (issue #48), e SÓMENTE com olhos no
       // painel (issue #82): a vigilia governa o desenho e nada mais; os
       // pulsos acima nunca dormem, que a musica não pára por falta de platéa.

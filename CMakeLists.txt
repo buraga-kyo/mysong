@@ -211,6 +211,8 @@ target_sources(mysong_core PRIVATE src/nucleo/libmpv.cpp)
 # caminho RELATIVO da fonte, e não pelo nome nú; uma colhe o espectro, a outra
 # o desenha, e o nome é o certo em ambas.
 target_sources(mysong_core PRIVATE src/tui/espectro.cpp)
+target_sources(mysong_core PRIVATE src/tui/dinamica_do_espectro.cpp
+  src/tui/paleta_do_espectro.cpp)
 target_sources(mysong_core PRIVATE src/tui/geometria_da_janella.cpp)
 
 # ─── A ONDA NA TELA (issue #131) ────────────────────────────────────────────

@@ -8,6 +8,7 @@
 #include "tui/espectro.hpp"
 
 #include "nucleo/espectro.hpp"
+#include "tui/paleta_do_espectro.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -48,13 +49,7 @@ Registro registro_da_banda(float centro_em_hertz) {
 // `default` o registro novo sahiria rosa e sem nome, calado. O return de
 // baixo existe só porque a linguagem não sabe que o switch é exhaustivo.
 std::string_view tinta_do_registro(Registro registro) {
-  switch (registro) {
-    case Registro::Graves: return tokens::glow_hot;
-    case Registro::MediosGraves: return tokens::data5;
-    case Registro::MediosAgudos: return tokens::data3;
-    case Registro::Agudos: return tokens::data2;
-  }
-  return tokens::glow_hot;
+  return tinta_do_registro_na_paleta(registro);
 }
 
 std::string_view nome_do_registro(Registro registro) {
@@ -227,7 +222,7 @@ bool columna_quente(const std::vector<float>& picos, float valor, std::size_t c,
 tokens::Triade tinta_da_linha(std::size_t desde_a_base, std::size_t altura) {
   // O VIOLETA CARDEAL, e não a côr do registro: desde a issue #132 a rampa é
   // UMA em toda a fita, e a familia sómente se lê no instante da batida forte.
-  const std::string_view cor = tokens::v500;
+  const std::string_view cor = paleta_do_espectro().base;
   // Painel de uma célulla só: a rampa degenera, e vale a BASE. A §7.4.9 ancora
   // a rampa na base, e painel de uma célulla é todo base; o meio da rampa seria
   // côr que spec alguma nomeia. E o desvio por zero fica excluido antes de se
@@ -270,12 +265,12 @@ namespace {
 tokens::Triade tinta_da_celula(float valor, bool mudo, bool quente,
                                bool no_topo, std::size_t desde_a_base,
                                std::size_t altura) {
-  if (mudo) return tokens::rgb(tokens::text_faint);
-  if (valor <= 0.0f) return tokens::rgb(tokens::text_faint);
+  if (mudo) return tokens::rgb(paleta_do_espectro().silencio);
+  if (valor <= 0.0f) return tokens::rgb(paleta_do_espectro().silencio);
   // A BATIDA accende o ROSA na ULTIMA cella, e sómente n'ella (issue #167): a
   // columna inteira em côr era o que havia, e elle quiz de volta a fita
   // violeta com a ponta accesa. As côres por familia sahiram com ellas.
-  if (quente && no_topo) return tokens::rgb(tokens::glow_hot);
+  if (quente && no_topo) return tokens::rgb(paleta_do_espectro().batida);
   return tinta_da_linha(desde_a_base, altura);
 }
 
