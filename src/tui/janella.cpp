@@ -74,6 +74,7 @@
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/dinamica_do_espectro.hpp"
+#include "tui/estado_da_janella.hpp"
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
 #include "tui/geometria_da_janella.hpp"
@@ -134,14 +135,6 @@ std::filesystem::path raiz_do_soquete() {
   const char* posto = std::getenv("XDG_RUNTIME_DIR");
   if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
   return std::filesystem::path("/tmp");
-}
-
-// janela_do_tmux_esta_ativa, focus-events informa foco do emulador, mas trocar
-// de janela dentro do tmux não é uma troca de foco do terminal. Consulta-se o
-// estado da janela pelo identificador seguro que o tmux já entrega em
-// TMUX_PANE, para que a animação interna continue sem pintar uma janela oculta.
-bool janela_do_tmux_esta_ativa() {
-  return true;
 }
 
 // QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
@@ -492,58 +485,29 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
   // toca, e por isso elle não pede tranca.
   std::string aviso_da_rede;
-  std::size_t primeira_linha = 0;
-  // AS CAIXAS da tela (issue #95). Vivem n'esta pilha, e não dentro do pintor: o
-  // `reflect` guarda referencia para ellas, e o tratador de eventos lê-as DEPOIS
-  // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
-  // pintura.
-  tui::CaixasDaTela caixas;
-  // A PEÇA COM FOCO (issue #107). Nasce na PAUTA, que é onde o operador está
-  // quando abre o programa: foco de nascença n'uma aba faria a primeira seta
-  // andar no cabeçalho em vez de andar na lista, que é o que elle veio fazer.
-  tui::Focavel foco = tui::Focavel::Pauta;
-  // O MENU DE CONTEXTO (issue #96). Vive n'esta pilha, ao lado das caixas: o
-  // tratador muta-o e o pintor lê-o, e os dous correm no fio da tela.
-  tui::MenuDeContexto menu;
-  // O HELP (issue #133): o estado da janella da ajuda e a caixa d'ella, que o
-  // clique de fóra consulta para a fechar. Mora aqui pela razão do menu.
-  tui::Ajuda ajuda;
-  // O ARRASTO (issue #153): a faixa que está na mão do rato. Mora aqui, ao
-  // lado do foco, que é estado da SESSÃO e não do quadro.
-  tui::Arrasto arrasto;
-  // A CHAPA DO VERSO que está na tela (issue #163), e se ha alguma: é por ellas
-  // que se sabe quando a janella da lousa precisa de se limpar.
-  tui::AssignaturaDaChapa assignatura_posta;
-  bool chapa_posta = false;
-  ftxui::Box caixa_da_ajuda = tui::caixa_por_pintar();
-  // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
-  // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
-  // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
-  std::vector<nucleo::LinhaDaLetra> letra;
-  std::string letra_de_qual;
-  // A FICHA da faixa que sôa, guardada como a letra e pela mesma razão: o
-  // indice consultado a cada quadro seriam vinte perguntas por segundo ao
-  // banco por uma cousa que sómente muda quando a faixa muda.
-  tui::Ficha ficha;
-  // A ONDA da faixa (issue #131), para o meio da fita: vazia emquanto não
-  // chega, e ahi o meio mostra a barra chata do progresso.
-  std::vector<float> onda_da_faixa;
+  // O estado que atravessa quadros mora n'um tipo visual, sem recurso externo.
+  // As referencias conservam esta etapa pequena; o dono único já fica claro.
+  tui::EstadoDaJanella estado;
+  auto& primeira_linha = estado.primeira_linha;
+  auto& caixas = estado.caixas;
+  auto& foco = estado.foco;
+  auto& menu = estado.menu;
+  auto& ajuda = estado.ajuda;
+  auto& arrasto = estado.arrasto;
+  auto& assignatura_posta = estado.assignatura_posta;
+  auto& chapa_posta = estado.chapa_posta;
+  auto& caixa_da_ajuda = estado.caixa_da_ajuda;
+  auto& letra = estado.letra;
+  auto& letra_de_qual = estado.letra_de_qual;
+  auto& ficha = estado.ficha;
+  auto& onda_da_faixa = estado.onda_da_faixa;
+  auto& mostra_letra = estado.mostra_letra;
+  auto& geometria_anterior = estado.geometria_anterior;
+  auto& reconciliador_da_capa = estado.reconciliador_da_capa;
+  auto& dinamica_do_espectro = estado.dinamica_do_espectro;
   // O correio por onde a onda chega do fio de fundo: o recado é o caminho da
   // faixa, para que onda de faixa que já sahiu não assente na que entrou.
   tui::CorreioDe<nucleo::Onda> correio_da_onda;
-  // OS PICOS do espectro (issue #132): um por banda, e são o estado de que a
-  // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
-  // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou. A
-  // tranca separa o avanço do relogio da leitura do pintor.
-  tui::DinamicaDoEspectro dinamica_do_espectro;
-
-  // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
-  // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
-  // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
-  //
-  // ATOMICO, e não bool nú: o fio do relogio lê-o para o pôr na assignatura, e o
-  // fio da tela troca-o na tecla `l`.
-  std::atomic<bool> mostra_letra{true};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
   nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
   // A LOUSA (issue #103) e o arquivario que a serve. Vivem n'esta pilha, ao
@@ -551,8 +515,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // por viver aqui que a sahida da tela leva a janella d'ella junto.
   nucleo::Lousa lousa(ajustes.lousa.valor);
   nucleo::Arquivario arquivario;
-  std::optional<tui::GeometriaDoQuadro> geometria_anterior;
-  tui::ReconciliadorDaSobreposicao reconciliador_da_capa;
   // O LETREIRO (issue #108) vive ao lado d'ella, e pela mesma chave: a chapa
   // que elle rasteriza é a lousa quem a põe, e desligada ella não ha onde.
   nucleo::Letreiro letreiro(ajustes.lousa.valor);
@@ -1964,7 +1926,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
-    bool janela_ativa = janela_do_tmux_esta_ativa();
     while (!sahir.load()) {
       tocador.pulsa();
       // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
@@ -1977,17 +1938,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (estaleiro.colheu()) pede_varrer.toca();
       analisador.pulsa();
       mpris.pulsa();
-      const bool janela_ativa_agora = janela_do_tmux_esta_ativa();
-      if (janela_ativa_agora != janela_ativa) {
-        janela_ativa = janela_ativa_agora;
-        if (janela_ativa)
-          vigilia.ganha();
-        else
-          vigilia.perde();
-        tela.Post([&alterna_rastreamento_do_rato, janela_ativa_agora] {
-          alterna_rastreamento_do_rato(janela_ativa_agora);
-        });
-      }
       const tui::Retracto retracto = retracto_do(tocador, projector);
       const std::vector<float> bandas = tocador.bandas();
       dinamica_do_espectro.avanca(bandas, retracto.mudo);
