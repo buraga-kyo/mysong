@@ -72,7 +72,7 @@ std::string apara(const std::string& crua, std::size_t largura) {
 // As cellas das columnas de largura fixa. A margem de UMA cella de cada lado é
 // o que aparta a pauta da orla e do divisor sem gastar collunha de traço.
 constexpr std::size_t kMargem = 1, kMarcador = 1, kNumero = 3, kVao = 2;
-constexpr std::size_t kRegua = 6, kTempo = 5, kConta = 4;
+constexpr std::size_t kRegua = 6, kTempo = 7, kConta = 4;
 // kTituloMinimo, abaixo d'isto o titulo não diz nada, e columna nova que o
 // levasse a menos seria columna que cega a linha para enfeitar a folha.
 constexpr std::size_t kTituloMinimo = 8;
@@ -354,7 +354,10 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     const bool pela_conta = navegador.secao() == Secao::Artistas ||
                             navegador.secao() == Secao::Albuns ||
                             navegador.secao() == Secao::Rois;
-    medidas = medidas_da_pauta(largura, false, pela_conta);
+    const std::size_t largura_da_capa = 9;
+    const std::size_t largura_do_texto =
+        largura > largura_da_capa + 1 ? largura - largura_da_capa - 1 : largura;
+    medidas = medidas_da_pauta(largura_do_texto, false, pela_conta);
   }
 
   std::vector<ftxui::Element> linhas;

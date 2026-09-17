@@ -294,7 +294,7 @@ ftxui::Element elemento_da_chapa(const Chapa& chapa, std::size_t largura) {
   const tokens::Triade fundo = tokens::rgb(tokens::panel_hi);
   if (chapa.contador_de_sons) {
     const tokens::Triade fundo_laranja = tokens::rgb(tokens::launcher_glow);
-    const std::string texto = " " + std::to_string(chapa.quantas) + " sons ";
+    const std::string texto = " PLANO ARTISTICO ";
     ftxui::Element barra = pinta(texto, tokens::vacuo) |
                            ftxui::bold |
                            ftxui::bgcolor(ftxui::Color::RGB(fundo_laranja.r, fundo_laranja.g, fundo_laranja.b));

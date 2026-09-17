@@ -255,7 +255,7 @@ std::string palavra_da_aba(Aba aba) {
     case Aba::Download: return "DOWNLOAD";
     case Aba::MySong: break;
   }
-  return "MY SONG";
+  return "MY XX SONG's";
 }
 
 std::string rotulo_da_aba(Aba aba) {
@@ -408,13 +408,13 @@ Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando) {
   // de glifo com o estado, e não de logar: botão que mudasse de sitio faria o
   // dedo errar a pausa que elle proprio pediu.
   fita.junta(aceso({" " + std::string(tocando ? kPausar : kTocar) + " ",
-                    tokens::panel_hi, tokens::glow_core},
+                    tokens::panel_hi, tokens::launcher_glow},
                    foco == Focavel::Tocar));
   fita.junta(aceso({" " + std::string(kAnterior) + " ", tokens::panel_hi,
-                    tokens::glow_core},
+                    tokens::launcher_glow},
                    foco == Focavel::Anterior));
   fita.junta(aceso({" " + std::string(kSeguinte) + " ", tokens::panel_hi,
-                    tokens::glow_core},
+                    tokens::launcher_glow},
                    foco == Focavel::Seguinte));
   return fita;
 }

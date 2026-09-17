@@ -195,8 +195,8 @@ std::vector<std::string> argumentos_do_chafa(
   //                    por NÃO se passar que a proporção se guarda: medido,
   //                    1280x720 em 40x21 sahe 40x12, e 200x200 sahe 40x20.
   const std::string symbolos =
-      com_sextante ? "--symbols=block+half+quad+sextant"
-                   : "--symbols=block+half+quad";
+      com_sextante ? "--symbols=block+half+quad+sextant+braille"
+                   : "--symbols=block+half+quad+braille";
   return {"chafa",
           "--format=symbols",
           symbolos,
