@@ -70,6 +70,7 @@
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
 #include "tui/cabecalho.hpp"
+#include "tui/campainha.hpp"
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
@@ -425,7 +426,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   if (!faixas.empty()) tocador.tocar_corrente();
 
   std::atomic<bool> varrida{false};
-  std::atomic<bool> pede_varrer{true};
+  tui::Campainha pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
 
 
@@ -439,17 +440,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // Vive sob a MESMA tranca do termo, e o fio da busca copia os dous n'um golpe:
   // assim não ha quadro em que o termo seja de uma fonte e a busca de outra.
   nucleo::Fonte fonte_da_busca = ajustes.fonte_da_busca.valor;
-  std::atomic<bool> pede_buscar{false};
+  tui::Campainha pede_buscar;
 
   // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
   // vector de um: o gabarito do correio carrega vector, e um catalogo é uma cousa.
   tui::CorreioDe<nucleo::Catalogo> correio_do_catalogo;
   std::string url_da_lista;
-  std::atomic<bool> pede_catalogo{false};
+  tui::Campainha pede_catalogo;
   tui::CorreioDe<nucleo::Pedido> correio_da_playlist;
   std::string url_da_playlist;
   nucleo::Fonte fonte_da_playlist = nucleo::Fonte::YouTube;
-  std::atomic<bool> pede_playlist{false};
+  tui::Campainha pede_playlist;
   std::atomic<bool> baixa_playlist_ao_chegar{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
@@ -570,56 +571,49 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
   tui::Vigilia vigilia(true);
   std::vector<std::thread> ao_fundo;
-  // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
-  // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
-  // bandeira `sahir` é onde elle olha.
+  // A VARREDURA, em fio permanente que dorme na campainha. A conducção por
+  // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_varrer.exchange(false)) {
-        varrida.store(false);
-        nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
-        while (!sahir.load() && varredura.passo()) {
-        }
-        varrida.store(true);
-        acervo_novo.store(true);
+    while (pede_varrer.espera()) {
+      varrida.store(false);
+      nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
+      while (!sahir.load() && varredura.passo()) {
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      varrida.store(true);
+      acervo_novo.store(true);
     }
   });
 
   // O FIO DAS PLAYLISTS da tecla `b`. A enumeração acontece fora da tela, e a
   // fila só recebe pedidos depois que a lista inteira foi lida.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_playlist.exchange(false)) {
-        std::string url;
-        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          url = url_da_playlist;
-          fonte = fonte_da_playlist;
-        }
-        std::vector<nucleo::Pedido> pedidos;
-        std::string recado;
-        if (fonte == nucleo::Fonte::Spotify) {
-          recado = "playlist Spotify usa o caminho do catalogo";
-        } else {
-          std::vector<std::string> urls;
-          const bool falou = nucleo::busca_playlist_na_rede(url, &urls);
-          for (const std::string& faixa : urls) {
-            nucleo::Pedido pedido;
-            pedido.url = faixa;
-            pedido.fonte = fonte;
-            pedidos.push_back(std::move(pedido));
-          }
-          recado = !falou ? "a playlist não respondeu"
-                          : (pedidos.empty() ? "a playlist veio vazia"
-                                             : std::to_string(pedidos.size()) +
-                                                   " faixas encontradas");
-        }
-        correio_da_playlist.poe(std::move(pedidos), std::move(recado));
+    while (pede_playlist.espera()) {
+      std::string url;
+      nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        url = url_da_playlist;
+        fonte = fonte_da_playlist;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      std::vector<nucleo::Pedido> pedidos;
+      std::string recado;
+      if (fonte == nucleo::Fonte::Spotify) {
+        recado = "playlist Spotify usa o caminho do catalogo";
+      } else {
+        std::vector<std::string> urls;
+        const bool falou = nucleo::busca_playlist_na_rede(url, &urls);
+        for (const std::string& faixa : urls) {
+          nucleo::Pedido pedido;
+          pedido.url = faixa;
+          pedido.fonte = fonte;
+          pedidos.push_back(std::move(pedido));
+        }
+        recado = !falou ? "a playlist não respondeu"
+                        : (pedidos.empty() ? "a playlist veio vazia"
+                                           : std::to_string(pedidos.size()) +
+                                                 " faixas encontradas");
+      }
+      correio_da_playlist.poe(std::move(pedidos), std::move(recado));
     }
   });
 
@@ -627,70 +621,53 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // A BUSCA NA REDE, em fio permanente do mesmo modo. Elle NÃO toca a tela nem o
   // navegador: deixa o que achou no correio, e o fio da tela colhe-o.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_buscar.exchange(false)) {
-        std::string termo;
-        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          termo = termo_da_rede;
-          fonte = fonte_da_busca;
-        }
-        // A fonte Spotify NUNCA corre aqui: a tela responde do catalogo, no
-        // proprio quadro e sem correio. Um pedido que envelheceu na flag (dous
-        // f seguidos com busca em voo) viraria um ytsearch de REDE a pousar
-        // por cima do catalogo, sob um cabeçalho que diz Spotify.
-        if (fonte == nucleo::Fonte::Spotify) continue;
-        std::vector<nucleo::Achado> achados;
-        const bool falou =
-            nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
-        // Tres desfechos, e tres recados: a rede muda, a rede que nada achou, e os
-        // achados. «Nada se achou» e «não respondeu» são cousas differentes, e dizer
-        // a mesma palavra ás duas faria o operador buscar outra vez em vão.
-        std::string recado =
-            !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
-                   : (achados.empty() ? "nada se achou" : "achados na rede");
-        // A resposta só se entrega se o pedido ainda for o VIGENTE: o operador
-        // pode ter trocado de fonte ou de termo com esta busca em voo, e a
-        // lista velha pousando por cima da nova ficaria a mentir sob um
-        // cabeçalho que já diz outra fonte.
-        bool vigente = false;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          vigente = termo == termo_da_rede && fonte == fonte_da_busca;
-        }
-        if (vigente) correio.poe(std::move(achados), std::move(recado));
+    while (pede_buscar.espera()) {
+      std::string termo;
+      nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        termo = termo_da_rede;
+        fonte = fonte_da_busca;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      // A fonte Spotify NUNCA corre aqui: a tela responde do catalogo, no
+      // proprio quadro e sem correio. Pedido envelhecido na campainha viraria
+      // um ytsearch de REDE a pousar por cima do catalogo.
+      if (fonte == nucleo::Fonte::Spotify) continue;
+      std::vector<nucleo::Achado> achados;
+      const bool falou =
+          nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
+      std::string recado =
+          !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
+                 : (achados.empty() ? "nada se achou" : "achados na rede");
+      bool vigente = false;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        vigente = termo == termo_da_rede && fonte == fonte_da_busca;
+      }
+      if (vigente) correio.poe(std::move(achados), std::move(recado));
     }
   });
 
   // O FIO DO CATALOGO, permanente como os outros, e por a mesma razão: fio erguido
   // por cada pedido mexeria no vector de fios de dous lados.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_catalogo.exchange(false)) {
-        std::string qual;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          qual = url_da_lista;
-        }
-        nucleo::Catalogo lido;
-        const bool falou = nucleo::busca_catalogo(qual, &lido);
-        // Tres desfechos, e tres recados. «Não é playlist do Spotify» e «a rede não
-        // respondeu» são cousas differentes, e dizer a mesma palavra ás duas faria o
-        // operador collar a mesma URL outra vez em vão.
-        std::string recado;
-        if (!falou)
-          recado = "não é playlist do Spotify, ou a rede não respondeu";
-        else if (lido.faixas.empty())
-          recado = "a lista veio vazia";
-        else
-          recado = std::to_string(lido.faixas.size()) +
-                   " faixas: enter baixa a eleita, T baixa todas";
-        correio_do_catalogo.poe({std::move(lido)}, std::move(recado));
+    while (pede_catalogo.espera()) {
+      std::string qual;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        qual = url_da_lista;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      nucleo::Catalogo lido;
+      const bool falou = nucleo::busca_catalogo(qual, &lido);
+      std::string recado;
+      if (!falou)
+        recado = "não é playlist do Spotify, ou a rede não respondeu";
+      else if (lido.faixas.empty())
+        recado = "a lista veio vazia";
+      else
+        recado = std::to_string(lido.faixas.size()) +
+                 " faixas: enter baixa a eleita, T baixa todas";
+      correio_do_catalogo.poe({std::move(lido)}, std::move(recado));
     }
   });
 
@@ -1602,7 +1579,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
               std::lock_guard<std::mutex> chave(tranca_do_termo);
               url_da_lista = termo_em_curso;
             }
-            pede_catalogo.store(true);
+            pede_catalogo.toca();
             aviso_da_rede = "a ler a lista do Spotify...";
           }
         } else if (era == Digita::Procura) {
@@ -1616,7 +1593,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             if (fonte == nucleo::Fonte::Spotify) {
               busca_no_catalogo(termo_em_curso);
             } else {
-              pede_buscar.store(true);
+              pede_buscar.toca();
               aviso_da_rede = "a perguntar á rede...";
             }
           }
@@ -1640,10 +1617,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                 std::lock_guard<std::mutex> chave(tranca_do_termo);
                 url_da_lista = url;
               }
-              pede_catalogo.store(true);
+              pede_catalogo.toca();
               aviso_da_rede = "a ler a playlist do Spotify...";
             } else {
-              pede_playlist.store(true);
+              pede_playlist.toca();
               aviso_da_rede = "a ler a playlist...";
             }
             return true;
@@ -1846,7 +1823,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         if (fonte == nucleo::Fonte::Spotify) {
           busca_no_catalogo(termo);
         } else {
-          pede_buscar.store(true);
+          pede_buscar.toca();
           aviso_da_rede = "a perguntar á rede...";
         }
         return true;
@@ -1932,7 +1909,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
         // apaga-o, donde carregar dez vezes no `r` durante uma varredura não
         // enfileira dez varreduras.
-        if (varrida.load()) pede_varrer.store(true);
+        if (varrida.load()) pede_varrer.toca();
         return true;
       case tui::Verbo::Entra: {
         // Na LISTA do Spotify, entrar é BAIXAR a eleita. A URL vae vazia, e a
@@ -2003,7 +1980,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (servidor) servidor->pulsa();
       // Colheu-se faixa nova: pede-se varredura. A bandeira do estaleiro CONSOME-SE
       // na leitura, donde isto sahe uma vez por colheita, e não a cada quadro.
-      if (estaleiro.colheu()) pede_varrer.store(true);
+      if (estaleiro.colheu()) pede_varrer.toca();
       analisador.pulsa();
       mpris.pulsa();
       const bool janela_ativa_agora = janela_do_tmux_esta_ativa();
@@ -2067,6 +2044,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::cout << "\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
+  pede_varrer.fecha();
+  pede_playlist.fecha();
+  pede_buscar.fecha();
+  pede_catalogo.fecha();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
   // banco, que vivem nesta pilha. Deixar um solto é fio a ler memoria de quadro já
   // desfeito, e isso não perdoa.
