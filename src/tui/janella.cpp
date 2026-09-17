@@ -74,6 +74,7 @@
 #include "tui/correio.hpp"
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
+#include "tui/geometria_da_janella.hpp"
 #include "tui/letra_viva.hpp"
 #include "nucleo/onda.hpp"
 #include "tui/ajuda.hpp"
@@ -551,6 +552,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // por viver aqui que a sahida da tela leva a janella d'ella junto.
   nucleo::Lousa lousa(ajustes.lousa.valor);
   nucleo::Arquivario arquivario;
+  std::optional<tui::GeometriaDoQuadro> geometria_anterior;
+  tui::ReconciliadorDaSobreposicao reconciliador_da_capa;
   // O LETREIRO (issue #108) vive ao lado d'ella, e pela mesma chave: a chapa
   // que elle rasteriza é a lousa quem a põe, e desligada ella não ha onde.
   nucleo::Letreiro letreiro(ajustes.lousa.valor);
@@ -797,11 +800,27 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // collunhas de orla e cinco linhas de guarnição (a marca, o topo, o
     // transporte, o rodapé e as duas da orla); a sala da issue #102 não tem
     // orla, e as linhas que ella gasta reparte-as ella propria.
-    const ftxui::Dimensions tela = ftxui::Terminal::Size();
-    const tui::Sala sala = tui::sala_da_tela(
-        tela.dimx > 0 ? static_cast<std::size_t>(tela.dimx) : 0,
-        tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
-        digita != Digita::Nada);
+    const ftxui::Dimensions medida_da_tela = ftxui::Terminal::Size();
+    const std::filesystem::path capa_do_painel =
+        lousa.disponivel() ? arquivario.de(retracto.titulo).caminho
+                           : std::filesystem::path();
+    const nucleo::Medida medida_da_capa =
+        capa_do_painel.empty() ? nucleo::Medida{}
+                               : arquivario.de(retracto.titulo).medida;
+    const tui::GeometriaDoQuadro geometria = tui::geometria_do_quadro(
+        {medida_da_tela.dimx > 0
+             ? static_cast<std::size_t>(medida_da_tela.dimx)
+             : 0,
+         medida_da_tela.dimy > 0
+             ? static_cast<std::size_t>(medida_da_tela.dimy)
+             : 0,
+         digita != Digita::Nada, vigilia.pede_batida(),
+         foco == tui::Focavel::Capa, lousa.disponivel(), capa_do_painel,
+         medida_da_capa},
+        geometria_anterior ? &*geometria_anterior : nullptr);
+    geometria_anterior = geometria;
+    reconciliador_da_capa.deseja(geometria);
+    const tui::Sala& sala = geometria.sala;
     const std::size_t altura_por_faixa =
         tui::secao_de_faixas(navegador.secao()) ? tui::ALTURA_DA_FAIXA : 1;
     primeira_linha = tui::primeira_a_mostrar(
@@ -925,7 +944,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A LOUSA de pé toma a capa (issue #103), e ahi o chafa NÃO corre: o render
     // d'elle ficaria por baixo da janella e ninguem o veria, e cada troca de
     // faixa pagaria dezenas de milesimos por um desenho invisivel.
-    const bool pela_lousa = lousa.disponivel() && !sala.capa.vazio();
+    const bool pela_lousa =
+        geometria.sobreposicao == tui::EstadoDaSobreposicao::Visivel;
     static const nucleo::CapaPintada kSemArte;
     const nucleo::CapaPintada& arte =
         pela_lousa ? kSemArte
@@ -933,15 +953,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                   sala.capa.altura);
     // O rectangulo da lousa nasce DENTRO do da sala, e guarda a proporção da
     // imagem: é o mesmo tecto de quarenta e cinco por cento que o chafa recebe.
-    nucleo::Retangulo rectangulo;
-    if (pela_lousa)
-      rectangulo = nucleo::rectangulo_da_capa(
-          arquivario.de(retracto.titulo).medida, sala.capa.largura,
-          sala.capa.altura, nucleo::CELLULA_DA_CASA);
+    const tui::Rectangulo& rectangulo = geometria.rectangulo_da_capa;
     // A ARTE mede-se pelo que se vae pintar, e não pelo tecto: a capa de 16 por
     // 9 sahe mais baixa, e o que ella deixa fica para o espectro.
     const std::size_t alt_arte =
-        pela_lousa ? rectangulo.linhas
+        pela_lousa ? rectangulo.altura
                    : tui::linhas_da_arte(arte, sala.capa.altura);
     // A ORLA do foco come duas linhas (issue #107), e a conta do espectro
     // desconta-as: sem o desconto, o pé do painel sahia aparado em silencio
@@ -975,28 +991,23 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // assim a lavra irmã da lousa troca o INTERIOR do rectangulo sem tocar na
     // caixa. Esvazia-se a cada quadro, que painel que se não pinta não ha de
     // deixar caixa velha a apanhar cliques.
-    // A ORDEM á lousa vae com a caixa do quadro ANTERIOR, que é a unica que o
-    // `reflect` já encheu: elle escreve DEPOIS de o pintor devolver o quadro.
-    // Custa UM quadro de atraso ao redimensionar, e não custa mais nada, que a
-    // mesma ordem repetida não manda cousa alguma pelo cano.
-    const std::filesystem::path capa_do_painel =
-        pela_lousa ? arquivario.de(retracto.titulo).caminho
-                   : std::filesystem::path();
+    // A ORDEM á lousa nasce da mesma geometria que compõe este quadro. O
+    // `reflect` continua servindo ao rato; coordenada de imagem já não depende
+    // da caixa preenchida pelo quadro anterior.
     // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
     // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
     if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
                               !capa_do_painel.empty(),
                               true) ==
         nucleo::OrdemDaCapa::Tira) {
-      lousa.tira("capa");
+      if (lousa.tira("capa"))
+        reconciliador_da_capa.confirma(geometria.geracao);
     } else {
-      const int lousa_x = static_cast<int>(sala.capa.x) +
-                          (sala.capa.largura > rectangulo.collunas
-                               ? static_cast<int>(sala.capa.largura - rectangulo.collunas) / 2
-                               : 0);
-      const int lousa_y = static_cast<int>(sala.capa.y) + (capa_com_foco ? 1 : 0);
-      lousa.poe("capa", capa_do_painel, lousa_x, lousa_y,
-                rectangulo.collunas, rectangulo.linhas);
+      if (lousa.poe("capa", capa_do_painel,
+                    static_cast<int>(rectangulo.x),
+                    static_cast<int>(rectangulo.y), rectangulo.largura,
+                    rectangulo.altura))
+        reconciliador_da_capa.confirma(geometria.geracao);
     }
     caixas.capa = tui::caixa_por_pintar();
     // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
@@ -1090,7 +1101,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // é a que a lousa lê para saber onde pôr a janella. Medindo o painel
     // inteiro, a caixa daria o canto esquerdo e a imagem sahiria encostada.
     ftxui::Element quadro_da_arte =
-        pela_lousa ? ftxui::text(std::string(rectangulo.collunas, ' ')) |
+        pela_lousa ? ftxui::text(std::string(rectangulo.largura, ' ')) |
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
@@ -1190,7 +1201,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           {std::move(corpo),
            tui::flutuante_do_menu(
                menu, linha_alvo, sala.cabecalho.largura,
-               tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0)});
+               medida_da_tela.dimy > 0
+                   ? static_cast<std::size_t>(medida_da_tela.dimy)
+                   : 0)});
     }
     // O HELP (issue #133) flutua por cima de TUDO, menu incluido: é a peça
     // mais de cima da tela, e é a ultima a compor-se por isso mesmo.
@@ -1204,7 +1217,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         {std::move(corpo),
          tui::flutuante_da_ajuda(
              ajuda, sala.cabecalho.largura,
-             tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
+             medida_da_tela.dimy > 0
+                 ? static_cast<std::size_t>(medida_da_tela.dimy)
+                 : 0,
              &caixa_da_ajuda)});
   });
 
