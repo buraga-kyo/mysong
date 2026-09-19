@@ -1,5 +1,9 @@
 # mysong
 
+<p align="center">
+  <img src="./mysong-letra-musica.png">
+</p>
+
 Tocador de musicas para o TERMINAL, escrito em C++17, gratuito e local. Nao ha
 nuvem, nao ha conta, nao ha telemetria: a musica esta no seu disco e o programa
 mora na sua janella de terminal, com a estetica arrowline do RADICAL-OS.
