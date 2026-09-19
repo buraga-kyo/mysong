@@ -975,10 +975,12 @@ codigo.
 ctest --test-dir build --output-on-failure
 ```
 
-## Licenca
+## 📜 Licença
 
-MIT. Veja o arquivo LICENSE.
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-9cf?style=for-the-badge)](./LICENSE)
 
+Copia, remixa, vende, fecha o código, constrói o que caralhos você quiser em cima;
+A única exigência é crédito: **braga US**, você me sente?
 
 ## Plano artístico
 
