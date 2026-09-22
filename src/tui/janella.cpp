@@ -535,12 +535,14 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
   ao_fundo.emplace_back([&] {
     while (pede_varrer.espera()) {
+      try {
       varrida.store(false);
       nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
       while (!sahir.load() && varredura.passo()) {
       }
       varrida.store(true);
       acervo_novo.store(true);
+      } catch (...) { varrida.store(false); }
     }
   });
 
@@ -548,6 +550,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // fila só recebe pedidos depois que a lista inteira foi lida.
   ao_fundo.emplace_back([&] {
     while (pede_playlist.espera()) {
+      try {
       std::string url;
       nucleo::Fonte fonte = nucleo::Fonte::YouTube;
       {
@@ -574,6 +577,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                                  " faixas encontradas");
       }
       correio_da_playlist.poe(std::move(pedidos), std::move(recado));
+      } catch (...) {
+        correio_da_playlist.poe({}, "a playlist falhou inesperadamente");
+      }
     }
   });
 
@@ -582,6 +588,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // navegador: deixa o que achou no correio, e o fio da tela colhe-o.
   ao_fundo.emplace_back([&] {
     while (pede_buscar.espera()) {
+      try {
       std::string termo;
       nucleo::Fonte fonte = nucleo::Fonte::YouTube;
       {
@@ -605,6 +612,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         vigente = termo == termo_da_rede && fonte == fonte_da_busca;
       }
       if (vigente) correio.poe(std::move(achados), std::move(recado));
+      } catch (...) { correio.poe({}, "a busca falhou inesperadamente"); }
     }
   });
 
@@ -612,6 +620,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // por cada pedido mexeria no vector de fios de dous lados.
   ao_fundo.emplace_back([&] {
     while (pede_catalogo.espera()) {
+      try {
       std::string qual;
       {
         std::lock_guard<std::mutex> chave(tranca_do_termo);
@@ -628,6 +637,9 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         recado = std::to_string(lido.faixas.size()) +
                  " faixas: enter baixa a eleita, T baixa todas";
       correio_do_catalogo.poe({std::move(lido)}, std::move(recado));
+      } catch (...) {
+        correio_do_catalogo.poe({}, "o catalogo falhou inesperadamente");
+      }
     }
   });
 
@@ -732,7 +744,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       livraria.reabre();
       navegador.recarrega();
     }
-    const tui::Retracto retracto = retracto_do(tocador, projector);
+    tui::Retracto retracto = retracto_do(tocador, projector);
+    retracto.acervo = livraria.total();
     // A tela INTEIRA, sem desconto algum. A conta velha tirava-lhe quatro
     // collunhas de orla e cinco linhas de guarnição (a marca, o topo, o
     // transporte, o rodapé e as duas da orla); a sala da issue #102 não tem
@@ -1906,11 +1919,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // é quem tem o tocador na mão.
         if (navegador.entra()) {
           const std::string caminho = navegador.caminho_eleito();
-          if (!caminho.empty()) {
-            // O tamanho novo vem da propria juntada: o ultimo é elle menos um.
-            tocador.ir_para(tocador.junta(caminho) - 1);
-            tocador.tocar_corrente();
-          }
+          if (!caminho.empty()) tocador.tocar(caminho);
         }
         return true;
       }

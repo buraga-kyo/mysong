@@ -58,6 +58,7 @@ struct Retracto {
   // lado do volume e não n'elle: volume zero por escolha do operador mostra o
   // numero, e a Casa calada por ordem mostra a palavra.
   bool mudo = false;
+  std::size_t acervo = 0;
 };
 
 // mm_ss, segundos em `MM:SS`, e o que não é tempo em `--:--`. Não lança, e não

@@ -557,7 +557,7 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
   if (largura == 0 || altura == 0) return ftxui::text("");
   const Fita esquerda = fita_da_esquerda(
       corrente, foco, retracto.estado == nucleo::Estado::Tocando,
-      retracto.tamanho);
+      retracto.acervo);
   const std::vector<Segmento> segs_direita = segmentos_da_direita(
       retracto, foco, animacao_travada, mostrar_animacao);
   std::vector<std::size_t> pede(segs_direita.size() + 1, 0);
@@ -572,7 +572,7 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
            esquerda.compor(), caixas_da_esquerda(caixas),
            {elemento_da_aba(Aba::MySong,
                             estado_da_aba(Aba::MySong, corrente, foco), altura,
-                            retracto.tamanho),
+                            retracto.acervo),
             elemento_da_aba(Aba::Playlists,
                             estado_da_aba(Aba::Playlists, corrente, foco),
                             altura),
