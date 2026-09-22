@@ -197,20 +197,20 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
       papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, {}, 167,
                                        nullptr, tui::Focavel::Pauta, 2),
             167, 2);
-  CHECK(pedaco(tela, 12, 13, 0) == " \U000f0cb8 PLAYLISTS ");
-  CHECK(pedaco(tela, 12, 13, 1) == "             ");
+  CHECK(pedaco(tela, 16, 13, 0) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 16, 13, 1) == "             ");
   // O FUNDO é o mesmo nas duas fileiras, peça por peça: aba corrente, aba
   // apagada, botão, meio e ponta direita.
-  for (const int x : {14, 2, 40, 70, 145})
+  for (const int x : {18, 2, 44, 70, 145})
     CHECK(tela.PixelAt(x, 1).background_color ==
           tela.PixelAt(x, 0).background_color);
-  CHECK(tela.PixelAt(14, 1).background_color == cor(tk::launcher_glow));
-  CHECK(tela.PixelAt(40, 1).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(18, 1).background_color == cor(tk::launcher_glow));
+  CHECK(tela.PixelAt(44, 1).background_color == cor(tk::panel_hi));
   CHECK(tela.PixelAt(70, 1).background_color == cor(tk::panel));
   // E a seta da junção repete-se em baixo, senão os dous fundos encostavam-se
   // em quadrado e a emenda via-se.
-  CHECK(pedaco(tela, 11, 1, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 50, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 15, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 54, 1, 1) == "\ue0b0");
   CHECK(pedaco(tela, 106, 1, 1) == "\ue0b2");
 }
 
@@ -220,20 +220,20 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
 TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, {}, 167), 167);
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::launcher_glow));
-  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::vacuo));
+  CHECK(tela.PixelAt(18, 0).background_color == cor(tk::launcher_glow));
+  CHECK(tela.PixelAt(18, 0).foreground_color == cor(tk::vacuo));
   CHECK(tela.PixelAt(2, 0).background_color == cor(tk::raised));
   CHECK(tela.PixelAt(2, 0).foreground_color == cor(tk::text_primary));
-  CHECK(tela.PixelAt(28, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(32, 0).background_color == cor(tk::raised));
   // Os botões vestem panel_hi com o glifo em glow_core: é o glow CONTIDO da
   // regra da Casa, que accende no que TOCA e nunca no fundo todo.
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
-  CHECK(tela.PixelAt(40, 0).foreground_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(44, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(44, 0).foreground_color == cor(tk::launcher_glow));
   // O meio veste `panel`, que é o degrau de fundo, e não o da fita: o meio é
   // o chão, e as peças pousam n'elle. E o remate da esquerda assenta no mesmo
   // panel, e não em preto.
   CHECK(tela.PixelAt(70, 0).background_color == cor(tk::panel));
-  CHECK(tela.PixelAt(50, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(54, 0).background_color == cor(tk::panel));
   CHECK(tela.PixelAt(106, 0).background_color == cor(tk::panel));
 }
 
@@ -346,19 +346,19 @@ TEST_CASE("o meio anda em v600, e o que falta fica em line_dim") {
   tui::CaixasDoCabecalho caixas;
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167, &caixas), 167);
-  const int andadas = static_cast<int>(tui::enchimento(50.0, 100.0, 55));
-  CHECK(andadas >= 27);
-  CHECK(andadas <= 28);
-  CHECK(tela.PixelAt(51, 0).foreground_color == cor(tk::v600));
-  CHECK(tela.PixelAt(51 + andadas - 1, 0).foreground_color == cor(tk::v600));
-  CHECK(tela.PixelAt(51 + andadas, 0).foreground_color == cor(tk::line_dim));
+  const int andadas = static_cast<int>(tui::enchimento(50.0, 100.0, 51));
+  CHECK(andadas >= 25);
+  CHECK(andadas <= 26);
+  CHECK(tela.PixelAt(55, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(55 + andadas - 1, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(55 + andadas, 0).foreground_color == cor(tk::line_dim));
   CHECK(tela.PixelAt(105, 0).foreground_color == cor(tk::line_dim));
   // No principio da faixa cella alguma anda, e no fim andam todas.
   tui::Retracto principio = tocando();
   principio.posicao = 0.0;
   CHECK(papel(tui::elemento_do_cabecalho(principio, tui::Aba::MySong, {}, 167),
               167)
-            .PixelAt(51, 0)
+            .PixelAt(55, 0)
             .foreground_color == cor(tk::line_dim));
   tui::Retracto fim = tocando();
   fim.posicao = fim.duracao;
