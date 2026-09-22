@@ -69,18 +69,18 @@ TEST_CASE("a fita sahe na ordem d'elle, egual á cadeia escripta á mão") {
   // A conta, feita á mão (issue #134): as abas pedem 39 collunhas (11, 13 e 12
   // das palavras e as 3 setas), os botões 12 (3 cada e as 3 setas), e a ponta
   // direita 61 com o HELP. Ao MEIO ficam as 55 que sobram, do 51 ao 105.
-  CHECK(pedaco(tela, 0, 11) == " \U000f075a MY SONG ");
-  CHECK(pedaco(tela, 11, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 12, 13) == " \U000f0cb8 PLAYLISTS ");
-  CHECK(pedaco(tela, 26, 12) == " \U000f01da DOWNLOAD ");
-  CHECK(pedaco(tela, 38, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 39, 3) == " \U000f03e4 ");    // toca: o botão diz PAUSAR
-  CHECK(pedaco(tela, 43, 3) == " \U000f04ae ");    // anterior
-  CHECK(pedaco(tela, 47, 3) == " \U000f04ad ");    // seguinte
-  CHECK(pedaco(tela, 50, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 0, 15) == " \U000f075a MY 0 SONG's ");
+  CHECK(pedaco(tela, 15, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 16, 13) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 30, 12) == " \U000f01da DOWNLOAD ");
+  CHECK(pedaco(tela, 42, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 43, 3) == " \U000f03e4 ");
+  CHECK(pedaco(tela, 47, 3) == " \U000f04ae ");
+  CHECK(pedaco(tela, 51, 3) == " \U000f04ad ");
+  CHECK(pedaco(tela, 54, 1) == "\ue0b0");
   std::string tracos;
-  for (int i = 0; i < 55; ++i) tracos += "\u2501";
-  CHECK(pedaco(tela, 51, 55) == tracos);          // o meio: a barra chata
+  for (int i = 0; i < 51; ++i) tracos += "\u2501";
+  CHECK(pedaco(tela, 55, 51) == tracos);
   CHECK(pedaco(tela, 106, 1) == "\ue0b2");        // a seta de entrada da direita
   CHECK(pedaco(tela, 107, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(tela, 123, 8) == " \U000f057e 100% ");
@@ -102,7 +102,7 @@ TEST_CASE("a fita sahe na ordem d'elle, egual á cadeia escripta á mão") {
 
 TEST_CASE("a aba MY SONG mostra a quantidade real do retracto") {
   tui::Retracto retracto = tocando();
-  retracto.tamanho = 42;
+  retracto.acervo = 42;
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, {}, 167), 167);
   CHECK(pedaco(tela, 0, 16) == " \U000f075a MY 42 SONG's ");
@@ -114,8 +114,8 @@ TEST_CASE("a linha fecha a largura exacta, e o meio toma o que sobra") {
   const ftxui::Screen larga = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, {}, 120), 120);
   std::string tracos;
-  for (int i = 0; i < 17; ++i) tracos += "\u2501";
-  CHECK(pedaco(larga, 51, 17) == tracos);
+  for (int i = 0; i < 13; ++i) tracos += "\u2501";
+  CHECK(pedaco(larga, 55, 13) == tracos);
   CHECK(pedaco(larga, 68, 1) == "\ue0b2");
   CHECK(pedaco(larga, 69, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(larga, 0, 120).find("REPETIR") != std::string::npos);
@@ -125,8 +125,8 @@ TEST_CASE("a linha fecha a largura exacta, e o meio toma o que sobra") {
   tui::Retracto parado;
   const ftxui::Screen quieta = papel(
       tui::elemento_do_cabecalho(parado, tui::Aba::MySong, {}, 120), 120);
-  CHECK(pedaco(quieta, 39, 3) == " \U000f040a ");
-  CHECK(quieta.PixelAt(51, 0).foreground_color == cor(tk::line_dim));
+  CHECK(pedaco(quieta, 43, 3) == " \U000f040a ");
+  CHECK(quieta.PixelAt(55, 0).foreground_color == cor(tk::line_dim));
   CHECK(quieta.PixelAt(67, 0).foreground_color == cor(tk::line_dim));
 }
 
@@ -172,12 +172,12 @@ TEST_CASE("as caixas seguem a ordem da fita, e a da palavra sahe da do segmento"
                                    &caixas, tui::Focavel::Pauta, 2),
         167, 2);
   CHECK(caixas.aba_mysong.x_min == 0);
-  CHECK(caixas.aba_mysong.x_max == 10);
-  CHECK(caixas.aba_playlists.x_min == 12);
-  CHECK(caixas.aba_download.x_max == 37);
-  CHECK(caixas.botao_tocar.x_min == 39);
-  CHECK(caixas.botao_seguinte.x_max == 49);
-  CHECK(caixas.trilho.x_min == 51);
+  CHECK(caixas.aba_mysong.x_max == 14);
+  CHECK(caixas.aba_playlists.x_min == 16);
+  CHECK(caixas.aba_download.x_max == 41);
+  CHECK(caixas.botao_tocar.x_min == 43);
+  CHECK(caixas.botao_seguinte.x_max == 53);
+  CHECK(caixas.trilho.x_min == 55);
   CHECK(caixas.trilho.x_max == 105);
   CHECK(caixas.tempo.x_min == 107);
   CHECK(caixas.ajuda.x_max == 166);
