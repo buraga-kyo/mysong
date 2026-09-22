@@ -92,7 +92,7 @@ PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept;
 // palavra_da_aba, a palavra de MARCA sósinha, sem o glifo e sem a guarnição.
 // É ella, e sómente ella, que sahe em XIROD: a chapa não cobre o icone nem as
 // setas da fita, que aquelle é glifo da fonte do terminal e estas são junção.
-std::string palavra_da_aba(Aba aba);
+std::string palavra_da_aba(Aba aba, std::size_t quantas = 0);
 
 // caixa_da_palavra, as cellas da PALAVRA dentro da caixa do segmento. Tira o
 // flanco que o `rotulo_da_aba` põe adeante (o espaço, o glifo, o espaço) e o
@@ -116,13 +116,14 @@ std::optional<Aba> aba_com_foco(Focavel foco) noexcept;
 // UM logar só, e é de proposito: a chapa em XIROD da issue irmã troca a
 // pintura d'esta palavra, e rotulo espalhado por dous ramos dar-lhe-hia duas
 // verdades sobre o que a aba diz.
-std::string rotulo_da_aba(Aba aba);
+std::string rotulo_da_aba(Aba aba, std::size_t quantas = 0);
 
 // elemento_da_aba, a palavra JÁ PINTADA, corrente ou não. Vive apartada da
 // fita pela mesma razão: quem puzer imagem por cima da cella troca aqui, e a
 // composição da linha não muda uma linha.
 ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
-                               std::size_t altura = 1);
+                               std::size_t altura = 1,
+                               std::size_t quantas = 0);
 
 // A REPARTIÇÃO da fita em TRES blocos (issue #134): á esquerda, FIXAS, as tres
 // abas e os tres botões; ao meio a ONDA, que toma o que sobra; á direita o

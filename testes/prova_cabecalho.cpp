@@ -100,6 +100,14 @@ TEST_CASE("a fita sahe na ordem d'elle, egual á cadeia escripta á mão") {
   CHECK(pedaco(tela, 0, 167) == pedaco(tela, 0, 200));
 }
 
+TEST_CASE("a aba MY SONG mostra a quantidade real do retracto") {
+  tui::Retracto retracto = tocando();
+  retracto.tamanho = 42;
+  const ftxui::Screen tela = papel(
+      tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, {}, 167), 167);
+  CHECK(pedaco(tela, 0, 16) == " \U000f075a MY 42 SONG's ");
+}
+
 TEST_CASE("a linha fecha a largura exacta, e o meio toma o que sobra") {
   // Em 120 as fixas pedem 51 e o HELP já não cabe (51 + 61 + 12 passa de 120):
   // ficam quatro peças á direita, 52 collunhas, e ao meio as 17 que sobram.

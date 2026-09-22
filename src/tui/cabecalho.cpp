@@ -249,16 +249,16 @@ PinturaDaAba pintura_da_aba(EstadoDaAba estado) noexcept {
   return {tokens::text_primary, tokens::raised};
 }
 
-std::string palavra_da_aba(Aba aba) {
+std::string palavra_da_aba(Aba aba, std::size_t quantas) {
   switch (aba) {
     case Aba::Playlists: return "PLAYLISTS";
     case Aba::Download: return "DOWNLOAD";
     case Aba::MySong: break;
   }
-  return "MY XX SONG's";
+  return "MY " + std::to_string(quantas) + " SONG's";
 }
 
-std::string rotulo_da_aba(Aba aba) {
+std::string rotulo_da_aba(Aba aba, std::size_t quantas) {
   // A guarnição dos flancos entra AQUI, e não na fita: o primitivo recebe o
   // rotulo como se ha de mostrar, e não lh'a accrescenta ás escondidas. E é
   // CONSTANTE de proposito: tres cellas adeante e uma atraz em toda aba, que é
@@ -269,7 +269,7 @@ std::string rotulo_da_aba(Aba aba) {
     case Aba::Download: glifo = kBaixa; break;
     case Aba::MySong: break;
   }
-  return " " + std::string(glifo) + " " + palavra_da_aba(aba) + " ";
+  return " " + std::string(glifo) + " " + palavra_da_aba(aba, quantas) + " ";
 }
 
 ftxui::Box caixa_da_palavra(const ftxui::Box& segmento) noexcept {
@@ -382,8 +382,8 @@ std::optional<Aba> aba_com_foco(Focavel foco) noexcept {
 }
 
 ftxui::Element elemento_da_aba(Aba aba, EstadoDaAba estado,
-                               std::size_t altura) {
-  return vestir(rotulo_da_aba(aba), tinta_da_aba(estado), fundo_da_aba(estado),
+                               std::size_t altura, std::size_t quantas) {
+  return vestir(rotulo_da_aba(aba, quantas), tinta_da_aba(estado), fundo_da_aba(estado),
                 altura) |
          ftxui::bold;
 }
@@ -396,11 +396,12 @@ namespace {
 // mesma regra que as outras, e fita apartada rematava em preto no meio da
 // linha. É a ordem d'elle (issue #134): «my song > playlists > download >
 // [play] > [<<] [>>]».
-Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando) {
+Fita fita_da_esquerda(Aba corrente, Focavel foco, bool tocando,
+                      std::size_t quantas) {
   Fita fita(Sentido::Dextra);
   for (const Aba qual : {Aba::MySong, Aba::Playlists, Aba::Download}) {
     const EstadoDaAba estado = estado_da_aba(qual, corrente, foco);
-    fita.junta({rotulo_da_aba(qual), fundo_da_aba(estado),
+    fita.junta({rotulo_da_aba(qual, quantas), fundo_da_aba(estado),
                 tinta_da_aba(estado)});
   }
   // Os botões vestem panel_hi com o glifo em glow_core, que é o glow CONTIDO
@@ -555,7 +556,8 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
   if (largura == 0 || altura == 0) return ftxui::text("");
   const Fita esquerda = fita_da_esquerda(
-      corrente, foco, retracto.estado == nucleo::Estado::Tocando);
+      corrente, foco, retracto.estado == nucleo::Estado::Tocando,
+      retracto.tamanho);
   const std::vector<Segmento> segs_direita = segmentos_da_direita(
       retracto, foco, animacao_travada, mostrar_animacao);
   std::vector<std::size_t> pede(segs_direita.size() + 1, 0);
@@ -569,7 +571,8 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
       {pintar_fita(
            esquerda.compor(), caixas_da_esquerda(caixas),
            {elemento_da_aba(Aba::MySong,
-                            estado_da_aba(Aba::MySong, corrente, foco), altura),
+                            estado_da_aba(Aba::MySong, corrente, foco), altura,
+                            retracto.tamanho),
             elemento_da_aba(Aba::Playlists,
                             estado_da_aba(Aba::Playlists, corrente, foco),
                             altura),
