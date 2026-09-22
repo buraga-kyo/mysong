@@ -422,6 +422,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> varrida{false};
   tui::Campainha pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
+  std::size_t total_do_acervo = livraria.total();
+  tui::CorreioDe<int> correio_da_varredura;
 
 
   // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
@@ -536,13 +538,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   ao_fundo.emplace_back([&] {
     while (pede_varrer.espera()) {
       try {
-      varrida.store(false);
-      nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
-      while (!sahir.load() && varredura.passo()) {
+        varrida.store(false);
+        nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
+        while (!sahir.load() && varredura.passo()) {
+        }
+        varrida.store(true);
+        acervo_novo.store(true);
+      } catch (...) {
+        varrida.store(true);
+        correio_da_varredura.poe({}, "a varredura falhou inesperadamente");
       }
-      varrida.store(true);
-      acervo_novo.store(true);
-      } catch (...) { varrida.store(false); }
     }
   });
 
@@ -743,9 +748,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     if (assenta && acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
+      total_do_acervo = livraria.total();
     }
+    std::string recado_da_varredura;
+    if (correio_da_varredura.colhe(nullptr, &recado_da_varredura))
+      aviso_da_rede = recado_da_varredura;
     tui::Retracto retracto = retracto_do(tocador, projector);
-    retracto.acervo = livraria.total();
+    retracto.acervo = total_do_acervo;
     // A tela INTEIRA, sem desconto algum. A conta velha tirava-lhe quatro
     // collunhas de orla e cinco linhas de guarnição (a marca, o topo, o
     // transporte, o rodapé e as duas da orla); a sala da issue #102 não tem
@@ -1919,7 +1928,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // é quem tem o tocador na mão.
         if (navegador.entra()) {
           const std::string caminho = navegador.caminho_eleito();
-          if (!caminho.empty()) tocador.tocar(caminho);
+          if (!caminho.empty() && !tocador.tocar(caminho))
+            aviso_da_rede = "não se pôde tocar a faixa eleita";
         }
         return true;
       }
