@@ -272,13 +272,13 @@ TEST_CASE("o clique em qualquer das duas linhas do segmento faz o mesmo") {
   REQUIRE(tela.cabecalho.aba_playlists.y_max -
               tela.cabecalho.aba_playlists.y_min == 1);
   for (const int linha : {0, 1}) {
-    const tui::Alvo aba = tui::alvo_do_ponto(tela, 14, linha);
+    const tui::Alvo aba = tui::alvo_do_ponto(tela, 18, linha);
     CHECK(aba.peca == tui::Peca::Aba);
     CHECK(aba.indice == 1);
     CHECK(tui::gesto_do_alvo(aba, Mouse::Left, Mouse::Pressed, {}).gesto ==
           tui::Gesto::VaiParaAba);
     // E o botão de tocar responde pelas duas fileiras d'elle tambem.
-    CHECK(tui::alvo_do_ponto(tela, 40, linha).peca == tui::Peca::Pausa);
+    CHECK(tui::alvo_do_ponto(tela, 44, linha).peca == tui::Peca::Pausa);
     // A roda fica MUDA sobre a fita, nas duas linhas: a caixa é de duas, e a
     // regra da roda não olha a fileira.
     CHECK(tui::gesto_do_alvo(aba, Mouse::WheelUp, Mouse::Pressed, {}).gesto ==

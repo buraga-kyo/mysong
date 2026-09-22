@@ -238,8 +238,8 @@ TEST_CASE("cada aba tem tres chapas, e as tres pedem imagens differentes") {
         tui::EstadoDaAba::ComFoco}) {
     ordem.estado = degrau;
     const nu::PedidoDaChapa pedido = tui::pedido_da_chapa(ordem);
-    CHECK(pedido.texto == "MY SONG");
-    CHECK(pedido.cellulas == 7);
+    CHECK(pedido.texto == "MY 0 SONG's");
+    CHECK(pedido.cellulas == 11);
     // A tinta e o fundo da chapa são os MESMOS com que a cella se pinta: é
     // esta egualdade que faz a imagem assentar sobre a fita sem se ver emenda.
     CHECK(pedido.fundo == std::string(tui::pintura_da_aba(degrau).fundo));
