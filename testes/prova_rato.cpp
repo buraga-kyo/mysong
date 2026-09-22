@@ -157,11 +157,11 @@ TEST_CASE("com o campo aberto o clique fecha-o, e pára ahi") {
             .gesto == tui::Gesto::FechaCampo);
 }
 
-TEST_CASE("o clique elege a linha, e o clique na JÁ eleita toca-a") {
+TEST_CASE("o clique elege e toca a linha no mesmo gesto") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato estado{false, 21, 40, 200.0};
   const tui::GestoDoRato outra = clicou(caixas, 30, 6, estado);
-  CHECK(outra.gesto == tui::Gesto::Elege);
+  CHECK(outra.gesto == tui::Gesto::Toca);
   CHECK(outra.indice == 23);
   CHECK(clicou(caixas, 30, 4, estado).gesto == tui::Gesto::Toca);
   // A vista encolheu entre a pintura e o clique: não se elege ás cegas.

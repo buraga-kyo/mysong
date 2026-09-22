@@ -105,8 +105,7 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
       // Indice além da vista é o quadro que envelheceu entre a pintura e o
       // clique. Não se elege ás cegas: o quadro seguinte já mostra o certo.
       if (alvo.indice >= estado.quantas) return {};
-      return {alvo.indice == estado.eleito ? Gesto::Toca : Gesto::Elege,
-              alvo.indice, 0.0};
+      return {Gesto::Toca, alvo.indice, 0.0};
     case Peca::Capa:
     case Peca::Pausa: return {Gesto::PausaOuRetoma, 0, 0.0};
     case Peca::Anterior: return {Gesto::Anterior, 0, 0.0};
