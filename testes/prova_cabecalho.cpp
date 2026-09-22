@@ -370,7 +370,7 @@ TEST_CASE("o meio anda em v600, e o que falta fica em line_dim") {
       papel(tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167, nullptr,
                                        tui::Focavel::Trilho),
             167);
-  CHECK(aceso.PixelAt(51, 0).foreground_color == cor(tk::glow_core));
+  CHECK(aceso.PixelAt(55, 0).foreground_color == cor(tk::glow_core));
   CHECK(aceso.PixelAt(105, 0).foreground_color == cor(tk::line_dim));
 }
 
@@ -386,20 +386,20 @@ TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
                         static_cast<int>(larga)),
                   0, static_cast<int>(larga));
   };
-  CHECK(linha_em(124).find("HELP") != std::string::npos);
-  CHECK(linha_em(123).find("HELP") == std::string::npos);
-  CHECK(linha_em(115).find("REPETIR") != std::string::npos);
-  CHECK(linha_em(114).find("REPETIR") == std::string::npos);
-  CHECK(linha_em(103).find("EMBARALHAR") != std::string::npos);
-  CHECK(linha_em(102).find("EMBARALHAR") == std::string::npos);
-  CHECK(linha_em(88).find("100%") != std::string::npos);
-  CHECK(linha_em(87).find("100%") == std::string::npos);
-  CHECK(linha_em(79).find("00:19") != std::string::npos);
-  CHECK(linha_em(78).find("00:19") == std::string::npos);
+  CHECK(linha_em(128).find("HELP") != std::string::npos);
+  CHECK(linha_em(127).find("HELP") == std::string::npos);
+  CHECK(linha_em(119).find("REPETIR") != std::string::npos);
+  CHECK(linha_em(118).find("REPETIR") == std::string::npos);
+  CHECK(linha_em(107).find("EMBARALHAR") != std::string::npos);
+  CHECK(linha_em(106).find("EMBARALHAR") == std::string::npos);
+  CHECK(linha_em(92).find("100%") != std::string::npos);
+  CHECK(linha_em(91).find("100%") == std::string::npos);
+  CHECK(linha_em(83).find("00:19") != std::string::npos);
+  CHECK(linha_em(82).find("00:19") == std::string::npos);
   // As tres ABAS e os botões ficam em toda largura: ellas são a navegação, e
   // navegação que sommisse deixaria o operador sem porta para a secção seguinte.
   for (const std::size_t larga : {60, 78, 88, 123, 167}) {
-    CHECK(linha_em(larga).find("MY SONG") != std::string::npos);
+    CHECK(linha_em(larga).find("MY 0 SONG's") != std::string::npos);
     CHECK(linha_em(larga).find("DOWNLOAD") != std::string::npos);
   }
 }
