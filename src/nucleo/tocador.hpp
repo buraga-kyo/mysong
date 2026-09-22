@@ -85,6 +85,9 @@ class Tocador {
   // Manda tocar a faixa corrente da fila. Falso em fila vazia.
   bool tocar_corrente();
 
+  // Elege um caminho sem duplicá-lo e toca-o numa única tomada da tranca.
+  bool tocar(const std::string& caminho);
+
   // Andam pela fila e mandam tocar a faixa nova. Falso na borda, e ahi NADA se
   // manda ao motor: a faixa que tocava continua a tocar.
   bool proxima();
