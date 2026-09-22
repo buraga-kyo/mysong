@@ -204,9 +204,16 @@ TEST_CASE("tocar por caminho não duplica a fila nem recarrega a corrente") {
 TEST_CASE("tocar por caminho torna observável a recusa do motor") {
   MotorDuble duble;
   Tocador tocador(duble);
+  tocador.junta("confirmada.wav");
+  REQUIRE(tocador.tocar_corrente());
+  const auto antes = tocador.retracto();
   duble.recusa_tocar = true;
   CHECK_FALSE(tocador.tocar("recusada.wav"));
-  CHECK(tocador.retracto().estado == Estado::Parado);
+  const auto depois = tocador.retracto();
+  CHECK(depois.tamanho == antes.tamanho);
+  CHECK(depois.indice == antes.indice);
+  CHECK(*depois.faixa == *antes.faixa);
+  CHECK(depois.estado == antes.estado);
 }
 
 TEST_CASE("fila vazia não faz o tocador mandar nada") {
