@@ -191,6 +191,24 @@ TEST_CASE("na borda da fila NADA se manda ao motor") {
   CHECK(tocador.estado() == Estado::Tocando);
 }
 
+TEST_CASE("tocar por caminho não duplica a fila nem recarrega a corrente") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  REQUIRE(tocador.tocar("uma.wav"));
+  REQUIRE(tocador.tocar("duas.wav"));
+  REQUIRE(tocador.tocar("duas.wav"));
+  CHECK(tocador.retracto().tamanho == 2);
+  CHECK(duble.tocados == std::vector<std::string>{"uma.wav", "duas.wav"});
+}
+
+TEST_CASE("tocar por caminho torna observável a recusa do motor") {
+  MotorDuble duble;
+  Tocador tocador(duble);
+  duble.recusa_tocar = true;
+  CHECK_FALSE(tocador.tocar("recusada.wav"));
+  CHECK(tocador.retracto().estado == Estado::Parado);
+}
+
 TEST_CASE("fila vazia não faz o tocador mandar nada") {
   MotorDuble duble;
   Tocador tocador(duble);
