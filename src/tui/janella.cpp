@@ -423,6 +423,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   tui::Campainha pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
   std::size_t total_do_acervo = livraria.total();
+  tui::CorreioDe<std::size_t> correio_da_contagem;
   tui::CorreioDe<int> correio_da_varredura;
 
 
@@ -543,6 +544,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         while (!sahir.load() && varredura.passo()) {
         }
         varrida.store(true);
+        nucleo::Biblioteca indice_novo(banco);
+        correio_da_contagem.poe({indice_novo.total()}, {});
         acervo_novo.store(true);
       } catch (...) {
         varrida.store(true);
@@ -748,8 +751,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     if (assenta && acervo_novo.exchange(false)) {
       livraria.reabre();
       navegador.recarrega();
-      total_do_acervo = livraria.total();
     }
+    std::vector<std::size_t> contagens;
+    if (correio_da_contagem.colhe(&contagens, nullptr) && !contagens.empty())
+      total_do_acervo = contagens.front();
     std::string recado_da_varredura;
     if (correio_da_varredura.colhe(nullptr, &recado_da_varredura))
       aviso_da_rede = recado_da_varredura;
