@@ -55,6 +55,27 @@ bool Tocador::tocar_corrente() {
   return tocar_corrente_trancado();
 }
 
+bool Tocador::tocar(const std::string& caminho) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  const std::vector<std::string>& faixas = fila_.todas();
+  std::size_t alvo = faixas.size();
+  for (std::size_t i = 0; i < faixas.size(); ++i)
+    if (faixas[i] == caminho) { alvo = i; break; }
+  const bool ja_tocava = estado_ == Estado::Tocando &&
+                         !fila_.vazia() && fila_.indice() == alvo;
+  if (ja_tocava) return true;
+  if (!motor_.tocar(caminho)) return false;
+  if (alvo == faixas.size()) {
+    fila_.junta(caminho);
+    alvo = fila_.tamanho() - 1;
+  }
+  fila_.ir_para(alvo);
+  ultima_posicao_ = 0.0;
+  motor_.volume(mudo_ ? 0 : volume_);
+  assenta_estado(Estado::Tocando);
+  return true;
+}
+
 // O miolo, chamado SEMPRE com a tranca já tomada: é por elle que proxima() e
 // anterior() tocam sem tomar a tranca segunda vez.
 bool Tocador::tocar_corrente_trancado() {

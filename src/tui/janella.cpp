@@ -70,10 +70,14 @@
 #include "nucleo/varredura.hpp"
 #include "nucleo/sonda.hpp"
 #include "tui/cabecalho.hpp"
+#include "tui/campainha.hpp"
 #include "tui/commando.hpp"
 #include "tui/correio.hpp"
+#include "tui/dinamica_do_espectro.hpp"
+#include "tui/estado_da_janella.hpp"
 #include "tui/espectro.hpp"
 #include "tui/foco.hpp"
+#include "tui/geometria_da_janella.hpp"
 #include "tui/letra_viva.hpp"
 #include "nucleo/onda.hpp"
 #include "tui/ajuda.hpp"
@@ -131,14 +135,6 @@ std::filesystem::path raiz_do_soquete() {
   const char* posto = std::getenv("XDG_RUNTIME_DIR");
   if (posto != nullptr && posto[0] != '\0') return std::filesystem::path(posto);
   return std::filesystem::path("/tmp");
-}
-
-// janela_do_tmux_esta_ativa, focus-events informa foco do emulador, mas trocar
-// de janela dentro do tmux não é uma troca de foco do terminal. Consulta-se o
-// estado da janela pelo identificador seguro que o tmux já entrega em
-// TMUX_PANE, para que a animação interna continue sem pintar uma janela oculta.
-bool janela_do_tmux_esta_ativa() {
-  return true;
 }
 
 // QUANTOS achados a busca na rede pede. Quinze: cabe n'uma tabella de terminal sem
@@ -424,8 +420,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   if (!faixas.empty()) tocador.tocar_corrente();
 
   std::atomic<bool> varrida{false};
-  std::atomic<bool> pede_varrer{true};
+  tui::Campainha pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
+  std::size_t total_do_acervo = livraria.total();
+  tui::CorreioDe<std::size_t> correio_da_contagem;
+  tui::CorreioDe<int> correio_da_varredura;
 
 
   // O CORREIO da busca na rede, e o pedido que o fio d'ella espera. Carrega os
@@ -438,17 +437,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // Vive sob a MESMA tranca do termo, e o fio da busca copia os dous n'um golpe:
   // assim não ha quadro em que o termo seja de uma fonte e a busca de outra.
   nucleo::Fonte fonte_da_busca = ajustes.fonte_da_busca.valor;
-  std::atomic<bool> pede_buscar{false};
+  tui::Campainha pede_buscar;
 
   // O CORREIO do catalogo do Spotify, e o pedido d'elle. Carrega UM catalogo n'um
   // vector de um: o gabarito do correio carrega vector, e um catalogo é uma cousa.
   tui::CorreioDe<nucleo::Catalogo> correio_do_catalogo;
   std::string url_da_lista;
-  std::atomic<bool> pede_catalogo{false};
+  tui::Campainha pede_catalogo;
   tui::CorreioDe<nucleo::Pedido> correio_da_playlist;
   std::string url_da_playlist;
   nucleo::Fonte fonte_da_playlist = nucleo::Fonte::YouTube;
-  std::atomic<bool> pede_playlist{false};
+  tui::Campainha pede_playlist;
   std::atomic<bool> baixa_playlist_ao_chegar{false};
 
   auto tela = ftxui::ScreenInteractive::Fullscreen();
@@ -489,61 +488,29 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
   // toca, e por isso elle não pede tranca.
   std::string aviso_da_rede;
-  std::size_t primeira_linha = 0;
-  // AS CAIXAS da tela (issue #95). Vivem n'esta pilha, e não dentro do pintor: o
-  // `reflect` guarda referencia para ellas, e o tratador de eventos lê-as DEPOIS
-  // do quadro. Nascem vazias, donde clique algum acha alvo antes da primeira
-  // pintura.
-  tui::CaixasDaTela caixas;
-  // A PEÇA COM FOCO (issue #107). Nasce na PAUTA, que é onde o operador está
-  // quando abre o programa: foco de nascença n'uma aba faria a primeira seta
-  // andar no cabeçalho em vez de andar na lista, que é o que elle veio fazer.
-  tui::Focavel foco = tui::Focavel::Pauta;
-  // O MENU DE CONTEXTO (issue #96). Vive n'esta pilha, ao lado das caixas: o
-  // tratador muta-o e o pintor lê-o, e os dous correm no fio da tela.
-  tui::MenuDeContexto menu;
-  // O HELP (issue #133): o estado da janella da ajuda e a caixa d'ella, que o
-  // clique de fóra consulta para a fechar. Mora aqui pela razão do menu.
-  tui::Ajuda ajuda;
-  // O ARRASTO (issue #153): a faixa que está na mão do rato. Mora aqui, ao
-  // lado do foco, que é estado da SESSÃO e não do quadro.
-  tui::Arrasto arrasto;
-  // A CHAPA DO VERSO que está na tela (issue #163), e se ha alguma: é por ellas
-  // que se sabe quando a janella da lousa precisa de se limpar.
-  tui::AssignaturaDaChapa assignatura_posta;
-  bool chapa_posta = false;
-  ftxui::Box caixa_da_ajuda = tui::caixa_por_pintar();
-  // A LETRA carrega-se do disco UMA vez por faixa, e não a cada quadro: ler
-  // arquivo vinte vezes por segundo seria gastar disco para nada. A faixa de que
-  // ella é guarda-se ao lado, e é a mudança d'essa que dispara a releitura.
-  std::vector<nucleo::LinhaDaLetra> letra;
-  std::string letra_de_qual;
-  // A FICHA da faixa que sôa, guardada como a letra e pela mesma razão: o
-  // indice consultado a cada quadro seriam vinte perguntas por segundo ao
-  // banco por uma cousa que sómente muda quando a faixa muda.
-  tui::Ficha ficha;
-  // A ONDA da faixa (issue #131), para o meio da fita: vazia emquanto não
-  // chega, e ahi o meio mostra a barra chata do progresso.
-  std::vector<float> onda_da_faixa;
+  // O estado que atravessa quadros mora n'um tipo visual, sem recurso externo.
+  // As referencias conservam esta etapa pequena; o dono único já fica claro.
+  tui::EstadoDaJanella estado;
+  auto& primeira_linha = estado.primeira_linha;
+  auto& caixas = estado.caixas;
+  auto& foco = estado.foco;
+  auto& menu = estado.menu;
+  auto& ajuda = estado.ajuda;
+  auto& arrasto = estado.arrasto;
+  auto& assignatura_posta = estado.assignatura_posta;
+  auto& chapa_posta = estado.chapa_posta;
+  auto& caixa_da_ajuda = estado.caixa_da_ajuda;
+  auto& letra = estado.letra;
+  auto& letra_de_qual = estado.letra_de_qual;
+  auto& ficha = estado.ficha;
+  auto& onda_da_faixa = estado.onda_da_faixa;
+  auto& mostra_letra = estado.mostra_letra;
+  auto& geometria_anterior = estado.geometria_anterior;
+  auto& reconciliador_da_capa = estado.reconciliador_da_capa;
+  auto& dinamica_do_espectro = estado.dinamica_do_espectro;
   // O correio por onde a onda chega do fio de fundo: o recado é o caminho da
   // faixa, para que onda de faixa que já sahiu não assente na que entrou.
   tui::CorreioDe<nucleo::Onda> correio_da_onda;
-  // OS PICOS do espectro (issue #132): um por banda, e são o estado de que a
-  // batida forte precisa e que a composição, sendo pura, não guarda. Vivem
-  // aqui, ao lado da ficha, e o relogio monotonico diz-lhes quanto passou. A
-  // tranca separa o avanço do relogio da leitura do pintor.
-  std::vector<float> picos;
-  std::mutex tranca_dos_picos;
-  std::chrono::steady_clock::time_point instante_dos_picos =
-      std::chrono::steady_clock::now();
-
-  // O RIO Á VISTA por omissão (issue #109). Nasce mostrando, e não escondendo:
-  // ella pediu a letra sempre á vista, e o `l` passou de alternar espectro e
-  // letra a esconder e mostrar o rio. O espectro nunca some por causa d'elle.
-  //
-  // ATOMICO, e não bool nú: o fio do relogio lê-o para o pôr na assignatura, e o
-  // fio da tela troca-o na tecla `l`.
-  std::atomic<bool> mostra_letra{true};
   // Uma conversão por album e por tamanho; o sextante vem dos ajustes (#94).
   nucleo::Galeria galeria(nucleo::sextante_de(ajustes.capa_sextantes.valor));
   // A LOUSA (issue #103) e o arquivario que a serve. Vivem n'esta pilha, ao
@@ -567,56 +534,60 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
   tui::Vigilia vigilia(true);
   std::vector<std::thread> ao_fundo;
-  // A VARREDURA, em fio permanente que espera por pedido. A conducção por passos da
-  // issue #34 existe justamente para isto: o fio pode parar entre dous passos, e a
-  // bandeira `sahir` é onde elle olha.
+  // A VARREDURA, em fio permanente que dorme na campainha. A conducção por
+  // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_varrer.exchange(false)) {
+    while (pede_varrer.espera()) {
+      try {
         varrida.store(false);
         nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
         while (!sahir.load() && varredura.passo()) {
         }
         varrida.store(true);
+        nucleo::Biblioteca indice_novo(banco);
+        correio_da_contagem.poe({indice_novo.total()}, {});
         acervo_novo.store(true);
+      } catch (...) {
+        varrida.store(true);
+        correio_da_varredura.poe({}, "a varredura falhou inesperadamente");
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
     }
   });
 
   // O FIO DAS PLAYLISTS da tecla `b`. A enumeração acontece fora da tela, e a
   // fila só recebe pedidos depois que a lista inteira foi lida.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_playlist.exchange(false)) {
-        std::string url;
-        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          url = url_da_playlist;
-          fonte = fonte_da_playlist;
-        }
-        std::vector<nucleo::Pedido> pedidos;
-        std::string recado;
-        if (fonte == nucleo::Fonte::Spotify) {
-          recado = "playlist Spotify usa o caminho do catalogo";
-        } else {
-          std::vector<std::string> urls;
-          const bool falou = nucleo::busca_playlist_na_rede(url, &urls);
-          for (const std::string& faixa : urls) {
-            nucleo::Pedido pedido;
-            pedido.url = faixa;
-            pedido.fonte = fonte;
-            pedidos.push_back(std::move(pedido));
-          }
-          recado = !falou ? "a playlist não respondeu"
-                          : (pedidos.empty() ? "a playlist veio vazia"
-                                             : std::to_string(pedidos.size()) +
-                                                   " faixas encontradas");
-        }
-        correio_da_playlist.poe(std::move(pedidos), std::move(recado));
+    while (pede_playlist.espera()) {
+      try {
+      std::string url;
+      nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        url = url_da_playlist;
+        fonte = fonte_da_playlist;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      std::vector<nucleo::Pedido> pedidos;
+      std::string recado;
+      if (fonte == nucleo::Fonte::Spotify) {
+        recado = "playlist Spotify usa o caminho do catalogo";
+      } else {
+        std::vector<std::string> urls;
+        const bool falou = nucleo::busca_playlist_na_rede(url, &urls);
+        for (const std::string& faixa : urls) {
+          nucleo::Pedido pedido;
+          pedido.url = faixa;
+          pedido.fonte = fonte;
+          pedidos.push_back(std::move(pedido));
+        }
+        recado = !falou ? "a playlist não respondeu"
+                        : (pedidos.empty() ? "a playlist veio vazia"
+                                           : std::to_string(pedidos.size()) +
+                                                 " faixas encontradas");
+      }
+      correio_da_playlist.poe(std::move(pedidos), std::move(recado));
+      } catch (...) {
+        correio_da_playlist.poe({}, "a playlist falhou inesperadamente");
+      }
     }
   });
 
@@ -624,70 +595,59 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // A BUSCA NA REDE, em fio permanente do mesmo modo. Elle NÃO toca a tela nem o
   // navegador: deixa o que achou no correio, e o fio da tela colhe-o.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_buscar.exchange(false)) {
-        std::string termo;
-        nucleo::Fonte fonte = nucleo::Fonte::YouTube;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          termo = termo_da_rede;
-          fonte = fonte_da_busca;
-        }
-        // A fonte Spotify NUNCA corre aqui: a tela responde do catalogo, no
-        // proprio quadro e sem correio. Um pedido que envelheceu na flag (dous
-        // f seguidos com busca em voo) viraria um ytsearch de REDE a pousar
-        // por cima do catalogo, sob um cabeçalho que diz Spotify.
-        if (fonte == nucleo::Fonte::Spotify) continue;
-        std::vector<nucleo::Achado> achados;
-        const bool falou =
-            nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
-        // Tres desfechos, e tres recados: a rede muda, a rede que nada achou, e os
-        // achados. «Nada se achou» e «não respondeu» são cousas differentes, e dizer
-        // a mesma palavra ás duas faria o operador buscar outra vez em vão.
-        std::string recado =
-            !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
-                   : (achados.empty() ? "nada se achou" : "achados na rede");
-        // A resposta só se entrega se o pedido ainda for o VIGENTE: o operador
-        // pode ter trocado de fonte ou de termo com esta busca em voo, e a
-        // lista velha pousando por cima da nova ficaria a mentir sob um
-        // cabeçalho que já diz outra fonte.
-        bool vigente = false;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          vigente = termo == termo_da_rede && fonte == fonte_da_busca;
-        }
-        if (vigente) correio.poe(std::move(achados), std::move(recado));
+    while (pede_buscar.espera()) {
+      try {
+      std::string termo;
+      nucleo::Fonte fonte = nucleo::Fonte::YouTube;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        termo = termo_da_rede;
+        fonte = fonte_da_busca;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      // A fonte Spotify NUNCA corre aqui: a tela responde do catalogo, no
+      // proprio quadro e sem correio. Pedido envelhecido na campainha viraria
+      // um ytsearch de REDE a pousar por cima do catalogo.
+      if (fonte == nucleo::Fonte::Spotify) continue;
+      std::vector<nucleo::Achado> achados;
+      const bool falou =
+          nucleo::busca_na_rede(termo, fonte, ACHADOS_POR_BUSCA, &achados);
+      std::string recado =
+          !falou ? "a busca não respondeu: ha yt-dlp e ha rede?"
+                 : (achados.empty() ? "nada se achou" : "achados na rede");
+      bool vigente = false;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        vigente = termo == termo_da_rede && fonte == fonte_da_busca;
+      }
+      if (vigente) correio.poe(std::move(achados), std::move(recado));
+      } catch (...) { correio.poe({}, "a busca falhou inesperadamente"); }
     }
   });
 
   // O FIO DO CATALOGO, permanente como os outros, e por a mesma razão: fio erguido
   // por cada pedido mexeria no vector de fios de dous lados.
   ao_fundo.emplace_back([&] {
-    while (!sahir.load()) {
-      if (pede_catalogo.exchange(false)) {
-        std::string qual;
-        {
-          std::lock_guard<std::mutex> chave(tranca_do_termo);
-          qual = url_da_lista;
-        }
-        nucleo::Catalogo lido;
-        const bool falou = nucleo::busca_catalogo(qual, &lido);
-        // Tres desfechos, e tres recados. «Não é playlist do Spotify» e «a rede não
-        // respondeu» são cousas differentes, e dizer a mesma palavra ás duas faria o
-        // operador collar a mesma URL outra vez em vão.
-        std::string recado;
-        if (!falou)
-          recado = "não é playlist do Spotify, ou a rede não respondeu";
-        else if (lido.faixas.empty())
-          recado = "a lista veio vazia";
-        else
-          recado = std::to_string(lido.faixas.size()) +
-                   " faixas: enter baixa a eleita, T baixa todas";
-        correio_do_catalogo.poe({std::move(lido)}, std::move(recado));
+    while (pede_catalogo.espera()) {
+      try {
+      std::string qual;
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        qual = url_da_lista;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(MILESIMOS_DO_QUADRO));
+      nucleo::Catalogo lido;
+      const bool falou = nucleo::busca_catalogo(qual, &lido);
+      std::string recado;
+      if (!falou)
+        recado = "não é playlist do Spotify, ou a rede não respondeu";
+      else if (lido.faixas.empty())
+        recado = "a lista veio vazia";
+      else
+        recado = std::to_string(lido.faixas.size()) +
+                 " faixas: enter baixa a eleita, T baixa todas";
+      correio_do_catalogo.poe({std::move(lido)}, std::move(recado));
+      } catch (...) {
+        correio_do_catalogo.poe({}, "o catalogo falhou inesperadamente");
+      }
     }
   });
 
@@ -792,16 +752,39 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       livraria.reabre();
       navegador.recarrega();
     }
-    const tui::Retracto retracto = retracto_do(tocador, projector);
+    std::vector<std::size_t> contagens;
+    if (correio_da_contagem.colhe(&contagens, nullptr) && !contagens.empty())
+      total_do_acervo = contagens.front();
+    std::string recado_da_varredura;
+    if (correio_da_varredura.colhe(nullptr, &recado_da_varredura))
+      aviso_da_rede = recado_da_varredura;
+    tui::Retracto retracto = retracto_do(tocador, projector);
+    retracto.acervo = total_do_acervo;
     // A tela INTEIRA, sem desconto algum. A conta velha tirava-lhe quatro
     // collunhas de orla e cinco linhas de guarnição (a marca, o topo, o
     // transporte, o rodapé e as duas da orla); a sala da issue #102 não tem
     // orla, e as linhas que ella gasta reparte-as ella propria.
-    const ftxui::Dimensions tela = ftxui::Terminal::Size();
-    const tui::Sala sala = tui::sala_da_tela(
-        tela.dimx > 0 ? static_cast<std::size_t>(tela.dimx) : 0,
-        tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
-        digita != Digita::Nada);
+    const ftxui::Dimensions medida_da_tela = ftxui::Terminal::Size();
+    const std::filesystem::path capa_do_painel =
+        lousa.disponivel() ? arquivario.de(retracto.titulo).caminho
+                           : std::filesystem::path();
+    const nucleo::Medida medida_da_capa =
+        capa_do_painel.empty() ? nucleo::Medida{}
+                               : arquivario.de(retracto.titulo).medida;
+    const tui::GeometriaDoQuadro geometria = tui::geometria_do_quadro(
+        {medida_da_tela.dimx > 0
+             ? static_cast<std::size_t>(medida_da_tela.dimx)
+             : 0,
+         medida_da_tela.dimy > 0
+             ? static_cast<std::size_t>(medida_da_tela.dimy)
+             : 0,
+         digita != Digita::Nada, vigilia.pede_batida(),
+         foco == tui::Focavel::Capa, lousa.disponivel(), capa_do_painel,
+         medida_da_capa},
+        geometria_anterior ? &*geometria_anterior : nullptr);
+    geometria_anterior = geometria;
+    reconciliador_da_capa.deseja(geometria);
+    const tui::Sala& sala = geometria.sala;
     const std::size_t altura_por_faixa =
         tui::secao_de_faixas(navegador.secao()) ? tui::ALTURA_DA_FAIXA : 1;
     primeira_linha = tui::primeira_a_mostrar(
@@ -821,7 +804,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                   d_ella.album);
       // Os PICOS morrem com a faixa (issue #132): o pico da que sahiu accendia
       // a primeira batida da que entra, e na côr da familia errada.
-      picos.clear();
+      dinamica_do_espectro.zera();
       // A CHAPA DO PRIMEIRO VERSO (issue #161) rasteriza-se assim que a faixa
       // muda, e não quando elle chega: o pango-view corre duas vezes na
       // primeira chamada, e esperá-lo com a musica já a andar é o que fazia a
@@ -925,7 +908,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A LOUSA de pé toma a capa (issue #103), e ahi o chafa NÃO corre: o render
     // d'elle ficaria por baixo da janella e ninguem o veria, e cada troca de
     // faixa pagaria dezenas de milesimos por um desenho invisivel.
-    const bool pela_lousa = lousa.disponivel() && !sala.capa.vazio();
+    const bool pela_lousa =
+        geometria.sobreposicao == tui::EstadoDaSobreposicao::Visivel;
     static const nucleo::CapaPintada kSemArte;
     const nucleo::CapaPintada& arte =
         pela_lousa ? kSemArte
@@ -933,15 +917,11 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                                   sala.capa.altura);
     // O rectangulo da lousa nasce DENTRO do da sala, e guarda a proporção da
     // imagem: é o mesmo tecto de quarenta e cinco por cento que o chafa recebe.
-    nucleo::Retangulo rectangulo;
-    if (pela_lousa)
-      rectangulo = nucleo::rectangulo_da_capa(
-          arquivario.de(retracto.titulo).medida, sala.capa.largura,
-          sala.capa.altura, nucleo::CELLULA_DA_CASA);
+    const tui::Rectangulo& rectangulo = geometria.rectangulo_da_capa;
     // A ARTE mede-se pelo que se vae pintar, e não pelo tecto: a capa de 16 por
     // 9 sahe mais baixa, e o que ella deixa fica para o espectro.
     const std::size_t alt_arte =
-        pela_lousa ? rectangulo.linhas
+        pela_lousa ? rectangulo.altura
                    : tui::linhas_da_arte(arte, sala.capa.altura);
     // A ORLA do foco come duas linhas (issue #107), e a conta do espectro
     // desconta-as: sem o desconto, o pé do painel sahia aparado em silencio
@@ -959,11 +939,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // é conta de segundos. Calado, os picos zerão-se, que batida não ha no que
     // se não ouve.
     const std::vector<float> bandas = tocador.bandas();
-    std::vector<float> picos_do_quadro;
-    {
-      std::lock_guard<std::mutex> guarda(tranca_dos_picos);
-      picos_do_quadro = picos;
-    }
+    const std::vector<float> picos_do_quadro = dinamica_do_espectro.retrato();
     const tui::Quadro quadro = tui::compor(bandas, abaixo.largura,
                                            abaixo.altura, false,
                                            centros_em_hertz, picos_do_quadro);
@@ -975,28 +951,23 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // assim a lavra irmã da lousa troca o INTERIOR do rectangulo sem tocar na
     // caixa. Esvazia-se a cada quadro, que painel que se não pinta não ha de
     // deixar caixa velha a apanhar cliques.
-    // A ORDEM á lousa vae com a caixa do quadro ANTERIOR, que é a unica que o
-    // `reflect` já encheu: elle escreve DEPOIS de o pintor devolver o quadro.
-    // Custa UM quadro de atraso ao redimensionar, e não custa mais nada, que a
-    // mesma ordem repetida não manda cousa alguma pelo cano.
-    const std::filesystem::path capa_do_painel =
-        pela_lousa ? arquivario.de(retracto.titulo).caminho
-                   : std::filesystem::path();
+    // A ORDEM á lousa nasce da mesma geometria que compõe este quadro. O
+    // `reflect` continua servindo ao rato; coordenada de imagem já não depende
+    // da caixa preenchida pelo quadro anterior.
     // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
     // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
     if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
                               !capa_do_painel.empty(),
                               true) ==
         nucleo::OrdemDaCapa::Tira) {
-      lousa.tira("capa");
+      if (lousa.tira("capa"))
+        reconciliador_da_capa.confirma(geometria.geracao);
     } else {
-      const int lousa_x = static_cast<int>(sala.capa.x) +
-                          (sala.capa.largura > rectangulo.collunas
-                               ? static_cast<int>(sala.capa.largura - rectangulo.collunas) / 2
-                               : 0);
-      const int lousa_y = static_cast<int>(sala.capa.y) + (capa_com_foco ? 1 : 0);
-      lousa.poe("capa", capa_do_painel, lousa_x, lousa_y,
-                rectangulo.collunas, rectangulo.linhas);
+      if (lousa.poe("capa", capa_do_painel,
+                    static_cast<int>(rectangulo.x),
+                    static_cast<int>(rectangulo.y), rectangulo.largura,
+                    rectangulo.altura))
+        reconciliador_da_capa.confirma(geometria.geracao);
     }
     caixas.capa = tui::caixa_por_pintar();
     // O RIO (issue #109). A letra não toma mais o logar do espectro: nasce na
@@ -1090,7 +1061,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // é a que a lousa lê para saber onde pôr a janella. Medindo o painel
     // inteiro, a caixa daria o canto esquerdo e a imagem sahiria encostada.
     ftxui::Element quadro_da_arte =
-        pela_lousa ? ftxui::text(std::string(rectangulo.collunas, ' ')) |
+        pela_lousa ? ftxui::text(std::string(rectangulo.largura, ' ')) |
                          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                                      static_cast<int>(alt_arte))
                    : tui::elemento_da_arte(arte, sala.capa.largura, alt_arte);
@@ -1190,16 +1161,25 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           {std::move(corpo),
            tui::flutuante_do_menu(
                menu, linha_alvo, sala.cabecalho.largura,
-               tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0)});
+               medida_da_tela.dimy > 0
+                   ? static_cast<std::size_t>(medida_da_tela.dimy)
+                   : 0)});
     }
     // O HELP (issue #133) flutua por cima de TUDO, menu incluido: é a peça
     // mais de cima da tela, e é a ultima a compor-se por isso mesmo.
+    // A drenagem corre ao cabo do quadro. Se o cano recusou bytes, pede-se
+    // outro passo somente emquanto houver linha pendente; quadro parado e
+    // lousa quieta continuam sem despertar algum.
+    lousa.drena();
+    if (lousa.pendente()) tela.PostEvent(ftxui::Event::Custom);
     if (!ajuda.aberta) return corpo;
     return ftxui::dbox(
         {std::move(corpo),
          tui::flutuante_da_ajuda(
              ajuda, sala.cabecalho.largura,
-             tela.dimy > 0 ? static_cast<std::size_t>(tela.dimy) : 0,
+             medida_da_tela.dimy > 0
+                 ? static_cast<std::size_t>(medida_da_tela.dimy)
+                 : 0,
              &caixa_da_ajuda)});
   });
 
@@ -1582,7 +1562,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
               std::lock_guard<std::mutex> chave(tranca_do_termo);
               url_da_lista = termo_em_curso;
             }
-            pede_catalogo.store(true);
+            pede_catalogo.toca();
             aviso_da_rede = "a ler a lista do Spotify...";
           }
         } else if (era == Digita::Procura) {
@@ -1596,7 +1576,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
             if (fonte == nucleo::Fonte::Spotify) {
               busca_no_catalogo(termo_em_curso);
             } else {
-              pede_buscar.store(true);
+              pede_buscar.toca();
               aviso_da_rede = "a perguntar á rede...";
             }
           }
@@ -1620,10 +1600,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
                 std::lock_guard<std::mutex> chave(tranca_do_termo);
                 url_da_lista = url;
               }
-              pede_catalogo.store(true);
+              pede_catalogo.toca();
               aviso_da_rede = "a ler a playlist do Spotify...";
             } else {
-              pede_playlist.store(true);
+              pede_playlist.toca();
               aviso_da_rede = "a ler a playlist...";
             }
             return true;
@@ -1826,7 +1806,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         if (fonte == nucleo::Fonte::Spotify) {
           busca_no_catalogo(termo);
         } else {
-          pede_buscar.store(true);
+          pede_buscar.toca();
           aviso_da_rede = "a perguntar á rede...";
         }
         return true;
@@ -1912,7 +1892,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // Uma varredura por vez, e não vinte: o fio da varredura toma o pedido e
         // apaga-o, donde carregar dez vezes no `r` durante uma varredura não
         // enfileira dez varreduras.
-        if (varrida.load()) pede_varrer.store(true);
+        if (varrida.load()) pede_varrer.toca();
         return true;
       case tui::Verbo::Entra: {
         // Na LISTA do Spotify, entrar é BAIXAR a eleita. A URL vae vazia, e a
@@ -1953,11 +1933,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
         // é quem tem o tocador na mão.
         if (navegador.entra()) {
           const std::string caminho = navegador.caminho_eleito();
-          if (!caminho.empty()) {
-            // O tamanho novo vem da propria juntada: o ultimo é elle menos um.
-            tocador.ir_para(tocador.junta(caminho) - 1);
-            tocador.tocar_corrente();
-          }
+          if (!caminho.empty() && !tocador.tocar(caminho))
+            aviso_da_rede = "não se pôde tocar a faixa eleita";
         }
         return true;
       }
@@ -1973,7 +1950,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
-    bool janela_ativa = janela_do_tmux_esta_ativa();
     while (!sahir.load()) {
       tocador.pulsa();
       // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
@@ -1983,32 +1959,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (servidor) servidor->pulsa();
       // Colheu-se faixa nova: pede-se varredura. A bandeira do estaleiro CONSOME-SE
       // na leitura, donde isto sahe uma vez por colheita, e não a cada quadro.
-      if (estaleiro.colheu()) pede_varrer.store(true);
+      if (estaleiro.colheu()) pede_varrer.toca();
       analisador.pulsa();
       mpris.pulsa();
-      const bool janela_ativa_agora = janela_do_tmux_esta_ativa();
-      if (janela_ativa_agora != janela_ativa) {
-        janela_ativa = janela_ativa_agora;
-        if (janela_ativa)
-          vigilia.ganha();
-        else
-          vigilia.perde();
-        tela.Post([&alterna_rastreamento_do_rato, janela_ativa_agora] {
-          alterna_rastreamento_do_rato(janela_ativa_agora);
-        });
-      }
-      const std::chrono::steady_clock::time_point instante =
-          std::chrono::steady_clock::now();
-      const double lapso = std::chrono::duration<double>(
-          instante - instante_dos_picos).count();
-      instante_dos_picos = instante;
       const tui::Retracto retracto = retracto_do(tocador, projector);
       const std::vector<float> bandas = tocador.bandas();
-      {
-        std::lock_guard<std::mutex> guarda(tranca_dos_picos);
-        if (retracto.mudo) picos.clear();
-        tui::avanca_picos(picos, bandas, lapso);
-      }
+      dinamica_do_espectro.avanca(bandas, retracto.mudo);
       // SÓMENTE quando o que se vê muda (issue #48), e SÓMENTE com olhos no
       // painel (issue #82): a vigilia governa o desenho e nada mais; os
       // pulsos acima nunca dormem, que a musica não pára por falta de platéa.
@@ -2047,6 +2003,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::cout << "\x1b[?1004l" << std::flush;
   sahir.store(true);  // a sahida pela tela tambem para o relogio
   relogio.join();
+  pede_varrer.fecha();
+  pede_playlist.fecha();
+  pede_buscar.fecha();
+  pede_catalogo.fecha();
   // Os fios de fundo esperam-se TODOS: elles têm referencia para bandeiras e para o
   // banco, que vivem nesta pilha. Deixar um solto é fio a ler memoria de quadro já
   // desfeito, e isso não perdoa.
@@ -2056,13 +2016,16 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // veio na sessão inteira. Diz-se o FATO, e não a culpa, que saber se o
   // terminal é incapaz ou se ninguem trocou de foco não se pode; e diz-se
   // depois da tela, no stderr, como o relatorio dos requisitos se diz.
-  // As ordens da capa que o cano não coube (issue #103). Dizem-se DEPOIS da
-  // tela, no stderr, pelo molde exacto da linha da vigilia abaixo: byte algum
-  // sahe por baixo de um quadro do FTXUI.
+  // A telemetria da lousa distingue a substituição esperada durante arrasto
+  // da perda verdadeira por falha permanente.
+  if (lousa.substituidas() > 0)
+    std::cerr << "mysong: " << lousa.substituidas()
+              << " ordens intermediarias da lousa foram substituidas pela"
+                 " vontade mais nova.\n";
   if (lousa.descartadas() > 0)
     std::cerr << "mysong: " << lousa.descartadas()
-              << " ordens da capa não couberam no cano do ueberzugpp e"
-                 " descartaram-se; a capa pode ter piscado.\n";
+              << " ordens da lousa perderam-se por falha permanente de"
+                 " escripta.\n";
   if (!vigilia.ha_noticia())
     std::cerr << "mysong: evento de foco nenhum veio nesta sessão; o relogio "
                  "nunca dormiu. Dentro do tmux, «set -g focus-events on» é o "

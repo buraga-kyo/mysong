@@ -69,18 +69,18 @@ TEST_CASE("a fita sahe na ordem d'elle, egual á cadeia escripta á mão") {
   // A conta, feita á mão (issue #134): as abas pedem 39 collunhas (11, 13 e 12
   // das palavras e as 3 setas), os botões 12 (3 cada e as 3 setas), e a ponta
   // direita 61 com o HELP. Ao MEIO ficam as 55 que sobram, do 51 ao 105.
-  CHECK(pedaco(tela, 0, 11) == " \U000f075a MY SONG ");
-  CHECK(pedaco(tela, 11, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 12, 13) == " \U000f0cb8 PLAYLISTS ");
-  CHECK(pedaco(tela, 26, 12) == " \U000f01da DOWNLOAD ");
-  CHECK(pedaco(tela, 38, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 39, 3) == " \U000f03e4 ");    // toca: o botão diz PAUSAR
-  CHECK(pedaco(tela, 43, 3) == " \U000f04ae ");    // anterior
-  CHECK(pedaco(tela, 47, 3) == " \U000f04ad ");    // seguinte
-  CHECK(pedaco(tela, 50, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 0, 15) == " \U000f075a MY 0 SONG's ");
+  CHECK(pedaco(tela, 15, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 16, 13) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 30, 12) == " \U000f01da DOWNLOAD ");
+  CHECK(pedaco(tela, 42, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 43, 3) == " \U000f03e4 ");
+  CHECK(pedaco(tela, 47, 3) == " \U000f04ae ");
+  CHECK(pedaco(tela, 51, 3) == " \U000f04ad ");
+  CHECK(pedaco(tela, 54, 1) == "\ue0b0");
   std::string tracos;
-  for (int i = 0; i < 55; ++i) tracos += "\u2501";
-  CHECK(pedaco(tela, 51, 55) == tracos);          // o meio: a barra chata
+  for (int i = 0; i < 51; ++i) tracos += "\u2501";
+  CHECK(pedaco(tela, 55, 51) == tracos);
   CHECK(pedaco(tela, 106, 1) == "\ue0b2");        // a seta de entrada da direita
   CHECK(pedaco(tela, 107, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(tela, 123, 8) == " \U000f057e 100% ");
@@ -100,14 +100,22 @@ TEST_CASE("a fita sahe na ordem d'elle, egual á cadeia escripta á mão") {
   CHECK(pedaco(tela, 0, 167) == pedaco(tela, 0, 200));
 }
 
+TEST_CASE("a aba MY SONG mostra a quantidade real do retracto") {
+  tui::Retracto retracto = tocando();
+  retracto.acervo = 42;
+  const ftxui::Screen tela = papel(
+      tui::elemento_do_cabecalho(retracto, tui::Aba::MySong, {}, 167), 167);
+  CHECK(pedaco(tela, 0, 16) == " \U000f075a MY 42 SONG's ");
+}
+
 TEST_CASE("a linha fecha a largura exacta, e o meio toma o que sobra") {
   // Em 120 as fixas pedem 51 e o HELP já não cabe (51 + 61 + 12 passa de 120):
   // ficam quatro peças á direita, 52 collunhas, e ao meio as 17 que sobram.
   const ftxui::Screen larga = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::MySong, {}, 120), 120);
   std::string tracos;
-  for (int i = 0; i < 17; ++i) tracos += "\u2501";
-  CHECK(pedaco(larga, 51, 17) == tracos);
+  for (int i = 0; i < 13; ++i) tracos += "\u2501";
+  CHECK(pedaco(larga, 55, 13) == tracos);
   CHECK(pedaco(larga, 68, 1) == "\ue0b2");
   CHECK(pedaco(larga, 69, 15) == " 00:19 / 03:09 ");
   CHECK(pedaco(larga, 0, 120).find("REPETIR") != std::string::npos);
@@ -117,8 +125,8 @@ TEST_CASE("a linha fecha a largura exacta, e o meio toma o que sobra") {
   tui::Retracto parado;
   const ftxui::Screen quieta = papel(
       tui::elemento_do_cabecalho(parado, tui::Aba::MySong, {}, 120), 120);
-  CHECK(pedaco(quieta, 39, 3) == " \U000f040a ");
-  CHECK(quieta.PixelAt(51, 0).foreground_color == cor(tk::line_dim));
+  CHECK(pedaco(quieta, 43, 3) == " \U000f040a ");
+  CHECK(quieta.PixelAt(55, 0).foreground_color == cor(tk::line_dim));
   CHECK(quieta.PixelAt(67, 0).foreground_color == cor(tk::line_dim));
 }
 
@@ -164,12 +172,12 @@ TEST_CASE("as caixas seguem a ordem da fita, e a da palavra sahe da do segmento"
                                    &caixas, tui::Focavel::Pauta, 2),
         167, 2);
   CHECK(caixas.aba_mysong.x_min == 0);
-  CHECK(caixas.aba_mysong.x_max == 10);
-  CHECK(caixas.aba_playlists.x_min == 12);
-  CHECK(caixas.aba_download.x_max == 37);
-  CHECK(caixas.botao_tocar.x_min == 39);
-  CHECK(caixas.botao_seguinte.x_max == 49);
-  CHECK(caixas.trilho.x_min == 51);
+  CHECK(caixas.aba_mysong.x_max == 14);
+  CHECK(caixas.aba_playlists.x_min == 16);
+  CHECK(caixas.aba_download.x_max == 41);
+  CHECK(caixas.botao_tocar.x_min == 43);
+  CHECK(caixas.botao_seguinte.x_max == 53);
+  CHECK(caixas.trilho.x_min == 55);
   CHECK(caixas.trilho.x_max == 105);
   CHECK(caixas.tempo.x_min == 107);
   CHECK(caixas.ajuda.x_max == 166);
@@ -189,20 +197,20 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
       papel(tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, {}, 167,
                                        nullptr, tui::Focavel::Pauta, 2),
             167, 2);
-  CHECK(pedaco(tela, 12, 13, 0) == " \U000f0cb8 PLAYLISTS ");
-  CHECK(pedaco(tela, 12, 13, 1) == "             ");
+  CHECK(pedaco(tela, 16, 13, 0) == " \U000f0cb8 PLAYLISTS ");
+  CHECK(pedaco(tela, 16, 13, 1) == "             ");
   // O FUNDO é o mesmo nas duas fileiras, peça por peça: aba corrente, aba
   // apagada, botão, meio e ponta direita.
-  for (const int x : {14, 2, 40, 70, 145})
+  for (const int x : {18, 2, 44, 70, 145})
     CHECK(tela.PixelAt(x, 1).background_color ==
           tela.PixelAt(x, 0).background_color);
-  CHECK(tela.PixelAt(14, 1).background_color == cor(tk::launcher_glow));
-  CHECK(tela.PixelAt(40, 1).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(18, 1).background_color == cor(tk::launcher_glow));
+  CHECK(tela.PixelAt(44, 1).background_color == cor(tk::panel_hi));
   CHECK(tela.PixelAt(70, 1).background_color == cor(tk::panel));
   // E a seta da junção repete-se em baixo, senão os dous fundos encostavam-se
   // em quadrado e a emenda via-se.
-  CHECK(pedaco(tela, 11, 1, 1) == "\ue0b0");
-  CHECK(pedaco(tela, 50, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 15, 1, 1) == "\ue0b0");
+  CHECK(pedaco(tela, 54, 1, 1) == "\ue0b0");
   CHECK(pedaco(tela, 106, 1, 1) == "\ue0b2");
 }
 
@@ -212,20 +220,20 @@ TEST_CASE("a fita alta pinta o fundo nas duas linhas e o rotulo na de cima") {
 TEST_CASE("a aba corrente sahe em bloco solido, e as outras no repouso") {
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(tocando(), tui::Aba::Playlists, {}, 167), 167);
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::launcher_glow));
-  CHECK(tela.PixelAt(14, 0).foreground_color == cor(tk::vacuo));
+  CHECK(tela.PixelAt(18, 0).background_color == cor(tk::launcher_glow));
+  CHECK(tela.PixelAt(18, 0).foreground_color == cor(tk::vacuo));
   CHECK(tela.PixelAt(2, 0).background_color == cor(tk::raised));
   CHECK(tela.PixelAt(2, 0).foreground_color == cor(tk::text_primary));
-  CHECK(tela.PixelAt(28, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(32, 0).background_color == cor(tk::raised));
   // Os botões vestem panel_hi com o glifo em glow_core: é o glow CONTIDO da
   // regra da Casa, que accende no que TOCA e nunca no fundo todo.
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
-  CHECK(tela.PixelAt(40, 0).foreground_color == cor(tk::glow_core));
+  CHECK(tela.PixelAt(44, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(44, 0).foreground_color == cor(tk::launcher_glow));
   // O meio veste `panel`, que é o degrau de fundo, e não o da fita: o meio é
   // o chão, e as peças pousam n'elle. E o remate da esquerda assenta no mesmo
   // panel, e não em preto.
   CHECK(tela.PixelAt(70, 0).background_color == cor(tk::panel));
-  CHECK(tela.PixelAt(50, 0).background_color == cor(tk::panel));
+  CHECK(tela.PixelAt(54, 0).background_color == cor(tk::panel));
   CHECK(tela.PixelAt(106, 0).background_color == cor(tk::panel));
 }
 
@@ -338,19 +346,19 @@ TEST_CASE("o meio anda em v600, e o que falta fica em line_dim") {
   tui::CaixasDoCabecalho caixas;
   const ftxui::Screen tela = papel(
       tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167, &caixas), 167);
-  const int andadas = static_cast<int>(tui::enchimento(50.0, 100.0, 55));
-  CHECK(andadas >= 27);
-  CHECK(andadas <= 28);
-  CHECK(tela.PixelAt(51, 0).foreground_color == cor(tk::v600));
-  CHECK(tela.PixelAt(51 + andadas - 1, 0).foreground_color == cor(tk::v600));
-  CHECK(tela.PixelAt(51 + andadas, 0).foreground_color == cor(tk::line_dim));
+  const int andadas = static_cast<int>(tui::enchimento(50.0, 100.0, 51));
+  CHECK(andadas >= 25);
+  CHECK(andadas <= 26);
+  CHECK(tela.PixelAt(55, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(55 + andadas - 1, 0).foreground_color == cor(tk::v600));
+  CHECK(tela.PixelAt(55 + andadas, 0).foreground_color == cor(tk::line_dim));
   CHECK(tela.PixelAt(105, 0).foreground_color == cor(tk::line_dim));
   // No principio da faixa cella alguma anda, e no fim andam todas.
   tui::Retracto principio = tocando();
   principio.posicao = 0.0;
   CHECK(papel(tui::elemento_do_cabecalho(principio, tui::Aba::MySong, {}, 167),
               167)
-            .PixelAt(51, 0)
+            .PixelAt(55, 0)
             .foreground_color == cor(tk::line_dim));
   tui::Retracto fim = tocando();
   fim.posicao = fim.duracao;
@@ -362,7 +370,7 @@ TEST_CASE("o meio anda em v600, e o que falta fica em line_dim") {
       papel(tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167, nullptr,
                                        tui::Focavel::Trilho),
             167);
-  CHECK(aceso.PixelAt(51, 0).foreground_color == cor(tk::glow_core));
+  CHECK(aceso.PixelAt(55, 0).foreground_color == cor(tk::glow_core));
   CHECK(aceso.PixelAt(105, 0).foreground_color == cor(tk::line_dim));
 }
 
@@ -378,20 +386,20 @@ TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
                         static_cast<int>(larga)),
                   0, static_cast<int>(larga));
   };
-  CHECK(linha_em(124).find("HELP") != std::string::npos);
-  CHECK(linha_em(123).find("HELP") == std::string::npos);
-  CHECK(linha_em(115).find("REPETIR") != std::string::npos);
-  CHECK(linha_em(114).find("REPETIR") == std::string::npos);
-  CHECK(linha_em(103).find("EMBARALHAR") != std::string::npos);
-  CHECK(linha_em(102).find("EMBARALHAR") == std::string::npos);
-  CHECK(linha_em(88).find("100%") != std::string::npos);
-  CHECK(linha_em(87).find("100%") == std::string::npos);
-  CHECK(linha_em(79).find("00:19") != std::string::npos);
-  CHECK(linha_em(78).find("00:19") == std::string::npos);
+  CHECK(linha_em(128).find("HELP") != std::string::npos);
+  CHECK(linha_em(127).find("HELP") == std::string::npos);
+  CHECK(linha_em(119).find("REPETIR") != std::string::npos);
+  CHECK(linha_em(118).find("REPETIR") == std::string::npos);
+  CHECK(linha_em(107).find("EMBARALHAR") != std::string::npos);
+  CHECK(linha_em(106).find("EMBARALHAR") == std::string::npos);
+  CHECK(linha_em(92).find("100%") != std::string::npos);
+  CHECK(linha_em(91).find("100%") == std::string::npos);
+  CHECK(linha_em(83).find("00:19") != std::string::npos);
+  CHECK(linha_em(82).find("00:19") == std::string::npos);
   // As tres ABAS e os botões ficam em toda largura: ellas são a navegação, e
   // navegação que sommisse deixaria o operador sem porta para a secção seguinte.
   for (const std::size_t larga : {60, 78, 88, 123, 167}) {
-    CHECK(linha_em(larga).find("MY SONG") != std::string::npos);
+    CHECK(linha_em(larga).find("MY 0 SONG's") != std::string::npos);
     CHECK(linha_em(larga).find("DOWNLOAD") != std::string::npos);
   }
 }

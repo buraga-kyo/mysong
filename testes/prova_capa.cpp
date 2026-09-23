@@ -351,7 +351,7 @@ TEST_CASE("os argumentos do chafa pedem os symbolos ricos, e nada de letras") {
   const std::vector<std::string> sem =
       nu::argumentos_do_chafa("/a/cover.jpg", 40, 20, false);
   CHECK(sem == std::vector<std::string>{
-                   "chafa", "--format=symbols", "--symbols=block+half+quad",
+                   "chafa", "--format=symbols", "--symbols=block+half+quad+braille",
                    "--work=9", "--size=40x20", "--animate=off",
                    "--relative=off", "--polite=on", "--colors=full", "--",
                    "/a/cover.jpg"});
@@ -359,7 +359,7 @@ TEST_CASE("os argumentos do chafa pedem os symbolos ricos, e nada de letras") {
   const std::vector<std::string> com =
       nu::argumentos_do_chafa("/a/cover.jpg", 40, 20, true);
   REQUIRE(com.size() == sem.size());
-  CHECK(com[2] == "--symbols=block+half+quad+sextant");
+  CHECK(com[2] == "--symbols=block+half+quad+sextant+braille");
   for (std::size_t i = 0; i < sem.size(); ++i)
     if (i != 2) CHECK(com[i] == sem[i]);
 

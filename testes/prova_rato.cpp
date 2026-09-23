@@ -157,11 +157,11 @@ TEST_CASE("com o campo aberto o clique fecha-o, e pára ahi") {
             .gesto == tui::Gesto::FechaCampo);
 }
 
-TEST_CASE("o clique elege a linha, e o clique na JÁ eleita toca-a") {
+TEST_CASE("o clique elege e toca a linha no mesmo gesto") {
   const tui::CaixasDaTela caixas = tela_de_mentira();
   const tui::EstadoDoRato estado{false, 21, 40, 200.0};
   const tui::GestoDoRato outra = clicou(caixas, 30, 6, estado);
-  CHECK(outra.gesto == tui::Gesto::Elege);
+  CHECK(outra.gesto == tui::Gesto::Toca);
   CHECK(outra.indice == 23);
   CHECK(clicou(caixas, 30, 4, estado).gesto == tui::Gesto::Toca);
   // A vista encolheu entre a pintura e o clique: não se elege ás cegas.
@@ -272,13 +272,13 @@ TEST_CASE("o clique em qualquer das duas linhas do segmento faz o mesmo") {
   REQUIRE(tela.cabecalho.aba_playlists.y_max -
               tela.cabecalho.aba_playlists.y_min == 1);
   for (const int linha : {0, 1}) {
-    const tui::Alvo aba = tui::alvo_do_ponto(tela, 14, linha);
+    const tui::Alvo aba = tui::alvo_do_ponto(tela, 18, linha);
     CHECK(aba.peca == tui::Peca::Aba);
     CHECK(aba.indice == 1);
     CHECK(tui::gesto_do_alvo(aba, Mouse::Left, Mouse::Pressed, {}).gesto ==
           tui::Gesto::VaiParaAba);
     // E o botão de tocar responde pelas duas fileiras d'elle tambem.
-    CHECK(tui::alvo_do_ponto(tela, 40, linha).peca == tui::Peca::Pausa);
+    CHECK(tui::alvo_do_ponto(tela, 44, linha).peca == tui::Peca::Pausa);
     // A roda fica MUDA sobre a fita, nas duas linhas: a caixa é de duas, e a
     // regra da roda não olha a fileira.
     CHECK(tui::gesto_do_alvo(aba, Mouse::WheelUp, Mouse::Pressed, {}).gesto ==

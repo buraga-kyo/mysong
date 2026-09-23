@@ -8,6 +8,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -87,7 +88,122 @@ nu::Ajustes resolvido(std::string_view arquivo, nu::Degraus degraus) {
   return ajustes;
 }
 
+struct CanoGovernado {
+  CanoGovernado() = default;
+  explicit CanoGovernado(std::vector<ssize_t> plano)
+      : respostas(std::move(plano)) {}
+  std::vector<ssize_t> respostas;
+  std::size_t proxima = 0;
+  std::string recebido;
+
+  ssize_t escreve(std::string_view bytes) {
+    const ssize_t resposta = proxima < respostas.size()
+                                  ? respostas[proxima++]
+                                  : static_cast<ssize_t>(bytes.size());
+    if (resposta < 0) {
+      errno = resposta == -2 ? EPIPE : EAGAIN;
+      return -1;
+    }
+    const std::size_t quantos = std::min<std::size_t>(resposta, bytes.size());
+    recebido.append(bytes.data(), quantos);
+    return static_cast<ssize_t>(quantos);
+  }
+};
+
 }  // namespace
+
+TEST_CASE("o escoadouro conclue uma linha inteira") {
+  CanoGovernado cano;
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK(saida.deseja("capa", "add\n", true));
+  CHECK(cano.recebido == "add\n");
+  CHECK(saida.concluidas() == 1);
+  CHECK_FALSE(saida.pendente());
+}
+
+TEST_CASE("EAGAIN conserva a linha para a drenagem seguinte") {
+  CanoGovernado cano({-1});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "add\n", true));
+  CHECK(saida.pendente());
+  CHECK(saida.drena());
+  CHECK(cano.recebido == "add\n");
+  CHECK(saida.falhas() == 0);
+}
+
+TEST_CASE("escripta parcial continua do octeto exacto") {
+  CanoGovernado cano({2, -1});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "abcdef\n", true));
+  CHECK(cano.recebido == "ab");
+  CHECK(saida.drena());
+  CHECK(cano.recebido == "abcdef\n");
+  CHECK(saida.concluidas() == 1);
+}
+
+TEST_CASE("tres ordens por começar deixam sahir sómente a ultima") {
+  CanoGovernado cano({-1, -1});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "um\n", true));
+  CHECK_FALSE(saida.deseja("capa", "dous\n", true));
+  CHECK(saida.deseja("capa", "tres\n", true));
+  CHECK(cano.recebido == "tres\n");
+  CHECK(saida.substituidas() == 2);
+}
+
+TEST_CASE("linha partida acaba antes da vontade mais nova") {
+  CanoGovernado cano({2, -1});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "velha\n", true));
+  CHECK(saida.deseja("capa", "nova\n", true));
+  CHECK(cano.recebido == "velha\nnova\n");
+  CHECK(saida.concluidas() == 2);
+}
+
+TEST_CASE("por ainda não começado seguido de tirar não escreve") {
+  CanoGovernado cano({-1});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "add\n", true));
+  CHECK(saida.deseja("capa", "remove\n", false));
+  CHECK(cano.recebido.empty());
+  CHECK_FALSE(saida.pendente());
+}
+
+TEST_CASE("duas identidades não apagam a vontade uma da outra") {
+  CanoGovernado cano({-1});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "capa\n", true));
+  CHECK(saida.deseja("letra", "letra\n", true));
+  CHECK(cano.recebido == "capa\nletra\n");
+  CHECK(saida.concluidas() == 2);
+}
+
+TEST_CASE("ordem concluida e repetida não torna ao cano") {
+  CanoGovernado cano;
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK(saida.deseja("capa", "add\n", true));
+  CHECK(saida.deseja("capa", "add\n", true));
+  CHECK(cano.recebido == "add\n");
+  CHECK(saida.concluidas() == 1);
+}
+
+TEST_CASE("EPIPE torna a sahida indisponivel e conta perda real") {
+  CanoGovernado cano({-2});
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK_FALSE(saida.deseja("capa", "add\n", true));
+  CHECK(saida.falhou());
+  CHECK(saida.falhas() == 1);
+  CHECK_FALSE(saida.drena());
+}
 
 TEST_CASE("a ordem de pôr traz o rectangulo e o caminho n'uma linha de JSON") {
   CHECK(nu::ordem_de_por("capa", "/tmp/a.jpg", 10, 5, 40, 12) ==

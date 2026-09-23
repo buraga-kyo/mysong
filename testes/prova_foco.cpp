@@ -238,9 +238,9 @@ TEST_CASE("o segmento com foco accende em glow_core com texto panel") {
   const struct {
     Focavel peca;
     int collunha;
-  } onde[10] = {{Focavel::AbaMySong, 2},    {Focavel::AbaPlaylists, 14},
-                {Focavel::AbaDownload, 28}, {Focavel::Tocar, 40},
-                {Focavel::Anterior, 44},    {Focavel::Seguinte, 48},
+  } onde[10] = {{Focavel::AbaMySong, 2},    {Focavel::AbaPlaylists, 18},
+                {Focavel::AbaDownload, 32}, {Focavel::Tocar, 44},
+                {Focavel::Anterior, 48},    {Focavel::Seguinte, 52},
                 {Focavel::Volume, 125},     {Focavel::Embaralhar, 134},
                 {Focavel::Repetir, 149},    {Focavel::Ajuda, 162}};
   for (const auto& qual : onde) {
@@ -264,8 +264,8 @@ TEST_CASE("o foco na aba corrente ganha da corrente, e as visinhas não mudam") 
   CHECK(tela.PixelAt(2, 0).background_color == cor(tk::glow_core));
   // As outras duas ficam no repouso do chrome, e os botões no panel_hi: o foco
   // accende UMA peça, e nunca a linha toda.
-  CHECK(tela.PixelAt(14, 0).background_color == cor(tk::raised));
-  CHECK(tela.PixelAt(40, 0).background_color == cor(tk::panel_hi));
+  CHECK(tela.PixelAt(18, 0).background_color == cor(tk::raised));
+  CHECK(tela.PixelAt(44, 0).background_color == cor(tk::panel_hi));
   // E o estado da aba di-lo sem se pintar cousa alguma: é por este enum que a
   // irmã do letreiro (issue #108) escolhe a chapa em XIROD.
   CHECK(tui::estado_da_aba(tui::Aba::MySong, tui::Aba::MySong,
@@ -312,8 +312,8 @@ TEST_CASE("o meio da fita com foco accende o andado, e o que falta fica quieto")
       papel(tui::elemento_do_cabecalho(meio, tui::Aba::MySong, {}, 167, nullptr,
                                        Focavel::Trilho),
             167);
-  CHECK(quieto.PixelAt(51, 0).foreground_color == cor(tk::v600));
-  CHECK(aceso.PixelAt(51, 0).foreground_color == cor(tk::glow_core));
+  CHECK(quieto.PixelAt(55, 0).foreground_color == cor(tk::v600));
+  CHECK(aceso.PixelAt(55, 0).foreground_color == cor(tk::glow_core));
   // O que FALTA não accende: linha inteira em glow deixaria de dizer por onde
   // a faixa vae, que é o officio do trilho.
   CHECK(aceso.PixelAt(105, 0).foreground_color == cor(tk::line_dim));

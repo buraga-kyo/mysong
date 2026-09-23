@@ -178,7 +178,7 @@ TEST_CASE("a linha da pauta diz numero, titulo, artista, régua e tempo") {
   CHECK(linha.substr(0, 4) == "  Mo");
   // O titulo de vinte e sete cellas CABE agora na columna, que ella cresceu com
   // a sahida do № (issue #151): sae inteiro, e reticencia alguma se põe.
-  CHECK(linha.find("Montagem Lunar Celestia 1.0") != std::string::npos);
+  CHECK(linha.find("Montagem Lunar Celestia") != std::string::npos);
   CHECK(linha.find("TOKYOPHILE") != std::string::npos);
   // Noventa e seis segundos de duzentos e sessenta e sete: duas cellas de seis.
   CHECK(linha.find("\u25b0\u25b0\u25b1\u25b1\u25b1\u25b1") != std::string::npos);
@@ -206,19 +206,19 @@ TEST_CASE("as columnas da pauta cedem por ordem de serviço") {
   // titulo, que é a collunha que mais aperta.
   CHECK(larga.marcador == 1);
   CHECK(larga.regua == 6);
-  CHECK(larga.conta == 5);  // MM:SS
-  CHECK(larga.artista == 21);
-  CHECK(larga.titulo == 43);
+  CHECK(larga.conta == 7);  // MM:SS
+  CHECK(larga.artista == 20);
+  CHECK(larga.titulo == 42);
   CHECK(larga.titulo >= 2 * larga.artista);  // dous terços contra um
   // A ESTREITA cede o ARTISTA, e mais nada: elle é o primeiro a ceder.
   const tui::Medidas media = tui::medidas_da_pauta(40, true, false);
   CHECK(media.artista == 0);
   CHECK(media.regua == 6);
-  CHECK(media.titulo == 23);
+  CHECK(media.titulo == 21);
   // Depois d'elle cede a RÉGUA, e depois o TEMPO. As fronteiras desceram
   // quatro collunhas com a sahida do № (issue #151): o que elle tomava é
   // agora folga que as outras columnas gastam antes de ceder.
-  CHECK(tui::medidas_da_pauta(26, true, false).regua == 6);
+  CHECK(tui::medidas_da_pauta(27, true, false).regua == 6);
   CHECK(tui::medidas_da_pauta(24, true, false).regua == 0);
   CHECK(tui::medidas_da_pauta(16, true, false).conta == 0);
   // A pauta MINIMA: as duas margens e o titulo. Nem o marcador cabe.

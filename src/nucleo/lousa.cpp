@@ -143,6 +143,91 @@ int ergue(int* cano) noexcept {
 
 }  // namespace
 
+EscoadouroDaLousa::EscoadouroDaLousa(Escrevedor escrevedor)
+    : escrevedor_(std::move(escrevedor)) {}
+
+bool EscoadouroDaLousa::escolhe_linha() {
+  for (const auto& [identidade, desejada] : desejadas_) {
+    const auto entregue = entregues_.find(identidade);
+    const bool egual = entregue != entregues_.end() &&
+                       entregue->second.posta == desejada.posta &&
+                       entregue->second.ordem == desejada.ordem;
+    const bool ausente = !desejada.posta && entregue == entregues_.end();
+    if (!egual && !ausente) {
+      linha_ = Linha{identidade, desejada, 0};
+      return true;
+    }
+  }
+  return false;
+}
+
+bool EscoadouroDaLousa::deseja(std::string identidade, std::string ordem,
+                               bool posta) noexcept {
+  try {
+    const Intencao nova{std::move(ordem), posta};
+    const auto antiga = desejadas_.find(identidade);
+    if (antiga != desejadas_.end() &&
+        (antiga->second.posta != nova.posta ||
+         antiga->second.ordem != nova.ordem))
+      ++substituidas_;
+    desejadas_[identidade] = nova;
+    if (linha_ && linha_->identidade == identidade &&
+        linha_->deslocamento == 0 &&
+        (linha_->intencao.posta != nova.posta ||
+         linha_->intencao.ordem != nova.ordem))
+      linha_.reset();
+    return drena();
+  } catch (...) {
+    falhou_ = true;
+    ++falhas_;
+    return false;
+  }
+}
+
+bool EscoadouroDaLousa::drena() noexcept {
+  if (falhou_) return false;
+  try {
+    while (linha_ || escolhe_linha()) {
+      std::string_view restante(linha_->intencao.ordem);
+      restante.remove_prefix(linha_->deslocamento);
+      errno = 0;
+      const ssize_t postos = escrevedor_(restante);
+      if (postos < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return false;
+      if (postos <= 0 || static_cast<std::size_t>(postos) > restante.size()) {
+        falhou_ = true;
+        ++falhas_;
+        return false;
+      }
+      linha_->deslocamento += static_cast<std::size_t>(postos);
+      if (linha_->deslocamento != linha_->intencao.ordem.size()) continue;
+      if (linha_->intencao.posta)
+        entregues_[linha_->identidade] = linha_->intencao;
+      else
+        entregues_.erase(linha_->identidade);
+      ++concluidas_;
+      linha_.reset();
+    }
+    return true;
+  } catch (...) {
+    falhou_ = true;
+    ++falhas_;
+    return false;
+  }
+}
+
+bool EscoadouroDaLousa::pendente() const noexcept {
+  if (linha_) return true;
+  for (const auto& [identidade, desejada] : desejadas_) {
+    const auto entregue = entregues_.find(identidade);
+    if (!desejada.posta && entregue == entregues_.end()) continue;
+    if (entregue == entregues_.end() ||
+        entregue->second.posta != desejada.posta ||
+        entregue->second.ordem != desejada.ordem)
+      return true;
+  }
+  return false;
+}
+
 Lousa::Lousa(ModoDaLousa modo) noexcept
     // Desligada, NÃO se pergunta ao mundo: os argumentos de uma chamada
     // avaliam-se todos, e o `versao_da_lousa` ergue processo. Quem escreveu
@@ -150,7 +235,11 @@ Lousa::Lousa(ModoDaLousa modo) noexcept
     : parecer_(modo == ModoDaLousa::Nao
                    ? parecer_da_lousa(modo, false, false)
                    : parecer_da_lousa(modo, ha_display(),
-                                      !versao_da_lousa().empty())) {
+                                      !versao_da_lousa().empty())),
+      escoadouro_([this](std::string_view bytes) -> ssize_t {
+        if (!disponivel()) return 0;
+        return ::send(cano_, bytes.data(), bytes.size(), MSG_NOSIGNAL);
+      }) {
   if (!parecer_.de_pe) return;
   filho_ = ergue(&cano_);
   if (filho_ < 0) {
@@ -202,57 +291,34 @@ Lousa::~Lousa() noexcept {
 
 bool Lousa::disponivel() const noexcept { return vivo_ && cano_ >= 0; }
 
-bool Lousa::escreve(const std::string& ordem) noexcept {
-  if (!disponivel()) return false;
-  const ::ssize_t postos =
-      ::send(cano_, ordem.data(), ordem.size(), MSG_NOSIGNAL);
-  if (postos == static_cast<::ssize_t>(ordem.size())) {
-    ++escritas_;
-    return true;
-  }
-  ++descartadas_;
-  // Cano cheio é passageiro, e a ordem descarta-se INTEIRA: meia linha de JSON
-  // seria peor que linha nenhuma, que o filho lê por linha e a seguinte
-  // emendaria n'ella. Toda outra falha, e a escripta PARTIDA ao meio, matam a
-  // lousa: d'ahi em diante o filho já não entende o que vem. E mata-se elle
-  // junto, que deixál-o com a janella de pé poria imagem velha por cima dos
-  // symbolos do chafa que o painel volta a pintar.
-  if (postos < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return false;
-  vivo_ = false;
-  if (filho_ > 0) ::kill(filho_, SIGTERM);
-  return false;
-}
-
 bool Lousa::poe(std::string_view identidade, const std::filesystem::path& imagem,
                 int collunha, int linha, std::size_t largura,
                 std::size_t altura) noexcept {
   if (!disponivel() || imagem.empty() || largura == 0 || altura == 0)
     return false;
-  const std::string ordem =
-      ordem_de_por(identidade, imagem, collunha, linha, largura, altura);
-  // A MESMA ordem não se torna a mandar, e não é economia de bytes: o
-  // Überzug++ redimensiona a imagem a cada `add`, e o pintor pediria vinte
-  // redimensionamentos por segundo de uma capa que não mudou.
-  const std::string chave(identidade);
-  const auto assento = postas_.find(chave);
-  if (assento != postas_.end() && assento->second == ordem) return true;
-  if (!escreve(ordem)) return false;
-  postas_[chave] = ordem;
-  return true;
+  identidades_.insert(std::string(identidade));
+  const bool inteira = escoadouro_.deseja(
+      std::string(identidade),
+      ordem_de_por(identidade, imagem, collunha, linha, largura, altura), true);
+  if (escoadouro_.falhou()) drena();
+  return inteira;
 }
 
 bool Lousa::tira(std::string_view identidade) noexcept {
-  const std::string chave(identidade);
-  // O que não está posto não se tira: mandar `remove` de uma identidade que
-  // nunca se poz seria uma linha por quadro na faixa sem capa alguma.
-  if (postas_.find(chave) == postas_.end()) return true;
-  // ESCREVE-SE primeiro, e apaga-se DEPOIS, pela assymetria que o `poe` já
-  // guardava. Apagando antes, a escripta que cahisse em cano cheio perdia o
-  // `remove` para sempre, que a taboa já não sabia haver cousa posta: a
-  // imagem ficava na tela e chamador algum tornava a pedil-a de volta.
-  if (!escreve(ordem_de_tirar(identidade))) return false;
-  postas_.erase(chave);
-  return true;
+  const bool inteira = escoadouro_.deseja(std::string(identidade),
+                                          ordem_de_tirar(identidade), false);
+  if (inteira) identidades_.erase(std::string(identidade));
+  if (escoadouro_.falhou()) drena();
+  return inteira;
+}
+
+bool Lousa::drena() noexcept {
+  const bool inteira = escoadouro_.drena();
+  if (escoadouro_.falhou()) {
+    vivo_ = false;
+    if (filho_ > 0) ::kill(filho_, SIGTERM);
+  }
+  return inteira;
 }
 
 void Lousa::empurra(const std::filesystem::path& imagem) noexcept {
@@ -262,17 +328,20 @@ void Lousa::empurra(const std::filesystem::path& imagem) noexcept {
   // d'onde a janella cae inteira fóra da tela e ninguem a vê. Não entra nas
   // `postas_` de proposito: não ha o que tirar de janella que se não vê, e o
   // filho leva-a comsigo ao morrer.
-  escreve(ordem_de_por("empurrao", imagem,
-                       empurrao_ ? COLLUNHA_DO_EMPURRAO
-                                 : COLLUNHA_DO_EMPURRAO - 1,
-                       0, LARGURA_DO_EMPURRAO, ALTURA_DO_EMPURRAO));
+  escoadouro_.deseja(
+      "empurrao",
+      ordem_de_por("empurrao", imagem,
+                   empurrao_ ? COLLUNHA_DO_EMPURRAO
+                             : COLLUNHA_DO_EMPURRAO - 1,
+                   0, LARGURA_DO_EMPURRAO, ALTURA_DO_EMPURRAO),
+      true);
+  if (escoadouro_.falhou()) drena();
 }
 
 void Lousa::tira_tudo() noexcept {
   // As chaves copiam-se ANTES: o tira() muta a taboa, e apagar dentro do laço
   // que a percorre invalidaria o proprio percurso.
-  std::vector<std::string> quaes;
-  for (const auto& posta : postas_) quaes.push_back(posta.first);
+  const std::vector<std::string> quaes(identidades_.begin(), identidades_.end());
   for (const std::string& qual : quaes) tira(qual);
 }
 

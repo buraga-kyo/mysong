@@ -268,17 +268,19 @@ nucleo::PedidoDaChapa pedido_da_chapa_da_letra(const std::string& verso,
   return pedido;
 }
 
-std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
-                                       const QuadroDaLetra& letra) {
-  std::vector<CelulaDoRio> tapete(espectro.largura * espectro.altura);
+void compoe_tapete_do_rio(const Quadro& espectro, const QuadroDaLetra& letra,
+                          std::vector<CelulaDoRio>* tapete) {
+  if (tapete == nullptr) return;
+  tapete->resize(espectro.largura * espectro.altura);
   // O ESPECTRO primeiro, inteiro: o rio não o apaga, cobre-o.
   for (std::size_t l = 0; l < espectro.altura; ++l)
     for (std::size_t c = 0; c < espectro.largura; ++c) {
       const Celula& d_elle = espectro.em(l, c);
-      CelulaDoRio& n_ella = tapete[l * espectro.largura + c];
+      CelulaDoRio& n_ella = (*tapete)[l * espectro.largura + c];
       n_ella.glifo = d_elle.glifo;
       n_ella.tinta = d_elle.tinta;
       n_ella.pinta = d_elle.pinta;
+      n_ella.letra = false;
     }
   // A LETRA por cima, e na ordem em que as linhas vêm: a de indice maior é a
   // mais nova, e duas que cahiam na mesma linha da tela hão de deixar ver a que
@@ -289,7 +291,8 @@ std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
     for (const std::string& glifo : glifos_da_linha(viva.texto)) {
       if (c >= espectro.largura) break;
       if (!e_branco(glifo)) {
-        CelulaDoRio& n_ella = tapete[viva.linha_da_tela * espectro.largura + c];
+        CelulaDoRio& n_ella =
+            (*tapete)[viva.linha_da_tela * espectro.largura + c];
         n_ella.glifo = glifo;
         n_ella.tinta = tokens::rgb(viva.tinta);
         n_ella.pinta = true;
@@ -298,6 +301,12 @@ std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
       ++c;
     }
   }
+}
+
+std::vector<CelulaDoRio> tapete_do_rio(const Quadro& espectro,
+                                       const QuadroDaLetra& letra) {
+  std::vector<CelulaDoRio> tapete;
+  compoe_tapete_do_rio(espectro, letra, &tapete);
   return tapete;
 }
 
@@ -311,7 +320,10 @@ std::string sequencia_do_rio(const CelulaDoRio& celula) {
 
 ftxui::Element elemento_do_rio(const Quadro& espectro,
                                const QuadroDaLetra& letra) {
-  const std::vector<CelulaDoRio> tapete = tapete_do_rio(espectro, letra);
+  // O armazenamento fica no fio pintor e conserva capacidade entre quadros.
+  // Redimensionar dentro do mesmo tecto não torna a alocar o tapete inteiro.
+  thread_local std::vector<CelulaDoRio> tapete;
+  compoe_tapete_do_rio(espectro, letra, &tapete);
   const tokens::Triade fundo = tokens::rgb(tokens::panel);
   std::vector<ftxui::Element> pintadas;
   pintadas.reserve(espectro.altura);

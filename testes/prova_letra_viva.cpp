@@ -306,6 +306,21 @@ TEST_CASE("a célulla com letra esconde a barra e o vão deixa-a passar") {
   CHECK(em(kLeitura - 1, x).glifo == "█");
 }
 
+TEST_CASE("o tapete reutilizado limpa a letra do quadro anterior") {
+  const tui::Quadro espectro = barras();
+  const tui::QuadroDaLetra rio =
+      tui::quadro_da_letra(kComVao, 10.0, kLargura, kAltura);
+  std::vector<tui::CelulaDoRio> tapete;
+  tui::compoe_tapete_do_rio(espectro, rio, &tapete);
+  const std::size_t capacidade = tapete.capacity();
+  REQUIRE(std::any_of(tapete.begin(), tapete.end(),
+                      [](const auto& celula) { return celula.letra; }));
+  tui::compoe_tapete_do_rio(espectro, {}, &tapete);
+  CHECK(tapete.capacity() == capacidade);
+  CHECK_FALSE(std::any_of(tapete.begin(), tapete.end(),
+                          [](const auto& celula) { return celula.letra; }));
+}
+
 TEST_CASE("o fundo do painel sae sómente debaixo da letra") {
   const tui::Quadro espectro = barras();
   const tui::QuadroDaLetra rio =

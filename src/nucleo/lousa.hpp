@@ -20,10 +20,15 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <functional>
 #include <map>
+#include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <sys/types.h>
 
 #include "nucleo/ajustes.hpp"  // ModoDaLousa: a alavanca do operador
 #include "nucleo/capa.hpp"     // Medida: a chapa mede-se como a capa
@@ -132,6 +137,44 @@ enum class OrdemDaCapa { Tira, Poe };
 OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
                           bool caixa_pintada) noexcept;
 
+// O ESCOADOURO conserva a ultima vontade por identidade e completa uma linha
+// já começada antes de escolher a seguinte. A funcção de escripta entra por
+// parametro para a prova governar EAGAIN e escriptas partidas sem X11.
+class EscoadouroDaLousa {
+ public:
+  using Escrevedor = std::function<ssize_t(std::string_view)>;
+
+  explicit EscoadouroDaLousa(Escrevedor escrevedor);
+  bool deseja(std::string identidade, std::string ordem, bool posta) noexcept;
+  bool drena() noexcept;
+  bool pendente() const noexcept;
+  bool falhou() const noexcept { return falhou_; }
+  std::size_t concluidas() const noexcept { return concluidas_; }
+  std::size_t substituidas() const noexcept { return substituidas_; }
+  std::size_t falhas() const noexcept { return falhas_; }
+
+ private:
+  struct Intencao {
+    std::string ordem;
+    bool posta = false;
+  };
+  struct Linha {
+    std::string identidade;
+    Intencao intencao;
+    std::size_t deslocamento = 0;
+  };
+
+  bool escolhe_linha();
+  Escrevedor escrevedor_;
+  std::map<std::string, Intencao> desejadas_;
+  std::map<std::string, Intencao> entregues_;
+  std::optional<Linha> linha_;
+  bool falhou_ = false;
+  std::size_t concluidas_ = 0;
+  std::size_t substituidas_ = 0;
+  std::size_t falhas_ = 0;
+};
+
 // ── E AGORA O QUE TOCA O MUNDO.
 
 // A LOUSA: o filho vivo, e o cano por onde se lhe fala. Ergue-se no
@@ -160,6 +203,8 @@ class Lousa {
   // sahida, e é elle que promette não deixar fantasma na tela.
   bool tira(std::string_view identidade) noexcept;
   void tira_tudo() noexcept;
+  bool drena() noexcept;
+  bool pendente() const noexcept { return escoadouro_.pendente(); }
 
   // empurra, uma ordem que NADA mostra, e que existe por uma MEDIÇÃO: o
   // Überzug++ (o 2.9.8 e o 2.9.10) não desenha a janella de UMA linha de
@@ -174,27 +219,21 @@ class Lousa {
 
   // escritas, quantas ordens sahiram pelo cano. É por ella que quem chama
   // sabe se o quadro mexeu na lousa: sómente ahi o empurrão tem que fazer.
-  std::size_t escritas() const noexcept { return escritas_; }
+  std::size_t escritas() const noexcept { return escoadouro_.concluidas(); }
 
   const Parecer& parecer() const noexcept { return parecer_; }
-  // descartadas, as ordens que o cano cheio engoliu. A janella di-las no
-  // stderr ao sahir, pelo molde da linha da vigilia: o --sonda é outra corrida
-  // do programa e lousa viva alguma tem, d'onde ali o numero seria sempre zero.
-  std::size_t descartadas() const noexcept { return descartadas_; }
+  // Falhas permanentes de escripta. EAGAIN não entra: conserva-se pendente.
+  std::size_t descartadas() const noexcept { return escoadouro_.falhas(); }
+  std::size_t substituidas() const noexcept { return escoadouro_.substituidas(); }
 
  private:
-  bool escreve(const std::string& ordem) noexcept;
-
   Parecer parecer_;
   bool vivo_ = false;
   int cano_ = -1;
   int filho_ = -1;
-  std::size_t descartadas_ = 0;
-  std::size_t escritas_ = 0;
+  EscoadouroDaLousa escoadouro_;
   bool empurrao_ = false;  // o lado do proximo empurrão
-  // O que está POSTO, e a ordem que o poz: é a comparação com ella que cala o
-  // pintor quando nada mudou, e a lista das chaves que o tira_tudo percorre.
-  std::map<std::string, std::string> postas_;
+  std::set<std::string> identidades_;
 };
 
 }  // namespace mysong::nucleo
