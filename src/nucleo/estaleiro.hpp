@@ -53,6 +53,7 @@ struct RegistroDaBaixa {
 // retracto coherente, e não campos colhidos em instantes differentes.
 struct Andamento {
   std::vector<RegistroDaBaixa> registros;
+  std::size_t versao = 0;
   std::size_t em_curso = 0;
   std::size_t na_espera = 0;
   std::size_t colhidas = 0;
@@ -68,6 +69,7 @@ struct Andamento {
 // aqui e não na janella. Estaleiro quieto e sem historia devolve cadeia VAZIA:
 // é o que faz a tela calar-se em vez de mostrar «0 a baixar».
 std::string texto_do_andamento(const Andamento& andamento);
+std::string assinatura_das_baixas(const Andamento& andamento);
 std::string texto_das_baixas(const Andamento& andamento,
                             std::size_t pagina = 0);
 
@@ -117,6 +119,7 @@ class Estaleiro {
   std::deque<Pedido> espera_;
   std::deque<RegistroDaBaixa> registros_;
   std::size_t proximo_id_ = 1;
+  std::size_t versao_ = 0;
   std::vector<std::thread> obreiros_;
   Obra obra_;
   std::size_t em_curso_ = 0;

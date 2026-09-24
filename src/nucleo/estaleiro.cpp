@@ -67,6 +67,10 @@ std::string texto_do_andamento(const Andamento& andamento) {
   return dito;
 }
 
+std::string assinatura_das_baixas(const Andamento& andamento) {
+  return texto_do_andamento(andamento) + ":" + std::to_string(andamento.versao);
+}
+
 std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
   std::vector<const RegistroDaBaixa*> ordem;
   for (const auto& registro : andamento.registros)
@@ -141,6 +145,7 @@ void Estaleiro::encommenda(Pedido pedido) {
   {
     std::lock_guard<std::mutex> chave(tranca_);
     if (fechado_) return;  // estaleiro fechado não aceita obra nova
+    ++versao_;
     pedido.identificador = proximo_id_++;
     RegistroDaBaixa registro;
     registro.id = pedido.identificador;
@@ -162,6 +167,7 @@ Andamento Estaleiro::andamento() const {
   agora.duvidosas = duvidosas_;
   agora.ultima = ultima_;
   agora.registros.assign(registros_.begin(), registros_.end());
+  agora.versao = versao_;
   return agora;
 }
 
@@ -173,6 +179,7 @@ void Estaleiro::limpa_recentes() {
            registro.estado == EstadoDaBaixa::Falhou;
   });
   registros_.erase(fim, registros_.end());
+  ++versao_;
 }
 
 bool Estaleiro::colheu() {
@@ -204,6 +211,7 @@ void Estaleiro::obreiro() {
       for (auto& registro : registros_)
         if (registro.id == pedido.identificador)
           registro.estado = EstadoDaBaixa::Preparando;
+      ++versao_;
       // O incremento vae DENTRO da tranca e ANTES da obra: é o que faz do pico o
       // pico de verdade, e não uma amostra colhida no intervallo entre os dous.
       ++em_curso_;
@@ -222,6 +230,7 @@ void Estaleiro::obreiro() {
           registro.estado = EstadoDaBaixa::Baixando;
           registro.porcentagem = porcentagem;
         }
+        ++versao_;
         break;
       }
     };
@@ -230,6 +239,7 @@ void Estaleiro::obreiro() {
       std::lock_guard<std::mutex> chave(tranca_);
       --em_curso_;
       ultima_ = std::string(razao_da_colheita(fim));
+      ++versao_;
       for (auto& registro : registros_)
         if (registro.id == pedido.identificador) {
           registro.estado = fim == Colheita::Colhido ||

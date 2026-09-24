@@ -465,7 +465,6 @@ bool Navegador::vai_para(Secao alvo) {
       if (secao_ != Secao::Faixas) return false;
       break;
     case Secao::Rede:
-      if (rede_.empty()) return false;
       trilha_.clear();
       break;
     case Secao::Lista:
