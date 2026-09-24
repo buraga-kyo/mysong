@@ -169,9 +169,7 @@ TEST_CASE("esgotada, a permutação não se re-sorteia") {
   CHECK(fila.ordem() == sorteada);
 }
 
-// «uma» prende o proxima() e devolve VERDADEIRO: o tocador manda tocar o que a
-// fila aponta, e a faixa recomeça. E o anterior() NÃO se prende, que a issue
-// nomeou sómente o proxima(): é a sahida do laço sem mexer no modo.
+// O avanço manual não se prende ao modo de repetição da faixa.
 TEST_CASE("repetir uma não prende o avanço manual") {
   auto fila = com_cinco();
   CHECK(fila.ir_para(2));
@@ -235,7 +233,7 @@ TEST_CASE("juntar durante o embaralhado conserva a permutação inteira") {
   CHECK(visitados == todos);
 }
 
-// Os dous modos são INDEPENDENTES: «uma» prende mesmo com o embaralhado ligado.
+// Os dous modos são independentes do avanço manual.
 TEST_CASE("os dous modos não se atropelam") {
   auto fila = com_cinco();
   fila.embaralhar(true);
