@@ -1912,28 +1912,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
               nucleo::encommenda_do_achado(navegador.achado_eleito()));
           return true;
         }
-        // Dentro de uma lista, entrar enche a fila com a lista TODA na ordem
-        // gravada, e não sómente com a faixa eleita: é o que a tarefa pede quando diz
-        // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
-        if (navegador.secao() == tui::Secao::NoRol) {
-          const std::size_t eleita = navegador.eleito();
-          const std::size_t antes = tocador.retracto().tamanho;
-          std::size_t quantas = 0;
-          for (const tui::Linha& linha : navegador.vista()) {
-            tocador.junta(linha.chave);
-            ++quantas;
-          }
-          if (quantas > 0) {
-            tocador.ir_para(antes + std::min(eleita, quantas - 1));
-            tocador.tocar_corrente();
-          }
-          return true;
-        }
         // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
         // é quem tem o tocador na mão.
         if (navegador.entra()) {
-          const std::string caminho = navegador.caminho_eleito();
-          if (!caminho.empty() && !tocador.tocar(caminho))
+          std::vector<std::string> faixas_da_vista;
+          for (const auto& linha : navegador.vista())
+            faixas_da_vista.push_back(linha.chave);
+          if (!tocador.tocar_lista(faixas_da_vista, navegador.eleito()))
             aviso_da_rede = "não se pôde tocar a faixa eleita";
         }
         return true;
