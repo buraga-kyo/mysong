@@ -1492,21 +1492,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           ordem_do_rato = {tui::Verbo::Buscar, gesto.alvo};
           break;
         case tui::Gesto::PausaOuRetoma:
-          if (alvo_do_gesto.peca == tui::Peca::Pausa &&
-              navegador.secao() == tui::Secao::Faixas) {
-            const std::size_t eleita = navegador.eleito();
-            const std::size_t antes = tocador.retracto().tamanho;
-            std::size_t quantas = 0;
-            for (const tui::Linha& linha : navegador.vista()) {
-              tocador.junta(linha.chave);
-              ++quantas;
-            }
-            if (quantas > 0) {
-              tocador.ir_para(antes + std::min(eleita, quantas - 1));
-              tocador.tocar_corrente();
-            }
-            return true;
-          }
           // O ⏯ e a capa perguntam á MESMA taboada do espaço: duas taboadas
           // dariam duas verdades sobre o que alternar quer dizer.
           ordem_do_rato =
