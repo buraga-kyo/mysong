@@ -99,6 +99,24 @@ TEST_CASE("capa ausente oculta e visivel são estados distintos") {
         tui::EstadoDaSobreposicao::Visivel);
 }
 
+TEST_CASE("ocultar restaurar e trocar capa invalidam a geração anterior") {
+  auto p = pedido(120, 45);
+  auto quadro = tui::geometria_do_quadro(p);
+  p.foco_dentro = false;
+  quadro = tui::geometria_do_quadro(p, &quadro);
+  CHECK(quadro.geracao == 2);
+  CHECK(quadro.sobreposicao == tui::EstadoDaSobreposicao::Oculta);
+  p.foco_dentro = true;
+  quadro = tui::geometria_do_quadro(p, &quadro);
+  CHECK(quadro.geracao == 3);
+  p.capa = "/tmp/outra.jpg";
+  quadro = tui::geometria_do_quadro(p, &quadro);
+  CHECK(quadro.geracao == 4);
+  p.capa_com_foco = true;
+  quadro = tui::geometria_do_quadro(p, &quadro);
+  CHECK(quadro.geracao == 5);
+}
+
 TEST_CASE("confirmação tardia não apaga a geração mais nova") {
   tui::ReconciliadorDaSobreposicao reconciliador;
   const tui::GeometriaDoQuadro velha =
