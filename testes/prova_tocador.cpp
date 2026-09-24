@@ -57,6 +57,7 @@ class MotorDuble final : public mysong::nucleo::Motor {
   void bombear() override {
     if (!fim_pendente_) return;
     fim_pendente_ = false;
+    fim_natural_ = true;
     posicao_ = 0.0;
     estado_ = Estado::Parado;
   }
@@ -68,11 +69,17 @@ class MotorDuble final : public mysong::nucleo::Motor {
   // Agenda o fim NATURAL da faixa, tal qual a libmpv o dá: posição a zero e
   // estado a Parado, ambos na batida seguinte, e não em batidas differentes.
   void acaba_na_proxima_batida() { fim_pendente_ = true; }
+  bool consome_fim_natural() override {
+    const bool acabou = fim_natural_;
+    fim_natural_ = false;
+    return acabou;
+  }
 
  private:
   double posicao_ = 0.0;
   Estado estado_ = Estado::Parado;
   bool fim_pendente_ = false;
+  bool fim_natural_ = false;
 };
 
 }  // namespace
@@ -82,6 +89,49 @@ class MotorDuble final : public mysong::nucleo::Motor {
 // O ENCADEAMENTO (issue #149): acabada a faixa, a seguinte entra sósinha. É na
 // BATIDA que elle se dá, que é onde o fim da faixa se sabe, e por isso todos
 // estes casos passam pelo `pulsa`.
+TEST_CASE("eleger lista preserva modos e não duplica carga da faixa corrente") {
+  MotorDuble motor;
+  Tocador tocador(motor);
+  const std::vector<std::string> lista = {"a", "b", "c"};
+  tocador.repetir(mysong::nucleo::Repeticao::Todas);
+  REQUIRE(tocador.tocar_lista(lista, 1));
+  motor.avanca(4);
+  REQUIRE(tocador.tocar_lista(lista, 1));
+  CHECK(motor.tocados.size() == 1);
+  CHECK(tocador.posicao() == 4);
+  CHECK(tocador.faixas() == lista);
+  CHECK(tocador.retracto().repeticao == mysong::nucleo::Repeticao::Todas);
+  REQUIRE(tocador.pausar());
+  REQUIRE(tocador.tocar_lista(lista, 1));
+  CHECK(motor.tocados.size() == 1);
+  CHECK(tocador.estado() == Estado::Tocando);
+  REQUIRE(tocador.proxima());
+  CHECK(*tocador.retracto().faixa == "c");
+  motor.recusa_tocar = true;
+  CHECK_FALSE(tocador.tocar_lista({"outra"}, 0));
+  CHECK(tocador.faixas() == lista);
+  CHECK(*tocador.retracto().faixa == "c");
+}
+
+TEST_CASE("parada sem fim natural não avança e EOF não se repete") {
+  MotorDuble motor;
+  Tocador tocador(motor);
+  tocador.junta("uma.wav");
+  tocador.junta("duas.wav");
+  tocador.junta("tres.wav");
+  REQUIRE(tocador.tocar_corrente());
+  motor.termina();
+  tocador.pulsa();
+  CHECK(tocador.retracto().indice == 0);
+  CHECK(motor.tocados.size() == 1);
+  REQUIRE(tocador.tocar_corrente());
+  motor.acaba_na_proxima_batida();
+  tocador.pulsa();
+  tocador.pulsa();
+  CHECK(tocador.retracto().indice == 1);
+  CHECK(motor.tocados.size() == 3);
+}
+
 TEST_CASE("acabada a faixa, a seguinte entra na mesma batida") {
   MotorDuble duble;
   Tocador tocador(duble);

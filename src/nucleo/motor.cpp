@@ -32,6 +32,7 @@
 #include "nucleo/libmpv.hpp"
 
 #include <string_view>
+#include <utility>
 
 namespace mysong::nucleo {
 namespace {
@@ -110,7 +111,8 @@ MotorMpv::MotorMpv(MotorMpv&& outro) noexcept
       punho_(outro.punho_),
       estado_(outro.estado_),
       posicao_(outro.posicao_),
-      duracao_(outro.duracao_) {
+      duracao_(outro.duracao_),
+      fim_natural_(outro.fim_natural_) {
   outro.punho_ = nullptr;
 }
 
@@ -199,6 +201,7 @@ bool aguarda_carga(::mpv_handle* punho, double prazo) {
 // «replace» é o que mantem a playlist do mpv com uma entrada só: a ordem das
 // faixas é NOSSA, e não d'elle.
 bool MotorMpv::tocar(const std::string& caminho) {
+  fim_natural_ = false;
   const char* ordem[] = {"loadfile", caminho.c_str(), "replace", nullptr};
   if (punho_ == nullptr || mpv().mpv_command(punho_, ordem) < 0) return false;
 
@@ -211,8 +214,8 @@ bool MotorMpv::tocar(const std::string& caminho) {
 
   posicao_ = le_dobro(punho_, "time-pos");
   duracao_ = le_dobro(punho_, "duration");
-  estado_ = Estado::Tocando;
-  return true;
+  // O mpv conserva pause entre cargas; a faixa eleita deve nascer audível.
+  return retomar();
 }
 
 // A versão da interface, ou ZERO quando a libmpv não está presente: é o UNICO
@@ -296,10 +299,17 @@ void MotorMpv::bombear() {
       if (nome == "duration") duracao_ = valor;
     } else if (evento->event_id == MPV_EVENT_END_FILE ||
                evento->event_id == MPV_EVENT_SHUTDOWN) {
+      const auto* fim = evento->event_id == MPV_EVENT_END_FILE
+          ? static_cast<const mpv_event_end_file*>(evento->data) : nullptr;
+      fim_natural_ = fim != nullptr && fim->reason == MPV_END_FILE_REASON_EOF;
       estado_ = Estado::Parado;
       posicao_ = 0.0;
     }
   }
+}
+
+bool MotorMpv::consome_fim_natural() {
+  return std::exchange(fim_natural_, false);
 }
 
 }  // namespace mysong::nucleo

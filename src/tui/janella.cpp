@@ -533,6 +533,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // Sem foco, o audio continua, mas o quadro deixa de ser repintado. O valor
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
   tui::Vigilia vigilia(true);
+  std::atomic<bool> repete_lousa{false};
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que dorme na campainha. A conducção por
   // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
@@ -778,7 +779,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
          medida_da_tela.dimy > 0
              ? static_cast<std::size_t>(medida_da_tela.dimy)
              : 0,
-         digita != Digita::Nada, vigilia.pede_batida(),
+         digita != Digita::Nada, vigilia.tem_foco(),
          foco == tui::Focavel::Capa, lousa.disponivel(), capa_do_painel,
          medida_da_capa},
         geometria_anterior ? &*geometria_anterior : nullptr);
@@ -956,7 +957,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // da caixa preenchida pelo quadro anterior.
     // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
     // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
-    if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
+    if (nucleo::ordem_da_capa(pela_lousa, vigilia.tem_foco(),
                               !capa_do_painel.empty(),
                               true) ==
         nucleo::OrdemDaCapa::Tira) {
@@ -998,7 +999,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // verso apparecia duas vezes.
     const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_parada(
         letra, verso_corrente, caixas.letra,
-        lousa.disponivel() && letreiro.disponivel(), vigilia.pede_batida(),
+        lousa.disponivel() && letreiro.disponivel(), vigilia.tem_foco(),
         mostra_letra.load());
     // A CHAPA DE PÉ (issue #165) é a MESMA condição que manda pô-la, e não uma
     // segunda conta: assim a cella nunca fica em branco sem que a imagem venha.
@@ -1170,8 +1171,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A drenagem corre ao cabo do quadro. Se o cano recusou bytes, pede-se
     // outro passo somente emquanto houver linha pendente; quadro parado e
     // lousa quieta continuam sem despertar algum.
-    lousa.drena();
-    if (lousa.pendente()) tela.PostEvent(ftxui::Event::Custom);
+    if (lousa.drena()) reconciliador_da_capa.confirma(geometria.geracao);
+    repete_lousa.store(lousa.pendente());
     if (!ajuda.aberta) return corpo;
     return ftxui::dbox(
         {std::move(corpo),
@@ -1292,6 +1293,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (rol.id == qual) aviso_da_rede = "juntada a «" + rol.nome + "»";
   };
 
+  tui::CliqueNaLinha clique_na_linha;
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
@@ -1385,9 +1387,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // o caminho de sempre quando não ha movimento a cumprir. A vista diz se se
     // deixa arrumar: o acervo e o dentro de uma lista sim; os artistas, os
     // albuns e os achados da rede não, que alli a ordem não é do operador.
+    bool clique_confirmado = false;
     if (tecla.is_mouse() && digita == Digita::Nada) {
       ftxui::Event d_agora = tecla;
       const ftxui::Mouse mao = d_agora.mouse();
+      clique_confirmado = tui::confirma_clique(
+          clique_na_linha, tui::alvo_do_ponto(caixas, mao.x, mao.y),
+          mao.button, mao.motion);
       const bool pode_arrumar = navegador.secao() == tui::Secao::Busca ||
                                 navegador.secao() == tui::Secao::NoRol;
       const tui::RespostaDoArrasto d_elle = tui::gesto_do_arrasto(
@@ -1412,10 +1418,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       const tui::Alvo alvo_do_gesto =
           pelo_foco ? tui::alvo_do_foco(foco)
                     : tui::alvo_do_ponto(caixas, rato.x, rato.y);
+      if (!pelo_foco && rato.button == ftxui::Mouse::Left &&
+          alvo_do_gesto.peca == tui::Peca::Linha && !clique_confirmado)
+        return true;
       const tui::GestoDoRato gesto = tui::gesto_do_alvo(
           alvo_do_gesto,
           pelo_foco ? ftxui::Mouse::Left : rato.button,
-          pelo_foco ? ftxui::Mouse::Pressed : rato.motion,
+          pelo_foco || clique_confirmado ? ftxui::Mouse::Pressed : rato.motion,
           {digita != Digita::Nada, navegador.eleito(),
            navegador.vista().size(),
            // A duração vae ZERO com a janella do video de pé, e a guarda do
@@ -1484,21 +1493,6 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           ordem_do_rato = {tui::Verbo::Buscar, gesto.alvo};
           break;
         case tui::Gesto::PausaOuRetoma:
-          if (alvo_do_gesto.peca == tui::Peca::Pausa &&
-              navegador.secao() == tui::Secao::Faixas) {
-            const std::size_t eleita = navegador.eleito();
-            const std::size_t antes = tocador.retracto().tamanho;
-            std::size_t quantas = 0;
-            for (const tui::Linha& linha : navegador.vista()) {
-              tocador.junta(linha.chave);
-              ++quantas;
-            }
-            if (quantas > 0) {
-              tocador.ir_para(antes + std::min(eleita, quantas - 1));
-              tocador.tocar_corrente();
-            }
-            return true;
-          }
           // O ⏯ e a capa perguntam á MESMA taboada do espaço: duas taboadas
           // dariam duas verdades sobre o que alternar quer dizer.
           ordem_do_rato =
@@ -1912,28 +1906,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
               nucleo::encommenda_do_achado(navegador.achado_eleito()));
           return true;
         }
-        // Dentro de uma lista, entrar enche a fila com a lista TODA na ordem
-        // gravada, e não sómente com a faixa eleita: é o que a tarefa pede quando diz
-        // que tocar a lista enche a fila. Começa-se na eleita, que é onde o dedo está.
-        if (navegador.secao() == tui::Secao::NoRol) {
-          const std::size_t eleita = navegador.eleito();
-          const std::size_t antes = tocador.retracto().tamanho;
-          std::size_t quantas = 0;
-          for (const tui::Linha& linha : navegador.vista()) {
-            tocador.junta(linha.chave);
-            ++quantas;
-          }
-          if (quantas > 0) {
-            tocador.ir_para(antes + std::min(eleita, quantas - 1));
-            tocador.tocar_corrente();
-          }
-          return true;
-        }
         // O navegador diz SE era faixa; a decisão de tocar é d'esta funcção, que
         // é quem tem o tocador na mão.
         if (navegador.entra()) {
-          const std::string caminho = navegador.caminho_eleito();
-          if (!caminho.empty() && !tocador.tocar(caminho))
+          std::vector<std::string> faixas_da_vista;
+          for (const auto& linha : navegador.vista())
+            faixas_da_vista.push_back(linha.chave);
+          if (!tocador.tocar_lista(faixas_da_vista, navegador.eleito()))
             aviso_da_rede = "não se pôde tocar a faixa eleita";
         }
         return true;
@@ -1951,6 +1930,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
     while (!sahir.load()) {
+      if (repete_lousa.exchange(false)) tela.PostEvent(ftxui::Event::Custom);
       tocador.pulsa();
       // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
       // manda, e a razão é que ordem alguma se intercale no meio de uma

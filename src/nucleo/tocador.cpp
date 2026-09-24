@@ -55,6 +55,31 @@ bool Tocador::tocar_corrente() {
   return tocar_corrente_trancado();
 }
 
+bool Tocador::tocar_lista(const std::vector<std::string>& faixas,
+                          std::size_t eleito) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (eleito >= faixas.size()) return false;
+  const bool mesma = !fila_.vazia() && fila_.corrente() == faixas[eleito];
+  if (!mesma || estado_ == Estado::Parado) {
+    if (!motor_.tocar(faixas[eleito])) {
+      estado_ = motor_.estado();
+      return false;
+    }
+  } else if (estado_ == Estado::Pausado && !motor_.retomar()) return false;
+  if (fila_.todas() != faixas) {
+    const bool embaralhada = fila_.embaralhado();
+    fila_.embaralhar(false);
+    fila_.esvazia();
+    for (const auto& faixa : faixas) fila_.junta(faixa);
+    fila_.ir_para(eleito);
+    fila_.embaralhar(embaralhada);
+  }
+  fila_.ir_para(eleito);
+  motor_.volume(mudo_ ? 0 : volume_);
+  estado_ = Estado::Tocando;
+  return true;
+}
+
 bool Tocador::tocar(const std::string& caminho) {
   std::lock_guard<std::mutex> chave(tranca_);
   const std::vector<std::string>& faixas = fila_.todas();
@@ -186,9 +211,8 @@ Retracto Tocador::retracto() const {
   obra.estado = estado_;
   
   std::string_view corrente = fila_.corrente();
-  if (corrente != ultima_faixa_vista_ || !faixa_cache_) {
+  if (!faixa_cache_ || corrente != *faixa_cache_) {
     faixa_cache_ = std::make_shared<const std::string>(corrente);
-    ultima_faixa_vista_ = corrente;
   }
   obra.faixa = faixa_cache_;
 
@@ -215,28 +239,17 @@ void Tocador::pulsa() {
   motor_.bombear();
   const Estado visto = motor_.estado();
   const double agora = motor_.posicao();
-  const bool mudou_estado = visto != estado_;
-  const bool acabou = mudou_estado && estado_ == Estado::Tocando &&
-                      visto == Estado::Parado;
+  const bool acabou = motor_.consome_fim_natural();
 
   estado_ = visto;
   ultima_posicao_ = agora;
 
-  // O ENCADEAMENTO (issue #149). Acabada a faixa, a seguinte entra sósinha: é
-  // o que o operador espera de um tocador, e até aqui a Casa tocava uma faixa
-  // de cada vez. Quem decide QUAL é a fila, que já sabe dos dous modos: com
-  // REPETIR UMA devolve a mesma, com TODAS gira a lista, e sem repetição
-  // recusa no fim d'ella, e ahi o tocador fica parado, que é o que se pede.
-  //
-  // Corre com a tranca JÁ tomada, pelo mesmo miolo do `proxima()`: chamá-lo de
-  // fóra tomaria a tranca segunda vez. E corre DEPOIS dos dous pregões, para
-  // que o ouvinte veja a faixa acabar antes de ver a seguinte começar.
-  //
-  // Só o fim NATURAL encadeia (Tocando que passa a Parado). A faixa que o
-  // motor RECUSA não encadeia outra: o `tocar_corrente_trancado` assenta
-  // Parado e diz porquê, e encadear sobre ella faria a lista inteira correr em
-  // silencio n'um segundo.
-  if (acabou && !fila_.vazia() && fila_.proxima()) tocar_corrente_trancado();
+  // Somente EOF autoriza encadear. Repetir uma conserva a eleição; nos
+  // demais modos a fila decide o próximo assento e a volta ao princípio.
+  // O evento já foi consumido, logo uma segunda batida não avança de novo.
+  if (acabou && !fila_.vazia() &&
+      (fila_.repeticao() == Repeticao::Uma || fila_.proxima()))
+    tocar_corrente_trancado();
 
   // A fonte das bandas bate no mesmo relogio do tocador, e não num seu: assim
   // quem já chama pulsa() ganha o relogio de guarda do espectro de graça, e não

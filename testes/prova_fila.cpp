@@ -169,19 +169,15 @@ TEST_CASE("esgotada, a permutação não se re-sorteia") {
   CHECK(fila.ordem() == sorteada);
 }
 
-// «uma» prende o proxima() e devolve VERDADEIRO: o tocador manda tocar o que a
-// fila aponta, e a faixa recomeça. E o anterior() NÃO se prende, que a issue
-// nomeou sómente o proxima(): é a sahida do laço sem mexer no modo.
-TEST_CASE("uma prende o proxima na faixa corrente, e o anterior não") {
+// O avanço manual não se prende ao modo de repetição da faixa.
+TEST_CASE("repetir uma não prende o avanço manual") {
   auto fila = com_cinco();
   CHECK(fila.ir_para(2));
   fila.repetir(Repeticao::Uma);
-  for (int volta = 0; volta < 3; ++volta) {
-    CHECK(fila.proxima());
-    CHECK(fila.indice() == 2);
-  }
+  CHECK(fila.proxima());
+  CHECK(fila.indice() == 3);
   CHECK(fila.anterior());
-  CHECK(fila.indice() == 1);
+  CHECK(fila.indice() == 2);
 }
 
 // «todas» gira nos DOUS sentidos: no MPRIS este modo chama-se Playlist, e girar
@@ -237,14 +233,14 @@ TEST_CASE("juntar durante o embaralhado conserva a permutação inteira") {
   CHECK(visitados == todos);
 }
 
-// Os dous modos são INDEPENDENTES: «uma» prende mesmo com o embaralhado ligado.
+// Os dous modos são independentes do avanço manual.
 TEST_CASE("os dous modos não se atropelam") {
   auto fila = com_cinco();
   fila.embaralhar(true);
   fila.repetir(Repeticao::Uma);
   const std::size_t assento = fila.indice();
   CHECK(fila.proxima());
-  CHECK(fila.indice() == assento);
+  CHECK(fila.indice() != assento);
   CHECK(fila.embaralhado());
   CHECK(fila.repeticao() == Repeticao::Uma);
 }

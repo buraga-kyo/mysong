@@ -49,16 +49,14 @@ std::string_view Fila::corrente() const noexcept {
 // Os tres passos. Cada um verifica a borda ANTES de mover o indice, e por isso
 // a invariante nunca se quebra, nem num instante intermediario.
 //
-// «uma» PRENDE o proxima() na faixa corrente, e devolve verdadeiro: o tocador
-// manda tocar o que a fila aponta, e a faixa recomeça. Devolver falso faria a
-// tecla parecer morta, que é o contrario do que o modo promette.
+// O passo manual não obedece a «uma». O tocador repete a faixa somente ao
+// consumir o fim natural, sem mover esta fila.
 //
 // Embaralhado, anda-se pelo PASSO da permutação, e o indice vem d'ella. Na
 // ponta, «todas» torna ao principio da MESMA permutação: ella não se
 // re-sorteia, e a segunda volta corre a ordem da primeira.
 bool Fila::proxima() noexcept {
   if (faixas_.empty()) return false;
-  if (repeticao_ == Repeticao::Uma) return true;
   if (embaralhado_ && !ordem_.empty()) {
     if (passo_ + 1 < ordem_.size()) ++passo_;
     else if (repeticao_ == Repeticao::Todas) passo_ = 0;
