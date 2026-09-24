@@ -92,6 +92,15 @@ std::vector<std::string> textos(const tui::Navegador& navegador) {
 // O CAMINHO DO ACEITE, de ponta a ponta: de Artistas a um artista, d'elle a um
 // album, e d'alli a uma faixa que se manda tocar. Cada degrau afere-se contra a
 // taboa escripta no arnês.
+TEST_CASE("DOWNLOAD abre sem busca e recebe pedidos por URL") {
+  const Cova cova;
+  const nu::Biblioteca livraria(cova.banco());
+  tui::Navegador navegador(livraria);
+  REQUIRE(navegador.vai_para(tui::Secao::Rede));
+  CHECK(navegador.secao() == tui::Secao::Rede);
+  CHECK(navegador.vista().empty());
+}
+
 TEST_CASE("de artistas a uma faixa, o caminho inteiro do aceite") {
   const Cova cova;
   REQUIRE(enche(cova.banco()));
@@ -720,10 +729,9 @@ TEST_CASE("o degrau sem chão recusa sem mudar cousa alguma") {
   tui::Navegador navegador(livraria);
   REQUIRE(navegador.vai_para(tui::Secao::Artistas));
   const std::vector<std::string> antes = textos(navegador);
-  // No topo não ha artista na trilha, rede buscada nem catalogo importado.
+  // No topo não ha artista na trilha nem catalogo importado.
   CHECK_FALSE(navegador.vai_para(tui::Secao::Albuns));
   CHECK_FALSE(navegador.vai_para(tui::Secao::Faixas));
-  CHECK_FALSE(navegador.vai_para(tui::Secao::Rede));
   CHECK_FALSE(navegador.vai_para(tui::Secao::Lista));
   CHECK_FALSE(navegador.vai_para(tui::Secao::NoRol));
   CHECK(navegador.secao() == tui::Secao::Artistas);

@@ -71,14 +71,19 @@ TEST_CASE("Spotify e YouTube conservam progresso e identidade separados") {
                                                : nu::Colheita::UrlRecusada;
   });
   nu::Pedido spotify;
+  const std::size_t versao_vazia = estaleiro.andamento().versao;
   spotify.fonte = nu::Fonte::Spotify;
   spotify.titulo = "uma faixa";
   estaleiro.encommenda(spotify);
   nu::Pedido youtube;
   youtube.fonte = nu::Fonte::YouTube;
   estaleiro.encommenda(youtube);
+  const std::size_t versao_encomendada = estaleiro.andamento().versao;
+  CHECK(versao_encomendada >= versao_vazia + 2);
   cancella.chegaram(2);
-  const auto meio = estaleiro.andamento().registros;
+  const auto retrato_do_meio = estaleiro.andamento();
+  CHECK(retrato_do_meio.versao > versao_encomendada);
+  const auto meio = retrato_do_meio.registros;
   REQUIRE(meio.size() == 2);
   CHECK(meio[0].id != meio[1].id);
   CHECK(meio[0].porcentagem == 37);
@@ -87,6 +92,7 @@ TEST_CASE("Spotify e YouTube conservam progresso e identidade separados") {
   cancella.abre();
   estaleiro.espera_a_fila();
   const auto fim = estaleiro.andamento();
+  CHECK(fim.versao > retrato_do_meio.versao);
   CHECK(fim.registros[0].estado == nu::EstadoDaBaixa::Concluido);
   CHECK(fim.registros[1].estado == nu::EstadoDaBaixa::Falhou);
   CHECK(nu::texto_das_baixas(fim, 1).find("#1 Spotify uma faixa concluído") != std::string::npos);
@@ -125,6 +131,16 @@ TEST_CASE("painel prioriza downloads ativos ante historico") {
   CHECK(texto.find("[1/5 V]") != std::string::npos);
   CHECK(nu::texto_das_baixas(andamento, 1).find("#4 YouTube concluído") !=
         std::string::npos);
+}
+
+TEST_CASE("progresso muda a assinatura mesmo sem alterar contadores") {
+  nu::Andamento antes;
+  antes.em_curso = 1;
+  nu::Andamento depois = antes;
+  depois.versao = 1;
+  CHECK(nu::texto_do_andamento(antes) == nu::texto_do_andamento(depois));
+  CHECK(nu::assinatura_das_baixas(antes) !=
+        nu::assinatura_das_baixas(depois));
 }
 
 TEST_CASE("o estaleiro não corre mais obras ao mesmo tempo que o limite") {
