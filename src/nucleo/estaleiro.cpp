@@ -60,39 +60,35 @@ std::string texto_do_andamento(const Andamento& andamento) {
   return dito;
 }
 
-std::string texto_das_baixas(const Andamento& andamento) {
-  std::string dito;
-  std::size_t mostradas = 0;
-  const auto acrescenta = [&dito, &mostradas](const RegistroDaBaixa& registro) {
-    if (!dito.empty()) dito += "  |  ";
-    dito += "#" + std::to_string(registro.id) + " " +
-            std::string(nome_da_fonte(registro.fonte)) + " ";
-    switch (registro.estado) {
-      case EstadoDaBaixa::Aguardando: dito += "aguardando"; break;
-      case EstadoDaBaixa::Preparando: dito += "preparando"; break;
-      case EstadoDaBaixa::Baixando:
-        dito += registro.porcentagem ? std::to_string(*registro.porcentagem) + "%"
-                                      : "baixando...";
-        break;
-      case EstadoDaBaixa::Concluido: dito += "concluído"; break;
-      case EstadoDaBaixa::Falhou: dito += "falhou"; break;
-    }
-    if (registro.estado == EstadoDaBaixa::Falhou && !registro.detalhe.empty())
-      dito += " (" + registro.detalhe.substr(0, 36) + ")";
-    ++mostradas;
-  };
-  for (const auto& registro : andamento.registros) {
-    if (mostradas == 3) break;
+std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
+  std::vector<const RegistroDaBaixa*> ordem;
+  for (const auto& registro : andamento.registros)
     if (registro.estado != EstadoDaBaixa::Concluido &&
-        registro.estado != EstadoDaBaixa::Falhou) acrescenta(registro);
-  }
-  for (auto i = andamento.registros.rbegin(); i != andamento.registros.rend(); ++i) {
-    if (mostradas == 3) break;
+        registro.estado != EstadoDaBaixa::Falhou) ordem.push_back(&registro);
+  for (auto i = andamento.registros.rbegin(); i != andamento.registros.rend(); ++i)
     if (i->estado == EstadoDaBaixa::Concluido ||
-        i->estado == EstadoDaBaixa::Falhou) acrescenta(*i);
+        i->estado == EstadoDaBaixa::Falhou) ordem.push_back(&*i);
+  if (ordem.empty()) return {};
+  const RegistroDaBaixa& registro = *ordem[pagina % ordem.size()];
+  std::string dito = "#" + std::to_string(registro.id) + " " +
+                     std::string(nome_da_fonte(registro.fonte)) + " ";
+  if (registro.titulo != "URL" && !registro.titulo.empty())
+    dito += registro.titulo.substr(0, 14) + " ";
+  switch (registro.estado) {
+    case EstadoDaBaixa::Aguardando: dito += "aguardando"; break;
+    case EstadoDaBaixa::Preparando: dito += "preparando"; break;
+    case EstadoDaBaixa::Baixando:
+      dito += registro.porcentagem ? std::to_string(*registro.porcentagem) + "%"
+                                    : "baixando...";
+      break;
+    case EstadoDaBaixa::Concluido: dito += "concluído"; break;
+    case EstadoDaBaixa::Falhou: dito += "falhou"; break;
   }
-  if (andamento.registros.size() > mostradas)
-    dito += "  +" + std::to_string(andamento.registros.size() - mostradas);
+  if (registro.estado == EstadoDaBaixa::Falhou && !registro.detalhe.empty())
+    dito += " (" + registro.detalhe.substr(0, 28) + ")";
+  if (ordem.size() > 1)
+    dito += " [" + std::to_string(pagina % ordem.size() + 1) + "/" +
+            std::to_string(ordem.size()) + " V]";
   return dito;
 }
 
