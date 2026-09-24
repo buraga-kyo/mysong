@@ -59,6 +59,34 @@ class Cancella {
 
 }  // namespace
 
+TEST_CASE("Spotify e YouTube conservam progresso e identidade separados") {
+  Cancella cancella;
+  nu::Estaleiro estaleiro(2, [&cancella](const nu::Pedido& pedido,
+                                         std::filesystem::path*) {
+    pedido.noticia(std::nullopt, {});
+    pedido.noticia(pedido.fonte == nu::Fonte::Spotify ? 37 : 82, {});
+    cancella.chego();
+    cancella.espera();
+    return pedido.fonte == nu::Fonte::Spotify ? nu::Colheita::Colhido
+                                               : nu::Colheita::UrlRecusada;
+  });
+  nu::Pedido spotify;
+  spotify.fonte = nu::Fonte::Spotify;
+  spotify.titulo = "uma faixa";
+  estaleiro.encommenda(spotify);
+  nu::Pedido youtube;
+  youtube.fonte = nu::Fonte::YouTube;
+  estaleiro.encommenda(youtube);
+  cancella.chegaram(2);
+  const auto meio = estaleiro.andamento().registros;
+  REQUIRE(meio.size() == 2);
+  CHECK(meio[0].id != meio[1].id);
+  CHECK(meio[0].porcentagem == 37);
+  CHECK(meio[1].porcentagem == 82);
+  CHECK(meio[0].estado == nu::EstadoDaBaixa::Baixando);
+  cancella.abre();
+  estaleiro.espera_a_fila();
+
 TEST_CASE("o estaleiro não corre mais obras ao mesmo tempo que o limite") {
   Cancella cancella;
   // Cinco encommendas, dous obreiros. As duas primeiras chegam á cancella e param
