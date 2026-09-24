@@ -87,6 +87,15 @@ std::string texto_das_baixas(const Andamento& andamento) {
         registro.estado != EstadoDaBaixa::Falhou) acrescenta(registro);
   }
   for (auto i = andamento.registros.rbegin(); i != andamento.registros.rend(); ++i) {
+    if (mostradas == 3) break;
+    if (i->estado == EstadoDaBaixa::Concluido ||
+        i->estado == EstadoDaBaixa::Falhou) acrescenta(*i);
+  }
+  if (andamento.registros.size() > mostradas)
+    dito += "  +" + std::to_string(andamento.registros.size() - mostradas);
+  return dito;
+}
+
 Estaleiro::Estaleiro(std::size_t obreiros, Obra obra) : obra_(std::move(obra)) {
   // Zero obreiro seria estaleiro que aceita encommenda e nunca a cumpre, que é
   // pior que erro: é silencio. Um, pelo menos.
@@ -108,6 +117,12 @@ void Estaleiro::fecha() {
     std::lock_guard<std::mutex> chave(tranca_);
     if (fechado_) return;  // fechado duas vezes: a segunda não junta os fios outra vez
     fechado_ = true;
+    for (const auto& pedido : espera_)
+      for (auto& registro : registros_)
+        if (registro.id == pedido.identificador) {
+          registro.estado = EstadoDaBaixa::Falhou;
+          registro.detalhe = "cancelado ao fechar";
+        }
     // A ESPERA abandona-se. Esperar por ella faria sahir do programa depender de
     // quantas baixas o operador encommendou, e ninguem espera meia hora para fechar
     // uma tela. A obra EM VOO espera-se, que essa já escreve no disco.
@@ -123,6 +138,12 @@ void Estaleiro::encommenda(Pedido pedido) {
   {
     std::lock_guard<std::mutex> chave(tranca_);
     if (fechado_) return;  // estaleiro fechado não aceita obra nova
+    pedido.identificador = proximo_id_++;
+    RegistroDaBaixa registro;
+    registro.id = pedido.identificador;
+    registro.fonte = pedido.fonte;
+    registro.titulo = pedido.titulo.empty() ? "URL" : pedido.titulo.substr(0, 24);
+    registros_.push_back(std::move(registro));
     espera_.push_back(std::move(pedido));
   }
   sino_.notify_one();
@@ -137,7 +158,14 @@ Andamento Estaleiro::andamento() const {
   agora.falhadas = falhadas_;
   agora.duvidosas = duvidosas_;
   agora.ultima = ultima_;
+  agora.registros.assign(registros_.begin(), registros_.end());
   return agora;
+}
+
+void Estaleiro::limpa_recentes() {
+  std::lock_guard<std::mutex> chave(tranca_);
+  const auto fim = std::remove_if(registros_.begin(), registros_.end(),
+      [](const RegistroDaBaixa& registro) {
 }
 
 bool Estaleiro::colheu() {
