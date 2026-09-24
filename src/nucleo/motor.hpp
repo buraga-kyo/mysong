@@ -114,6 +114,8 @@ class Motor {
   // Drena o que a potencia tiver a dizer. Chama-se de fóra, em cadencia de
   // quem chama: o motor não cria linha de execução propria.
   virtual void bombear() = 0;
+  // Consome apenas o fim natural; parar ou falhar não autoriza avançar.
+  virtual bool consome_fim_natural() { return false; }
 
  protected:
   Motor() = default;
@@ -147,6 +149,7 @@ class MotorMpv final : public Motor {
   double duracao() const override;
   Estado estado() const override;
   void bombear() override;
+  bool consome_fim_natural() override;
 
   // JANELLA DE LEITURA: qualquer propriedade do mpv, em texto, e cadeia vazia
   // quando ella não existe. Só LÊ, e nunca escreve, de sorte que abri-la não
@@ -161,6 +164,7 @@ class MotorMpv final : public Motor {
   Estado estado_ = Estado::Parado;
   double posicao_ = 0.0;
   double duracao_ = 0.0;
+  bool fim_natural_ = false;
 };
 
 }  // namespace mysong::nucleo

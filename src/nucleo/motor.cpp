@@ -199,6 +199,7 @@ bool aguarda_carga(::mpv_handle* punho, double prazo) {
 // «replace» é o que mantem a playlist do mpv com uma entrada só: a ordem das
 // faixas é NOSSA, e não d'elle.
 bool MotorMpv::tocar(const std::string& caminho) {
+  fim_natural_ = false;
   const char* ordem[] = {"loadfile", caminho.c_str(), "replace", nullptr};
   if (punho_ == nullptr || mpv().mpv_command(punho_, ordem) < 0) return false;
 
@@ -211,8 +212,8 @@ bool MotorMpv::tocar(const std::string& caminho) {
 
   posicao_ = le_dobro(punho_, "time-pos");
   duracao_ = le_dobro(punho_, "duration");
-  estado_ = Estado::Tocando;
-  return true;
+  // O mpv conserva pause entre cargas; a faixa eleita deve nascer audível.
+  return retomar();
 }
 
 // A versão da interface, ou ZERO quando a libmpv não está presente: é o UNICO
