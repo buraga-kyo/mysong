@@ -487,7 +487,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
   // toca, e por isso elle não pede tranca.
-  std::string aviso_da_rede;
+std::string aviso_da_rede;
+std::size_t pagina_das_baixas = 0;
   // O estado que atravessa quadros mora n'um tipo visual, sem recurso externo.
   // As referencias conservam esta etapa pequena; o dono único já fica claro.
   tui::EstadoDaJanella estado;
@@ -863,11 +864,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // As ENCOMMENDAS ganham logar proprio na DOWNLOAD, que é onde a issue as
     // pede por cima da lista. Nas outras abas ellas descem ao recado, que alli
     // a linha não é d'ellas e o que importa é a secção em que se está.
+    const nucleo::Andamento retrato_das_baixas = estaleiro.andamento();
     const std::string andamento =
-        nucleo::texto_do_andamento(estaleiro.andamento());
+        nucleo::texto_do_andamento(retrato_das_baixas);
     const bool na_baixa =
         tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
-    if (na_baixa) chapa.encommendas = andamento;
+    if (na_baixa) chapa.encommendas =
+        nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
     // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
     // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: o que não
     // couber no que a chapa deixa fica de fóra, em vez de se cortar a meio da
@@ -1607,6 +1610,10 @@ int erguer_tocador(const std::vector<std::string>& faixas,
           // não se atropelam, e a segunda espera em vez de disputar a rede.
           nucleo::Pedido pedido;
           pedido.url = url;  // o resto vem da rede: o operador não disse
+          if (url.find("open.spotify.com/") != std::string::npos)
+            pedido.fonte = nucleo::Fonte::Spotify;
+          else if (url.find("music.youtube.com/") != std::string::npos)
+            pedido.fonte = nucleo::Fonte::YouTubeMusic;
           estaleiro.encommenda(pedido);
         }
         return true;
@@ -1697,6 +1704,17 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // botão direito. Trata-se AQUI, depois do campo e das abas, e não na
     // taboada do commando: ella não dá Ordem alguma, e verbo que sómente
     // abrisse caixa da tela seria verbo que o tocador nunca cumpriria.
+    if (tecla == ftxui::Event::Character('C') &&
+        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
+      estaleiro.limpa_recentes();
+      pagina_das_baixas = 0;
+      return true;
+    }
+    if (tecla == ftxui::Event::Character('V') &&
+        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
+      ++pagina_das_baixas;
+      return true;
+    }
     if (tecla == ftxui::Event::Character('m')) {
       abre_o_menu_na(navegador.eleito());
       return true;

@@ -15,6 +15,28 @@
 
 namespace nu = mysong::nucleo;
 
+TEST_CASE("progresso do yt-dlp aceita linhas parciais e desconhecidas") {
+  CHECK(nu::progresso_do_yt_dlp("[download]  12.5% of 4MiB") == 12);
+  CHECK(nu::progresso_do_yt_dlp("[download] 100% of 4MiB") == 100);
+  CHECK_FALSE(nu::progresso_do_yt_dlp("[download] Destination: faixa.mp3"));
+  CHECK_FALSE(nu::progresso_do_yt_dlp("[download] 12."));
+  CHECK_FALSE(nu::progresso_do_yt_dlp("[download] 101%"));
+  CHECK_FALSE(nu::progresso_do_yt_dlp("ERROR: rede indisponível"));
+}
+
+TEST_CASE("leitor entrega linhas de stdout e erro sem bloquear o chamador") {
+  std::vector<std::string> linhas;
+  const int codigo = nu::corre(
+      {"sh", "-c", "printf '[download] 4.2%%\\r[download] 8%%\\n' ; printf 'ERROR: falha\\n' >&2"},
+      nullptr, [&linhas](std::string_view linha) { linhas.emplace_back(linha); },
+      true);
+  CHECK(codigo == 0);
+  REQUIRE(linhas.size() == 3);
+  CHECK(nu::progresso_do_yt_dlp(linhas[0]) == 4);
+  CHECK(nu::progresso_do_yt_dlp(linhas[1]) == 8);
+  CHECK(linhas[2] == "ERROR: falha");
+}
+
 namespace {
 
 // um_achado, o achado com os tres campos de que os casos dos eleitores vivem:

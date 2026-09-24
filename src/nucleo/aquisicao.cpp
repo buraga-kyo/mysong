@@ -242,6 +242,7 @@ std::vector<std::string> argumentos_do_download(
   const std::vector<std::string> resto = {
           "--no-warnings",
           "--no-playlist",
+          "--newline",
           // `--no-overwrites` é a segunda guarda contra perder arquivo. A
           // primeira é a checagem do destino; ter as duas quer dizer que uma
           // corrida entre duas aquisições não apaga o que a outra gravou.
@@ -326,6 +327,28 @@ std::string_view nome_da_fonte(Fonte fonte) {
   return "fonte sem nome";
 }
 
+std::optional<int> progresso_do_yt_dlp(std::string_view linha) {
+  const std::string_view marca = "[download]";
+  if (linha.substr(0, marca.size()) != marca) return std::nullopt;
+  std::size_t i = marca.size();
+  while (i < linha.size() && linha[i] == ' ') ++i;
+  if (i == linha.size() || linha[i] < '0' || linha[i] > '9')
+    return std::nullopt;
+  int inteiro = 0;
+  while (i < linha.size() && linha[i] >= '0' && linha[i] <= '9') {
+    inteiro = inteiro * 10 + linha[i++] - '0';
+    if (inteiro > 100) return std::nullopt;
+  }
+  if (i < linha.size() && linha[i] == '.') {
+    ++i;
+    if (i == linha.size() || linha[i] < '0' || linha[i] > '9')
+      return std::nullopt;
+    while (i < linha.size() && linha[i] >= '0' && linha[i] <= '9') ++i;
+  }
+  return i < linha.size() && linha[i] == '%' ? std::optional<int>(inteiro)
+                                             : std::nullopt;
+}
+
 Fonte proxima_fonte(Fonte fonte) {
   switch (fonte) {
     case Fonte::YouTube: return Fonte::YouTubeMusic;
@@ -335,7 +358,8 @@ Fonte proxima_fonte(Fonte fonte) {
   return Fonte::YouTube;
 }
 
-int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
+int corre(const std::vector<std::string>& argumentos, std::string* colhido,
+         const std::function<void(std::string_view)>& linha, bool unir_erros) {
   if (argumentos.empty()) return -1;
   int cano[2] = {-1, -1};
   if (::pipe(cano) != 0) return -1;
@@ -353,8 +377,12 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
     //
     // E o stderr vae para o buraco, e não para o terminal: esta Casa corre debaixo
     // de uma tela do FTXUI, e uma linha de aviso no meio do quadro estraga-o.
-    const int buraco = ::open("/dev/null", O_WRONLY);
-    if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
+    if (unir_erros) {
+      ::dup2(cano[1], STDERR_FILENO);
+    } else {
+      const int buraco = ::open("/dev/null", O_WRONLY);
+      if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
+    }
     ::close(cano[1]);
     // O vector vira argv aqui, no filho, e sem shell: `execvp` recebe os
     // argumentos tal e qual, donde a URL não atravessa interpretador algum.
@@ -370,8 +398,20 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
   ::close(cano[1]);
   char pedaco[4096];
   ::ssize_t lidos = 0;
-  while ((lidos = ::read(cano[0], pedaco, sizeof pedaco)) > 0)
+  std::string pendente;
+  while ((lidos = ::read(cano[0], pedaco, sizeof pedaco)) > 0) {
     if (colhido != nullptr) colhido->append(pedaco, static_cast<std::size_t>(lidos));
+    if (!linha) continue;
+    for (ssize_t i = 0; i < lidos; ++i) {
+      if (pedaco[i] == '\n' || pedaco[i] == '\r') {
+        if (!pendente.empty()) linha(pendente);
+        pendente.clear();
+      } else if (pendente.size() < 4096) {
+        pendente += pedaco[i];
+      }
+    }
+  }
+  if (linha && !pendente.empty()) linha(pendente);
   ::close(cano[0]);
 
   int estado = 0;
@@ -629,9 +669,22 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     return Colheita::JaExiste;
   }
 
-  std::string colhido;
-  if (corre(argumentos_do_download(pedido.url, molde), &colhido) != 0)
+  if (pedido.noticia) pedido.noticia(std::nullopt, {});
+  std::string erro_da_rede;
+  const auto observa = [&pedido, &erro_da_rede](std::string_view linha) {
+    if (const auto porcentagem = progresso_do_yt_dlp(linha)) {
+      if (pedido.noticia) pedido.noticia(porcentagem, {});
+    } else if (linha.substr(0, 6) == "ERROR:") {
+      erro_da_rede.clear();
+      for (const unsigned char letra : linha)
+        if (letra >= 32 && letra != 127) erro_da_rede += static_cast<char>(letra);
+    }
+  };
+  if (corre(argumentos_do_download(pedido.url, molde), nullptr, observa, true) != 0) {
+    if (pedido.noticia && !erro_da_rede.empty())
+      pedido.noticia(std::nullopt, erro_da_rede);
     return Colheita::FalhouAoBaixar;
+  }
 
   const std::filesystem::path ficou = acha_o_que_ficou(molde);
   if (ficou.empty()) return Colheita::FalhouAoBaixar;
