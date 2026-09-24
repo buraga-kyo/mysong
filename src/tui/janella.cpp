@@ -533,6 +533,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // Sem foco, o audio continua, mas o quadro deixa de ser repintado. O valor
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
   tui::Vigilia vigilia(true);
+  std::atomic<bool> repete_lousa{false};
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que dorme na campainha. A conducção por
   // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
@@ -778,7 +779,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
          medida_da_tela.dimy > 0
              ? static_cast<std::size_t>(medida_da_tela.dimy)
              : 0,
-         digita != Digita::Nada, vigilia.pede_batida(),
+         digita != Digita::Nada, vigilia.tem_foco(),
          foco == tui::Focavel::Capa, lousa.disponivel(), capa_do_painel,
          medida_da_capa},
         geometria_anterior ? &*geometria_anterior : nullptr);
@@ -956,7 +957,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // da caixa preenchida pelo quadro anterior.
     // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
     // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
-    if (nucleo::ordem_da_capa(pela_lousa, vigilia.pede_batida(),
+    if (nucleo::ordem_da_capa(pela_lousa, vigilia.tem_foco(),
                               !capa_do_painel.empty(),
                               true) ==
         nucleo::OrdemDaCapa::Tira) {
@@ -998,7 +999,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // verso apparecia duas vezes.
     const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_parada(
         letra, verso_corrente, caixas.letra,
-        lousa.disponivel() && letreiro.disponivel(), vigilia.pede_batida(),
+        lousa.disponivel() && letreiro.disponivel(), vigilia.tem_foco(),
         mostra_letra.load());
     // A CHAPA DE PÉ (issue #165) é a MESMA condição que manda pô-la, e não uma
     // segunda conta: assim a cella nunca fica em branco sem que a imagem venha.
@@ -1170,8 +1171,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // A drenagem corre ao cabo do quadro. Se o cano recusou bytes, pede-se
     // outro passo somente emquanto houver linha pendente; quadro parado e
     // lousa quieta continuam sem despertar algum.
-    lousa.drena();
-    if (lousa.pendente()) tela.PostEvent(ftxui::Event::Custom);
+    if (lousa.drena()) reconciliador_da_capa.confirma(geometria.geracao);
+    repete_lousa.store(lousa.pendente());
     if (!ajuda.aberta) return corpo;
     return ftxui::dbox(
         {std::move(corpo),
@@ -1929,6 +1930,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
     while (!sahir.load()) {
+      if (repete_lousa.exchange(false)) tela.PostEvent(ftxui::Event::Custom);
       tocador.pulsa();
       // O SOCKET bate AQUI, e não em fio proprio: é o que o cabeçalho d'elle
       // manda, e a razão é que ordem alguma se intercale no meio de uma
