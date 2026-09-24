@@ -25,3 +25,22 @@ Testes direcionados: 62 casos e 568 asserções passaram, sem falhas.
 Comando: `./build/testes/mysong_testes --source-file='*prova_fila.cpp,*prova_tocador.cpp,*prova_tocador_fios.cpp,*prova_api.cpp,*prova_unidades.cpp'`.
 Nenhum teste humano foi declarado aprovado. Não houve push, PR ou merge.
 O usuário pediu encerrar o trabalho iniciado sem começar novas correções.
+
+## Saldo por issue
+
+- #208: correção parcial; falha permanente não repete pintura.
+- #209: pendente; seleção de letra ainda ignora duração.
+- #210: pendente; publicação da contagem pode não provocar novo quadro.
+- #211: pendente; não existe consulta de visibilidade do tmux.
+- #212: pendente; controles continuam cortados em largura reduzida.
+- #213: pendente; janela ainda permite animação sem foco.
+- #214: correção parcial; avanço manual não fica preso por repetir uma.
+- #215: correção parcial; EOF explícito governa avanço automático.
+- #216: correção parcial; clique, fila e carga têm correções direcionadas.
+- #217: pendente; integração da fila e histórico ainda precisam de correção.
+- #218: pendente; progresso individual não foi implementado.
+
+## Revisão
+
+Pacote: /tmp/mysong-revisao-final.md.
+Testes humanos pendentes. Integração real com mpv não foi testada.
