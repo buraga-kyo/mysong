@@ -1,6 +1,8 @@
 #include <doctest/doctest.h>
 
 #include "tui/geometria_da_janella.hpp"
+#include "nucleo/lousa.hpp"
+#include <cerrno>
 
 namespace tui = mysong::tui;
 
@@ -12,6 +14,30 @@ tui::PedidoDeGeometria pedido(std::size_t largura, std::size_t altura) {
 }
 
 }  // namespace
+
+TEST_CASE("redimensionamento ocupado entrega somente a última geometria") {
+  bool ocupado = true;
+  std::string recebido;
+  mysong::nucleo::EscoadouroDaLousa saida([&](std::string_view bytes) -> ssize_t {
+    if (ocupado) { errno = EAGAIN; return -1; }
+    recebido += bytes;
+    return static_cast<ssize_t>(bytes.size());
+  });
+  std::string ultima;
+  for (const auto largura : {167u, 130u, 100u, 99u, 120u}) {
+    const auto quadro = tui::geometria_do_quadro(pedido(largura, 45));
+    const auto& r = quadro.rectangulo_da_capa;
+    const bool visivel = quadro.sobreposicao == tui::EstadoDaSobreposicao::Visivel;
+    ultima = visivel ? mysong::nucleo::ordem_de_por("capa", "/tmp/capa.jpg",
+        r.x, r.y, r.largura, r.altura) : mysong::nucleo::ordem_de_tirar("capa");
+    saida.deseja("capa", visivel, ultima);
+  }
+  CHECK(saida.pendente());
+  ocupado = false;
+  CHECK(saida.drena());
+  CHECK(recebido == ultima);
+  CHECK_FALSE(saida.pendente());
+}
 
 TEST_CASE("a geometria do quadro nasce inteira da mesma medida da tela") {
   const tui::GeometriaDoQuadro quadro =
