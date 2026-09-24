@@ -487,7 +487,8 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
   // toca, e por isso elle não pede tranca.
-  std::string aviso_da_rede;
+std::string aviso_da_rede;
+std::size_t pagina_das_baixas = 0;
   // O estado que atravessa quadros mora n'um tipo visual, sem recurso externo.
   // As referencias conservam esta etapa pequena; o dono único já fica claro.
   tui::EstadoDaJanella estado;
@@ -869,7 +870,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     const bool na_baixa =
         tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
     if (na_baixa) chapa.encommendas =
-        nucleo::texto_das_baixas(retrato_das_baixas);
+        nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
     // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
     // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: o que não
     // couber no que a chapa deixa fica de fóra, em vez de se cortar a meio da
@@ -1706,6 +1707,12 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     if (tecla == ftxui::Event::Character('C') &&
         tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
       estaleiro.limpa_recentes();
+      pagina_das_baixas = 0;
+      return true;
+    }
+    if (tecla == ftxui::Event::Character('V') &&
+        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
+      ++pagina_das_baixas;
       return true;
     }
     if (tecla == ftxui::Event::Character('m')) {
