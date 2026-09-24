@@ -92,7 +92,7 @@ std::vector<std::string> textos(const tui::Navegador& navegador) {
 // O CAMINHO DO ACEITE, de ponta a ponta: de Artistas a um artista, d'elle a um
 // album, e d'alli a uma faixa que se manda tocar. Cada degrau afere-se contra a
 // taboa escripta no arnês.
-TEST_CASE("DOWNLOAD abre sem busca e recebe pedidos por URL") {
+TEST_CASE("DOWNLOAD abre antes da primeira busca") {
   const Cova cova;
   const nu::Biblioteca livraria(cova.banco());
   tui::Navegador navegador(livraria);
