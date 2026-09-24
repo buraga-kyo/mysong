@@ -235,6 +235,21 @@ void Estaleiro::obreiro() {
                                 ? EstadoDaBaixa::Concluido : EstadoDaBaixa::Falhou;
           if (registro.detalhe.empty()) registro.detalhe = ultima_;
           break;
+        }
+      std::size_t recentes = 0;
+      for (const auto& registro : registros_)
+        if (registro.estado == EstadoDaBaixa::Concluido ||
+            registro.estado == EstadoDaBaixa::Falhou) ++recentes;
+      while (recentes > 4) {
+        const auto antigo = std::find_if(registros_.begin(), registros_.end(),
+            [](const RegistroDaBaixa& registro) {
+              return registro.estado == EstadoDaBaixa::Concluido ||
+                     registro.estado == EstadoDaBaixa::Falhou;
+            });
+        if (antigo == registros_.end()) break;
+        registros_.erase(antigo);
+        --recentes;
+      }
       if (fim == Colheita::Colhido) {
         ++colhidas_;
         colheu_ = true;
