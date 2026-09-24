@@ -111,7 +111,8 @@ MotorMpv::MotorMpv(MotorMpv&& outro) noexcept
       punho_(outro.punho_),
       estado_(outro.estado_),
       posicao_(outro.posicao_),
-      duracao_(outro.duracao_) {
+      duracao_(outro.duracao_),
+      fim_natural_(outro.fim_natural_) {
   outro.punho_ = nullptr;
 }
 
