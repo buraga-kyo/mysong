@@ -1292,6 +1292,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       if (rol.id == qual) aviso_da_rede = "juntada a «" + rol.nome + "»";
   };
 
+  tui::CliqueNaLinha clique_na_linha;
   auto janella = ftxui::CatchEvent(pintor, [&](const ftxui::Event& tecla) {
     // O FOCO DO PAINEL trata-se ANTES até do modo de digitar (issue #82):
     // escape de foco não é tecla, e não ha de virar «não» de confirmação nem
@@ -1385,9 +1386,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
     // o caminho de sempre quando não ha movimento a cumprir. A vista diz se se
     // deixa arrumar: o acervo e o dentro de uma lista sim; os artistas, os
     // albuns e os achados da rede não, que alli a ordem não é do operador.
+    bool clique_confirmado = false;
     if (tecla.is_mouse() && digita == Digita::Nada) {
       ftxui::Event d_agora = tecla;
       const ftxui::Mouse mao = d_agora.mouse();
+      clique_confirmado = tui::confirma_clique(
+          clique_na_linha, tui::alvo_do_ponto(caixas, mao.x, mao.y),
+          mao.button, mao.motion);
       const bool pode_arrumar = navegador.secao() == tui::Secao::Busca ||
                                 navegador.secao() == tui::Secao::NoRol;
       const tui::RespostaDoArrasto d_elle = tui::gesto_do_arrasto(
@@ -1412,10 +1417,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
       const tui::Alvo alvo_do_gesto =
           pelo_foco ? tui::alvo_do_foco(foco)
                     : tui::alvo_do_ponto(caixas, rato.x, rato.y);
+      if (!pelo_foco && rato.button == ftxui::Mouse::Left &&
+          alvo_do_gesto.peca == tui::Peca::Linha && !clique_confirmado)
+        return true;
       const tui::GestoDoRato gesto = tui::gesto_do_alvo(
           alvo_do_gesto,
           pelo_foco ? ftxui::Mouse::Left : rato.button,
-          pelo_foco ? ftxui::Mouse::Pressed : rato.motion,
+          pelo_foco || clique_confirmado ? ftxui::Mouse::Pressed : rato.motion,
           {digita != Digita::Nada, navegador.eleito(),
            navegador.vista().size(),
            // A duração vae ZERO com a janella do video de pé, e a guarda do
