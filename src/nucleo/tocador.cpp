@@ -67,8 +67,12 @@ bool Tocador::tocar_lista(const std::vector<std::string>& faixas,
     }
   } else if (estado_ == Estado::Pausado && !motor_.retomar()) return false;
   if (fila_.todas() != faixas) {
+    const bool embaralhada = fila_.embaralhado();
+    fila_.embaralhar(false);
     fila_.esvazia();
     for (const auto& faixa : faixas) fila_.junta(faixa);
+    fila_.ir_para(eleito);
+    fila_.embaralhar(embaralhada);
   }
   fila_.ir_para(eleito);
   motor_.volume(mudo_ ? 0 : volume_);
