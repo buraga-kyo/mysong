@@ -38,9 +38,21 @@ namespace mysong::nucleo {
 // primeira inteira. Dous, e não cinco: a rede é uma só.
 inline constexpr std::size_t OBREIROS_DA_BAIXA = 2;
 
+enum class EstadoDaBaixa { Aguardando, Preparando, Baixando, Concluido, Falhou };
+
+struct RegistroDaBaixa {
+  std::size_t id = 0;
+  Fonte fonte = Fonte::YouTube;
+  EstadoDaBaixa estado = EstadoDaBaixa::Aguardando;
+  std::optional<int> porcentagem;
+  std::string titulo;
+  std::string detalhe;
+};
+
 // O ANDAMENTO n'um instante. Cópia, e não punho para dentro: quem pergunta lê um
 // retracto coherente, e não campos colhidos em instantes differentes.
 struct Andamento {
+  std::vector<RegistroDaBaixa> registros;
   std::size_t em_curso = 0;
   std::size_t na_espera = 0;
   std::size_t colhidas = 0;
@@ -56,6 +68,7 @@ struct Andamento {
 // aqui e não na janella. Estaleiro quieto e sem historia devolve cadeia VAZIA:
 // é o que faz a tela calar-se em vez de mostrar «0 a baixar».
 std::string texto_do_andamento(const Andamento& andamento);
+std::string texto_das_baixas(const Andamento& andamento);
 
 // O ESTALEIRO. Ergue `obreiros` fios que consomem a fila, e cada um chama a OBRA,
 // que entra por parametro: é essa juncta que deixa a bateria pôr no logar d'ella
@@ -72,6 +85,7 @@ class Estaleiro {
 
   void encommenda(Pedido pedido);
   Andamento andamento() const;
+  void limpa_recentes();
 
   // colheu, CONSOME a bandeira de «entrou faixa nova no disco». Sem o consumo, a
   // tela varreria o disco a cada quadro para sempre.
@@ -100,6 +114,8 @@ class Estaleiro {
   mutable std::mutex tranca_;
   std::condition_variable sino_;
   std::deque<Pedido> espera_;
+  std::deque<RegistroDaBaixa> registros_;
+  std::size_t proximo_id_ = 1;
   std::vector<std::thread> obreiros_;
   Obra obra_;
   std::size_t em_curso_ = 0;
