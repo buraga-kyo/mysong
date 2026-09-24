@@ -68,7 +68,8 @@ struct Andamento {
 // aqui e não na janella. Estaleiro quieto e sem historia devolve cadeia VAZIA:
 // é o que faz a tela calar-se em vez de mostrar «0 a baixar».
 std::string texto_do_andamento(const Andamento& andamento);
-std::string texto_das_baixas(const Andamento& andamento);
+std::string texto_das_baixas(const Andamento& andamento,
+                            std::size_t pagina = 0);
 
 // O ESTALEIRO. Ergue `obreiros` fios que consomem a fila, e cada um chama a OBRA,
 // que entra por parametro: é essa juncta que deixa a bateria pôr no logar d'ella
