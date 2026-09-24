@@ -57,6 +57,7 @@ class MotorDuble final : public mysong::nucleo::Motor {
   void bombear() override {
     if (!fim_pendente_) return;
     fim_pendente_ = false;
+    fim_natural_ = true;
     posicao_ = 0.0;
     estado_ = Estado::Parado;
   }
@@ -68,11 +69,17 @@ class MotorDuble final : public mysong::nucleo::Motor {
   // Agenda o fim NATURAL da faixa, tal qual a libmpv o dá: posição a zero e
   // estado a Parado, ambos na batida seguinte, e não em batidas differentes.
   void acaba_na_proxima_batida() { fim_pendente_ = true; }
+  bool consome_fim_natural() override {
+    const bool acabou = fim_natural_;
+    fim_natural_ = false;
+    return acabou;
+  }
 
  private:
   double posicao_ = 0.0;
   Estado estado_ = Estado::Parado;
   bool fim_pendente_ = false;
+  bool fim_natural_ = false;
 };
 
 }  // namespace
