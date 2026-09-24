@@ -29,6 +29,8 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -55,6 +57,9 @@ Fonte proxima_fonte(Fonte fonte);
 // e ahi vale o que a sonda da URL tiver dito.
 struct Pedido {
   std::string url;
+  std::size_t identificador = 0;
+  // O obreiro observa a baixa sem entregar o fio da tela ao processo externo.
+  std::function<void(std::optional<int>, std::string_view)> noticia;
   std::string artista;
   std::string album;
   std::string titulo;
@@ -275,7 +280,12 @@ std::vector<Achado> achados_do_catalogo(const Catalogo& catalogo,
 // corre, corre o commando e colhe a sahida. Não ha shell: `execvp` recebe o
 // vector tal e qual. Devolve o codigo de sahida, e menos um se nem se pôde
 // erguer o processo.
-int corre(const std::vector<std::string>& argumentos, std::string* colhido);
+int corre(const std::vector<std::string>& argumentos, std::string* colhido,
+         const std::function<void(std::string_view)>& linha = {},
+         bool unir_erros = false);
+
+// Porcentagem só quando a linha do yt-dlp a declara por inteiro.
+std::optional<int> progresso_do_yt_dlp(std::string_view linha);
 
 // sonda_url, pergunta á rede o que ella sabe da URL. Falso quando o yt-dlp não
 // respondeu; ahi a etiqueta fica como estava.
