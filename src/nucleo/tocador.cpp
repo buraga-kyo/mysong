@@ -215,9 +215,7 @@ void Tocador::pulsa() {
   motor_.bombear();
   const Estado visto = motor_.estado();
   const double agora = motor_.posicao();
-  const bool mudou_estado = visto != estado_;
-  const bool acabou = mudou_estado && estado_ == Estado::Tocando &&
-                      visto == Estado::Parado;
+  const bool acabou = motor_.consome_fim_natural();
 
   estado_ = visto;
   ultima_posicao_ = agora;
@@ -236,7 +234,9 @@ void Tocador::pulsa() {
   // motor RECUSA não encadeia outra: o `tocar_corrente_trancado` assenta
   // Parado e diz porquê, e encadear sobre ella faria a lista inteira correr em
   // silencio n'um segundo.
-  if (acabou && !fila_.vazia() && fila_.proxima()) tocar_corrente_trancado();
+  if (acabou && !fila_.vazia() &&
+      (fila_.repeticao() == Repeticao::Uma || fila_.proxima()))
+    tocar_corrente_trancado();
 
   // A fonte das bandas bate no mesmo relogio do tocador, e não num seu: assim
   // quem já chama pulsa() ganha o relogio de guarda do espectro de graça, e não
