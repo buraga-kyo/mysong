@@ -216,6 +216,7 @@ bool EscoadouroDaLousa::drena() noexcept {
 }
 
 bool EscoadouroDaLousa::pendente() const noexcept {
+  if (falhou_) return false;
   if (linha_) return true;
   for (const auto& [identidade, desejada] : desejadas_) {
     const auto entregue = entregues_.find(identidade);
