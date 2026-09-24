@@ -58,7 +58,6 @@ std::string_view Fila::corrente() const noexcept {
 // re-sorteia, e a segunda volta corre a ordem da primeira.
 bool Fila::proxima() noexcept {
   if (faixas_.empty()) return false;
-  if (repeticao_ == Repeticao::Uma) return true;
   if (embaralhado_ && !ordem_.empty()) {
     if (passo_ + 1 < ordem_.size()) ++passo_;
     else if (repeticao_ == Repeticao::Todas) passo_ = 0;
