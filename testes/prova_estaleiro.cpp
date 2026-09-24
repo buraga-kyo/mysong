@@ -86,6 +86,34 @@ TEST_CASE("Spotify e YouTube conservam progresso e identidade separados") {
   CHECK(meio[0].estado == nu::EstadoDaBaixa::Baixando);
   cancella.abre();
   estaleiro.espera_a_fila();
+  const auto fim = estaleiro.andamento();
+  CHECK(fim.registros[0].estado == nu::EstadoDaBaixa::Concluido);
+  CHECK(fim.registros[1].estado == nu::EstadoDaBaixa::Falhou);
+  CHECK(nu::texto_das_baixas(fim).find("#1 Spotify concluído") != std::string::npos);
+  CHECK(nu::texto_das_baixas(fim).find("#2 YouTube falhou") != std::string::npos);
+  estaleiro.limpa_recentes();
+  CHECK(estaleiro.andamento().registros.empty());
+}
+
+TEST_CASE("progresso ausente continua indeterminado") {
+  nu::Estaleiro estaleiro(1, [](const nu::Pedido& pedido,
+                                std::filesystem::path*) {
+    pedido.noticia(std::nullopt, {});
+    return nu::Colheita::FalhouAoBaixar;
+  });
+  estaleiro.encommenda(nu::Pedido{});
+  estaleiro.espera_a_fila();
+  const auto registro = estaleiro.andamento().registros.front();
+  CHECK_FALSE(registro.porcentagem);
+  CHECK(registro.estado == nu::EstadoDaBaixa::Falhou);
+}
+
+TEST_CASE("painel prioriza downloads ativos ante historico") {
+  nu::Andamento andamento;
+  for (std::size_t id = 1; id <= 4; ++id) {
+    nu::RegistroDaBaixa registro;
+    registro.id = id;
+    registro.estado = nu::EstadoDaBaixa::Concluido;
 
 TEST_CASE("o estaleiro não corre mais obras ao mesmo tempo que o limite") {
   Cancella cancella;
