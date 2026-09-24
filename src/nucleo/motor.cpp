@@ -32,6 +32,7 @@
 #include "nucleo/libmpv.hpp"
 
 #include <string_view>
+#include <utility>
 
 namespace mysong::nucleo {
 namespace {
@@ -297,10 +298,17 @@ void MotorMpv::bombear() {
       if (nome == "duration") duracao_ = valor;
     } else if (evento->event_id == MPV_EVENT_END_FILE ||
                evento->event_id == MPV_EVENT_SHUTDOWN) {
+      const auto* fim = evento->event_id == MPV_EVENT_END_FILE
+          ? static_cast<const mpv_event_end_file*>(evento->data) : nullptr;
+      fim_natural_ = fim != nullptr && fim->reason == MPV_END_FILE_REASON_EOF;
       estado_ = Estado::Parado;
       posicao_ = 0.0;
     }
   }
+}
+
+bool MotorMpv::consome_fim_natural() {
+  return std::exchange(fim_natural_, false);
 }
 
 }  // namespace mysong::nucleo
