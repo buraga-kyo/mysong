@@ -143,6 +143,15 @@ struct Arrasto {
   bool andou = false;       // já sahiu MAIS de uma linha d'onde veio
 };
 
+struct CliqueNaLinha {
+  bool premido = false;
+  bool moveu = false;
+  std::size_t origem = 0;
+};
+bool confirma_clique(CliqueNaLinha& clique, const Alvo& alvo,
+                     ftxui::Mouse::Button botao,
+                     ftxui::Mouse::Motion movimento) noexcept;
+
 // O que a máquina do arrasto responde a cada evento do rato.
 enum class GestoDoArrasto {
   Nada,      // evento que não é do arrasto

@@ -120,6 +120,23 @@ GestoDoRato gesto_do_alvo(const Alvo& alvo, ftxui::Mouse::Button botao,
   return {};
 }
 
+bool confirma_clique(CliqueNaLinha& clique, const Alvo& alvo,
+                     ftxui::Mouse::Button botao,
+                     ftxui::Mouse::Motion movimento) noexcept {
+  if (botao != ftxui::Mouse::Left) return false;
+  if (movimento == ftxui::Mouse::Pressed) {
+    clique = {alvo.peca == Peca::Linha, false, alvo.indice};
+    return false;
+  }
+  if (!clique.premido) return false;
+  clique.moveu = clique.moveu || alvo.peca != Peca::Linha ||
+                 alvo.indice != clique.origem;
+  if (movimento != ftxui::Mouse::Released) return false;
+  const bool valido = !clique.moveu;
+  clique = {};
+  return valido;
+}
+
 RespostaDoArrasto gesto_do_arrasto(Arrasto& arrasto, const Alvo& alvo,
                                    ftxui::Mouse::Button botao,
                                    ftxui::Mouse::Motion movimento,
