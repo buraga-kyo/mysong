@@ -871,6 +871,7 @@ std::size_t pagina_das_baixas = 0;
         tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
     if (na_baixa) chapa.encommendas =
         nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
+    if (na_baixa && !chapa.encommendas.empty()) chapa.conselho.clear();
     // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
     // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: o que não
     // couber no que a chapa deixa fica de fóra, em vez de se cortar a meio da
@@ -1192,9 +1193,8 @@ std::size_t pagina_das_baixas = 0;
   // duas copias d'estes recados divergiriam na primeira issue que mexesse
   // n'uma d'ellas, e o dedo veria um aviso e a tecla outro.
   //
-  // Aba sem chão AVISA e fica onde está. A DOWNLOAD é a unica que o pode não
-  // ter: ella abre a lista dos achados, e antes da primeira busca não ha
-  // achado algum. As outras duas abrem sempre.
+  // A aba DOWNLOAD abre mesmo sem achados: o progresso da baixa por URL
+  // vive ali antes de qualquer busca.
   const auto vai_para_aba = [&](tui::Aba qual) {
     if (navegador.vai_para(tui::secao_da_aba(qual))) return;
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
@@ -1579,6 +1579,7 @@ std::size_t pagina_das_baixas = 0;
           }
         } else if (!termo_em_curso.empty()) {
           const std::string url = termo_em_curso;
+          navegador.vai_para(tui::Secao::Rede);
           if (nucleo::eh_playlist_url(url)) {
             const nucleo::Fonte fonte =
                 !nucleo::id_da_playlist(url).empty()
@@ -1668,11 +1669,7 @@ std::size_t pagina_das_baixas = 0;
             d_ella.gesto) {
       case tui::GestoDaAba::Vai: vai_para_aba(d_ella.aba); return true;
       case tui::GestoDaAba::Cycla: {
-        // Tenta até TRES, e SALTA a aba sem chão. Sem o salto o Tab ficava
-        // preso nas PLAYLISTS emquanto não houvesse busca na rede feita, que é
-        // o estado de nascença: a tecla que a issue annuncia como «cicla as
-        // tres abas» não ciclava, e carregar n'ella duas vezes dava o mesmo
-        // recado e a mesma tela.
+        // Tenta até TRES abas. Todas abrem sem conteúdo prévio.
         tui::Aba qual = tui::aba_da_secao(navegador.secao());
         for (int volta = 0; volta < 3; ++volta) {
           qual = tui::aba_seguinte(qual);
@@ -1970,8 +1967,9 @@ std::size_t pagina_das_baixas = 0;
       // se pintou, e o primeiro quadro desperto ha de sahir completo.
       if (vigilia.acordou()) ultima_assignatura.clear();
       if (vigilia.pede_batida()) {
+        const nucleo::Andamento baixas = estaleiro.andamento();
         const std::string agora = assignatura_do_visivel(
-            tocador, nucleo::texto_do_andamento(estaleiro.andamento()),
+            tocador, nucleo::assinatura_das_baixas(baixas),
             mostra_letra.load(), varrida.load(),
             correio.geracao() + correio_do_catalogo.geracao() +
                 correio_da_playlist.geracao() +
