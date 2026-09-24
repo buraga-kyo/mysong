@@ -166,6 +166,10 @@ void Estaleiro::limpa_recentes() {
   std::lock_guard<std::mutex> chave(tranca_);
   const auto fim = std::remove_if(registros_.begin(), registros_.end(),
       [](const RegistroDaBaixa& registro) {
+    return registro.estado == EstadoDaBaixa::Concluido ||
+           registro.estado == EstadoDaBaixa::Falhou;
+  });
+  registros_.erase(fim, registros_.end());
 }
 
 bool Estaleiro::colheu() {
@@ -194,6 +198,9 @@ void Estaleiro::obreiro() {
       if (fechado_) return;
       pedido = std::move(espera_.front());
       espera_.pop_front();
+      for (auto& registro : registros_)
+        if (registro.id == pedido.identificador)
+          registro.estado = EstadoDaBaixa::Preparando;
       // O incremento vae DENTRO da tranca e ANTES da obra: é o que faz do pico o
       // pico de verdade, e não uma amostra colhida no intervallo entre os dous.
       ++em_curso_;
@@ -202,11 +209,32 @@ void Estaleiro::obreiro() {
     // A OBRA corre FÓRA da tranca. Correndo dentro, dous obreiros nunca correriam
     // ao mesmo tempo e o limite de dous seria limite de um, dito por engano.
     std::filesystem::path ficou;
+    pedido.noticia = [this, id = pedido.identificador](
+        std::optional<int> porcentagem, std::string_view erro) {
+      std::lock_guard<std::mutex> chave(tranca_);
+      for (auto& registro : registros_) {
+        if (registro.id != id) continue;
+        if (!erro.empty()) registro.detalhe = std::string(erro.substr(0, 180));
+        else {
+          registro.estado = EstadoDaBaixa::Baixando;
+          registro.porcentagem = porcentagem;
+        }
+        break;
+      }
+    };
     const Colheita fim = obra_(pedido, &ficou);
     {
       std::lock_guard<std::mutex> chave(tranca_);
       --em_curso_;
       ultima_ = std::string(razao_da_colheita(fim));
+      for (auto& registro : registros_)
+        if (registro.id == pedido.identificador) {
+          registro.estado = fim == Colheita::Colhido ||
+                            fim == Colheita::ColhidoDuvidoso ||
+                            fim == Colheita::JaExiste
+                                ? EstadoDaBaixa::Concluido : EstadoDaBaixa::Falhou;
+          if (registro.detalhe.empty()) registro.detalhe = ultima_;
+          break;
       if (fim == Colheita::Colhido) {
         ++colhidas_;
         colheu_ = true;
