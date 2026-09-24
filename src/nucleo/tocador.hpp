@@ -87,6 +87,7 @@ class Tocador {
 
   // Elege um caminho sem duplicá-lo e toca-o numa única tomada da tranca.
   bool tocar(const std::string& caminho);
+  bool tocar_lista(const std::vector<std::string>& faixas, std::size_t eleito);
 
   // Andam pela fila e mandam tocar a faixa nova. Falso na borda, e ahi NADA se
   // manda ao motor: a faixa que tocava continua a tocar.

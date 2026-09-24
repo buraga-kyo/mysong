@@ -55,6 +55,27 @@ bool Tocador::tocar_corrente() {
   return tocar_corrente_trancado();
 }
 
+bool Tocador::tocar_lista(const std::vector<std::string>& faixas,
+                          std::size_t eleito) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (eleito >= faixas.size()) return false;
+  const bool mesma = !fila_.vazia() && fila_.corrente() == faixas[eleito];
+  if (!mesma || estado_ == Estado::Parado) {
+    if (!motor_.tocar(faixas[eleito])) {
+      estado_ = motor_.estado();
+      return false;
+    }
+  } else if (estado_ == Estado::Pausado && !motor_.retomar()) return false;
+  if (fila_.todas() != faixas) {
+    fila_.esvazia();
+    for (const auto& faixa : faixas) fila_.junta(faixa);
+  }
+  fila_.ir_para(eleito);
+  motor_.volume(mudo_ ? 0 : volume_);
+  estado_ = Estado::Tocando;
+  return true;
+}
+
 bool Tocador::tocar(const std::string& caminho) {
   std::lock_guard<std::mutex> chave(tranca_);
   const std::vector<std::string>& faixas = fila_.todas();
