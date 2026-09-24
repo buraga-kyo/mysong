@@ -681,9 +681,10 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     }
   };
   if (corre(argumentos_do_download(pedido.url, molde), nullptr, observa, true) != 0) {
-  std::string colhido;
-  if (corre(argumentos_do_download(pedido.url, molde), &colhido) != 0)
+    if (pedido.noticia && !erro_da_rede.empty())
+      pedido.noticia(std::nullopt, erro_da_rede);
     return Colheita::FalhouAoBaixar;
+  }
 
   const std::filesystem::path ficou = acha_o_que_ficou(molde);
   if (ficou.empty()) return Colheita::FalhouAoBaixar;
