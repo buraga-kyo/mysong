@@ -16,6 +16,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/estaleiro.hpp"
 
+#include <algorithm>
 #include <utility>
 
 namespace mysong::nucleo {
@@ -59,6 +60,33 @@ std::string texto_do_andamento(const Andamento& andamento) {
   return dito;
 }
 
+std::string texto_das_baixas(const Andamento& andamento) {
+  std::string dito;
+  std::size_t mostradas = 0;
+  const auto acrescenta = [&dito, &mostradas](const RegistroDaBaixa& registro) {
+    if (!dito.empty()) dito += "  |  ";
+    dito += "#" + std::to_string(registro.id) + " " +
+            std::string(nome_da_fonte(registro.fonte)) + " ";
+    switch (registro.estado) {
+      case EstadoDaBaixa::Aguardando: dito += "aguardando"; break;
+      case EstadoDaBaixa::Preparando: dito += "preparando"; break;
+      case EstadoDaBaixa::Baixando:
+        dito += registro.porcentagem ? std::to_string(*registro.porcentagem) + "%"
+                                      : "baixando...";
+        break;
+      case EstadoDaBaixa::Concluido: dito += "concluído"; break;
+      case EstadoDaBaixa::Falhou: dito += "falhou"; break;
+    }
+    if (registro.estado == EstadoDaBaixa::Falhou && !registro.detalhe.empty())
+      dito += " (" + registro.detalhe.substr(0, 36) + ")";
+    ++mostradas;
+  };
+  for (const auto& registro : andamento.registros) {
+    if (mostradas == 3) break;
+    if (registro.estado != EstadoDaBaixa::Concluido &&
+        registro.estado != EstadoDaBaixa::Falhou) acrescenta(registro);
+  }
+  for (auto i = andamento.registros.rbegin(); i != andamento.registros.rend(); ++i) {
 Estaleiro::Estaleiro(std::size_t obreiros, Obra obra) : obra_(std::move(obra)) {
   // Zero obreiro seria estaleiro que aceita encommenda e nunca a cumpre, que é
   // pior que erro: é silencio. Um, pelo menos.
