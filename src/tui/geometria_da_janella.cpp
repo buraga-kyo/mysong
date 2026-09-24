@@ -13,26 +13,33 @@ GeometriaDoQuadro geometria_do_quadro(
   quadro.sala = sala_da_tela(pedido.largura, pedido.altura,
                              pedido.campo_aberto);
   quadro.capa = pedido.capa;
-  const bool mudou = anterior == nullptr ||
-                     anterior->largura != pedido.largura ||
-                     anterior->altura != pedido.altura;
-  quadro.geracao = anterior == nullptr ? 1 : anterior->geracao + (mudou ? 1 : 0);
+  const auto termina = [&] {
+    const auto& r = quadro.rectangulo_da_capa;
+    const bool mudou = anterior == nullptr ||
+        anterior->largura != quadro.largura || anterior->altura != quadro.altura ||
+        anterior->capa != quadro.capa || anterior->sobreposicao != quadro.sobreposicao ||
+        anterior->rectangulo_da_capa.x != r.x || anterior->rectangulo_da_capa.y != r.y ||
+        anterior->rectangulo_da_capa.largura != r.largura ||
+        anterior->rectangulo_da_capa.altura != r.altura;
+    quadro.geracao = anterior == nullptr ? 1 : anterior->geracao + (mudou ? 1 : 0);
+    return quadro;
+  };
 
   if (pedido.capa.empty()) {
     quadro.sobreposicao = EstadoDaSobreposicao::Ausente;
-    return quadro;
+    return termina();
   }
   if (!pedido.lousa_disponivel || !pedido.foco_dentro ||
       quadro.sala.capa.vazio()) {
     quadro.sobreposicao = EstadoDaSobreposicao::Oculta;
-    return quadro;
+    return termina();
   }
   const nucleo::Retangulo medida = nucleo::rectangulo_da_capa(
       pedido.medida_da_capa, quadro.sala.capa.largura,
       quadro.sala.capa.altura, nucleo::CELLULA_DA_CASA);
   if (medida.collunas == 0 || medida.linhas == 0) {
     quadro.sobreposicao = EstadoDaSobreposicao::Oculta;
-    return quadro;
+    return termina();
   }
   quadro.rectangulo_da_capa = {
       quadro.sala.capa.x +
@@ -42,7 +49,7 @@ GeometriaDoQuadro geometria_do_quadro(
       quadro.sala.capa.y + (pedido.capa_com_foco ? 1u : 0u), medida.collunas,
       medida.linhas};
   quadro.sobreposicao = EstadoDaSobreposicao::Visivel;
-  return quadro;
+  return termina();
 }
 
 void ReconciliadorDaSobreposicao::deseja(
