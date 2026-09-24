@@ -89,6 +89,30 @@ class MotorDuble final : public mysong::nucleo::Motor {
 // O ENCADEAMENTO (issue #149): acabada a faixa, a seguinte entra sósinha. É na
 // BATIDA que elle se dá, que é onde o fim da faixa se sabe, e por isso todos
 // estes casos passam pelo `pulsa`.
+TEST_CASE("eleger lista preserva modos e não duplica carga da faixa corrente") {
+  MotorDuble motor;
+  Tocador tocador(motor);
+  const std::vector<std::string> lista = {"a", "b", "c"};
+  tocador.repetir(mysong::nucleo::Repeticao::Todas);
+  REQUIRE(tocador.tocar_lista(lista, 1));
+  motor.avanca(4);
+  REQUIRE(tocador.tocar_lista(lista, 1));
+  CHECK(motor.tocados.size() == 1);
+  CHECK(tocador.posicao() == 4);
+  CHECK(tocador.faixas() == lista);
+  CHECK(tocador.retracto().repeticao == mysong::nucleo::Repeticao::Todas);
+  REQUIRE(tocador.pausar());
+  REQUIRE(tocador.tocar_lista(lista, 1));
+  CHECK(motor.tocados.size() == 1);
+  CHECK(tocador.estado() == Estado::Tocando);
+  REQUIRE(tocador.proxima());
+  CHECK(*tocador.retracto().faixa == "c");
+  motor.recusa_tocar = true;
+  CHECK_FALSE(tocador.tocar_lista({"outra"}, 0));
+  CHECK(tocador.faixas() == lista);
+  CHECK(*tocador.retracto().faixa == "c");
+}
+
 TEST_CASE("parada sem fim natural não avança e EOF não se repete") {
   MotorDuble motor;
   Tocador tocador(motor);
