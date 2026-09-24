@@ -242,6 +242,7 @@ std::vector<std::string> argumentos_do_download(
   const std::vector<std::string> resto = {
           "--no-warnings",
           "--no-playlist",
+          "--newline",
           // `--no-overwrites` é a segunda guarda contra perder arquivo. A
           // primeira é a checagem do destino; ter as duas quer dizer que uma
           // corrida entre duas aquisições não apaga o que a outra gravou.
@@ -326,6 +327,28 @@ std::string_view nome_da_fonte(Fonte fonte) {
   return "fonte sem nome";
 }
 
+std::optional<int> progresso_do_yt_dlp(std::string_view linha) {
+  const std::string_view marca = "[download]";
+  if (linha.substr(0, marca.size()) != marca) return std::nullopt;
+  std::size_t i = marca.size();
+  while (i < linha.size() && linha[i] == ' ') ++i;
+  if (i == linha.size() || linha[i] < '0' || linha[i] > '9')
+    return std::nullopt;
+  int inteiro = 0;
+  while (i < linha.size() && linha[i] >= '0' && linha[i] <= '9') {
+    inteiro = inteiro * 10 + linha[i++] - '0';
+    if (inteiro > 100) return std::nullopt;
+  }
+  if (i < linha.size() && linha[i] == '.') {
+    ++i;
+    if (i == linha.size() || linha[i] < '0' || linha[i] > '9')
+      return std::nullopt;
+    while (i < linha.size() && linha[i] >= '0' && linha[i] <= '9') ++i;
+  }
+  return i < linha.size() && linha[i] == '%' ? std::optional<int>(inteiro)
+                                             : std::nullopt;
+}
+
 Fonte proxima_fonte(Fonte fonte) {
   switch (fonte) {
     case Fonte::YouTube: return Fonte::YouTubeMusic;
@@ -335,7 +358,8 @@ Fonte proxima_fonte(Fonte fonte) {
   return Fonte::YouTube;
 }
 
-int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
+int corre(const std::vector<std::string>& argumentos, std::string* colhido,
+         const std::function<void(std::string_view)>& linha, bool unir_erros) {
   if (argumentos.empty()) return -1;
   int cano[2] = {-1, -1};
   if (::pipe(cano) != 0) return -1;
@@ -353,6 +377,9 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido) {
     //
     // E o stderr vae para o buraco, e não para o terminal: esta Casa corre debaixo
     // de uma tela do FTXUI, e uma linha de aviso no meio do quadro estraga-o.
+    if (unir_erros) {
+      ::dup2(cano[1], STDERR_FILENO);
+    } else {
     const int buraco = ::open("/dev/null", O_WRONLY);
     if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
     ::close(cano[1]);
