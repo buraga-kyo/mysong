@@ -220,20 +220,9 @@ void Tocador::pulsa() {
   estado_ = visto;
   ultima_posicao_ = agora;
 
-  // O ENCADEAMENTO (issue #149). Acabada a faixa, a seguinte entra sósinha: é
-  // o que o operador espera de um tocador, e até aqui a Casa tocava uma faixa
-  // de cada vez. Quem decide QUAL é a fila, que já sabe dos dous modos: com
-  // REPETIR UMA devolve a mesma, com TODAS gira a lista, e sem repetição
-  // recusa no fim d'ella, e ahi o tocador fica parado, que é o que se pede.
-  //
-  // Corre com a tranca JÁ tomada, pelo mesmo miolo do `proxima()`: chamá-lo de
-  // fóra tomaria a tranca segunda vez. E corre DEPOIS dos dous pregões, para
-  // que o ouvinte veja a faixa acabar antes de ver a seguinte começar.
-  //
-  // Só o fim NATURAL encadeia (Tocando que passa a Parado). A faixa que o
-  // motor RECUSA não encadeia outra: o `tocar_corrente_trancado` assenta
-  // Parado e diz porquê, e encadear sobre ella faria a lista inteira correr em
-  // silencio n'um segundo.
+  // Somente EOF autoriza encadear. Repetir uma conserva a eleição; nos
+  // demais modos a fila decide o próximo assento e a volta ao princípio.
+  // O evento já foi consumido, logo uma segunda batida não avança de novo.
   if (acabou && !fila_.vazia() &&
       (fila_.repeticao() == Repeticao::Uma || fila_.proxima()))
     tocar_corrente_trancado();
