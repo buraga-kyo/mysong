@@ -35,6 +35,13 @@ std::string plural(std::size_t quantas, const std::string& singular) {
   return std::to_string(quantas) + " " + singular + (quantas == 1 ? "" : "s");
 }
 
+std::string abrevia_utf8(std::string_view texto, std::size_t limite) {
+  std::size_t fim = std::min(texto.size(), limite);
+  while (fim > 0 && fim < texto.size() &&
+         (static_cast<unsigned char>(texto[fim]) & 0xc0) == 0x80) --fim;
+  return std::string(texto.substr(0, fim));
+}
+
 }  // namespace
 
 std::string texto_do_andamento(const Andamento& andamento) {
@@ -73,7 +80,7 @@ std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
   std::string dito = "#" + std::to_string(registro.id) + " " +
                      std::string(nome_da_fonte(registro.fonte)) + " ";
   if (registro.titulo != "URL" && !registro.titulo.empty())
-    dito += registro.titulo.substr(0, 14) + " ";
+    dito += abrevia_utf8(registro.titulo, 14) + " ";
   switch (registro.estado) {
     case EstadoDaBaixa::Aguardando: dito += "aguardando"; break;
     case EstadoDaBaixa::Preparando: dito += "preparando"; break;
@@ -85,7 +92,7 @@ std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
     case EstadoDaBaixa::Falhou: dito += "falhou"; break;
   }
   if (registro.estado == EstadoDaBaixa::Falhou && !registro.detalhe.empty())
-    dito += " (" + registro.detalhe.substr(0, 28) + ")";
+    dito += " (" + abrevia_utf8(registro.detalhe, 28) + ")";
   if (ordem.size() > 1)
     dito += " [" + std::to_string(pagina % ordem.size() + 1) + "/" +
             std::to_string(ordem.size()) + " V]";
@@ -138,7 +145,7 @@ void Estaleiro::encommenda(Pedido pedido) {
     RegistroDaBaixa registro;
     registro.id = pedido.identificador;
     registro.fonte = pedido.fonte;
-    registro.titulo = pedido.titulo.empty() ? "URL" : pedido.titulo.substr(0, 24);
+    registro.titulo = pedido.titulo.empty() ? "URL" : pedido.titulo;
     registros_.push_back(std::move(registro));
     espera_.push_back(std::move(pedido));
   }
@@ -210,7 +217,7 @@ void Estaleiro::obreiro() {
       std::lock_guard<std::mutex> chave(tranca_);
       for (auto& registro : registros_) {
         if (registro.id != id) continue;
-        if (!erro.empty()) registro.detalhe = std::string(erro.substr(0, 180));
+        if (!erro.empty()) registro.detalhe = std::string(erro);
         else {
           registro.estado = EstadoDaBaixa::Baixando;
           registro.porcentagem = porcentagem;
