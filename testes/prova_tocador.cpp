@@ -89,6 +89,25 @@ class MotorDuble final : public mysong::nucleo::Motor {
 // O ENCADEAMENTO (issue #149): acabada a faixa, a seguinte entra sósinha. É na
 // BATIDA que elle se dá, que é onde o fim da faixa se sabe, e por isso todos
 // estes casos passam pelo `pulsa`.
+TEST_CASE("parada sem fim natural não avança e EOF não se repete") {
+  MotorDuble motor;
+  Tocador tocador(motor);
+  tocador.junta("uma.wav");
+  tocador.junta("duas.wav");
+  tocador.junta("tres.wav");
+  REQUIRE(tocador.tocar_corrente());
+  motor.termina();
+  tocador.pulsa();
+  CHECK(tocador.retracto().indice == 0);
+  CHECK(motor.tocados.size() == 1);
+  REQUIRE(tocador.tocar_corrente());
+  motor.acaba_na_proxima_batida();
+  tocador.pulsa();
+  tocador.pulsa();
+  CHECK(tocador.retracto().indice == 1);
+  CHECK(motor.tocados.size() == 3);
+}
+
 TEST_CASE("acabada a faixa, a seguinte entra na mesma batida") {
   MotorDuble duble;
   Tocador tocador(duble);
