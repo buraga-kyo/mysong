@@ -114,6 +114,16 @@ TEST_CASE("painel prioriza downloads ativos ante historico") {
     nu::RegistroDaBaixa registro;
     registro.id = id;
     registro.estado = nu::EstadoDaBaixa::Concluido;
+    andamento.registros.push_back(registro);
+  }
+  nu::RegistroDaBaixa ativo;
+  ativo.id = 5;
+  ativo.estado = nu::EstadoDaBaixa::Baixando;
+  andamento.registros.push_back(ativo);
+  const std::string texto = nu::texto_das_baixas(andamento);
+  CHECK(texto.find("#5 YouTube baixando...") != std::string::npos);
+  CHECK(texto.find("+2") != std::string::npos);
+}
 
 TEST_CASE("o estaleiro não corre mais obras ao mesmo tempo que o limite") {
   Cancella cancella;
