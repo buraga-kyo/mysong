@@ -676,7 +676,7 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
       if (pedido.noticia) pedido.noticia(porcentagem, {});
     } else if (linha.substr(0, 6) == "ERROR:") {
       erro_da_rede.clear();
-      for (const unsigned char letra : linha.substr(0, 180))
+      for (const unsigned char letra : linha)
         if (letra >= 32 && letra != 127) erro_da_rede += static_cast<char>(letra);
     }
   };
