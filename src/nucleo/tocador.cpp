@@ -211,9 +211,8 @@ Retracto Tocador::retracto() const {
   obra.estado = estado_;
   
   std::string_view corrente = fila_.corrente();
-  if (corrente != ultima_faixa_vista_ || !faixa_cache_) {
+  if (!faixa_cache_ || corrente != *faixa_cache_) {
     faixa_cache_ = std::make_shared<const std::string>(corrente);
-    ultima_faixa_vista_ = corrente;
   }
   obra.faixa = faixa_cache_;
 

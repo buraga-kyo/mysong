@@ -146,7 +146,6 @@ class Tocador {
   double ultima_posicao_ = 0.0;
   FonteDeBandas* fonte_ = nullptr;  // emprestada, e nullo é caso legitimo
 
-  mutable std::string_view ultima_faixa_vista_;
   mutable std::shared_ptr<const std::string> faixa_cache_;
 };
 
