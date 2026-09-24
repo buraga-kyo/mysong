@@ -21,6 +21,22 @@
 #include "nucleo/biblioteca.hpp"
 #include "tui/cabecalho.hpp"
 #include "tui/rato.hpp"
+
+TEST_CASE("clique confirmado não confunde arrasto com reprodução") {
+  namespace t = mysong::tui;
+  using M = ftxui::Mouse;
+  t::CliqueNaLinha clique;
+  const t::Alvo origem{t::Peca::Linha, 2, 0};
+  const t::Alvo outra{t::Peca::Linha, 4, 0};
+  CHECK_FALSE(t::confirma_clique(clique, origem, M::Left, M::Pressed));
+  CHECK(t::confirma_clique(clique, origem, M::Left, M::Released));
+  CHECK_FALSE(t::confirma_clique(clique, origem, M::Left, M::Released));
+  CHECK_FALSE(t::confirma_clique(clique, origem, M::Left, M::Pressed));
+  CHECK_FALSE(t::confirma_clique(clique, outra, M::Left, M::Moved));
+  CHECK_FALSE(t::confirma_clique(clique, origem, M::Left, M::Released));
+  CHECK_FALSE(t::confirma_clique(clique, origem, M::Left, M::Pressed));
+  CHECK_FALSE(t::confirma_clique(clique, outra, M::Left, M::Released));
+}
 #include "tui/tabella.hpp"
 #include "tui/transporte.hpp"
 #include "tui/vigilia.hpp"
