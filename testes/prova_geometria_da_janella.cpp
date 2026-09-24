@@ -30,7 +30,7 @@ TEST_CASE("redimensionamento ocupado entrega somente a última geometria") {
     const bool visivel = quadro.sobreposicao == tui::EstadoDaSobreposicao::Visivel;
     ultima = visivel ? mysong::nucleo::ordem_de_por("capa", "/tmp/capa.jpg",
         r.x, r.y, r.largura, r.altura) : mysong::nucleo::ordem_de_tirar("capa");
-    saida.deseja("capa", visivel, ultima);
+    saida.deseja("capa", ultima, visivel);
   }
   CHECK(saida.pendente());
   ocupado = false;
