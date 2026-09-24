@@ -380,8 +380,9 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido,
     if (unir_erros) {
       ::dup2(cano[1], STDERR_FILENO);
     } else {
-    const int buraco = ::open("/dev/null", O_WRONLY);
-    if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
+      const int buraco = ::open("/dev/null", O_WRONLY);
+      if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
+    }
     ::close(cano[1]);
     // O vector vira argv aqui, no filho, e sem shell: `execvp` recebe os
     // argumentos tal e qual, donde a URL não atravessa interpretador algum.
@@ -397,8 +398,20 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido,
   ::close(cano[1]);
   char pedaco[4096];
   ::ssize_t lidos = 0;
-  while ((lidos = ::read(cano[0], pedaco, sizeof pedaco)) > 0)
+  std::string pendente;
+  while ((lidos = ::read(cano[0], pedaco, sizeof pedaco)) > 0) {
     if (colhido != nullptr) colhido->append(pedaco, static_cast<std::size_t>(lidos));
+    if (!linha) continue;
+    for (ssize_t i = 0; i < lidos; ++i) {
+      if (pedaco[i] == '\n' || pedaco[i] == '\r') {
+        if (!pendente.empty()) linha(pendente);
+        pendente.clear();
+      } else if (pendente.size() < 4096) {
+        pendente += pedaco[i];
+      }
+    }
+  }
+  if (linha && !pendente.empty()) linha(pendente);
   ::close(cano[0]);
 
   int estado = 0;
@@ -656,6 +669,18 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     return Colheita::JaExiste;
   }
 
+  if (pedido.noticia) pedido.noticia(std::nullopt, {});
+  std::string erro_da_rede;
+  const auto observa = [&pedido, &erro_da_rede](std::string_view linha) {
+    if (const auto porcentagem = progresso_do_yt_dlp(linha)) {
+      if (pedido.noticia) pedido.noticia(porcentagem, {});
+    } else if (linha.substr(0, 6) == "ERROR:") {
+      erro_da_rede.clear();
+      for (const unsigned char letra : linha.substr(0, 180))
+        if (letra >= 32 && letra != 127) erro_da_rede += static_cast<char>(letra);
+    }
+  };
+  if (corre(argumentos_do_download(pedido.url, molde), nullptr, observa, true) != 0) {
   std::string colhido;
   if (corre(argumentos_do_download(pedido.url, molde), &colhido) != 0)
     return Colheita::FalhouAoBaixar;
