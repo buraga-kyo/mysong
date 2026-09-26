@@ -1551,7 +1551,12 @@ std::size_t pagina_das_baixas = 0;
       if (tecla == ftxui::Event::Return) {
         const Digita era = digita;
         digita = Digita::Nada;
-        if (era == Digita::Busca) {
+        if (era == Digita::Biblioteca) {
+          std::string razao;
+          aviso_da_rede = nucleo::salva_acervo(ajustes.arquivo, termo_em_curso, &razao)
+              ? "biblioteca salva; reinicie o MySong. Arquivos antigos permanecem na pasta anterior"
+              : "não foi possível salvar: " + razao;
+        } else if (era == Digita::Busca) {
           navegador.filtra(termo_em_curso);
         } else if (era == Digita::NomeNovo) {
           if (!navegador.cria_rol(termo_em_curso))
