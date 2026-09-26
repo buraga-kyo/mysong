@@ -257,7 +257,7 @@ target_link_libraries(mysong_core PUBLIC ftxui::component)
 # ─── A VARREDURA DO ACERVO (issue #34) ──────────────────────────────────────
 # Entra por target_sources, ACRESCENTANDO linha. Dependencia nova alguma se
 # cobra: a taglib e o sqlite3 já entraram com a bibliotheca na issue #8.
-target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp src/nucleo/renomeacao.cpp)
 
 # A prova do esquema mais novo ENVELHECE a Casa por SQL propria, e para isso pede
 # os cabeçalhos do sqlite3. A alternativa era pôr na obra um parametro de versão
