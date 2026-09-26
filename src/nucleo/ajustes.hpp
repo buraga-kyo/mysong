@@ -195,7 +195,7 @@ std::filesystem::path caminho_da_configuracao();
 EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
                               std::string* texto, Ajustes* ajustes);
 
-// padrao_do_acervo, `~/Música`, o chão da escada. Vive aqui, e não na janella,
+// padrao_do_acervo, a pasta musical do Linux seguida de mysong. Vive aqui,
 // para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
 std::filesystem::path padrao_do_acervo();
 
