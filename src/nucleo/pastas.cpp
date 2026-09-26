@@ -28,3 +28,33 @@ std::filesystem::path le_pasta_xdg(std::string linha,
              ? pasta : std::filesystem::path{};
 }
 }  // namespace
+
+std::filesystem::path pasta_de_musica(const std::filesystem::path& casa,
+                                    const std::filesystem::path& configuracao) {
+  if (casa.empty()) return {};
+  std::ifstream arquivo(configuracao / "user-dirs.dirs");
+  std::string linha;
+  while (std::getline(arquivo, linha)) {
+    const auto pasta = le_pasta_xdg(linha, casa);
+    if (!pasta.empty()) return pasta;
+  }
+  for (const auto* nome : {"Música", "Músicas", "Musicas", "Musics", "Music",
+                           "musica", "musicas", "musics", "music"}) {
+    std::error_code erro;
+    if (std::filesystem::is_directory(casa / nome, erro)) return casa / nome;
+  }
+  return casa / "Música";
+}
+
+bool salva_acervo(const std::filesystem::path& arquivo,
+                  const std::filesystem::path& acervo, std::string* razao) {
+  const auto recusa = [razao](const std::string& motivo) {
+    if (razao) *razao = motivo;
+    return false;
+  };
+  const std::string caminho = acervo.string();
+  if (arquivo.empty() || !acervo.is_absolute() || caminho.find_first_of("#\r\n") != std::string::npos ||
+      caminho.find('\0') != std::string::npos || aparar(caminho) != caminho)
+    return recusa("use caminho absoluto, sem #, quebras ou espaços nas pontas");
+  std::error_code erro;
+  std::filesystem::create_directories(acervo, erro);
