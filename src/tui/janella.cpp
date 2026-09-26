@@ -50,6 +50,8 @@
 #include "api/socket.hpp"
 
 #include "nucleo/ajustes.hpp"
+#include "nucleo/pastas.hpp"
+#include "nucleo/renomeacao.hpp"
 #include "nucleo/analisador.hpp"
 #include "nucleo/caa.hpp"
 #include "nucleo/capa.hpp"
