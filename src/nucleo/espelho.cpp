@@ -28,3 +28,33 @@ bool pasta_controlada(const std::filesystem::path& pasta) {
 }
 
 bool nome_seguro(const std::string& nome) {
+  return !nome.empty() && nome != "." && nome != ".." && nome != ".mysong" &&
+         nome.find('/') == std::string::npos && nome.find('\0') == std::string::npos;
+}
+}  // namespace
+
+EspelhoDePlaylists::EspelhoDePlaylists(std::filesystem::path raiz)
+    : destino_(std::move(raiz) / "Playlists") {}
+
+bool EspelhoDePlaylists::prepara(const std::vector<ListaNoDisco>& listas) {
+  try {
+    std::filesystem::create_directories(destino_.parent_path());
+    havia_ = std::filesystem::exists(std::filesystem::symlink_status(destino_));
+    if (havia_ && !pasta_controlada(destino_)) return false;
+    const std::string molde = (destino_.parent_path() / ".playlists-XXXXXX").string();
+    std::vector<char> nome(molde.begin(), molde.end());
+    nome.push_back('\0');
+    if (::mkdtemp(nome.data()) == nullptr) return false;
+    temporario_ = nome.data();
+    std::ofstream marca(temporario_ / ".mysong");
+    marca << "Playlists do MySong\n";
+    marca.close();
+    if (!marca) return false;
+    for (const auto& lista : listas) {
+      if (!nome_seguro(lista.nome)) return false;
+      const auto pasta = temporario_ / lista.nome;
+      std::filesystem::create_directory(pasta);
+      std::size_t ordem = 0;
+      for (const auto& faixa : lista.faixas) {
+        const auto alvo = std::filesystem::absolute(faixa);
+        const auto folha = std::to_string(++ordem) + " - " + alvo.filename().string();
