@@ -25,6 +25,7 @@
 #include "nucleo/varredura.hpp"
 #include "nucleo/renomeacao.hpp"
 #include "nucleo/pastas.hpp"
+#include "nucleo/letra.hpp"
 
 namespace nu = mysong::nucleo;
 
@@ -651,6 +652,25 @@ TEST_CASE("renomeacao reverte arquivo quando espelho recusa alteracao") {
   nu::Faixa faixa;
   REQUIRE(biblioteca.acha_por_caminho(original.string(), faixa));
   CHECK(faixa.titulo == "Tear");
+}
+
+TEST_CASE("renomeacao acompanha letra e recusa colisao de lrc") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  std::ofstream(cova.acervo() / "Artistas/Ada/Musicas/Tear.lrc")
+      << "[00:01.00]Tear\n";
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  nu::Roleiro listas(cova.raiz() / "listas.sqlite3", cova.acervo());
+  REQUIRE(nu::renomeia_arquivo(original.string(), "Geometria", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(cova.acervo() / "Artistas/Ada/Musicas/Geometria.lrc"));
+  std::ofstream(cova.acervo() / "Artistas/Ada/Musicas/Colisao.lrc") << "alheia\n";
+  CHECK_FALSE(nu::renomeia_arquivo(
+      (cova.acervo() / "Artistas/Ada/Musicas/Geometria.wav").string(),
+      "Colisao", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(cova.acervo() / "Artistas/Ada/Musicas/Geometria.lrc"));
 }
 
 TEST_CASE("pasta musical respeita XDG e fallback sem executar comandos") {
