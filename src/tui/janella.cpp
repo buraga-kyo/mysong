@@ -1507,6 +1507,16 @@ std::size_t pagina_das_baixas = 0;
       // Parado não ha o que pausar, e ahi o gesto morre aqui, consumido.
       if (ordem_do_rato.verbo == tui::Verbo::Nada) return true;
     }
+    if (digita == Digita::Nada && tecla == ftxui::Event::Character('B')) {
+      if (ajustes.acervo.origem == nucleo::Origem::Argumento ||
+          ajustes.acervo.origem == nucleo::Origem::Ambiente) {
+        aviso_da_rede = "remova --acervo ou MYSONG_ACERVO para editar a biblioteca pela tela";
+        return true;
+      }
+      digita = Digita::Biblioteca;
+      termo_em_curso = ajustes.acervo.valor.string();
+      return true;
+    }
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
