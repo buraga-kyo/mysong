@@ -122,6 +122,7 @@ std::string rotulo_do_prompt(Modo modo, std::string_view contexto) {
     // O titulo da faixa, e não «NOME:»: o campo abre já com o titulo corrente
     // dentro, e o rotulo ha de dizer o que aquelle texto é.
     case Modo::TituloOutro: return "TITULO:";
+    case Modo::Biblioteca: return "PASTA DA BIBLIOTECA (Enter salva; reinicie):";
     // A MESMA pergunta do apagar da lista, palavra por palavra. Duas perguntas
     // com a mesma resposta e redacções differentes fariam o operador ler duas
     // vezes para saber se a tecla que responde é a mesma.
