@@ -216,13 +216,10 @@ bool Roleiro::renomeia(int id, std::string_view nome) {
 }
 
 bool Roleiro::apaga(int id) {
-  // Os itens vão-se pela CASCATA da chave estrangeira, e não por um DELETE ao
-  // lado. Houve os dous, e a mutação accusou-o: tirar qualquer um d'elles não
-  // matava caso algum, e sómente tirando os DOUS a bateria accusava. Duas cousas
-  // a prometter a mesma cousa dão duas verdades, e no dia em que uma mudasse a
-  // outra ficaria a mentir. Fica a cascata, que é onde a relação se declara.
-  if (!corre(punho_, "DELETE FROM rol WHERE id = ?;", {id}, {})) return false;
-  return sqlite3_changes(punho_) > 0;
+  return altera([&] {
+    return corre(punho_, "DELETE FROM rol WHERE id = ?;", {id}, {}) &&
+           sqlite3_changes(punho_) > 0;
+  });
 }
 
 bool Roleiro::junta(int id, std::string_view caminho) {
