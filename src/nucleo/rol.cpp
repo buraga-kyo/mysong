@@ -140,6 +140,7 @@ Roleiro::Roleiro(std::filesystem::path banco, std::filesystem::path acervo)
         });
   if (quantas == 0)
     corre(punho_, "INSERT INTO esquema_do_rol VALUES (?);", {kVersaoDoRol}, {});
+  if (!acervo_.empty()) altera([] { return true; });
 }
 
 Roleiro::~Roleiro() {
