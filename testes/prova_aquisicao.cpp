@@ -149,7 +149,7 @@ TEST_CASE("o destino sahe na hierarchia Artistas/Artista/Musicas/NN - Titulo") {
   // Numero de dous digitos não ganha zero á frente.
   cheio.numero = 12;
   CHECK(nu::destino("/acervo", cheio).string() ==
-        "/acervo/Ada Lovelace/Máquina Analítica/12 - Tear");
+        "/acervo/Artistas/Ada Lovelace/Musicas/12 - Tear");
   // Sem numero, o titulo fica sozinho; sem album, o artista contem a faixa.
   cheio.numero = 0;
   CHECK(nu::destino("/acervo", cheio).string() ==
