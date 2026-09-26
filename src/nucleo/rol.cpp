@@ -116,7 +116,8 @@ std::string saneia_nome_de_rol(std::string_view crua) {
   return nome;
 }
 
-Roleiro::Roleiro(std::filesystem::path banco) : banco_(std::move(banco)) {
+Roleiro::Roleiro(std::filesystem::path banco, std::filesystem::path acervo)
+    : acervo_(std::move(acervo)), banco_(std::move(banco)) {
   if (sqlite3_open_v2(banco_.c_str(), &punho_,
                       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
                       nullptr) != SQLITE_OK) {
