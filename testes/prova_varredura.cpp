@@ -640,3 +640,33 @@ TEST_CASE("renomeacao reverte arquivo quando espelho recusa alteracao") {
   const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
   faz_wav(original, 1);
   poe_etiqueta(original, "Ada", "", "Tear", 1);
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  nu::Roleiro listas(cova.raiz() / "listas.sqlite3", cova.acervo());
+  std::ofstream(cova.acervo() / "Playlists/alheio.txt") << "preservar";
+  CHECK_FALSE(nu::renomeia_arquivo(original.string(), "Novo", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(original));
+  CHECK_FALSE(std::filesystem::exists(original.parent_path() / "Novo.wav"));
+  nu::Faixa faixa;
+  REQUIRE(biblioteca.acha_por_caminho(original.string(), faixa));
+  CHECK(faixa.titulo == "Tear");
+}
+
+TEST_CASE("pasta musical respeita XDG e fallback sem executar comandos") {
+  Cova cova;
+  const auto configuracao = cova.raiz() / "config";
+  std::filesystem::create_directory(configuracao);
+  std::filesystem::create_directory(cova.raiz() / "Musics");
+  CHECK(nu::pasta_de_musica(cova.raiz(), configuracao) == cova.raiz() / "Musics");
+  std::ofstream(configuracao / "user-dirs.dirs") << "XDG_MUSIC_DIR=\"$HOME/Minhas canções\"\n";
+  CHECK(nu::pasta_de_musica(cova.raiz(), configuracao) == cova.raiz() / "Minhas canções");
+  std::ofstream(configuracao / "user-dirs.dirs") << "XDG_MUSIC_DIR=\"$(touch intruso)\"\n";
+  CHECK(nu::pasta_de_musica(cova.raiz(), configuracao) == cova.raiz() / "Musics");
+}
+
+TEST_CASE("edicao da biblioteca preserva outros ajustes e recusa caminhos ambiguos") {
+  Cova cova;
+  const auto arquivo = cova.raiz() / "mysong.conf";
+  std::ofstream(arquivo) << "# comentario pessoal\nvolume = 35\nacervo = /antigo\n";
+  std::string razao;
