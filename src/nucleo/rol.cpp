@@ -232,21 +232,18 @@ bool Roleiro::junta(int id, std::string_view caminho) {
 }
 
 bool Roleiro::retira(int id, int ordem) {
-  if (punho_ == nullptr) return false;
-  // UMA transacção para as duas cousas. Sem ella, uma queda entre o DELETE e o
-  // fechamento do buraco deixaria a lista com buraco no disco, e mover para cima
-  // passaria a adivinhar quem é o vizinho.
-  sqlite3_exec(punho_, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
-  corre(punho_, "DELETE FROM item WHERE rol = ?1 AND ordem = ?2;", {id, ordem},
-        {});
-  const bool havia = sqlite3_changes(punho_) > 0;
-  if (havia)
-    corre(punho_,
-          "UPDATE item SET ordem = ordem - 1 WHERE rol = ?1 AND ordem > ?2;",
-          {id, ordem}, {});
-  sqlite3_exec(punho_, havia ? "COMMIT;" : "ROLLBACK;", nullptr, nullptr,
-               nullptr);
-  return havia;
+  return altera([&] {
+    return corre(punho_, "DELETE FROM item WHERE rol = ?1 AND ordem = ?2;", {id, ordem}, {}) &&
+           sqlite3_changes(punho_) > 0 && corre(punho_,
+               "UPDATE item SET ordem = ordem - 1 WHERE rol = ?1 AND ordem > ?2;", {id, ordem}, {});
+  });
+}
+
+bool Roleiro::muda_caminho(std::string_view anterior, std::string_view novo) {
+  return altera([&] {
+    return corre(punho_, "UPDATE item SET caminho = ?2 WHERE caminho = ?1;", {},
+                 {std::string(anterior), std::string(novo)});
+  });
 }
 
 int Roleiro::retira_de_todos(std::string_view caminho) {
