@@ -1565,7 +1565,10 @@ std::size_t pagina_das_baixas = 0;
           cria_a_lista_com(termo_em_curso);
         } else if (era == Digita::TituloOutro) {
           const std::string qual = navegador.caminho_eleito();
-          aviso_da_rede = renomeia_a_faixa(qual, termo_em_curso, livraria);
+          std::unique_lock<std::mutex> chave(tranca_do_acervo, std::try_to_lock);
+          aviso_da_rede = chave.owns_lock()
+              ? renomeia_a_faixa(qual, termo_em_curso, livraria, roleiro, tocador)
+              : "aguarde a varredura terminar para renomear";
           navegador.recarrega();  // a pauta reflecte no mesmo quadro
         } else if (era == Digita::NomeOutro) {
           if (!navegador.renomeia_rol(termo_em_curso))
