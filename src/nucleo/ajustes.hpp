@@ -5,8 +5,7 @@
 // d'elle entra aqui, e d'aqui sahe RESOLVIDO: quem consome não pergunta ao
 // ambiente, não abre arquivo e não escolhe padrão algum.
 //
-// O PROGRAMA NUNCA ESCREVE O ARQUIVO: o commentario que o operador poz lá não
-// morre n'uma reescrita nossa.
+// A edição da biblioteca preserva os outros ajustes e comentários do arquivo.
 //
 // DOMÍNIO ......... o TEXTO do arquivo, o que o ambiente diz, e o que a linha
 //                   de commando trouxe. Nunca o disco directamente.
