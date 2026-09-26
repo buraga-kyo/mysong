@@ -28,6 +28,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -58,7 +59,9 @@ std::string saneia_nome_de_rol(std::string_view crua);
 // primeira lista do operador não ha de falhar por falta de arquivo.
 class Roleiro {
  public:
-  explicit Roleiro(std::filesystem::path banco);
+  explicit Roleiro(std::filesystem::path banco, std::filesystem::path acervo = {});
+  bool muda_caminho(std::string_view anterior, std::string_view novo);
+  const std::string& erro() const noexcept { return erro_; }
   ~Roleiro();
 
   Roleiro(const Roleiro&) = delete;
@@ -101,6 +104,9 @@ class Roleiro {
   std::vector<std::string> faixas(int id) const;
 
  private:
+  bool altera(const std::function<bool()>& operacao);
+  std::filesystem::path acervo_;
+  std::string erro_;
   std::filesystem::path banco_;
   sqlite3* punho_ = nullptr;
 };

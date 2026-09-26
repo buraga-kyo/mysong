@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -240,3 +241,38 @@ TEST_CASE("a faixa apagada sae de todas as listas, e a ordem fecha o buraco") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("playlists materializam repeticoes e acompanham renomeacao e exclusao") {
+  Cova cova;
+  const auto raiz = cova.banco().parent_path();
+  const auto faixa = raiz / "canção.wav";
+  std::ofstream(faixa) << "conteudo";
+  nu::Roleiro listas(cova.banco(), raiz);
+  const int lista = listas.cria("Estudo");
+  REQUIRE(lista > 0);
+  REQUIRE(listas.junta(lista, faixa.string()));
+  REQUIRE(listas.junta(lista, faixa.string()));
+  CHECK(std::filesystem::read_symlink(raiz / "Playlists/Estudo/1 - canção.wav") == faixa);
+  CHECK(std::filesystem::read_symlink(raiz / "Playlists/Estudo/2 - canção.wav") == faixa);
+  REQUIRE(listas.renomeia(lista, "Matemática"));
+  CHECK_FALSE(std::filesystem::exists(raiz / "Playlists/Estudo"));
+  REQUIRE(listas.retira(lista, 0));
+  CHECK_FALSE(std::filesystem::exists(raiz / "Playlists/Matemática/2 - canção.wav"));
+  REQUIRE(listas.apaga(lista));
+  CHECK(std::filesystem::exists(faixa));
+  CHECK_FALSE(std::filesystem::exists(raiz / "Playlists/Matemática"));
+}
+
+TEST_CASE("playlists recusam travessia e preservam arquivos alheios") {
+  Cova cova;
+  const auto raiz = cova.banco().parent_path();
+  nu::Roleiro listas(cova.banco(), raiz);
+  CHECK(listas.cria("../fora") == 0);
+  CHECK(listas.cria(".mysong") == 0);
+  REQUIRE(listas.cria("Estudo") > 0);
+  std::ofstream(raiz / "Playlists/Estudo/arquivo.txt") << "preservar";
+  CHECK(listas.cria("Outra") == 0);
+  CHECK(listas.rois().size() == 1);
+  CHECK(std::filesystem::exists(raiz / "Playlists/Estudo/arquivo.txt"));
+  CHECK_FALSE(listas.erro().empty());
+}

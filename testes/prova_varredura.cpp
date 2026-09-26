@@ -23,6 +23,9 @@
 
 #include "nucleo/biblioteca.hpp"
 #include "nucleo/varredura.hpp"
+#include "nucleo/renomeacao.hpp"
+#include "nucleo/pastas.hpp"
+#include "nucleo/letra.hpp"
 
 namespace nu = mysong::nucleo;
 
@@ -608,3 +611,108 @@ TEST_CASE("renomear recusa titulo vazio, e a etiqueta fica como estava") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("renomeacao atualiza disco indice etiqueta e links sem sobrescrever") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  nu::Roleiro listas(cova.raiz() / "listas.sqlite3", cova.acervo());
+  const int lista = listas.cria("Estudo");
+  REQUIRE(listas.junta(lista, original.string()));
+  const auto novo = nu::renomeia_arquivo(original.string(), "Geometria", biblioteca, listas);
+  REQUIRE(novo.feita);
+  CHECK_FALSE(std::filesystem::exists(original));
+  CHECK(std::filesystem::exists(novo.caminho));
+  CHECK(listas.faixas(lista).front() == novo.caminho);
+  nu::Faixa faixa;
+  REQUIRE(biblioteca.acha_por_caminho(novo.caminho, faixa));
+  CHECK(faixa.titulo == "Geometria");
+  CHECK(std::filesystem::read_symlink(cova.acervo() / "Playlists/Estudo/1 - Geometria.wav") == novo.caminho);
+  faz_wav(original, 2);
+  CHECK_FALSE(nu::renomeia_arquivo(novo.caminho, "Tear", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(novo.caminho));
+}
+
+TEST_CASE("renomeacao reverte arquivo quando espelho recusa alteracao") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  poe_etiqueta(original, "Ada", "", "Tear", 1);
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  nu::Roleiro listas(cova.raiz() / "listas.sqlite3", cova.acervo());
+  std::ofstream(cova.acervo() / "Playlists/alheio.txt") << "preservar";
+  CHECK_FALSE(nu::renomeia_arquivo(original.string(), "Novo", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(original));
+  CHECK_FALSE(std::filesystem::exists(original.parent_path() / "Novo.wav"));
+  nu::Faixa faixa;
+  REQUIRE(biblioteca.acha_por_caminho(original.string(), faixa));
+  CHECK(faixa.titulo == "Tear");
+}
+
+TEST_CASE("renomeacao acompanha letra e recusa colisao de lrc") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  std::ofstream(cova.acervo() / "Artistas/Ada/Musicas/Tear.lrc")
+      << "[00:01.00]Tear\n";
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  nu::Roleiro listas(cova.raiz() / "listas.sqlite3", cova.acervo());
+  REQUIRE(nu::renomeia_arquivo(original.string(), "Geometria", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(cova.acervo() / "Artistas/Ada/Musicas/Geometria.lrc"));
+  std::ofstream(cova.acervo() / "Artistas/Ada/Musicas/Colisao.lrc") << "alheia\n";
+  CHECK_FALSE(nu::renomeia_arquivo(
+      (cova.acervo() / "Artistas/Ada/Musicas/Geometria.wav").string(),
+      "Colisao", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(cova.acervo() / "Artistas/Ada/Musicas/Geometria.lrc"));
+}
+
+TEST_CASE("pasta musical respeita XDG e fallback sem executar comandos") {
+  Cova cova;
+  const auto configuracao = cova.raiz() / "config";
+  std::filesystem::create_directory(configuracao);
+  std::filesystem::create_directory(cova.raiz() / "Musics");
+  CHECK(nu::pasta_de_musica(cova.raiz(), configuracao) == cova.raiz() / "Musics");
+  std::ofstream(configuracao / "user-dirs.dirs") << "XDG_MUSIC_DIR=\"$HOME/Minhas canções\"\n";
+  CHECK(nu::pasta_de_musica(cova.raiz(), configuracao) == cova.raiz() / "Minhas canções");
+  std::ofstream(configuracao / "user-dirs.dirs") << "XDG_MUSIC_DIR=\"$(touch intruso)\"\n";
+  CHECK(nu::pasta_de_musica(cova.raiz(), configuracao) == cova.raiz() / "Musics");
+}
+
+TEST_CASE("edicao da biblioteca preserva outros ajustes e recusa caminhos ambiguos") {
+  Cova cova;
+  const auto arquivo = cova.raiz() / "mysong.conf";
+  std::ofstream(arquivo) << "# comentario pessoal\nvolume = 35\nacervo = /antigo\n";
+  std::string razao;
+  const auto nova = cova.raiz() / "Nova biblioteca";
+  REQUIRE(nu::salva_acervo(arquivo, nova, &razao));
+  std::ifstream leitura(arquivo);
+  const std::string texto((std::istreambuf_iterator<char>(leitura)), {});
+  CHECK(texto.find("# comentario pessoal\nvolume = 35") != std::string::npos);
+  CHECK(texto.find("acervo = " + nova.string()) != std::string::npos);
+  CHECK(texto.find("/antigo") == std::string::npos);
+  CHECK_FALSE(nu::salva_acervo(arquivo, cova.raiz() / "pasta#invalida", &razao));
+  CHECK_FALSE(nu::salva_acervo(arquivo, "relativa", &razao));
+}
+
+TEST_CASE("a varredura ignora playlists e deduz a hierarquia gerenciada") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  std::filesystem::create_directories(cova.acervo() / "Playlists/Estudo");
+  std::filesystem::create_symlink(original, cova.acervo() / "Playlists/Estudo/Tear.wav");
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  CHECK(biblioteca.total() == 1);
+  nu::Faixa faixa;
+  REQUIRE(biblioteca.acha_por_caminho(original.string(), faixa));
+  CHECK(faixa.artista == "Ada");
+  CHECK(faixa.album.empty());
+}

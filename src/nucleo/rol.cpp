@@ -15,6 +15,7 @@
 //                   collidiriam a meio.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/rol.hpp"
+#include "nucleo/espelho.hpp"
 
 #include <sqlite3.h>
 
@@ -115,7 +116,8 @@ std::string saneia_nome_de_rol(std::string_view crua) {
   return nome;
 }
 
-Roleiro::Roleiro(std::filesystem::path banco) : banco_(std::move(banco)) {
+Roleiro::Roleiro(std::filesystem::path banco, std::filesystem::path acervo)
+    : acervo_(std::move(acervo)), banco_(std::move(banco)) {
   if (sqlite3_open_v2(banco_.c_str(), &punho_,
                       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
                       nullptr) != SQLITE_OK) {
@@ -138,6 +140,7 @@ Roleiro::Roleiro(std::filesystem::path banco) : banco_(std::move(banco)) {
         });
   if (quantas == 0)
     corre(punho_, "INSERT INTO esquema_do_rol VALUES (?);", {kVersaoDoRol}, {});
+  if (!acervo_.empty()) altera([] { return true; });
 }
 
 Roleiro::~Roleiro() {
@@ -171,64 +174,76 @@ std::vector<Rol> Roleiro::rois() const {
   return lista;
 }
 
+bool Roleiro::altera(const std::function<bool()>& operacao) {
+  erro_.clear();
+  if (!corre(punho_, "BEGIN IMMEDIATE;", {}, {})) return false;
+  bool pronto = operacao();
+  EspelhoDePlaylists espelho(acervo_);
+  if (pronto && !acervo_.empty()) {
+    std::vector<ListaNoDisco> listas;
+    for (const auto& rol : rois()) listas.push_back({rol.nome, faixas(rol.id)});
+    pronto = espelho.prepara(listas) && espelho.publica();
+    if (!pronto) erro_ = "não foi possível atualizar Playlists; confira permissões e arquivos alheios";
+  }
+  if (pronto && corre(punho_, "COMMIT;", {}, {})) {
+    espelho.confirma();
+    return true;
+  }
+  corre(punho_, "ROLLBACK;", {}, {});
+  if (erro_.empty()) erro_ = "a alteração da playlist foi recusada";
+  return false;
+}
+
 int Roleiro::cria(std::string_view nome) {
   const std::string limpo = saneia_nome_de_rol(nome);
   if (limpo.empty()) return 0;
-  if (!corre(punho_, "INSERT INTO rol (nome) VALUES (?);", {}, {limpo}))
-    return 0;  // nome repetido cahe aqui, pelo UNIQUE
-  return static_cast<int>(sqlite3_last_insert_rowid(punho_));
+  int identificador = 0;
+  const bool criou = altera([&] {
+    if (!corre(punho_, "INSERT INTO rol (nome) VALUES (?);", {}, {limpo})) return false;
+    identificador = static_cast<int>(sqlite3_last_insert_rowid(punho_));
+    return true;
+  });
+  return criou ? identificador : 0;
 }
 
 bool Roleiro::renomeia(int id, std::string_view nome) {
   const std::string limpo = saneia_nome_de_rol(nome);
   if (limpo.empty()) return false;
-  if (!corre(punho_, "UPDATE rol SET nome = ?2 WHERE id = ?1;", {id}, {limpo}))
-    return false;  // nome repetido cahe aqui tambem, pelo UNIQUE
-  return sqlite3_changes(punho_) > 0;
+  return altera([&] {
+    return corre(punho_, "UPDATE rol SET nome = ?2 WHERE id = ?1;", {id}, {limpo}) &&
+           sqlite3_changes(punho_) > 0;
+  });
 }
 
 bool Roleiro::apaga(int id) {
-  // Os itens vão-se pela CASCATA da chave estrangeira, e não por um DELETE ao
-  // lado. Houve os dous, e a mutação accusou-o: tirar qualquer um d'elles não
-  // matava caso algum, e sómente tirando os DOUS a bateria accusava. Duas cousas
-  // a prometter a mesma cousa dão duas verdades, e no dia em que uma mudasse a
-  // outra ficaria a mentir. Fica a cascata, que é onde a relação se declara.
-  if (!corre(punho_, "DELETE FROM rol WHERE id = ?;", {id}, {})) return false;
-  return sqlite3_changes(punho_) > 0;
+  return altera([&] {
+    return corre(punho_, "DELETE FROM rol WHERE id = ?;", {id}, {}) &&
+           sqlite3_changes(punho_) > 0;
+  });
 }
 
 bool Roleiro::junta(int id, std::string_view caminho) {
   if (caminho.empty()) return false;
-  const std::string qual(caminho);
-  // A ordem nova é o que ha mais um. COALESCE porque MAX de lista vazia é nullo,
-  // e nullo mais um continua nullo: sem elle, a primeira faixa nunca entrava.
-  // Lista que não existe recusa-se pela CHAVE ESTRANGEIRA, e não por um WHERE
-  // EXISTS ao lado: houve o WHERE, e a mutação que o tirava sobrevivia, porque a
-  // chave já fazia o serviço. Vale aqui a mesma razão que em apaga().
-  return corre(punho_,
-               "INSERT INTO item (rol, ordem, caminho) SELECT ?1, "
-               "COALESCE((SELECT MAX(ordem) + 1 FROM item WHERE rol = ?1), 0),"
-               " ?2;",
-               {id}, {qual}) &&
-         sqlite3_changes(punho_) > 0;
+  return altera([&] {
+    return corre(punho_, "INSERT INTO item (rol, ordem, caminho) SELECT ?1, "
+                 "COALESCE((SELECT MAX(ordem) + 1 FROM item WHERE rol = ?1), 0), ?2;",
+                 {id}, {std::string(caminho)}) && sqlite3_changes(punho_) > 0;
+  });
 }
 
 bool Roleiro::retira(int id, int ordem) {
-  if (punho_ == nullptr) return false;
-  // UMA transacção para as duas cousas. Sem ella, uma queda entre o DELETE e o
-  // fechamento do buraco deixaria a lista com buraco no disco, e mover para cima
-  // passaria a adivinhar quem é o vizinho.
-  sqlite3_exec(punho_, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
-  corre(punho_, "DELETE FROM item WHERE rol = ?1 AND ordem = ?2;", {id, ordem},
-        {});
-  const bool havia = sqlite3_changes(punho_) > 0;
-  if (havia)
-    corre(punho_,
-          "UPDATE item SET ordem = ordem - 1 WHERE rol = ?1 AND ordem > ?2;",
-          {id, ordem}, {});
-  sqlite3_exec(punho_, havia ? "COMMIT;" : "ROLLBACK;", nullptr, nullptr,
-               nullptr);
-  return havia;
+  return altera([&] {
+    return corre(punho_, "DELETE FROM item WHERE rol = ?1 AND ordem = ?2;", {id, ordem}, {}) &&
+           sqlite3_changes(punho_) > 0 && corre(punho_,
+               "UPDATE item SET ordem = ordem - 1 WHERE rol = ?1 AND ordem > ?2;", {id, ordem}, {});
+  });
+}
+
+bool Roleiro::muda_caminho(std::string_view anterior, std::string_view novo) {
+  return altera([&] {
+    return corre(punho_, "UPDATE item SET caminho = ?2 WHERE caminho = ?1;", {},
+                 {std::string(anterior), std::string(novo)});
+  });
 }
 
 int Roleiro::retira_de_todos(std::string_view caminho) {
@@ -257,23 +272,15 @@ int Roleiro::retira_de_todos(std::string_view caminho) {
 }
 
 bool Roleiro::troca(int id, int uma, int outra) {
-  if (punho_ == nullptr || uma == outra) return false;
-  // Tres UPDATE, e não dous: a chave é (rol, ordem), e dous crús collidiriam a
-  // meio, que o primeiro poria duas linhas na mesma ordem. A sentinella negativa
-  // é logar que linha verdadeira nunca occupa.
-  sqlite3_exec(punho_, "BEGIN IMMEDIATE;", nullptr, nullptr, nullptr);
-  corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
-        {kSentinella, id, uma}, {});
-  const bool ha_uma = sqlite3_changes(punho_) > 0;
-  corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
-        {uma, id, outra}, {});
-  const bool ha_outra = sqlite3_changes(punho_) > 0;
-  corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
-        {outra, id, kSentinella}, {});
-  const bool ambas = ha_uma && ha_outra;
-  sqlite3_exec(punho_, ambas ? "COMMIT;" : "ROLLBACK;", nullptr, nullptr,
-               nullptr);
-  return ambas;
+  if (uma == outra) return false;
+  return altera([&] {
+    return corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
+                 {kSentinella, id, uma}, {}) && sqlite3_changes(punho_) > 0 &&
+           corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
+                 {uma, id, outra}, {}) && sqlite3_changes(punho_) > 0 &&
+           corre(punho_, "UPDATE item SET ordem = ?1 WHERE rol = ?2 AND ordem = ?3;",
+                 {outra, id, kSentinella}, {});
+  });
 }
 
 std::vector<std::string> Roleiro::faixas(int id) const {

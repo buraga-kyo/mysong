@@ -94,6 +94,12 @@ Faixa deriva_do_caminho(const std::filesystem::path& caminho,
   for (const std::filesystem::path& parte : relativo)
     if (parte != "." && parte != "..") degraus.push_back(parte.string());
 
+  if (degraus.size() >= 3 && degraus.front() == "Artistas" &&
+      (degraus[2] == "Musicas" || degraus[2] == "Clipes")) {
+    faixa.artista = degraus[1];
+    faixa.album = degraus.size() > 3 ? degraus.back() : "";
+    return faixa;
+  }
   if (!degraus.empty()) {
     faixa.artista = degraus.front();  // o componente logo sob a raiz
     faixa.album = degraus.back();     // o directorio que contem o arquivo
@@ -150,6 +156,12 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
   for (; anda != fim; anda.increment(erro)) {
     if (erro) { erro.clear(); continue; }  // entrada illegivel não para a raiz
     const std::filesystem::directory_entry& entrada = *anda;
+    if (entrada.path().parent_path() == raiz &&
+        (entrada.path().filename() == "Playlists" ||
+         entrada.path().filename().string().find(".playlists-") == 0)) {
+      anda.disable_recursion_pending();
+      continue;
+    }
     if (entrada.is_symlink(erro) && entrada.is_directory(erro)) {
       ++progresso->ligacoes_saltadas;
       anda.disable_recursion_pending();
@@ -164,7 +176,7 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
         std::filesystem::weakly_canonical(entrada.path(), erro).string();
     if (erro) { erro.clear(); continue; }
     if (!vistos->insert(canonico).second) continue;  // já veio por outra
-    achados->emplace_back(entrada.path(), raiz);
+    achados->emplace_back(canonico, raiz);
   }
 }
 

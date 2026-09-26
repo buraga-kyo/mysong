@@ -67,6 +67,7 @@ class Tocador {
   // duas perguntas com o mundo andando no meio. Nada d'isto desce ao motor:
   // tocar é ordem á parte, como sempre foi.
   std::size_t junta(std::string caminho);
+  void muda_caminho(std::string_view anterior, const std::string& novo);
   bool ir_para(std::size_t alvo);
   // O `indice` opcional sahe da MESMA tomada da tranca que as faixas: quem
   // lista para armar tela quer o assento do MESMO momento, e duas tomadas dão

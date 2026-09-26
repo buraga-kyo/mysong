@@ -10,6 +10,12 @@ AppContext::AppContext(
     const std::filesystem::path& soquete) {
   const std::filesystem::path acervo = ajustes.acervo.valor;
   std::string razao;
+  std::error_code erro_da_pasta;
+  std::filesystem::create_directories(acervo, erro_da_pasta);
+  if (erro_da_pasta) {
+    erro_fatal = "não foi possível abrir a biblioteca: " + erro_da_pasta.message();
+    return;
+  }
   
   std::optional<mysong::nucleo::MotorMpv> motor_temp = mysong::nucleo::MotorMpv::abrir(&razao);
   if (!motor_temp) {
@@ -33,7 +39,8 @@ AppContext::AppContext(
   }
 
   livraria = std::make_unique<mysong::nucleo::Biblioteca>(banco);
-  roleiro = std::make_unique<mysong::nucleo::Roleiro>(listas);
+  roleiro = std::make_unique<mysong::nucleo::Roleiro>(listas, acervo);
+  if (!roleiro->erro().empty()) std::cerr << "mysong: " << roleiro->erro() << "\n";
   projector = std::make_unique<mysong::nucleo::Projector>(soquete);
   navegador = std::make_unique<mysong::tui::Navegador>(*livraria, roleiro.get());
 

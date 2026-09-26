@@ -23,6 +23,11 @@ namespace mysong::nucleo {
 
 Tocador::Tocador(Motor& motor) noexcept : motor_(motor) {}
 
+void Tocador::muda_caminho(std::string_view anterior, const std::string& novo) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  fila_.muda_caminho(anterior, novo);
+}
+
 // Os punhos trancados da fila. Movem fila e indice, e nada mandam ao motor.
 std::size_t Tocador::junta(std::string caminho) {
   std::lock_guard<std::mutex> chave(tranca_);

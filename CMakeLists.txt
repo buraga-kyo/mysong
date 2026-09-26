@@ -257,7 +257,7 @@ target_link_libraries(mysong_core PUBLIC ftxui::component)
 # ─── A VARREDURA DO ACERVO (issue #34) ──────────────────────────────────────
 # Entra por target_sources, ACRESCENTANDO linha. Dependencia nova alguma se
 # cobra: a taglib e o sqlite3 já entraram com a bibliotheca na issue #8.
-target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/varredura.cpp src/nucleo/renomeacao.cpp)
 
 # A prova do esquema mais novo ENVELHECE a Casa por SQL propria, e para isso pede
 # os cabeçalhos do sqlite3. A alternativa era pôr na obra um parametro de versão
@@ -351,7 +351,7 @@ target_link_libraries(mysong_core PUBLIC Threads::Threads)
 # Banco PROPRIO, e não o da bibliotheca: aquelle é reconstruido a cada varredura
 # por temporario e rename, e taboa de lista lá dentro sahiria com a varredura.
 # Dependencia nova alguma: o sqlite3 já entrou com a bibliotheca na issue #8.
-target_sources(mysong_core PRIVATE src/nucleo/rol.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/rol.cpp src/nucleo/espelho.cpp)
 
 # ─── A LIXEIRA DO SYSTEMA (issue #105) ──────────────────────────────────────
 # Apagar faixa é mandá-la á lixeira freedesktop, e nunca desligá-la do disco.
@@ -453,7 +453,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop"
 # ─── OS AJUSTES DO OPERADOR (issue #67) ─────────────────────────────────────
 # Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Dependencia
 # nova alguma se cobra: o arquivo lê-se por ifstream.
-target_sources(mysong_core PRIVATE src/nucleo/ajustes.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/ajustes.cpp src/nucleo/pastas.cpp)
 
 # ─── O PROMPT EM LINHA PROPRIA (issue #79) ──────────────────────────────────
 # Por target_sources, ACRESCENTANDO linha. A peça é nova de proposito: o topo da

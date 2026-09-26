@@ -50,6 +50,8 @@
 #include "api/socket.hpp"
 
 #include "nucleo/ajustes.hpp"
+#include "nucleo/pastas.hpp"
+#include "nucleo/renomeacao.hpp"
 #include "nucleo/analisador.hpp"
 #include "nucleo/caa.hpp"
 #include "nucleo/capa.hpp"
@@ -265,17 +267,15 @@ std::string apaga_a_faixa(const std::string& caminho,
   return recado;
 }
 
-// renomeia_a_faixa, o titulo na ETIQUETA primeiro, e no índice depois. N'esta
-// ordem, e não na contraria: gravado o índice antes, a etiqueta que recusasse
-// deixava a pauta a mostrar nome que o arquivo não tem, e a proxima varredura
-// desfazia-o sem o operador entender porquê.
+// Mantém arquivo, índice, playlists e fila apontando para o mesmo nome.
 std::string renomeia_a_faixa(const std::string& caminho,
                              const std::string& titulo,
-                             nucleo::Biblioteca& livraria) {
-  const nucleo::DoTitulo desfecho = nucleo::renomeia_titulo(caminho, titulo);
-  if (!desfecho.feito) return "não se renomeou: " + desfecho.razao;
-  livraria.muda_o_titulo(caminho, desfecho.titulo);
-  return "agora chama-se «" + desfecho.titulo + "»";
+                             nucleo::Biblioteca& livraria,
+                             nucleo::Roleiro& roleiro, nucleo::Tocador& tocador) {
+  const auto resultado = nucleo::renomeia_arquivo(caminho, titulo, livraria, roleiro);
+  if (!resultado.feita) return "não se renomeou: " + resultado.razao;
+  tocador.muda_caminho(caminho, resultado.caminho);
+  return "agora chama-se «" + resultado.titulo + "»";
 }
 
 // cumprir, a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
@@ -422,6 +422,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> varrida{false};
   tui::Campainha pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
+  std::mutex tranca_do_acervo;
   std::size_t total_do_acervo = livraria.total();
   tui::CorreioDe<std::size_t> correio_da_contagem;
   tui::CorreioDe<int> correio_da_varredura;
@@ -540,6 +541,7 @@ std::size_t pagina_das_baixas = 0;
   // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
   ao_fundo.emplace_back([&] {
     while (pede_varrer.espera()) {
+      std::lock_guard<std::mutex> chave(tranca_do_acervo);
       try {
         varrida.store(false);
         nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
@@ -1505,6 +1507,16 @@ std::size_t pagina_das_baixas = 0;
       // Parado não ha o que pausar, e ahi o gesto morre aqui, consumido.
       if (ordem_do_rato.verbo == tui::Verbo::Nada) return true;
     }
+    if (digita == Digita::Nada && tecla == ftxui::Event::Character('B')) {
+      if (ajustes.acervo.origem == nucleo::Origem::Argumento ||
+          ajustes.acervo.origem == nucleo::Origem::Ambiente) {
+        aviso_da_rede = "remova --acervo ou MYSONG_ACERVO para editar a biblioteca pela tela";
+        return true;
+      }
+      digita = Digita::Biblioteca;
+      termo_em_curso = ajustes.acervo.valor.string();
+      return true;
+    }
     // O MODO DE DIGITAR trata-se PRIMEIRO, e por inteiro: assim não ha caminho
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
@@ -1539,7 +1551,12 @@ std::size_t pagina_das_baixas = 0;
       if (tecla == ftxui::Event::Return) {
         const Digita era = digita;
         digita = Digita::Nada;
-        if (era == Digita::Busca) {
+        if (era == Digita::Biblioteca) {
+          std::string razao;
+          aviso_da_rede = nucleo::salva_acervo(ajustes.arquivo, termo_em_curso, &razao)
+              ? "biblioteca salva; reinicie o MySong. Arquivos antigos permanecem na pasta anterior"
+              : "não foi possível salvar: " + razao;
+        } else if (era == Digita::Busca) {
           navegador.filtra(termo_em_curso);
         } else if (era == Digita::NomeNovo) {
           if (!navegador.cria_rol(termo_em_curso))
@@ -1548,7 +1565,10 @@ std::size_t pagina_das_baixas = 0;
           cria_a_lista_com(termo_em_curso);
         } else if (era == Digita::TituloOutro) {
           const std::string qual = navegador.caminho_eleito();
-          aviso_da_rede = renomeia_a_faixa(qual, termo_em_curso, livraria);
+          std::unique_lock<std::mutex> chave(tranca_do_acervo, std::try_to_lock);
+          aviso_da_rede = chave.owns_lock()
+              ? renomeia_a_faixa(qual, termo_em_curso, livraria, roleiro, tocador)
+              : "aguarde a varredura terminar para renomear";
           navegador.recarrega();  // a pauta reflecte no mesmo quadro
         } else if (era == Digita::NomeOutro) {
           if (!navegador.renomeia_rol(termo_em_curso))

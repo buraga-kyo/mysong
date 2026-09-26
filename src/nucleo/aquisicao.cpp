@@ -144,8 +144,7 @@ Pedido enriquece(const Pedido& pedido, const FichaMB& ficha) {
 
 std::filesystem::path destino(const std::filesystem::path& raiz,
                               const Pedido& pedido) {
-  std::filesystem::path caminho = raiz / saneia_nome(pedido.artista);
-  if (!pedido.album.empty()) caminho /= saneia_nome(pedido.album);
+  std::filesystem::path caminho = raiz / "Artistas" / saneia_nome(pedido.artista) / "Musicas";
   std::string folha;
   if (pedido.numero > 0) {
     // O numero apara-se em quatro digitos, e o buffer é folgado. Sem a aparadura,

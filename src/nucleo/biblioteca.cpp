@@ -404,6 +404,14 @@ bool muda_uma_linha(const std::filesystem::path& banco, const char* sql,
 }
 }  // namespace
 
+bool Biblioteca::renomeia(std::string_view anterior, std::string_view novo,
+                           std::string_view titulo) {
+  const std::lock_guard<std::mutex> chave(tranca_);
+  return muda_uma_linha(banco_,
+      "UPDATE faixas SET caminho = ?2, titulo = ?3 WHERE caminho = ?1;",
+      {anterior, novo, titulo});
+}
+
 bool Biblioteca::muda_o_titulo(std::string_view caminho,
                                std::string_view titulo) {
   const std::lock_guard<std::mutex> chave(tranca_);

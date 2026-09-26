@@ -5,8 +5,7 @@
 // d'elle entra aqui, e d'aqui sahe RESOLVIDO: quem consome não pergunta ao
 // ambiente, não abre arquivo e não escolhe padrão algum.
 //
-// O PROGRAMA NUNCA ESCREVE O ARQUIVO: o commentario que o operador poz lá não
-// morre n'uma reescrita nossa.
+// A edição da biblioteca preserva os outros ajustes e comentários do arquivo.
 //
 // DOMÍNIO ......... o TEXTO do arquivo, o que o ambiente diz, e o que a linha
 //                   de commando trouxe. Nunca o disco directamente.
@@ -196,7 +195,7 @@ std::filesystem::path caminho_da_configuracao();
 EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
                               std::string* texto, Ajustes* ajustes);
 
-// padrao_do_acervo, `~/Música`, o chão da escada. Vive aqui, e não na janella,
+// padrao_do_acervo, a pasta musical do Linux seguida de mysong. Vive aqui,
 // para que haja UM logar que sabe o que o acervo é na falta de tudo o mais.
 std::filesystem::path padrao_do_acervo();
 

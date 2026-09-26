@@ -10,6 +10,7 @@
 //                   a precedencia inteira sem tocar disco nem ambiente.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/ajustes.hpp"
+#include "nucleo/pastas.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -363,12 +364,15 @@ EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
   return EstadoDoArquivo::Lido;
 }
 
-// padrao_do_acervo, o chão da escada, e o mesmo de sempre: `~/Música`. Sem
+// A raiz gerenciada fica sob a pasta musical indicada pelo Linux. Sem
 // HOME, devolve vazio, e ahi a varredura não acha nada, que é o que já succedia.
 std::filesystem::path padrao_do_acervo() {
   const char* const casa = std::getenv("HOME");
   if (casa == nullptr) return {};
-  return std::filesystem::path(casa) / "Música";
+  const char* configuracao = std::getenv("XDG_CONFIG_HOME");
+  const std::filesystem::path pasta = configuracao && configuracao[0] == '/'
+      ? std::filesystem::path(configuracao) : std::filesystem::path(casa) / ".config";
+  return pasta_de_musica(casa, pasta) / "mysong";
 }
 
 // eh_acervo, a UNICA bandeira que esta lavra accrescenta. Repetida, vale a
