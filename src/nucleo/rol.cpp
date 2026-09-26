@@ -174,6 +174,26 @@ std::vector<Rol> Roleiro::rois() const {
   return lista;
 }
 
+bool Roleiro::altera(const std::function<bool()>& operacao) {
+  erro_.clear();
+  if (!corre(punho_, "BEGIN IMMEDIATE;", {}, {})) return false;
+  bool pronto = operacao();
+  EspelhoDePlaylists espelho(acervo_);
+  if (pronto && !acervo_.empty()) {
+    std::vector<ListaNoDisco> listas;
+    for (const auto& rol : rois()) listas.push_back({rol.nome, faixas(rol.id)});
+    pronto = espelho.prepara(listas) && espelho.publica();
+    if (!pronto) erro_ = "não foi possível atualizar Playlists; confira permissões e arquivos alheios";
+  }
+  if (pronto && corre(punho_, "COMMIT;", {}, {})) {
+    espelho.confirma();
+    return true;
+  }
+  corre(punho_, "ROLLBACK;", {}, {});
+  if (erro_.empty()) erro_ = "a alteração da playlist foi recusada";
+  return false;
+}
+
 int Roleiro::cria(std::string_view nome) {
   const std::string limpo = saneia_nome_de_rol(nome);
   if (limpo.empty()) return 0;
