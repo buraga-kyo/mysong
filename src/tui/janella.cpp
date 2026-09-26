@@ -422,6 +422,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   std::atomic<bool> varrida{false};
   tui::Campainha pede_varrer{true};
   std::atomic<bool> acervo_novo{false};
+  std::mutex tranca_do_acervo;
   std::size_t total_do_acervo = livraria.total();
   tui::CorreioDe<std::size_t> correio_da_contagem;
   tui::CorreioDe<int> correio_da_varredura;
