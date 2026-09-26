@@ -271,3 +271,8 @@ TEST_CASE("playlists recusam travessia e preservam arquivos alheios") {
   CHECK(listas.cria(".mysong") == 0);
   REQUIRE(listas.cria("Estudo") > 0);
   std::ofstream(raiz / "Playlists/Estudo/arquivo.txt") << "preservar";
+  CHECK(listas.cria("Outra") == 0);
+  CHECK(listas.rois().size() == 1);
+  CHECK(std::filesystem::exists(raiz / "Playlists/Estudo/arquivo.txt"));
+  CHECK_FALSE(listas.erro().empty());
+}
