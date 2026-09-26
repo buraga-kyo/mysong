@@ -670,3 +670,29 @@ TEST_CASE("edicao da biblioteca preserva outros ajustes e recusa caminhos ambigu
   const auto arquivo = cova.raiz() / "mysong.conf";
   std::ofstream(arquivo) << "# comentario pessoal\nvolume = 35\nacervo = /antigo\n";
   std::string razao;
+  const auto nova = cova.raiz() / "Nova biblioteca";
+  REQUIRE(nu::salva_acervo(arquivo, nova, &razao));
+  std::ifstream leitura(arquivo);
+  const std::string texto((std::istreambuf_iterator<char>(leitura)), {});
+  CHECK(texto.find("# comentario pessoal\nvolume = 35") != std::string::npos);
+  CHECK(texto.find("acervo = " + nova.string()) != std::string::npos);
+  CHECK(texto.find("/antigo") == std::string::npos);
+  CHECK_FALSE(nu::salva_acervo(arquivo, cova.raiz() / "pasta#invalida", &razao));
+  CHECK_FALSE(nu::salva_acervo(arquivo, "relativa", &razao));
+}
+
+TEST_CASE("a varredura ignora playlists e deduz a hierarquia gerenciada") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  std::filesystem::create_directories(cova.acervo() / "Playlists/Estudo");
+  std::filesystem::create_symlink(original, cova.acervo() / "Playlists/Estudo/Tear.wav");
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  CHECK(biblioteca.total() == 1);
+  nu::Faixa faixa;
+  REQUIRE(biblioteca.acha_por_caminho(original.string(), faixa));
+  CHECK(faixa.artista == "Ada");
+  CHECK(faixa.album.empty());
+}
