@@ -541,6 +541,7 @@ std::size_t pagina_das_baixas = 0;
   // passos da issue #34 deixa a bandeira `sahir` interromper trabalho activo.
   ao_fundo.emplace_back([&] {
     while (pede_varrer.espera()) {
+      std::lock_guard<std::mutex> chave(tranca_do_acervo);
       try {
         varrida.store(false);
         nucleo::Varredura varredura(banco, {ajustes.acervo.valor});
