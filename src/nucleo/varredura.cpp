@@ -94,6 +94,12 @@ Faixa deriva_do_caminho(const std::filesystem::path& caminho,
   for (const std::filesystem::path& parte : relativo)
     if (parte != "." && parte != "..") degraus.push_back(parte.string());
 
+  if (degraus.size() >= 3 && degraus.front() == "Artistas" &&
+      (degraus[2] == "Musicas" || degraus[2] == "Clipes")) {
+    faixa.artista = degraus[1];
+    faixa.album = degraus.size() > 3 ? degraus.back() : "";
+    return faixa;
+  }
   if (!degraus.empty()) {
     faixa.artista = degraus.front();  // o componente logo sob a raiz
     faixa.album = degraus.back();     // o directorio que contem o arquivo
