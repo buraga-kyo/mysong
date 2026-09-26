@@ -270,11 +270,12 @@ std::string apaga_a_faixa(const std::string& caminho,
 // Mantém arquivo, índice, playlists e fila apontando para o mesmo nome.
 std::string renomeia_a_faixa(const std::string& caminho,
                              const std::string& titulo,
-                             nucleo::Biblioteca& livraria) {
-  const nucleo::DoTitulo desfecho = nucleo::renomeia_titulo(caminho, titulo);
-  if (!desfecho.feito) return "não se renomeou: " + desfecho.razao;
-  livraria.muda_o_titulo(caminho, desfecho.titulo);
-  return "agora chama-se «" + desfecho.titulo + "»";
+                             nucleo::Biblioteca& livraria,
+                             nucleo::Roleiro& roleiro, nucleo::Tocador& tocador) {
+  const auto resultado = nucleo::renomeia_arquivo(caminho, titulo, livraria, roleiro);
+  if (!resultado.feita) return "não se renomeou: " + resultado.razao;
+  tocador.muda_caminho(caminho, resultado.caminho);
+  return "agora chama-se «" + resultado.titulo + "»";
 }
 
 // cumprir, a ordem em chamada. O `switch` é exhaustivo de proposito: verbo novo
