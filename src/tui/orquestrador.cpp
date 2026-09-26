@@ -39,7 +39,8 @@ AppContext::AppContext(
   }
 
   livraria = std::make_unique<mysong::nucleo::Biblioteca>(banco);
-  roleiro = std::make_unique<mysong::nucleo::Roleiro>(listas);
+  roleiro = std::make_unique<mysong::nucleo::Roleiro>(listas, acervo);
+  if (!roleiro->erro().empty()) std::cerr << "mysong: " << roleiro->erro() << "\n";
   projector = std::make_unique<mysong::nucleo::Projector>(soquete);
   navegador = std::make_unique<mysong::tui::Navegador>(*livraria, roleiro.get());
 
