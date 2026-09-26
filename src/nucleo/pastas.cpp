@@ -58,3 +58,33 @@ bool salva_acervo(const std::filesystem::path& arquivo,
     return recusa("use caminho absoluto, sem #, quebras ou espaços nas pontas");
   std::error_code erro;
   std::filesystem::create_directories(acervo, erro);
+  if (erro) return recusa("não foi possível criar a biblioteca: " + erro.message());
+  Ajustes leitura;
+  std::string anterior;
+  if (ler_o_arquivo(arquivo, &anterior, &leitura) == EstadoDoArquivo::Illegivel ||
+      !leitura.queixas.empty()) return recusa("configuração ilegível ou grande demais");
+  std::string novo;
+  std::size_t inicio = 0;
+  while (inicio < anterior.size()) {
+    const auto fim = anterior.find('\n', inicio);
+    const auto linha = anterior.substr(inicio, fim == std::string::npos ? fim : fim - inicio);
+    const auto igual = linha.find('=');
+    if (igual == std::string::npos || aparar(linha.substr(0, igual)) != "acervo")
+      novo += linha + "\n";
+    inicio = fim == std::string::npos ? anterior.size() : fim + 1;
+  }
+  novo += "acervo = " + caminho + "\n";
+  std::filesystem::create_directories(arquivo.parent_path(), erro);
+  if (erro) return recusa(erro.message());
+  std::string molde = arquivo.string() + ".XXXXXX";
+  std::vector<char> nome(molde.begin(), molde.end());
+  nome.push_back('\0');
+  const int descritor = ::mkstemp(nome.data());
+  if (descritor < 0) return recusa("não foi possível criar a configuração temporária");
+  const bool gravou = ::write(descritor, novo.data(), novo.size()) == static_cast<ssize_t>(novo.size()) &&
+                      ::fsync(descritor) == 0;
+  const bool fechou = ::close(descritor) == 0;
+  if (gravou && fechou) std::filesystem::rename(nome.data(), arquivo, erro);
+  if (!gravou || !fechou || erro) {
+    std::filesystem::remove(nome.data(), erro);
+    return recusa("não foi possível salvar a configuração");
