@@ -36,7 +36,7 @@ namespace mysong::tui {
 // o Enter d'elle faz DUAS cousas em vez de uma; e rotulo que dissesse «LISTA
 // NOVA» calaria a segunda, que é a que o operador não ha de descobrir depois.
 enum class Modo { Nada, Busca, Url, Procura, NomeNovo, NomeOutro, Confirma,
-                  Lista, TituloOutro, ConfirmaFaixa, NomeComEsta };
+                  Lista, TituloOutro, ConfirmaFaixa, NomeComEsta, Biblioteca };
 
 // aceita_letra, o modo escreve no termo? Falso em Nada e em Confirma.
 bool aceita_letra(Modo modo) noexcept;
