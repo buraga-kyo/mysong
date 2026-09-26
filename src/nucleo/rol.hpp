@@ -104,6 +104,9 @@ class Roleiro {
   std::vector<std::string> faixas(int id) const;
 
  private:
+  bool altera(const std::function<bool()>& operacao);
+  std::filesystem::path acervo_;
+  std::string erro_;
   std::filesystem::path banco_;
   sqlite3* punho_ = nullptr;
 };
