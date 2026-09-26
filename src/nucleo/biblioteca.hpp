@@ -144,6 +144,7 @@ class Biblioteca {
   // d'esta classe é de sómente-leitura e ha de continuar a ser. Falso quando o
   // caminho não está no índice, ou quando o banco não se deixa escrever.
   bool muda_o_titulo(std::string_view caminho, std::string_view titulo);
+  bool renomeia(std::string_view anterior, std::string_view novo, std::string_view titulo);
   bool esquece(std::string_view caminho);
 
   // O que a varredura pergunta para saber se ha de reler a etiqueta. Falso
