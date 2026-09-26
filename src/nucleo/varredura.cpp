@@ -176,7 +176,7 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
         std::filesystem::weakly_canonical(entrada.path(), erro).string();
     if (erro) { erro.clear(); continue; }
     if (!vistos->insert(canonico).second) continue;  // já veio por outra
-    achados->emplace_back(entrada.path(), raiz);
+    achados->emplace_back(canonico, raiz);
   }
 }
 
