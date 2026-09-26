@@ -88,3 +88,6 @@ EspelhoDePlaylists::~EspelhoDePlaylists() {
     }
   }
   std::error_code erro;
+  if (!temporario_.empty()) std::filesystem::remove_all(temporario_, erro);
+}
+}  // namespace mysong::nucleo
