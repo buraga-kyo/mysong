@@ -364,7 +364,7 @@ EstadoDoArquivo ler_o_arquivo(const std::filesystem::path& caminho,
   return EstadoDoArquivo::Lido;
 }
 
-// padrao_do_acervo, o chão da escada, e o mesmo de sempre: `~/Música`. Sem
+// A raiz gerenciada fica sob a pasta musical indicada pelo Linux. Sem
 // HOME, devolve vazio, e ahi a varredura não acha nada, que é o que já succedia.
 std::filesystem::path padrao_do_acervo() {
   const char* const casa = std::getenv("HOME");
