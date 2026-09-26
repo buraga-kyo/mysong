@@ -58,3 +58,33 @@ bool EspelhoDePlaylists::prepara(const std::vector<ListaNoDisco>& listas) {
       for (const auto& faixa : lista.faixas) {
         const auto alvo = std::filesystem::absolute(faixa);
         const auto folha = std::to_string(++ordem) + " - " + alvo.filename().string();
+        std::filesystem::create_symlink(alvo, pasta / folha);
+      }
+    }
+    return true;
+  } catch (const std::filesystem::filesystem_error&) { return false; }
+}
+
+bool EspelhoDePlaylists::publica() {
+  if (temporario_.empty()) return false;
+  if (havia_) publicado_ = troca_pastas(temporario_, destino_);
+  else {
+    publicado_ = ::syscall(SYS_renameat2, AT_FDCWD, temporario_.c_str(), AT_FDCWD,
+                            destino_.c_str(), RENAME_NOREPLACE) == 0;
+  }
+  return publicado_;
+}
+
+void EspelhoDePlaylists::confirma() noexcept { confirmado_ = true; }
+
+EspelhoDePlaylists::~EspelhoDePlaylists() {
+  if (publicado_ && !confirmado_) {
+    // Se a reversão falhar, preservamos as duas árvores para recuperação.
+    if (havia_ && !troca_pastas(temporario_, destino_)) return;
+    if (!havia_) {
+      std::error_code erro;
+      std::filesystem::rename(destino_, temporario_, erro);
+      if (erro) return;
+    }
+  }
+  std::error_code erro;
