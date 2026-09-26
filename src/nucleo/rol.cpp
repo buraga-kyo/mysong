@@ -209,9 +209,10 @@ int Roleiro::cria(std::string_view nome) {
 bool Roleiro::renomeia(int id, std::string_view nome) {
   const std::string limpo = saneia_nome_de_rol(nome);
   if (limpo.empty()) return false;
-  if (!corre(punho_, "UPDATE rol SET nome = ?2 WHERE id = ?1;", {id}, {limpo}))
-    return false;  // nome repetido cahe aqui tambem, pelo UNIQUE
-  return sqlite3_changes(punho_) > 0;
+  return altera([&] {
+    return corre(punho_, "UPDATE rol SET nome = ?2 WHERE id = ?1;", {id}, {limpo}) &&
+           sqlite3_changes(punho_) > 0;
+  });
 }
 
 bool Roleiro::apaga(int id) {
