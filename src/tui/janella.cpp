@@ -267,10 +267,7 @@ std::string apaga_a_faixa(const std::string& caminho,
   return recado;
 }
 
-// renomeia_a_faixa, o titulo na ETIQUETA primeiro, e no índice depois. N'esta
-// ordem, e não na contraria: gravado o índice antes, a etiqueta que recusasse
-// deixava a pauta a mostrar nome que o arquivo não tem, e a proxima varredura
-// desfazia-o sem o operador entender porquê.
+// Mantém arquivo, índice, playlists e fila apontando para o mesmo nome.
 std::string renomeia_a_faixa(const std::string& caminho,
                              const std::string& titulo,
                              nucleo::Biblioteca& livraria) {
