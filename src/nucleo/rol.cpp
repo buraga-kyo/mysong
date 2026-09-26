@@ -197,9 +197,13 @@ bool Roleiro::altera(const std::function<bool()>& operacao) {
 int Roleiro::cria(std::string_view nome) {
   const std::string limpo = saneia_nome_de_rol(nome);
   if (limpo.empty()) return 0;
-  if (!corre(punho_, "INSERT INTO rol (nome) VALUES (?);", {}, {limpo}))
-    return 0;  // nome repetido cahe aqui, pelo UNIQUE
-  return static_cast<int>(sqlite3_last_insert_rowid(punho_));
+  int identificador = 0;
+  const bool criou = altera([&] {
+    if (!corre(punho_, "INSERT INTO rol (nome) VALUES (?);", {}, {limpo})) return false;
+    identificador = static_cast<int>(sqlite3_last_insert_rowid(punho_));
+    return true;
+  });
+  return criou ? identificador : 0;
 }
 
 bool Roleiro::renomeia(int id, std::string_view nome) {
