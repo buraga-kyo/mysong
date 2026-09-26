@@ -10,6 +10,7 @@
 //                   a precedencia inteira sem tocar disco nem ambiente.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/ajustes.hpp"
+#include "nucleo/pastas.hpp"
 
 #include <algorithm>
 #include <charconv>
