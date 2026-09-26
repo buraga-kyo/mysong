@@ -155,7 +155,7 @@ TEST_CASE("o destino sahe na hierarchia Artistas/Artista/Musicas/NN - Titulo") {
   CHECK(nu::destino("/acervo", cheio).string() ==
         "/acervo/Artistas/Ada Lovelace/Musicas/Tear");
   cheio.album.clear();
-  CHECK(nu::destino("/acervo", cheio).string() == "/acervo/Ada Lovelace/Tear");
+  CHECK(nu::destino("/acervo", cheio).string() == "/acervo/Artistas/Ada Lovelace/Musicas/Tear");
   // E o saneamento vale em CADA componente, e não sómente no titulo.
   nu::Pedido torto;
   torto.artista = "AC/DC";
