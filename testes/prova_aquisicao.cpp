@@ -153,7 +153,7 @@ TEST_CASE("o destino sahe na hierarchia Artistas/Artista/Musicas/NN - Titulo") {
   // Sem numero, o titulo fica sozinho; sem album, o artista contem a faixa.
   cheio.numero = 0;
   CHECK(nu::destino("/acervo", cheio).string() ==
-        "/acervo/Ada Lovelace/Máquina Analítica/Tear");
+        "/acervo/Artistas/Ada Lovelace/Musicas/Tear");
   cheio.album.clear();
   CHECK(nu::destino("/acervo", cheio).string() == "/acervo/Ada Lovelace/Tear");
   // E o saneamento vale em CADA componente, e não sómente no titulo.
