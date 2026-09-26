@@ -21,6 +21,12 @@
 
 namespace mysong::nucleo {
 
+void Fila::muda_caminho(std::string_view anterior, const std::string& novo) {
+  for (auto& caminho : faixas_)
+    if (caminho == anterior) caminho = novo;
+}
+
+
 void Fila::junta(std::string caminho) {
   faixas_.push_back(std::move(caminho));
   // Embaralhado, a faixa nova entra no FIM da permutação, e a permutação NÃO se
