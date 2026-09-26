@@ -453,7 +453,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/gerado/mysong.desktop"
 # ─── OS AJUSTES DO OPERADOR (issue #67) ─────────────────────────────────────
 # Por target_sources, ACRESCENTANDO linha, que é a regra d'esta Casa. Dependencia
 # nova alguma se cobra: o arquivo lê-se por ifstream.
-target_sources(mysong_core PRIVATE src/nucleo/ajustes.cpp)
+target_sources(mysong_core PRIVATE src/nucleo/ajustes.cpp src/nucleo/pastas.cpp)
 
 # ─── O PROMPT EM LINHA PROPRIA (issue #79) ──────────────────────────────────
 # Por target_sources, ACRESCENTANDO linha. A peça é nova de proposito: o topo da
