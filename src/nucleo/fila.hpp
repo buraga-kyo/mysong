@@ -49,6 +49,7 @@ class Fila {
  public:
   // Junta ao fim, preservando a ordem de chegada.
   void junta(std::string caminho);
+  void muda_caminho(std::string_view anterior, const std::string& novo);
 
   bool vazia() const noexcept;
   std::size_t tamanho() const noexcept;
