@@ -610,3 +610,33 @@ TEST_CASE("renomear recusa titulo vazio, e a etiqueta fica como estava") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("renomeacao atualiza disco indice etiqueta e links sem sobrescrever") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  nu::Varredura varredura(cova.banco(), {cova.acervo()});
+  while (varredura.passo()) {}
+  nu::Biblioteca biblioteca(cova.banco());
+  nu::Roleiro listas(cova.raiz() / "listas.sqlite3", cova.acervo());
+  const int lista = listas.cria("Estudo");
+  REQUIRE(listas.junta(lista, original.string()));
+  const auto novo = nu::renomeia_arquivo(original.string(), "Geometria", biblioteca, listas);
+  REQUIRE(novo.feita);
+  CHECK_FALSE(std::filesystem::exists(original));
+  CHECK(std::filesystem::exists(novo.caminho));
+  CHECK(listas.faixas(lista).front() == novo.caminho);
+  nu::Faixa faixa;
+  REQUIRE(biblioteca.acha_por_caminho(novo.caminho, faixa));
+  CHECK(faixa.titulo == "Geometria");
+  CHECK(std::filesystem::read_symlink(cova.acervo() / "Playlists/Estudo/1 - Geometria.wav") == novo.caminho);
+  faz_wav(original, 2);
+  CHECK_FALSE(nu::renomeia_arquivo(novo.caminho, "Tear", biblioteca, listas).feita);
+  CHECK(std::filesystem::exists(novo.caminho));
+}
+
+TEST_CASE("renomeacao reverte arquivo quando espelho recusa alteracao") {
+  Cova cova;
+  const auto original = cova.acervo() / "Artistas/Ada/Musicas/Tear.wav";
+  faz_wav(original, 1);
+  poe_etiqueta(original, "Ada", "", "Tear", 1);
