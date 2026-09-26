@@ -156,6 +156,12 @@ void lista_raiz(const std::filesystem::path& raiz, Progresso* progresso,
   for (; anda != fim; anda.increment(erro)) {
     if (erro) { erro.clear(); continue; }  // entrada illegivel não para a raiz
     const std::filesystem::directory_entry& entrada = *anda;
+    if (entrada.path().parent_path() == raiz &&
+        (entrada.path().filename() == "Playlists" ||
+         entrada.path().filename().string().find(".playlists-") == 0)) {
+      anda.disable_recursion_pending();
+      continue;
+    }
     if (entrada.is_symlink(erro) && entrada.is_directory(erro)) {
       ++progresso->ligacoes_saltadas;
       anda.disable_recursion_pending();
