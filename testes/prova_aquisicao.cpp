@@ -145,7 +145,7 @@ TEST_CASE("o destino sahe na hierarchia Artistas/Artista/Musicas/NN - Titulo") {
   cheio.titulo = "Tear";
   cheio.numero = 3;
   CHECK(nu::destino("/acervo", cheio).string() ==
-        "/acervo/Ada Lovelace/Máquina Analítica/03 - Tear");
+        "/acervo/Artistas/Ada Lovelace/Musicas/03 - Tear");
   // Numero de dous digitos não ganha zero á frente.
   cheio.numero = 12;
   CHECK(nu::destino("/acervo", cheio).string() ==
