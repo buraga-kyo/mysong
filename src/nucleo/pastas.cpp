@@ -88,3 +88,7 @@ bool salva_acervo(const std::filesystem::path& arquivo,
   if (!gravou || !fechou || erro) {
     std::filesystem::remove(nome.data(), erro);
     return recusa("não foi possível salvar a configuração");
+  }
+  return true;
+}
+}  // namespace mysong::nucleo
