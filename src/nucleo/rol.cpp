@@ -224,18 +224,11 @@ bool Roleiro::apaga(int id) {
 
 bool Roleiro::junta(int id, std::string_view caminho) {
   if (caminho.empty()) return false;
-  const std::string qual(caminho);
-  // A ordem nova é o que ha mais um. COALESCE porque MAX de lista vazia é nullo,
-  // e nullo mais um continua nullo: sem elle, a primeira faixa nunca entrava.
-  // Lista que não existe recusa-se pela CHAVE ESTRANGEIRA, e não por um WHERE
-  // EXISTS ao lado: houve o WHERE, e a mutação que o tirava sobrevivia, porque a
-  // chave já fazia o serviço. Vale aqui a mesma razão que em apaga().
-  return corre(punho_,
-               "INSERT INTO item (rol, ordem, caminho) SELECT ?1, "
-               "COALESCE((SELECT MAX(ordem) + 1 FROM item WHERE rol = ?1), 0),"
-               " ?2;",
-               {id}, {qual}) &&
-         sqlite3_changes(punho_) > 0;
+  return altera([&] {
+    return corre(punho_, "INSERT INTO item (rol, ordem, caminho) SELECT ?1, "
+                 "COALESCE((SELECT MAX(ordem) + 1 FROM item WHERE rol = ?1), 0), ?2;",
+                 {id}, {std::string(caminho)}) && sqlite3_changes(punho_) > 0;
+  });
 }
 
 bool Roleiro::retira(int id, int ordem) {
