@@ -23,6 +23,8 @@
 
 #include "nucleo/biblioteca.hpp"
 #include "nucleo/varredura.hpp"
+#include "nucleo/renomeacao.hpp"
+#include "nucleo/pastas.hpp"
 
 namespace nu = mysong::nucleo;
 
