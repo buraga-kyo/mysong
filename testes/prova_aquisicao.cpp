@@ -161,7 +161,7 @@ TEST_CASE("o destino sahe na hierarchia Artistas/Artista/Musicas/NN - Titulo") {
   torto.artista = "AC/DC";
   torto.album = ".occulto";
   torto.titulo = "a/b";
-  CHECK(nu::destino("/acervo", torto).string() == "/acervo/AC-DC/occulto/a-b");
+  CHECK(nu::destino("/acervo", torto).string() == "/acervo/Artistas/AC-DC/Musicas/a-b");
   // Extensão alguma se põe: quem a põe é o yt-dlp, que sabe em que fórma sahiu.
   CHECK(nu::destino("/acervo", cheio).extension().empty());
 }
