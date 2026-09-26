@@ -15,6 +15,7 @@
 //                   collidiriam a meio.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/rol.hpp"
+#include "nucleo/espelho.hpp"
 
 #include <sqlite3.h>
 
