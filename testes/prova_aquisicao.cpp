@@ -138,7 +138,7 @@ TEST_CASE("faltando os dous, o artista fica Desconhecido e não fica o canal") {
 }
 
 // O CAMINHO na hierarchia, contra alvo escripto á mão.
-TEST_CASE("o destino sahe na hierarchia Artista/Album/NN - Titulo") {
+TEST_CASE("o destino sahe na hierarchia Artistas/Artista/Musicas/NN - Titulo") {
   nu::Pedido cheio;
   cheio.artista = "Ada Lovelace";
   cheio.album = "Máquina Analítica";
