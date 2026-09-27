@@ -66,5 +66,24 @@ bool campo(std::string_view& corpo, unsigned& numero, unsigned& tipo,
   corpo.remove_prefix(texto.size());
   return true;
 }
+// § Elege video da faixa exacta e da origem de media do Spotify.
+// Não segue endereços alheios; texto com controles ou resposta invalida dá vazio.
+std::string video_da_entidade(std::string_view corpo, std::string_view id) {
+  std::string url, uri;
+  std::uint64_t especie = 0, valor = 0;
+  unsigned numero = 0, tipo = 0;
+  std::string_view texto;
+  while (!corpo.empty()) {
+    if (!campo(corpo, numero, tipo, valor, texto)) return {};
+    if (numero == 2 && tipo == 2) url = std::string(texto);
+    if (numero == 4 && tipo == 0) especie = valor;
+    if (numero == 5 && tipo == 2) uri = std::string(texto);
+  }
+  if (uri != "spotify:track:" + std::string(id) || especie < 1 || especie > 3 ||
+      url.rfind("https://canvaz.scdn.co/", 0) != 0 || url.size() > 4096) return {};
+  for (const unsigned char letra : url)
+    if (letra <= 32 || letra == 127 || letra == '\\') return {};
+  return url;
+}
 }  // namespace detalhe_canvas
 }  // namespace mysong::nucleo
