@@ -97,8 +97,8 @@ std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
 bool busca_letra(std::string_view artista, std::string_view titulo,
                  Letra* letra, double duracao = 0);
 
-// grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio. Não grava a
-// PLANA: `.lrc` é fórmato de letra com tempo, e pôr letra sem tempo n'um `.lrc`
+// grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio; sem ella,
+// conserva a alternativa em `.letra.txt`, pois pôr letra sem tempo n'um `.lrc`
 // faria todo tocador do mundo mostrar a musica inteira n'uma linha. Falso quando
 // não ha letra sincronizada, e ahi arquivo algum se cria.
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra);

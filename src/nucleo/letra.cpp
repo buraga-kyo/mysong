@@ -135,12 +135,15 @@ Letra escolhe_letra(std::string_view corpo, std::string_view artista,
   return eleita;
 }
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra) {
-  if (letra.sincronizada.empty()) return false;
-  const std::filesystem::path onde = caminho_do_lrc(audio);
+  const bool temporizada = !letra.sincronizada.empty();
+  const auto& texto = temporizada ? letra.sincronizada : letra.plana;
+  if (texto.empty()) return false;
+  std::filesystem::path onde = caminho_do_lrc(audio);
+  if (!temporizada) onde.replace_extension(".letra.txt");
   std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
   if (!sahida) return false;
-  sahida << letra.sincronizada;
-  if (letra.sincronizada.back() != '\n') sahida << '\n';
+  sahida << texto;
+  if (texto.back() != '\n') sahida << '\n';
   return sahida.good();
 }
 
