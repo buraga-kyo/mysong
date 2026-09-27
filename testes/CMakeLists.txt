@@ -11,6 +11,7 @@
 #                   contagem zero, e a falha silenciosa deixa de se esconder.
 # ══════════════════════════════════════════════════════════════════════════
 add_executable(mysong_testes fumo_marca.cpp prova_arrowline.cpp)
+target_sources(mysong_testes PRIVATE prova_canvas.cpp)
 target_compile_options(mysong_testes PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong_testes PRIVATE mysong_core doctest::doctest)
 
