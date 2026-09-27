@@ -17,6 +17,7 @@
 #include "nucleo/aquisicao.hpp"
 
 #include "nucleo/letra.hpp"
+#include "nucleo/canvas.hpp"
 
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -591,8 +592,28 @@ bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
   return true;
 }
 
+// § O ornamento tem noticia propria; sua falha não altera o desfecho do audio.
+// Sem ID nada consulta; retornos distinguem video novo, antigo e indisponivel.
+ColheitaCanvas acompanha_com_canvas(const std::filesystem::path& raiz, const Pedido& pedido) {
+  if (pedido.id_spotify.empty()) return ColheitaCanvas::Indisponivel;
+  const auto fim = baixa_canvas(raiz, pedido);
+  if (pedido.noticia) {
+    const char* noticia = fim == ColheitaCanvas::Gravado ? "Canvas salvo em Clipes/Canvas"
+        : fim == ColheitaCanvas::JaExiste ? "Canvas já presente em Clipes/Canvas"
+        : fim == ColheitaCanvas::Indisponivel ? "Canvas não disponibilizado pelo Spotify; áudio preservado"
+        : "Canvas não obtido (rede, sessão ou disco); áudio preservado";
+    pedido.noticia(std::nullopt, noticia);
+  }
+  return fim;
+}
+
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
+  if (!id_da_faixa_spotify(pedido.url).empty()) {
+    Pedido faixa = pedido;
+    if (!resolve_faixa_spotify(&faixa)) return Colheita::UrlRecusada;
+    return baixa(raiz, faixa, gravado);
+  }
   // SEM URL, mas com titulo: busca-se o audio por si (issue #13), agora pela
   // GRAVAÇÃO antes do titulo (issue #57). O MusicBrainz resolve a faixa n'uma
   // ficha; os termos de ISRC nomeiam a gravação exacta, e entre os achados a
@@ -665,6 +686,9 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   // nada se corre. A segunda é o `--no-overwrites` na lista de argumentos.
   if (!acha_o_que_ficou(molde).empty()) {
     if (gravado != nullptr) *gravado = acha_o_que_ficou(molde);
+    // Video novo pede nova varredura mesmo quando o audio já estava presente.
+    if (acompanha_com_canvas(raiz, feito) == ColheitaCanvas::Gravado)
+      return Colheita::Colhido;
     return Colheita::JaExiste;
   }
 
@@ -696,6 +720,7 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   Letra letra;
   if (busca_letra(feito.artista, feito.titulo, &letra)) grava_lrc(ficou, letra);
 
+  acompanha_com_canvas(raiz, feito);
   return escreve_etiqueta(ficou, feito) ? Colheita::Colhido
                                         : Colheita::FalhouAEtiqueta;
 }
