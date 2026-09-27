@@ -86,4 +86,21 @@ std::string video_da_entidade(std::string_view corpo, std::string_view id) {
   return url;
 }
 }  // namespace detalhe_canvas
+// § Examina toda a mensagem antes de aceitar a URL; cauda mutilada a invalida.
+// Sem effeitos; vazio significa que não houve video elegivel na resposta.
+std::string url_do_canvas(std::string_view resposta, std::string_view id) {
+  if (pedido_do_canvas(id).empty() || resposta.size() > 1024 * 1024) return {};
+  std::string url;
+  unsigned numero = 0, tipo = 0;
+  std::uint64_t valor = 0;
+  std::string_view texto;
+  while (!resposta.empty()) {
+    if (!detalhe_canvas::campo(resposta, numero, tipo, valor, texto)) return {};
+    if (numero == 1 && tipo == 2) {
+      const auto candidata = detalhe_canvas::video_da_entidade(texto, id);
+      if (url.empty()) url = candidata;
+    }
+  }
+  return url;
+}
 }  // namespace mysong::nucleo
