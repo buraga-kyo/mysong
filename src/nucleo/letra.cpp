@@ -25,6 +25,23 @@
 
 namespace mysong::nucleo {
 
+// § Iguala caixa ASCII e espaços, conservando os demais octetos dos nomes.
+// Sem effeitos exteriores; vazio continua vazio para não inventar metadado.
+std::string nome_para_letra(std::string_view nome) {
+  std::string resultado;
+  bool espaco = false;
+  for (const unsigned char letra : nome) {
+    if (letra == ' ' || letra == '\t' || letra == '\n' || letra == '\r') {
+      espaco = !resultado.empty();
+      continue;
+    }
+    if (espaco) resultado += ' ';
+    espaco = false;
+    resultado += static_cast<char>(letra >= 'A' && letra <= 'Z' ? letra + 32 : letra);
+  }
+  return resultado;
+}
+
 std::string escapa_para_url(std::string_view crua) {
   static const char kCifras[] = "0123456789ABCDEF";
   std::string obra;

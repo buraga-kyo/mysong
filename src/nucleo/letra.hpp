@@ -30,7 +30,13 @@ namespace mysong::nucleo {
 struct Letra {
   std::string sincronizada;
   std::string plana;
+  bool sincronizada_recusada = false;
 };
+
+// Dous segundos cobrem arredondamento de metadados; introduções maiores não.
+inline constexpr double TOLERANCIA_DA_LETRA = 2.0;
+Letra escolhe_letra(std::string_view corpo, std::string_view artista,
+                    std::string_view titulo, double duracao);
 
 // escapa_para_url, o que se põe n'um parametro de consulta. Espaço vira `%20`, e
 // tudo o que não é letra, digito, hyphen, ponto, sublinhado ou til vira `%XX`.
