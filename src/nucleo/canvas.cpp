@@ -180,8 +180,14 @@ bool resolve_faixa_spotify(Pedido* pedido) {
 std::filesystem::path destino_do_canvas(const std::filesystem::path& raiz,
                                         const Pedido& pedido) {
   if (pedido_do_canvas(pedido.id_spotify).empty()) return {};
+  std::string titulo = saneia_nome(pedido.titulo);
+  if (titulo.size() > 180) {
+    std::size_t fronteira = 180;
+    while ((static_cast<unsigned char>(titulo[fronteira]) & 0xc0) == 0x80) --fronteira;
+    titulo.resize(fronteira);
+  }
   return raiz / "Artistas" / saneia_nome(pedido.artista) / "Clipes" / "Canvas" /
-      (saneia_nome(pedido.titulo).substr(0, 180) + " [" + pedido.id_spotify + "].mp4");
+      (titulo + " [" + pedido.id_spotify + "].mp4");
 }
 // § Publica sómente MP4 inteiro; temporario exclusivo impede colisão entre fios.
 // Falha apaga só o temporario proprio; ligação atomica jámais substitue destino.
