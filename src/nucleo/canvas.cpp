@@ -148,12 +148,13 @@ std::string url_do_canvas(std::string_view resposta, std::string_view id) {
 }
 // § Resolve URL publica; só altera o pedido após conferir URI, titulo e artista.
 // Sem credenciais persistidas; rede ou pagina incompleta devolvem falso.
-bool resolve_faixa_spotify(Pedido* pedido) {
+bool resolve_faixa_spotify(Pedido* pedido, const ConsultaCanvas& consulta) {
   if (pedido == nullptr) return false;
   const auto id = id_da_faixa_spotify(pedido->url);
   if (id.empty()) return false;
-  const auto pagina = detalhe_canvas::consulta(
-      "https://open.spotify.com/embed/track/" + id, 2 * 1024 * 1024);
+  const ConsultaCanvas rede = consulta ? consulta : detalhe_canvas::consulta;
+  const auto pagina = rede(
+      "https://open.spotify.com/embed/track/" + id, 2 * 1024 * 1024, {}, {});
   const auto entidade = api::recorta_objecto(pagina, "entity");
   if (api::texto_de_chave(entidade, "uri") != "spotify:track:" + id) return false;
   const auto titulo = api::texto_de_chave(entidade, "title");
@@ -215,26 +216,28 @@ ColheitaCanvas grava_canvas(const std::filesystem::path& destino, std::string_vi
 }
 // § Tenta o video sem comprometter o audio; prazos e tectos pertencem á consulta.
 // Sessão publica é a omissão; credencial opcional vive só na memoria do processo.
-ColheitaCanvas baixa_canvas(const std::filesystem::path& raiz, const Pedido& pedido) {
+ColheitaCanvas baixa_canvas(const std::filesystem::path& raiz, const Pedido& pedido,
+                            const ConsultaCanvas& consulta) {
   const auto destino = destino_do_canvas(raiz, pedido);
   if (destino.empty()) return ColheitaCanvas::Indisponivel;
   std::error_code erro;
   if (std::filesystem::is_regular_file(destino, erro)) return ColheitaCanvas::JaExiste;
+  const ConsultaCanvas rede = consulta ? consulta : detalhe_canvas::consulta;
   std::string credencial;
   const char* configurada = std::getenv("MYSONG_SPOTIFY_TOKEN");
   if (configurada && *configurada) credencial = configurada;
   else {
-    const auto pagina = detalhe_canvas::consulta(
-        "https://open.spotify.com/embed/track/" + pedido.id_spotify, 2 * 1024 * 1024);
+    const auto pagina = rede(
+        "https://open.spotify.com/embed/track/" + pedido.id_spotify, 2 * 1024 * 1024, {}, {});
     credencial = api::texto_de_chave(api::recorta_objecto(pagina, "session"), "accessToken");
   }
   if (credencial.empty()) return ColheitaCanvas::Falhou;
-  const auto resposta = detalhe_canvas::consulta(
+  const auto resposta = rede(
       "https://spclient.wg.spotify.com/canvaz-cache/v0/canvases", 1024 * 1024,
       credencial, pedido_do_canvas(pedido.id_spotify));
   if (resposta.empty()) return ColheitaCanvas::Falhou;
   const auto url = url_do_canvas(resposta, pedido.id_spotify);
   if (url.empty()) return ColheitaCanvas::Indisponivel;
-  return grava_canvas(destino, detalhe_canvas::consulta(url, 24 * 1024 * 1024));
+  return grava_canvas(destino, rede(url, 24 * 1024 * 1024, {}, {}));
 }
 }  // namespace mysong::nucleo
