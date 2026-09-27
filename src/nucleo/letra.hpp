@@ -99,8 +99,8 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
 
 // grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio; sem ella,
 // conserva a alternativa em `.letra.txt`, pois pôr letra sem tempo n'um `.lrc`
-// faria todo tocador do mundo mostrar a musica inteira n'uma linha. Falso quando
-// não ha letra sincronizada, e ahi arquivo algum se cria.
+// faria o tocador interpretar texto sem prova temporal. Falso quando não ha
+// texto algum ou quando a escripta falha.
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra);
 
 }  // namespace mysong::nucleo

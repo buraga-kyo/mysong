@@ -19,6 +19,33 @@
 
 namespace nu = mysong::nucleo;
 
+TEST_CASE("letra respeita limites da duração e conserva alternativa plana") {
+  const std::string corpo = R"([{"trackName":"Canção","artistName":"Autor",)"
+      R"("duration":100,"syncedLyrics":"[00:01] verso","plainLyrics":"verso"}])";
+  for (const double duracao : {98.0, 100.0, 102.0}) {
+    const auto letra = nu::escolhe_letra(corpo, " AUTOR ", "Canção", duracao);
+    CHECK(letra.sincronizada == "[00:01] verso");
+    CHECK_FALSE(letra.sincronizada_recusada);
+  }
+  for (const double duracao : {97.9, 102.1, 0.0}) {
+    const auto letra = nu::escolhe_letra(corpo, "Autor", "Canção", duracao);
+    CHECK(letra.sincronizada.empty());
+    CHECK(letra.plana == "verso");
+    CHECK(letra.sincronizada_recusada);
+  }
+  CHECK(nu::escolhe_letra(corpo, "Alheio", "Canção", 100).sincronizada.empty());
+  CHECK(nu::escolhe_letra(corpo, "Autor", "Outra", 100).plana.empty());
+  CHECK(nu::escolhe_letra(corpo, "", "Canção", 100).sincronizada.empty());
+}
+
+TEST_CASE("letra sem duração declarada não ganha carimbos") {
+  const auto letra = nu::escolhe_letra(
+      R"([{"trackName":"A","artistName":"B","syncedLyrics":"[00:01] x","plainLyrics":"x"}])",
+      "B", "A", 100);
+  CHECK(letra.sincronizada.empty());
+  CHECK(letra.plana == "x");
+}
+
 TEST_CASE("o escape da URL cobre o que parte a consulta") {
   CHECK(nu::escapa_para_url("Creep") == "Creep");
   CHECK(nu::escapa_para_url("a b") == "a%20b");
