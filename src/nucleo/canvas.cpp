@@ -23,4 +23,12 @@ std::string id_da_faixa_spotify(std::string_view entrada) {
   }
   return {};
 }
+// § Escreve o pedido protobuf só depois de provar o ID; sem estado exterior.
+// Os comprimentos cabem n'um octeto, pois a URI mede invariavelmente 36.
+std::string pedido_do_canvas(std::string_view id) {
+  if (id_da_faixa_spotify("spotify:track:" + std::string(id)) != id || id.empty())
+    return {};
+  const std::string uri = "spotify:track:" + std::string(id);
+  return std::string("\x0a\x26\x0a\x24", 4) + uri;
+}
 }  // namespace mysong::nucleo
