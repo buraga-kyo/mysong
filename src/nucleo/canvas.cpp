@@ -46,5 +46,25 @@ bool inteiro(std::string_view& corpo, std::uint64_t& valor) {
   }
   return false;
 }
+// § Separa um campo protobuf; desconhecidos de tamanho fixo são consumidos.
+// Entrada mutilada dá falso; vistas apontam para o corpo vivo do chamador.
+bool campo(std::string_view& corpo, unsigned& numero, unsigned& tipo,
+           std::uint64_t& valor, std::string_view& texto) {
+  std::uint64_t chave = 0;
+  texto = {};
+  if (!inteiro(corpo, chave) || chave < 8 || chave >> 3 > 0x1fffffff) return false;
+  numero = static_cast<unsigned>(chave >> 3);
+  tipo = static_cast<unsigned>(chave & 7);
+  if (tipo == 0) return inteiro(corpo, valor);
+  if (tipo == 2) {
+    if (!inteiro(corpo, valor) || valor > corpo.size()) return false;
+  } else if (tipo == 1 || tipo == 5) {
+    valor = tipo == 1 ? 8 : 4;
+    if (valor > corpo.size()) return false;
+  } else return false;
+  texto = corpo.substr(0, static_cast<std::size_t>(valor));
+  corpo.remove_prefix(texto.size());
+  return true;
+}
 }  // namespace detalhe_canvas
 }  // namespace mysong::nucleo
