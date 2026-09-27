@@ -15,4 +15,6 @@ std::filesystem::path destino_do_canvas(const std::filesystem::path& raiz,
 bool resolve_faixa_spotify(Pedido* pedido);
 // Consulta limitada; video publicado inteiro e sem substituir arquivo existente.
 ColheitaCanvas baixa_canvas(const std::filesystem::path& raiz, const Pedido& pedido);
+// Publicação atomica, verificavel sem rede: corpo MP4 ou falha sem arquivo parcial.
+ColheitaCanvas grava_canvas(const std::filesystem::path& destino, std::string_view corpo);
 }  // namespace mysong::nucleo

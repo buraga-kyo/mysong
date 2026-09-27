@@ -2,6 +2,7 @@
 #include "api/jsonzinho.hpp"
 #include <curl/curl.h>
 #include <cstdint>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -181,5 +182,29 @@ std::filesystem::path destino_do_canvas(const std::filesystem::path& raiz,
   if (pedido_do_canvas(pedido.id_spotify).empty()) return {};
   return raiz / "Artistas" / saneia_nome(pedido.artista) / "Clipes" / "Canvas" /
       (saneia_nome(pedido.titulo).substr(0, 180) + " [" + pedido.id_spotify + "].mp4");
+}
+// § Publica sómente MP4 inteiro; temporario exclusivo impede colisão entre fios.
+// Falha apaga só o temporario proprio; ligação atomica jámais substitue destino.
+ColheitaCanvas grava_canvas(const std::filesystem::path& destino, std::string_view corpo) {
+  if (destino.empty() || corpo.size() < 12 || corpo.substr(4, 4) != "ftyp")
+    return ColheitaCanvas::Falhou;
+  std::error_code erro;
+  std::filesystem::create_directories(destino.parent_path(), erro);
+  if (erro) return ColheitaCanvas::Falhou;
+  std::string temporario = destino.string() + ".XXXXXX";
+  const int descritor = ::mkstemp(temporario.data());
+  if (descritor < 0) return ColheitaCanvas::Falhou;
+  FILE* arquivo = ::fdopen(descritor, "wb");
+  if (!arquivo) { ::close(descritor); ::unlink(temporario.c_str()); return ColheitaCanvas::Falhou; }
+  bool pronto = std::fwrite(corpo.data(), 1, corpo.size(), arquivo) == corpo.size();
+  if (std::fflush(arquivo) != 0 || ::fsync(descritor) != 0) pronto = false;
+  if (std::fclose(arquivo) != 0) pronto = false;
+  ColheitaCanvas resultado = ColheitaCanvas::Falhou;
+  if (pronto) {
+    if (::link(temporario.c_str(), destino.c_str()) == 0) resultado = ColheitaCanvas::Gravado;
+    else if (errno == EEXIST) resultado = ColheitaCanvas::JaExiste;
+  }
+  ::unlink(temporario.c_str());
+  return resultado;
 }
 }  // namespace mysong::nucleo
