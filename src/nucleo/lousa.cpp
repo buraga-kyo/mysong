@@ -166,7 +166,12 @@ bool EscoadouroDaLousa::deseja(std::string identidade, std::string ordem,
   try {
     const Intencao nova{std::move(ordem), posta};
     const auto antiga = desejadas_.find(identidade);
-    if (antiga != desejadas_.end() &&
+    const auto entregue = entregues_.find(identidade);
+    // Só vontade ainda não entregue conta como substituição; movimento normal não.
+    const bool por_comecar = antiga != desejadas_.end() &&
+        (entregue == entregues_.end() || entregue->second.ordem != antiga->second.ordem) &&
+        !(linha_ && linha_->identidade == identidade && linha_->deslocamento > 0);
+    if (por_comecar &&
         (antiga->second.posta != nova.posta ||
          antiga->second.ordem != nova.ordem))
       ++substituidas_;
@@ -192,6 +197,7 @@ bool EscoadouroDaLousa::drena() noexcept {
       restante.remove_prefix(linha_->deslocamento);
       errno = 0;
       const ssize_t postos = escrevedor_(restante);
+      if (postos < 0 && errno == EINTR) return false;
       if (postos < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return false;
       if (postos <= 0 || static_cast<std::size_t>(postos) > restante.size()) {
         falhou_ = true;
