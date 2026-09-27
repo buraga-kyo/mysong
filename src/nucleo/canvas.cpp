@@ -207,4 +207,28 @@ ColheitaCanvas grava_canvas(const std::filesystem::path& destino, std::string_vi
   ::unlink(temporario.c_str());
   return resultado;
 }
+// § Tenta o video sem comprometter o audio; prazos e tectos pertencem á consulta.
+// Sessão publica é a omissão; credencial opcional vive só na memoria do processo.
+ColheitaCanvas baixa_canvas(const std::filesystem::path& raiz, const Pedido& pedido) {
+  const auto destino = destino_do_canvas(raiz, pedido);
+  if (destino.empty()) return ColheitaCanvas::Indisponivel;
+  std::error_code erro;
+  if (std::filesystem::is_regular_file(destino, erro)) return ColheitaCanvas::JaExiste;
+  std::string credencial;
+  const char* configurada = std::getenv("MYSONG_SPOTIFY_TOKEN");
+  if (configurada && *configurada) credencial = configurada;
+  else {
+    const auto pagina = detalhe_canvas::consulta(
+        "https://open.spotify.com/embed/track/" + pedido.id_spotify, 2 * 1024 * 1024);
+    credencial = api::texto_de_chave(api::recorta_objecto(pagina, "session"), "accessToken");
+  }
+  if (credencial.empty()) return ColheitaCanvas::Falhou;
+  const auto resposta = detalhe_canvas::consulta(
+      "https://spclient.wg.spotify.com/canvaz-cache/v0/canvases", 1024 * 1024,
+      credencial, pedido_do_canvas(pedido.id_spotify));
+  if (resposta.empty()) return ColheitaCanvas::Falhou;
+  const auto url = url_do_canvas(resposta, pedido.id_spotify);
+  if (url.empty()) return ColheitaCanvas::Indisponivel;
+  return grava_canvas(destino, detalhe_canvas::consulta(url, 24 * 1024 * 1024));
+}
 }  // namespace mysong::nucleo
