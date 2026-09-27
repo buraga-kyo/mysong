@@ -145,4 +145,33 @@ std::string url_do_canvas(std::string_view resposta, std::string_view id) {
   }
   return url;
 }
+// § Resolve URL publica; só altera o pedido após conferir URI, titulo e artista.
+// Sem credenciais persistidas; rede ou pagina incompleta devolvem falso.
+bool resolve_faixa_spotify(Pedido* pedido) {
+  if (pedido == nullptr) return false;
+  const auto id = id_da_faixa_spotify(pedido->url);
+  if (id.empty()) return false;
+  const auto pagina = detalhe_canvas::consulta(
+      "https://open.spotify.com/embed/track/" + id, 2 * 1024 * 1024);
+  const auto entidade = api::recorta_objecto(pagina, "entity");
+  if (api::texto_de_chave(entidade, "uri") != "spotify:track:" + id) return false;
+  const auto titulo = api::texto_de_chave(entidade, "title");
+  std::string artista;
+  for (const auto& pessoa : api::objectos_do_arranjo(api::recorta_arranjo(entidade, "artists"))) {
+    const auto nome = api::texto_de_chave(pessoa, "name");
+    if (nome.empty()) continue;
+    if (!artista.empty()) artista += ", ";
+    artista += nome;
+  }
+  if (titulo.empty() || artista.empty()) return false;
+  if (pedido->titulo.empty()) pedido->titulo = titulo;
+  if (pedido->artista.empty()) pedido->artista = artista;
+  double duracao = 0;
+  if (pedido->duracao == 0 && api::numero_de_chave(entidade, "duration", &duracao) &&
+      duracao > 0 && duracao <= 86400000) pedido->duracao = static_cast<int>(duracao / 1000);
+  pedido->id_spotify = id;
+  pedido->fonte = Fonte::Spotify;
+  pedido->url.clear();
+  return true;
+}
 }  // namespace mysong::nucleo
