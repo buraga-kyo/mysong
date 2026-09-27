@@ -31,4 +31,20 @@ std::string pedido_do_canvas(std::string_view id) {
   const std::string uri = "spotify:track:" + std::string(id);
   return std::string("\x0a\x26\x0a\x24", 4) + uri;
 }
+namespace detalhe_canvas {
+// § Lê inteiro sem sinal de até 64 bits, consumindo sómente octetos existentes.
+// Falso denuncia truncamento ou transbordo; o deslocamento nunca excede 63.
+bool inteiro(std::string_view& corpo, std::uint64_t& valor) {
+  valor = 0;
+  for (unsigned deslocamento = 0; deslocamento < 64; deslocamento += 7) {
+    if (corpo.empty()) return false;
+    const auto octeto = static_cast<unsigned char>(corpo.front());
+    corpo.remove_prefix(1);
+    if (deslocamento == 63 && octeto > 1) return false;
+    valor |= std::uint64_t(octeto & 127) << deslocamento;
+    if ((octeto & 128) == 0) return true;
+  }
+  return false;
+}
+}  // namespace detalhe_canvas
 }  // namespace mysong::nucleo
