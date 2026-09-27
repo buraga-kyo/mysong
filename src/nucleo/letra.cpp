@@ -157,7 +157,7 @@ std::size_t recolhe(char* pedaco, std::size_t largura, std::size_t quantos,
 }  // namespace
 
 bool busca_letra(std::string_view artista, std::string_view titulo,
-                 Letra* letra) {
+                 Letra* letra, double duracao) {
   if (titulo.empty()) return false;
   CURL* punho = curl_easy_init();
   if (punho == nullptr) return false;
@@ -177,7 +177,7 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
   const CURLcode desfecho = curl_easy_perform(punho);
   curl_easy_cleanup(punho);
   if (desfecho != CURLE_OK) return false;
-  if (letra != nullptr) *letra = le_resposta(corpo);
+  if (letra != nullptr) *letra = escolhe_letra(corpo, artista, titulo, duracao);
   return true;
 }
 

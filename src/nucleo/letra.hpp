@@ -95,7 +95,7 @@ std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
 // ordinario e não erro. O prazo é de OITO segundos: quem baixa uma faixa não ha de
 // esperar por um serviço de letra mais do que isso.
 bool busca_letra(std::string_view artista, std::string_view titulo,
-                 Letra* letra);
+                 Letra* letra, double duracao = 0);
 
 // grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio. Não grava a
 // PLANA: `.lrc` é fórmato de letra com tempo, e pôr letra sem tempo n'um `.lrc`
