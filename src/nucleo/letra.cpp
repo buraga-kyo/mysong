@@ -25,6 +25,23 @@
 
 namespace mysong::nucleo {
 
+// § Iguala caixa ASCII e espaços, conservando os demais octetos dos nomes.
+// Sem effeitos exteriores; vazio continua vazio para não inventar metadado.
+std::string nome_para_letra(std::string_view nome) {
+  std::string resultado;
+  bool espaco = false;
+  for (const unsigned char letra : nome) {
+    if (letra == ' ' || letra == '\t' || letra == '\n' || letra == '\r') {
+      espaco = !resultado.empty();
+      continue;
+    }
+    if (espaco) resultado += ' ';
+    espaco = false;
+    resultado += static_cast<char>(letra >= 'A' && letra <= 'Z' ? letra + 32 : letra);
+  }
+  return resultado;
+}
+
 std::string escapa_para_url(std::string_view crua) {
   static const char kCifras[] = "0123456789ABCDEF";
   std::string obra;
@@ -88,13 +105,45 @@ Letra le_resposta(std::string_view corpo) {
   return letra;
 }
 
+// § Elege o candidato temporalmente mais proximo da mesma faixa e artista.
+// Sem duração comprovada conserva só a letra plana; a recusa fica observavel.
+Letra escolhe_letra(std::string_view corpo, std::string_view artista,
+                    std::string_view titulo, double duracao) {
+  Letra eleita;
+  double melhor = TOLERANCIA_DA_LETRA + 1;
+  const auto nome = nome_para_letra(titulo), autor = nome_para_letra(artista);
+  if (nome.empty() || autor.empty()) return eleita;
+  for (const auto& objeto : api::objectos_do_arranjo(corpo)) {
+    if (nome_para_letra(api::texto_de_chave(objeto, "trackName")) != nome ||
+        nome_para_letra(api::texto_de_chave(objeto, "artistName")) != autor) continue;
+    const auto candidata = le_resposta("[" + objeto + "]");
+    if (eleita.plana.empty()) eleita.plana = candidata.plana;
+    if (candidata.sincronizada.empty()) continue;
+    double segundos = 0;
+    const bool medida = std::isfinite(duracao) && duracao > 0 &&
+        api::numero_de_chave(objeto, "duration", &segundos) &&
+        std::isfinite(segundos) && segundos > 0;
+    const double distancia = std::abs(segundos - duracao);
+    if (!medida || distancia > TOLERANCIA_DA_LETRA) {
+      eleita.sincronizada_recusada = true;
+    } else if (distancia < melhor) {
+      melhor = distancia;
+      eleita.sincronizada = candidata.sincronizada;
+    }
+  }
+  if (!eleita.sincronizada.empty()) eleita.sincronizada_recusada = false;
+  return eleita;
+}
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra) {
-  if (letra.sincronizada.empty()) return false;
-  const std::filesystem::path onde = caminho_do_lrc(audio);
+  const bool temporizada = !letra.sincronizada.empty();
+  const auto& texto = temporizada ? letra.sincronizada : letra.plana;
+  if (texto.empty()) return false;
+  std::filesystem::path onde = caminho_do_lrc(audio);
+  if (!temporizada) onde.replace_extension(".letra.txt");
   std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
   if (!sahida) return false;
-  sahida << letra.sincronizada;
-  if (letra.sincronizada.back() != '\n') sahida << '\n';
+  sahida << texto;
+  if (texto.back() != '\n') sahida << '\n';
   return sahida.good();
 }
 
@@ -111,7 +160,7 @@ std::size_t recolhe(char* pedaco, std::size_t largura, std::size_t quantos,
 }  // namespace
 
 bool busca_letra(std::string_view artista, std::string_view titulo,
-                 Letra* letra) {
+                 Letra* letra, double duracao) {
   if (titulo.empty()) return false;
   CURL* punho = curl_easy_init();
   if (punho == nullptr) return false;
@@ -131,7 +180,7 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
   const CURLcode desfecho = curl_easy_perform(punho);
   curl_easy_cleanup(punho);
   if (desfecho != CURLE_OK) return false;
-  if (letra != nullptr) *letra = le_resposta(corpo);
+  if (letra != nullptr) *letra = escolhe_letra(corpo, artista, titulo, duracao);
   return true;
 }
 

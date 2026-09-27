@@ -30,7 +30,13 @@ namespace mysong::nucleo {
 struct Letra {
   std::string sincronizada;
   std::string plana;
+  bool sincronizada_recusada = false;
 };
+
+// Dous segundos cobrem arredondamento de metadados; introduções maiores não.
+inline constexpr double TOLERANCIA_DA_LETRA = 2.0;
+Letra escolhe_letra(std::string_view corpo, std::string_view artista,
+                    std::string_view titulo, double duracao);
 
 // escapa_para_url, o que se põe n'um parametro de consulta. Espaço vira `%20`, e
 // tudo o que não é letra, digito, hyphen, ponto, sublinhado ou til vira `%XX`.
@@ -89,12 +95,12 @@ std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
 // ordinario e não erro. O prazo é de OITO segundos: quem baixa uma faixa não ha de
 // esperar por um serviço de letra mais do que isso.
 bool busca_letra(std::string_view artista, std::string_view titulo,
-                 Letra* letra);
+                 Letra* letra, double duracao = 0);
 
-// grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio. Não grava a
-// PLANA: `.lrc` é fórmato de letra com tempo, e pôr letra sem tempo n'um `.lrc`
-// faria todo tocador do mundo mostrar a musica inteira n'uma linha. Falso quando
-// não ha letra sincronizada, e ahi arquivo algum se cria.
+// grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio; sem ella,
+// conserva a alternativa em `.letra.txt`, pois pôr letra sem tempo n'um `.lrc`
+// faria o tocador interpretar texto sem prova temporal. Falso quando não ha
+// texto algum ou quando a escripta falha.
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra);
 
 }  // namespace mysong::nucleo

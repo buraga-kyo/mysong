@@ -96,5 +96,19 @@ TEST_CASE("a trava manual congela e volta a liberar a animação") {
   CHECK(v.pede_batida());
 }
 
+TEST_CASE("destravar sem foco conserva o repouso e ganhar foco preserva a trava") {
+  tui::Vigilia v;
+  v.perde();
+  CHECK(v.alterna_trava());
+  CHECK_FALSE(v.alterna_trava());
+  CHECK_FALSE(v.pede_batida());
+  CHECK(v.alterna_trava());
+  v.ganha();
+  CHECK_FALSE(v.pede_batida());
+  CHECK(v.acordou());
+  CHECK_FALSE(v.alterna_trava());
+  CHECK(v.pede_batida());
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

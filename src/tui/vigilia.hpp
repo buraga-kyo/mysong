@@ -40,7 +40,8 @@ class Vigilia {
 
   // pede_batida, o relogio pergunta antes de conferir a assignatura.
   bool pede_batida() const {
-    return !trava_animacao_.load() && estado_.load() != Estado::Adormecida;
+    return !trava_animacao_.load() &&
+           (tem_foco_.load() || anima_sem_foco_.load());
   }
 
   bool tem_foco() const {
@@ -52,7 +53,8 @@ class Vigilia {
     const bool travada = !trava_animacao_.load();
     trava_animacao_.store(travada);
     if (travada) estado_.store(Estado::Adormecida);
-    else estado_.store(Estado::Desperta);
+    else estado_.store(tem_foco_.load() || anima_sem_foco_.load()
+                           ? Estado::Desperta : Estado::Adormecida);
     return travada;
   }
 

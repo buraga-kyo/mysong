@@ -534,7 +534,7 @@ std::size_t pagina_das_baixas = 0;
   // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
   // Sem foco, o audio continua, mas o quadro deixa de ser repintado. O valor
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
-  tui::Vigilia vigilia(true);
+  tui::Vigilia vigilia;
   std::atomic<bool> repete_lousa{false};
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que dorme na campainha. A conducção por

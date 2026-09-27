@@ -122,6 +122,16 @@ TEST_CASE("o escoadouro conclue uma linha inteira") {
   CHECK_FALSE(saida.pendente());
 }
 
+TEST_CASE("movimento depois da entrega não conta substituição") {
+  CanoGovernado cano;
+  nu::EscoadouroDaLousa saida(
+      [&](std::string_view bytes) { return cano.escreve(bytes); });
+  CHECK(saida.deseja("capa", "primeira\n", true));
+  CHECK(saida.deseja("capa", "segunda\n", true));
+  CHECK(saida.substituidas() == 0);
+  CHECK(saida.concluidas() == 2);
+}
+
 TEST_CASE("EAGAIN conserva a linha para a drenagem seguinte") {
   CanoGovernado cano({-1});
   nu::EscoadouroDaLousa saida(

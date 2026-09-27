@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include <taglib/fileref.h>
+#include <taglib/audioproperties.h>
 #include <taglib/tag.h>
 
 #include <algorithm>
@@ -718,7 +719,13 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   // Corre DEPOIS de o audio estar no logar, para que uma rede lenta não atrase o
   // que o operador de facto pediu.
   Letra letra;
-  if (busca_letra(feito.artista, feito.titulo, &letra)) grava_lrc(ficou, letra);
+  TagLib::FileRef audio(ficou.c_str());
+  const double duracao_real = audio.audioProperties() ? audio.audioProperties()->length() : 0;
+  if (busca_letra(feito.artista, feito.titulo, &letra, duracao_real)) {
+    grava_lrc(ficou, letra);
+    if (letra.sincronizada_recusada && pedido.noticia)
+      pedido.noticia(std::nullopt, "letra temporizada recusada: duração incompatível; áudio preservado");
+  }
 
   acompanha_com_canvas(raiz, feito);
   return escreve_etiqueta(ficou, feito) ? Colheita::Colhido
