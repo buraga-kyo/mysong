@@ -17,6 +17,7 @@
 #include "nucleo/aquisicao.hpp"
 
 #include "nucleo/letra.hpp"
+#include "nucleo/canvas.hpp"
 
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -589,6 +590,21 @@ bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
   // não dizem de onde vieram.
   for (Achado& achado : *achados) achado.fonte = fonte;
   return true;
+}
+
+// § O ornamento tem noticia propria; sua falha não altera o desfecho do audio.
+// Sem ID nada consulta; retornos distinguem video novo, antigo e indisponivel.
+ColheitaCanvas acompanha_com_canvas(const std::filesystem::path& raiz, const Pedido& pedido) {
+  if (pedido.id_spotify.empty()) return ColheitaCanvas::Indisponivel;
+  const auto fim = baixa_canvas(raiz, pedido);
+  if (pedido.noticia) {
+    const char* noticia = fim == ColheitaCanvas::Gravado ? "Canvas salvo em Clipes/Canvas"
+        : fim == ColheitaCanvas::JaExiste ? "Canvas já presente em Clipes/Canvas"
+        : fim == ColheitaCanvas::Indisponivel ? "Canvas não disponibilizado pelo Spotify; áudio preservado"
+        : "Canvas não obtido (rede, sessão ou disco); áudio preservado";
+    pedido.noticia(std::nullopt, noticia);
+  }
+  return fim;
 }
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
