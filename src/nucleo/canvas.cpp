@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <unistd.h>
 
 namespace mysong::nucleo {
@@ -32,6 +33,17 @@ std::string pedido_do_canvas(std::string_view id) {
   return std::string("\x0a\x26\x0a\x24", 4) + uri;
 }
 namespace detalhe_canvas {
+struct Corpo { std::string texto; std::size_t limite; };
+// § Recolhe octetos sob um tecto explicito; zero interrompe excesso ou alocação.
+// O receptor CURL conserva o corpo vivo e nunca recebe excepção de C++.
+std::size_t recolhe(char* dados, std::size_t tamanho, std::size_t quantos,
+                    void* destino) {
+  auto& corpo = *static_cast<Corpo*>(destino);
+  if (tamanho && quantos > (corpo.limite - corpo.texto.size()) / tamanho) return 0;
+  const auto bytes = tamanho * quantos;
+  try { corpo.texto.append(dados, bytes); } catch (...) { return 0; }
+  return bytes;
+}
 // § Lê inteiro sem sinal de até 64 bits, consumindo sómente octetos existentes.
 // Falso denuncia truncamento ou transbordo; o deslocamento nunca excede 63.
 bool inteiro(std::string_view& corpo, std::uint64_t& valor) {
