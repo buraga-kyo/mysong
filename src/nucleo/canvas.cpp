@@ -44,6 +44,36 @@ std::size_t recolhe(char* dados, std::size_t tamanho, std::size_t quantos,
   try { corpo.texto.append(dados, bytes); } catch (...) { return 0; }
   return bytes;
 }
+// § Consulta HTTPS em prazo finito, sem redirecção; credencial só ao destinatario.
+// HTTP diverso de 200 ou falha de transporte devolve corpo vazio.
+std::string consulta(const std::string& url, std::size_t limite,
+                     const std::string& credencial = {}, const std::string& carga = {}) {
+  std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> punho(curl_easy_init(), curl_easy_cleanup);
+  if (!punho) return {};
+  Corpo corpo{{}, limite};
+  auto* rede = punho.get();
+  curl_easy_setopt(rede, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(rede, CURLOPT_WRITEFUNCTION, recolhe);
+  curl_easy_setopt(rede, CURLOPT_WRITEDATA, &corpo);
+  curl_easy_setopt(rede, CURLOPT_CONNECTTIMEOUT, 5L);
+  curl_easy_setopt(rede, CURLOPT_TIMEOUT, 25L);
+  curl_easy_setopt(rede, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(rede, CURLOPT_USERAGENT, "Mozilla/5.0 mysong/0.1");
+  std::unique_ptr<curl_slist, decltype(&curl_slist_free_all)> cabecalho(
+      curl_slist_append(nullptr, "Content-Type: application/x-protobuf"), curl_slist_free_all);
+  if (!carga.empty()) {
+    if (!cabecalho) return {};
+    curl_easy_setopt(rede, CURLOPT_HTTPHEADER, cabecalho.get());
+    curl_easy_setopt(rede, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
+    curl_easy_setopt(rede, CURLOPT_XOAUTH2_BEARER, credencial.c_str());
+    curl_easy_setopt(rede, CURLOPT_POSTFIELDS, carga.data());
+    curl_easy_setopt(rede, CURLOPT_POSTFIELDSIZE, static_cast<long>(carga.size()));
+  }
+  const auto resultado = curl_easy_perform(rede);
+  long estado = 0;
+  curl_easy_getinfo(rede, CURLINFO_RESPONSE_CODE, &estado);
+  return resultado == CURLE_OK && estado == 200 ? corpo.texto : std::string{};
+}
 // § Lê inteiro sem sinal de até 64 bits, consumindo sómente octetos existentes.
 // Falso denuncia truncamento ou transbordo; o deslocamento nunca excede 63.
 bool inteiro(std::string_view& corpo, std::uint64_t& valor) {
