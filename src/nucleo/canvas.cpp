@@ -174,4 +174,12 @@ bool resolve_faixa_spotify(Pedido* pedido) {
   pedido->url.clear();
   return true;
 }
+// § Destino separado do audio, com ID para distinguir versões homonymas.
+// Sem effeitos; ID invalido dá caminho vazio, nunca um nome vindo da rede.
+std::filesystem::path destino_do_canvas(const std::filesystem::path& raiz,
+                                        const Pedido& pedido) {
+  if (pedido_do_canvas(pedido.id_spotify).empty()) return {};
+  return raiz / "Artistas" / saneia_nome(pedido.artista) / "Clipes" / "Canvas" /
+      (saneia_nome(pedido.titulo).substr(0, 180) + " [" + pedido.id_spotify + "].mp4");
+}
 }  // namespace mysong::nucleo
