@@ -105,6 +105,35 @@ Letra le_resposta(std::string_view corpo) {
   return letra;
 }
 
+// § Elege o candidato temporalmente mais proximo da mesma faixa e artista.
+// Sem duração comprovada conserva só a letra plana; a recusa fica observavel.
+Letra escolhe_letra(std::string_view corpo, std::string_view artista,
+                    std::string_view titulo, double duracao) {
+  Letra eleita;
+  double melhor = TOLERANCIA_DA_LETRA + 1;
+  const auto nome = nome_para_letra(titulo), autor = nome_para_letra(artista);
+  if (nome.empty() || autor.empty()) return eleita;
+  for (const auto& objeto : api::objectos_do_arranjo(corpo)) {
+    if (nome_para_letra(api::texto_de_chave(objeto, "trackName")) != nome ||
+        nome_para_letra(api::texto_de_chave(objeto, "artistName")) != autor) continue;
+    const auto candidata = le_resposta("[" + objeto + "]");
+    if (eleita.plana.empty()) eleita.plana = candidata.plana;
+    if (candidata.sincronizada.empty()) continue;
+    double segundos = 0;
+    const bool medida = std::isfinite(duracao) && duracao > 0 &&
+        api::numero_de_chave(objeto, "duration", &segundos) &&
+        std::isfinite(segundos) && segundos > 0;
+    const double distancia = std::abs(segundos - duracao);
+    if (!medida || distancia > TOLERANCIA_DA_LETRA) {
+      eleita.sincronizada_recusada = true;
+    } else if (distancia < melhor) {
+      melhor = distancia;
+      eleita.sincronizada = candidata.sincronizada;
+    }
+  }
+  if (!eleita.sincronizada.empty()) eleita.sincronizada_recusada = false;
+  return eleita;
+}
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra) {
   if (letra.sincronizada.empty()) return false;
   const std::filesystem::path onde = caminho_do_lrc(audio);
