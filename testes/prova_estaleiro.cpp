@@ -316,3 +316,27 @@ TEST_CASE("parar em voo impede recomeço antes do termo e zera a tentativa") {
   CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Concluido);
   CHECK_FALSE(fila.recomeca(1));
 }
+
+TEST_CASE("parar na espera não executa a obra nem perde o pedido") {
+  Cancella cancella;
+  std::vector<std::size_t> executados;
+  nu::Estaleiro fila(1, [&](const nu::Pedido& pedido, std::filesystem::path*) {
+    executados.push_back(pedido.identificador);
+    cancella.chego();
+    cancella.espera();
+    return nu::Colheita::Colhido;
+  });
+  fila.encommenda(nu::Pedido{});
+  cancella.chegaram(1);
+  fila.encommenda(nu::Pedido{});
+  CHECK(fila.para(2));
+  CHECK(fila.andamento().na_espera == 0);
+  cancella.abre();
+  fila.espera_a_fila();
+  CHECK(executados == std::vector<std::size_t>{1});
+  CHECK(fila.recomeca(2));
+  fila.espera_a_fila();
+  CHECK(executados == std::vector<std::size_t>{1, 2});
+  fila.limpa_recentes();
+  CHECK_FALSE(fila.recomeca(2));
+}
