@@ -297,6 +297,10 @@ bool sonda_url(const std::string& url, EtiquetaRemota* remota);
 // suportados. Uma URL de faixa não deve cair no caminho de lote.
 bool eh_playlist_url(const std::string& url);
 
+// De um link misto do YouTube, conserva somente a faixa indicada por v=.
+// Lista sem faixa devolve vazio: não se pode adivinhar a música actual.
+std::string url_da_faixa_na_playlist(const std::string& url);
+
 // argumentos_da_playlist, enumera URLs sem baixar audio. O caminho individual
 // continua protegido por `--no-playlist`; só este caminho abre a lista.
 std::vector<std::string> argumentos_da_playlist(const std::string& url,

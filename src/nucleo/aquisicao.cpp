@@ -202,6 +202,30 @@ bool eh_playlist_url(const std::string& url) {
          url.find("list=") != std::string::npos;
 }
 
+std::string url_da_faixa_na_playlist(const std::string& url) {
+  const bool musica = url.find("https://music.youtube.com/watch?") == 0;
+  const bool video = url.find("https://www.youtube.com/watch?") == 0 ||
+                     url.find("https://youtube.com/watch?") == 0;
+  if (!musica && !video) return {};
+  const auto busca = url.find('?');
+  std::size_t inicio = busca + 1;
+  while (inicio < url.size()) {
+    const auto fim = url.find_first_of("&#", inicio);
+    const auto termo = url.substr(inicio, fim == std::string::npos ? fim : fim - inicio);
+    if (termo.compare(0, 2, "v=") == 0 && termo.size() > 2) {
+      const std::string id = termo.substr(2);
+      const bool valido = std::all_of(id.begin(), id.end(), [](unsigned char c) {
+        return std::isalnum(c) || c == '_' || c == '-';
+      });
+      if (valido) return std::string(musica ? "https://music.youtube.com/watch?v="
+                                              : "https://www.youtube.com/watch?v=") + id;
+    }
+    if (fim == std::string::npos || url[fim] == '#') break;
+    inicio = fim + 1;
+  }
+  return {};
+}
+
 std::vector<std::string> argumentos_da_playlist(const std::string& url,
                                                 bool com_cookie) {
   std::vector<std::string> ditos{"yt-dlp"};
