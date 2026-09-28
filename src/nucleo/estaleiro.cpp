@@ -173,6 +173,26 @@ Andamento Estaleiro::andamento() const {
   return agora;
 }
 
+// A tranca decide se a ordem ainda espera ou se o obreiro deve interrompê-la.
+bool Estaleiro::para(std::size_t id) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (fechado_) return false;
+  for (auto& registro : registros_) {
+    if (registro.id != id || baixa_terminada(registro.estado) ||
+        registro.estado == EstadoDaBaixa::Parando) continue;
+    pedidos_.at(id).interrupcao->store(true);
+    const bool aguardava = registro.estado == EstadoDaBaixa::Aguardando;
+    espera_.erase(std::remove_if(espera_.begin(), espera_.end(),
+        [id](const Pedido& pedido) { return pedido.identificador == id; }), espera_.end());
+    registro.estado = aguardava ? EstadoDaBaixa::Parado : EstadoDaBaixa::Parando;
+    registro.detalhe = aguardava ? "Download parado. Pode recomeçar." : "Interrompendo...";
+    ++versao_;
+    sino_.notify_all();
+    return true;
+  }
+  return false;
+}
+
 void Estaleiro::limpa_recentes() {
   std::lock_guard<std::mutex> chave(tranca_);
   const auto fim = std::remove_if(registros_.begin(), registros_.end(),
