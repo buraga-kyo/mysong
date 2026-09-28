@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <memory>
+#include <curl/curl.h>
 
 namespace mysong::nucleo {
 // Cada fio conserva a bandeira da sua baixa, inclusive nas chamadas aninhadas.
@@ -17,7 +18,7 @@ struct EscopoDaBaixa {
   ~EscopoDaBaixa() { interrupcao_corrente = std::move(anterior); }
 };
 // Assignatura do libcurl: um pedido de parada aborta a transferencia corrente.
-inline int consulta_interrupcao(void*, long long, long long, long long, long long) {
+inline int consulta_interrupcao(void*, curl_off_t, curl_off_t, curl_off_t, curl_off_t) {
   return baixa_interrompida() ? 1 : 0;
 }
 }  // namespace mysong::nucleo

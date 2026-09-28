@@ -1,6 +1,7 @@
 #include "nucleo/canvas.hpp"
 #include "api/jsonzinho.hpp"
 #include <curl/curl.h>
+#include "nucleo/cancelamento.hpp"
 #include <cstdint>
 #include <cerrno>
 #include <cstdio>
@@ -59,6 +60,8 @@ std::string consulta(const std::string& url, std::size_t limite,
   curl_easy_setopt(rede, CURLOPT_CONNECTTIMEOUT, 5L);
   curl_easy_setopt(rede, CURLOPT_TIMEOUT, 25L);
   curl_easy_setopt(rede, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(rede, CURLOPT_NOPROGRESS, 0L);
+  curl_easy_setopt(rede, CURLOPT_XFERINFOFUNCTION, consulta_interrupcao);
   curl_easy_setopt(rede, CURLOPT_USERAGENT, "Mozilla/5.0 mysong/0.1");
   std::unique_ptr<curl_slist, decltype(&curl_slist_free_all)> cabecalho(
       curl_slist_append(nullptr, "Content-Type: application/x-protobuf"), curl_slist_free_all);
