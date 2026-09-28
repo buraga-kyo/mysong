@@ -8,6 +8,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -742,3 +743,13 @@ TEST_CASE("os campos da musica nascem vazios, que vazio é «não sei»") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("parar interrompe filho silencioso e seus descendentes") {
+  auto bandeira = std::make_shared<std::atomic_bool>(false);
+  const nu::EscopoDaBaixa escopo(bandeira);
+  const auto inicio = std::chrono::steady_clock::now();
+  const int fim = nu::corre({"sh", "-c", "printf 'pronto\\n'; sleep 20 & wait"},
+      nullptr, [&](std::string_view) { bandeira->store(true); });
+  CHECK(fim != 0);
+  CHECK(std::chrono::steady_clock::now() - inicio < std::chrono::seconds(3));
+}
