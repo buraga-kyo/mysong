@@ -26,6 +26,7 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
+#include <map>
 #include <string>
 #include <thread>
 #include <vector>  // os obreiros guardam-se n'um vector, e juntam-se no fim
@@ -38,7 +39,14 @@ namespace mysong::nucleo {
 // primeira inteira. Dous, e não cinco: a rede é uma só.
 inline constexpr std::size_t OBREIROS_DA_BAIXA = 2;
 
-enum class EstadoDaBaixa { Aguardando, Preparando, Baixando, Concluido, Falhou };
+enum class EstadoDaBaixa {
+  Aguardando, Preparando, Baixando, Concluido, Falhou, Parando, Parado
+};
+// Estado terminal não conserva trabalho em voo; pode ser limpo ou refeito.
+inline bool baixa_terminada(EstadoDaBaixa estado) {
+  return estado == EstadoDaBaixa::Concluido || estado == EstadoDaBaixa::Falhou ||
+         estado == EstadoDaBaixa::Parado;
+}
 
 struct RegistroDaBaixa {
   std::size_t id = 0;
@@ -89,6 +97,8 @@ class Estaleiro {
   void encommenda(Pedido pedido);
   Andamento andamento() const;
   void limpa_recentes();
+  bool para(std::size_t id);
+  bool recomeca(std::size_t id);
 
   // colheu, CONSOME a bandeira de «entrou faixa nova no disco». Sem o consumo, a
   // tela varreria o disco a cada quadro para sempre.
@@ -117,6 +127,7 @@ class Estaleiro {
   mutable std::mutex tranca_;
   std::condition_variable sino_;
   std::deque<Pedido> espera_;
+  std::map<std::size_t, Pedido> pedidos_;
   std::deque<RegistroDaBaixa> registros_;
   std::size_t proximo_id_ = 1;
   std::size_t versao_ = 0;

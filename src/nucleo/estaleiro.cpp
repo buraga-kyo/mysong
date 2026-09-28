@@ -94,6 +94,8 @@ std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
       break;
     case EstadoDaBaixa::Concluido: dito += "concluído"; break;
     case EstadoDaBaixa::Falhou: dito += "falhou"; break;
+    case EstadoDaBaixa::Parando: dito += "parando..."; break;
+    case EstadoDaBaixa::Parado: dito += "parado"; break;
   }
   if (registro.estado == EstadoDaBaixa::Falhou && !registro.detalhe.empty())
     dito += " (" + abrevia_utf8(registro.detalhe, 28) + ")";
