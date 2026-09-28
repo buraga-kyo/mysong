@@ -74,11 +74,9 @@ std::string assinatura_das_baixas(const Andamento& andamento) {
 std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
   std::vector<const RegistroDaBaixa*> ordem;
   for (const auto& registro : andamento.registros)
-    if (registro.estado != EstadoDaBaixa::Concluido &&
-        registro.estado != EstadoDaBaixa::Falhou) ordem.push_back(&registro);
+    if (!baixa_terminada(registro.estado)) ordem.push_back(&registro);
   for (auto i = andamento.registros.rbegin(); i != andamento.registros.rend(); ++i)
-    if (i->estado == EstadoDaBaixa::Concluido ||
-        i->estado == EstadoDaBaixa::Falhou) ordem.push_back(&*i);
+    if (baixa_terminada(i->estado)) ordem.push_back(&*i);
   if (ordem.empty()) return {};
   const RegistroDaBaixa& registro = *ordem[pagina % ordem.size()];
   std::string dito = "#" + std::to_string(registro.id) + " " +
@@ -178,9 +176,9 @@ Andamento Estaleiro::andamento() const {
 void Estaleiro::limpa_recentes() {
   std::lock_guard<std::mutex> chave(tranca_);
   const auto fim = std::remove_if(registros_.begin(), registros_.end(),
-      [](const RegistroDaBaixa& registro) {
-    return registro.estado == EstadoDaBaixa::Concluido ||
-           registro.estado == EstadoDaBaixa::Falhou;
+      [this](const RegistroDaBaixa& registro) {
+    if (baixa_terminada(registro.estado)) pedidos_.erase(registro.id);
+    return baixa_terminada(registro.estado);
   });
   registros_.erase(fim, registros_.end());
   ++versao_;
@@ -255,15 +253,14 @@ void Estaleiro::obreiro() {
         }
       std::size_t recentes = 0;
       for (const auto& registro : registros_)
-        if (registro.estado == EstadoDaBaixa::Concluido ||
-            registro.estado == EstadoDaBaixa::Falhou) ++recentes;
+        if (baixa_terminada(registro.estado)) ++recentes;
       while (recentes > 4) {
         const auto antigo = std::find_if(registros_.begin(), registros_.end(),
             [](const RegistroDaBaixa& registro) {
-              return registro.estado == EstadoDaBaixa::Concluido ||
-                     registro.estado == EstadoDaBaixa::Falhou;
+              return baixa_terminada(registro.estado);
             });
         if (antigo == registros_.end()) break;
+        pedidos_.erase(antigo->id);
         registros_.erase(antigo);
         --recentes;
       }
