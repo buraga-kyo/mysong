@@ -434,7 +434,13 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido,
   ::close(cano[0]);
 
   int estado = 0;
-  if (::waitpid(filho, &estado, 0) < 0) return -1;
+  for (;;) {
+    if (baixa_interrompida()) { ::kill(-filho, SIGKILL); ::kill(filho, SIGKILL); }
+    const pid_t visto = ::waitpid(filho, &estado, WNOHANG);
+    if (visto == filho) break;
+    if (visto < 0 && errno != EINTR) return -1;
+    ::poll(nullptr, 0, 50);
+  }
   return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
 
