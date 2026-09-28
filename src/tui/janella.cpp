@@ -1212,7 +1212,13 @@ std::size_t pagina_das_baixas = 0;
   // A aba DOWNLOAD abre mesmo sem achados: o progresso da baixa por URL
   // vive ali antes de qualquer busca.
   const auto vai_para_aba = [&](tui::Aba qual) {
-    if (navegador.vai_para(tui::secao_da_aba(qual))) return;
+    if (navegador.vai_para(tui::secao_da_aba(qual))) {
+      if (qual == tui::Aba::Download) {
+        const auto quantas = estaleiro.andamento().registros.size();
+        pagina_das_baixas = quantas ? quantas - 1 : 0;
+      }
+      return;
+    }
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
   };
 
@@ -1758,15 +1764,7 @@ std::size_t pagina_das_baixas = 0;
             d_ella.gesto) {
       case tui::GestoDaAba::Vai: vai_para_aba(d_ella.aba); return true;
       case tui::GestoDaAba::Cycla: {
-        // Tenta até TRES abas. Todas abrem sem conteúdo prévio.
-        tui::Aba qual = tui::aba_da_secao(navegador.secao());
-        for (int volta = 0; volta < 3; ++volta) {
-          qual = tui::aba_seguinte(qual);
-          if (navegador.vai_para(tui::secao_da_aba(qual))) return true;
-          // Saltou-se, e diz-se PORQUE: aba a passar em silencio deixaria o
-          // operador a crer que o Tab pulou uma por engano d'elle.
-          aviso_da_rede = "DOWNLOAD saltada: a rede está vazia (s busca)";
-        }
+        vai_para_aba(tui::aba_seguinte(tui::aba_da_secao(navegador.secao())));
         return true;
       }
       case tui::GestoDaAba::CyclaVista: {
