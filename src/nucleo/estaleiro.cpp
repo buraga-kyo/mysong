@@ -266,7 +266,7 @@ void Estaleiro::obreiro() {
         std::optional<int> porcentagem, std::string_view erro) {
       std::lock_guard<std::mutex> chave(tranca_);
       for (auto& registro : registros_) {
-        if (registro.id != id) continue;
+        if (registro.id != id || registro.estado == EstadoDaBaixa::Parando) continue;
         if (!erro.empty()) registro.detalhe = std::string(erro);
         else {
           registro.estado = EstadoDaBaixa::Baixando;
@@ -276,19 +276,27 @@ void Estaleiro::obreiro() {
         break;
       }
     };
-    const Colheita fim = obra_(pedido, &ficou);
+    Colheita fim = Colheita::FalhouAoBaixar;
+    try {
+      const EscopoDaBaixa escopo(pedido.interrupcao);
+      if (!baixa_interrompida()) fim = obra_(pedido, &ficou);
+    } catch (...) {
+      // Excepção da obra não mata o obreiro nem deixa a fila presa.
+      pedido.noticia(std::nullopt, "Não foi possível concluir. Tente novamente.");
+    }
     {
       std::lock_guard<std::mutex> chave(tranca_);
       --em_curso_;
-      ultima_ = std::string(razao_da_colheita(fim));
+      const bool parado = pedido.interrupcao->load();
+      ultima_ = parado ? "Download parado. Pode recomeçar." : std::string(razao_da_colheita(fim));
       ++versao_;
       for (auto& registro : registros_)
         if (registro.id == pedido.identificador) {
-          registro.estado = fim == Colheita::Colhido ||
+          registro.estado = parado ? EstadoDaBaixa::Parado : fim == Colheita::Colhido ||
                             fim == Colheita::ColhidoDuvidoso ||
                             fim == Colheita::JaExiste
                                 ? EstadoDaBaixa::Concluido : EstadoDaBaixa::Falhou;
-          if (registro.detalhe.empty()) registro.detalhe = ultima_;
+          if (parado || registro.detalhe.empty()) registro.detalhe = ultima_;
           break;
         }
       std::size_t recentes = 0;
@@ -304,7 +312,11 @@ void Estaleiro::obreiro() {
         registros_.erase(antigo);
         --recentes;
       }
-      if (fim == Colheita::Colhido) {
+      if (parado) {
+        if (!ficou.empty()) colheu_ = true;
+      } else if (fim == Colheita::JaExiste) {
+        // Existente não é falha; o registro já diz concluído.
+      } else if (fim == Colheita::Colhido) {
         ++colhidas_;
         colheu_ = true;
       } else if (fim == Colheita::ColhidoDuvidoso) {
