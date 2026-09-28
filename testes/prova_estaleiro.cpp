@@ -13,6 +13,7 @@
 #include <mutex>
 #include <thread>
 #include <string>
+#include <stdexcept>
 #include <vector>
 
 #include "nucleo/estaleiro.hpp"
@@ -339,4 +340,20 @@ TEST_CASE("parar na espera não executa a obra nem perde o pedido") {
   CHECK(executados == std::vector<std::size_t>{1, 2});
   fila.limpa_recentes();
   CHECK_FALSE(fila.recomeca(2));
+}
+
+TEST_CASE("erro inesperado permite nova tentativa sem matar o obreiro") {
+  int tentativas = 0;
+  nu::Estaleiro fila(1, [&](const nu::Pedido&, std::filesystem::path*) {
+    if (++tentativas == 1) throw std::runtime_error("falha simulada");
+    return nu::Colheita::JaExiste;
+  });
+  fila.encommenda(nu::Pedido{});
+  fila.espera_a_fila();
+  CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Falhou);
+  CHECK(fila.recomeca(1));
+  fila.espera_a_fila();
+  CHECK(tentativas == 2);
+  CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Concluido);
+  CHECK(fila.andamento().falhadas == 1);
 }
