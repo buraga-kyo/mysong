@@ -15,6 +15,7 @@
 #include "nucleo/letra.hpp"
 #include "tui/espectro.hpp"
 #include "tui/sala.hpp"
+#include "tui/baixas.hpp"
 #include "tui/tabella.hpp"
 #include "tui/tokens.hpp"
 
@@ -554,3 +555,25 @@ TEST_CASE("a ficha do painel diz o titulo e o artista ao centro, e cede o artist
 
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("painel de downloads preserva acções e porcentagem em alturas distintas") {
+  nu::Andamento andamento;
+  nu::RegistroDaBaixa registro;
+  registro.id = 7;
+  registro.titulo = "Uma música para a estrada";
+  registro.estado = nu::EstadoDaBaixa::Baixando;
+  registro.porcentagem = 42;
+  andamento.registros.push_back(registro);
+  for (const int altura : {4, 7, 11}) {
+    tui::CaixasDasBaixas caixas;
+    const auto ecran = papel(tui::painel_das_baixas(andamento, 0, altura, caixas), 46, altura);
+    std::string texto;
+    for (int y = 0; y < altura; ++y) texto += linha_de(ecran, y);
+    CHECK(texto.find("42%") != std::string::npos);
+    CHECK(texto.find("Parar") != std::string::npos);
+    CHECK(caixas.id == 7);
+    CHECK(caixas.acao.y_min >= 0);
+    CHECK(caixas.acao.y_max < altura);
+    CHECK(caixas.acao.x_min <= caixas.acao.x_max);
+  }
+}
