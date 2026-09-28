@@ -97,7 +97,7 @@ ftxui::Element caret(ftxui::Color fundo) {
 
 bool aceita_letra(Modo modo) noexcept {
   return modo != Modo::Nada && modo != Modo::Confirma &&
-         modo != Modo::ConfirmaFaixa;
+         modo != Modo::ConfirmaFaixa && modo != Modo::EscolhePlaylist;
 }
 
 bool assenta_novidade(Modo modo) noexcept { return modo == Modo::Nada; }
@@ -129,6 +129,8 @@ std::string rotulo_do_prompt(Modo modo, std::string_view contexto) {
     case Modo::Confirma:
     case Modo::ConfirmaFaixa:
       return "apagar «" + std::string(contexto) + "»? s/n";
+    case Modo::EscolhePlaylist:
+      return "PLAYLIST: " + std::string(contexto);
     case Modo::Nada: break;
   }
   return {};
