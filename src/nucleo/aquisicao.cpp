@@ -250,6 +250,7 @@ std::vector<std::string> argumentos_do_download(
           // primeira é a checagem do destino; ter as duas quer dizer que uma
           // corrida entre duas aquisições não apaga o que a outra gravou.
           "--no-overwrites",
+          "--no-continue",  // recomeçar descarta somente o progresso parcial
           "--extract-audio",
           "--audio-format", "mp3",
           "--audio-quality", "0",
@@ -634,6 +635,8 @@ ColheitaCanvas acompanha_com_canvas(const std::filesystem::path& raiz, const Ped
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
+  const EscopoDaBaixa escopo(pedido.interrupcao);
+  if (baixa_interrompida()) return Colheita::FalhouAoBaixar;
   if (!id_da_faixa_spotify(pedido.url).empty()) {
     Pedido faixa = pedido;
     if (!resolve_faixa_spotify(&faixa)) return Colheita::UrlRecusada;
