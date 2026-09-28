@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "nucleo/catalogo.hpp"
+#include "nucleo/cancelamento.hpp"
 #include "nucleo/musicbrainz.hpp"
 
 namespace mysong::nucleo {
@@ -58,6 +59,7 @@ Fonte proxima_fonte(Fonte fonte);
 struct Pedido {
   std::string url;
   std::size_t identificador = 0;
+  std::shared_ptr<std::atomic_bool> interrupcao;
   // O obreiro observa a baixa sem entregar o fio da tela ao processo externo.
   std::function<void(std::optional<int>, std::string_view)> noticia;
   std::string artista;
