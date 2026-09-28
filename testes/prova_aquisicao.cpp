@@ -263,6 +263,19 @@ TEST_CASE("playlist é reconhecida e enumerada sem baixar") {
   CHECK(ditos.back() == "https://www.youtube.com/playlist?list=PL123");
 }
 
+TEST_CASE("link misto conserva somente a música escolhida") {
+  CHECK(nu::url_da_faixa_na_playlist(
+      "https://www.youtube.com/watch?v=I2DRv5TcXWk&list=RDI2DRv5TcXWk") ==
+      "https://www.youtube.com/watch?v=I2DRv5TcXWk");
+  CHECK(nu::url_da_faixa_na_playlist(
+      "https://music.youtube.com/watch?list=PL123&v=abc_12-3") ==
+      "https://music.youtube.com/watch?v=abc_12-3");
+  CHECK(nu::url_da_faixa_na_playlist(
+      "https://www.youtube.com/playlist?list=PL123").empty());
+  CHECK(nu::url_da_faixa_na_playlist(
+      "https://www.youtube.com/watch?list=PL123&v=%2F").empty());
+}
+
 TEST_CASE("linhas da playlist conservam a ordem e ignoram NA") {
   const std::vector<std::string> urls = nu::le_urls_da_playlist(
       "https://youtu.be/primeira\nNA\n\nhttps://youtu.be/terceira\n");
