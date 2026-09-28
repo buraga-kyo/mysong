@@ -1751,6 +1751,12 @@ std::size_t pagina_das_baixas = 0;
     // botão direito. Trata-se AQUI, depois do campo e das abas, e não na
     // taboada do commando: ella não dá Ordem alguma, e verbo que sómente
     // abrisse caixa da tela seria verbo que o tocador nunca cumpriria.
+    if (tui::aba_da_secao(navegador.secao()) == tui::Aba::Download &&
+        (tecla == ftxui::Event::Character('P') || tecla == ftxui::Event::Character('R'))) {
+      if (tecla == ftxui::Event::Character('P')) estaleiro.para(caixas_das_baixas.id);
+      else estaleiro.recomeca(caixas_das_baixas.id);
+      return true;
+    }
     if (tecla == ftxui::Event::Character('C') &&
         tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
       estaleiro.limpa_recentes();
