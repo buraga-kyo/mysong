@@ -21,5 +21,13 @@ std::string nome_do_estado(const RegistroDaBaixa& registro) {
   }
   return {};
 }
+// A mesma paleta da sala conserva contraste entre aviso, falha e conclusão.
+ftxui::Color tinta_da_baixa(EstadoDaBaixa estado) {
+  const auto tom = tokens::rgb(estado == EstadoDaBaixa::Falhou ? tokens::crit
+      : estado == EstadoDaBaixa::Concluido ? tokens::ok
+      : estado == EstadoDaBaixa::Parado || estado == EstadoDaBaixa::Parando
+          ? tokens::warn : tokens::v400);
+  return ftxui::Color::RGB(tom.r, tom.g, tom.b);
+}
 }  // namespace
 }  // namespace mysong::tui
