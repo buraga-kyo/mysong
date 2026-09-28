@@ -486,6 +486,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // ao índice no pintor seriam vinte consultas por segundo.
   std::string titulo_em_causa;
   std::string termo_em_curso;
+  std::string url_a_decidir;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
   // toca, e por isso elle não pede tranca.
@@ -1209,6 +1210,32 @@ std::size_t pagina_das_baixas = 0;
   const auto vai_para_aba = [&](tui::Aba qual) {
     if (navegador.vai_para(tui::secao_da_aba(qual))) return;
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+  };
+
+  // Depois da escolha, a lista é lida no fio de fundo e só então encommendada.
+  const auto inicia_playlist = [&](const std::string& url) {
+    navegador.vai_para(tui::Secao::Rede);
+    const nucleo::Fonte fonte =
+        !nucleo::id_da_playlist(url).empty() ? nucleo::Fonte::Spotify
+        : url.find("music.youtube.com") != std::string::npos
+            ? nucleo::Fonte::YouTubeMusic : nucleo::Fonte::YouTube;
+    {
+      std::lock_guard<std::mutex> chave(tranca_do_termo);
+      url_da_playlist = url;
+      fonte_da_playlist = fonte;
+    }
+    baixa_playlist_ao_chegar.store(true);
+    if (fonte == nucleo::Fonte::Spotify) {
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        url_da_lista = url;
+      }
+      pede_catalogo.toca();
+      aviso_da_rede = "a ler a playlist do Spotify...";
+    } else {
+      pede_playlist.toca();
+      aviso_da_rede = "a ler a playlist...";
+    }
   };
 
   // abre_o_menu_na, o menu sobre a faixa de indice `qual`, que se ELEGE
