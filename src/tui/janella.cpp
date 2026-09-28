@@ -1582,6 +1582,34 @@ std::size_t pagina_das_baixas = 0;
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
     // antes do resto para que a letra «s» não vá parar ao termo em curso.
+    if (digita == Digita::EscolhePlaylist) {
+      if (tecla == ftxui::Event::Escape) {
+        digita = Digita::Nada;
+        url_a_decidir.clear();
+        return true;
+      }
+      if (tecla == ftxui::Event::Character('1')) {
+        inicia_playlist(url_a_decidir);
+        digita = Digita::Nada;
+        url_a_decidir.clear();
+        return true;
+      }
+      if (tecla == ftxui::Event::Character('2')) {
+        const std::string url = nucleo::url_da_faixa_na_playlist(url_a_decidir);
+        if (url.empty()) return true;
+        nucleo::Pedido pedido;
+        pedido.url = url;
+        pedido.fonte = url.find("music.youtube.com") != std::string::npos
+            ? nucleo::Fonte::YouTubeMusic : nucleo::Fonte::YouTube;
+        estaleiro.encommenda(std::move(pedido));
+        navegador.vai_para(tui::Secao::Rede);
+        digita = Digita::Nada;
+        url_a_decidir.clear();
+        aviso_da_rede = "uma música encommendada";
+        return true;
+      }
+      return true;
+    }
     if (digita == Digita::Confirma || digita == Digita::ConfirmaFaixa) {
       if (tecla == ftxui::Event::Character('s') ||
           tecla == ftxui::Event::Character('S')) {
