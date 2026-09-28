@@ -57,6 +57,7 @@
 #include "nucleo/capa.hpp"
 #include "nucleo/catalogo.hpp"
 #include "nucleo/estaleiro.hpp"
+#include "tui/baixas.hpp"
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
@@ -490,6 +491,7 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // toca, e por isso elle não pede tranca.
 std::string aviso_da_rede;
 std::size_t pagina_das_baixas = 0;
+  tui::CaixasDasBaixas caixas_das_baixas;
   // O estado que atravessa quadros mora n'um tipo visual, sem recurso externo.
   // As referencias conservam esta etapa pequena; o dono único já fica claro.
   tui::EstadoDaJanella estado;
@@ -788,7 +790,12 @@ std::size_t pagina_das_baixas = 0;
         geometria_anterior ? &*geometria_anterior : nullptr);
     geometria_anterior = geometria;
     reconciliador_da_capa.deseja(geometria);
-    const tui::Sala& sala = geometria.sala;
+    tui::Sala sala = geometria.sala;
+    const bool na_baixa = tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
+    const std::size_t altura_das_baixas = na_baixa ? tui::altura_das_baixas(sala.pauta.altura) : 0;
+    sala.pauta.y += altura_das_baixas;
+    sala.pauta.altura -= altura_das_baixas;
+    caixas_das_baixas = {};
     const std::size_t altura_por_faixa =
         tui::secao_de_faixas(navegador.secao()) ? tui::ALTURA_DA_FAIXA : 1;
     primeira_linha = tui::primeira_a_mostrar(
@@ -869,10 +876,10 @@ std::size_t pagina_das_baixas = 0;
     const nucleo::Andamento retrato_das_baixas = estaleiro.andamento();
     const std::string andamento =
         nucleo::texto_do_andamento(retrato_das_baixas);
-    const bool na_baixa =
-        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
-    if (na_baixa) chapa.encommendas =
-        nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
+    if (na_baixa) chapa.encommendas = altura_das_baixas
+        ? std::to_string(retrato_das_baixas.em_curso) + " baixando · " +
+          std::to_string(retrato_das_baixas.na_espera) + " na fila"
+        : nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
     if (na_baixa && !chapa.encommendas.empty()) chapa.conselho.clear();
     // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
     // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: o que não
@@ -1107,6 +1114,8 @@ std::size_t pagina_das_baixas = 0;
     if (!sala.pauta.vazio() || !sala.chapa.vazio()) {
       metades.push_back(ftxui::vbox(
           {tui::elemento_da_chapa(chapa, sala.chapa.largura),
+           tui::painel_das_baixas(retrato_das_baixas, pagina_das_baixas,
+                                  altura_das_baixas, caixas_das_baixas),
            // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
            // da tabella: é a caixa que o FOCO lê para saltar ás visinhas.
            //
@@ -1138,7 +1147,7 @@ std::size_t pagina_das_baixas = 0;
     // morreu na issue #134: a onda no meio da fita é o progresso.
     const int altura_do_meio = std::max(
         static_cast<int>(sala.painel.altura),
-        static_cast<int>(sala.pauta.altura + (sala.chapa.vazio() ? 0 : 1)));
+        static_cast<int>(sala.pauta.altura + altura_das_baixas + (sala.chapa.vazio() ? 0 : 1)));
     std::vector<ftxui::Element> tudo = {
         ftxui::hbox(std::move(metades)) |
         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, altura_do_meio)};
