@@ -40,5 +40,23 @@ ftxui::Element progresso_da_baixa(const RegistroDaBaixa& registro) {
       text("  " + std::to_string(valor) + "%  ")}) |
       color(tinta_da_baixa(registro.estado));
 }
+// Só os botões habilitados recebem caixa, impedindo cliques em acções antigas.
+ftxui::Element controles_da_baixa(const RegistroDaBaixa& registro,
+    std::size_t pagina, std::size_t total, CaixasDasBaixas& caixas) {
+  using namespace ftxui;
+  caixas.id = registro.id;
+  caixas.recomecar = registro.estado == EstadoDaBaixa::Parado ||
+                      registro.estado == EstadoDaBaixa::Falhou;
+  const bool parar = !nucleo::baixa_terminada(registro.estado) &&
+                      registro.estado != EstadoDaBaixa::Parando;
+  Element acao = text(caixas.recomecar ? " [R] Recomeçar " : parar ? " [P] Parar "
+      : registro.estado == EstadoDaBaixa::Parando ? " Parando... " : " Salvo ");
+  if (parar || caixas.recomecar)
+    acao = acao | bold | inverted | reflect(caixas.acao);
+  else acao = acao | dim;
+  return hbox({text(" < ") | reflect(caixas.anterior),
+      text(std::to_string(pagina + 1) + "/" + std::to_string(total)),
+      text(" V > ") | reflect(caixas.seguinte), filler(), std::move(acao)});
+}
 }  // namespace
 }  // namespace mysong::tui
