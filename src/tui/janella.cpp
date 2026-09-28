@@ -1392,6 +1392,27 @@ std::size_t pagina_das_baixas = 0;
     //
     // A guarda do `digita` é o que deixa o campo e a pergunta ficarem com o
     // Enter d'elles: com modo modal aberto, este ramo não corre.
+    if (tecla.is_mouse() && digita == Digita::Nada &&
+        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
+      auto copia = tecla;
+      const auto& rato = copia.mouse();
+      if (rato.button == ftxui::Mouse::Left && rato.motion == ftxui::Mouse::Pressed) {
+        if (caixas_das_baixas.acao.Contain(rato.x, rato.y)) {
+          if (caixas_das_baixas.recomecar) estaleiro.recomeca(caixas_das_baixas.id);
+          else estaleiro.para(caixas_das_baixas.id);
+          return true;
+        }
+        if (caixas_das_baixas.seguinte.Contain(rato.x, rato.y)) {
+          ++pagina_das_baixas;
+          return true;
+        }
+        if (caixas_das_baixas.anterior.Contain(rato.x, rato.y)) {
+          const auto total = estaleiro.andamento().registros.size();
+          if (total) pagina_das_baixas = (pagina_das_baixas % total + total - 1) % total;
+          return true;
+        }
+      }
+    }
     const bool pelo_foco = !tecla.is_mouse() && digita == Digita::Nada &&
                            foco != tui::Focavel::Pauta &&
                            (tecla == ftxui::Event::Return ||
