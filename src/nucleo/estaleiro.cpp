@@ -193,6 +193,26 @@ bool Estaleiro::para(std::size_t id) {
   return false;
 }
 
+// Só o termo da tentativa anterior autoriza outra com o mesmo identificador.
+bool Estaleiro::recomeca(std::size_t id) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (fechado_) return false;
+  for (auto& registro : registros_) {
+    if (registro.id != id || (registro.estado != EstadoDaBaixa::Parado &&
+        registro.estado != EstadoDaBaixa::Falhou)) continue;
+    Pedido& pedido = pedidos_.at(id);
+    pedido.interrupcao = std::make_shared<std::atomic_bool>(false);
+    registro.estado = EstadoDaBaixa::Aguardando;
+    registro.porcentagem.reset();
+    registro.detalhe.clear();
+    espera_.push_back(pedido);
+    ++versao_;
+    sino_.notify_all();
+    return true;
+  }
+  return false;
+}
+
 void Estaleiro::limpa_recentes() {
   std::lock_guard<std::mutex> chave(tranca_);
   const auto fim = std::remove_if(registros_.begin(), registros_.end(),
