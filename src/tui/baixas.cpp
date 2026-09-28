@@ -29,5 +29,16 @@ ftxui::Color tinta_da_baixa(EstadoDaBaixa estado) {
           ? tokens::warn : tokens::v400);
   return ftxui::Color::RGB(tom.r, tom.g, tom.b);
 }
+// Porcentagem ausente conserva texto; não se inventa medida da rede.
+ftxui::Element progresso_da_baixa(const RegistroDaBaixa& registro) {
+  using namespace ftxui;
+  const bool concluido = registro.estado == EstadoDaBaixa::Concluido;
+  if (!concluido && !registro.porcentagem)
+    return text("  " + nome_do_estado(registro) + " · aguardando informação") | dim;
+  const int valor = concluido ? 100 : std::clamp(*registro.porcentagem, 0, 100);
+  return hbox({text("  "), gauge(valor / 100.0f) | flex,
+      text("  " + std::to_string(valor) + "%  ")}) |
+      color(tinta_da_baixa(registro.estado));
+}
 }  // namespace
 }  // namespace mysong::tui
