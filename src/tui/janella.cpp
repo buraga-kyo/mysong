@@ -851,7 +851,11 @@ std::size_t pagina_das_baixas = 0;
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
     const std::string contexto_do_campo =
-        digita == Digita::ConfirmaFaixa ? titulo_em_causa
+        digita == Digita::EscolhePlaylist
+            ? (nucleo::url_da_faixa_na_playlist(url_a_decidir).empty()
+                ? "1 lista inteira | Esc cancela"
+                : "1 lista inteira | 2 só esta música | Esc cancela")
+        : digita == Digita::ConfirmaFaixa ? titulo_em_causa
         : digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
@@ -1656,33 +1660,13 @@ std::size_t pagina_das_baixas = 0;
           }
         } else if (!termo_em_curso.empty()) {
           const std::string url = termo_em_curso;
-          navegador.vai_para(tui::Secao::Rede);
           if (nucleo::eh_playlist_url(url)) {
-            const nucleo::Fonte fonte =
-                !nucleo::id_da_playlist(url).empty()
-                    ? nucleo::Fonte::Spotify
-                    : (url.find("music.youtube.com") != std::string::npos
-                           ? nucleo::Fonte::YouTubeMusic
-                           : nucleo::Fonte::YouTube);
-            {
-              std::lock_guard<std::mutex> chave(tranca_do_termo);
-              url_da_playlist = url;
-              fonte_da_playlist = fonte;
-            }
-            baixa_playlist_ao_chegar.store(true);
-            if (fonte == nucleo::Fonte::Spotify) {
-              {
-                std::lock_guard<std::mutex> chave(tranca_do_termo);
-                url_da_lista = url;
-              }
-              pede_catalogo.toca();
-              aviso_da_rede = "a ler a playlist do Spotify...";
-            } else {
-              pede_playlist.toca();
-              aviso_da_rede = "a ler a playlist...";
-            }
+            url_a_decidir = url;
+            digita = Digita::EscolhePlaylist;
+            termo_em_curso.clear();
             return true;
           }
+          navegador.vai_para(tui::Secao::Rede);
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
           // declarado, conta o andamento, e a tela lê-o: duas encommendas seguidas
           // não se atropelam, e a segunda espera em vez de disputar a rede.
