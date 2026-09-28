@@ -80,7 +80,7 @@ ftxui::Element painel_das_baixas(const nucleo::Andamento& andamento,
   Elements linhas;
   linhas.push_back(text(" ↓ TRANSFERÊNCIAS") | bold);
   if (andamento.registros.empty()) {
-    linhas.push_back(paragraph("Busque uma música com s ou cole um link com u."));
+    linhas.push_back(paragraph("Busque uma música com s ou cole um link com b."));
     linhas.push_back(text("Seus downloads aparecerão aqui.") | dim);
   } else {
     pagina %= andamento.registros.size();
