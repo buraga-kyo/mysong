@@ -149,6 +149,8 @@ void Estaleiro::encommenda(Pedido pedido) {
     if (fechado_) return;  // estaleiro fechado não aceita obra nova
     ++versao_;
     pedido.identificador = proximo_id_++;
+    pedido.interrupcao = std::make_shared<std::atomic_bool>(false);
+    pedidos_[pedido.identificador] = pedido;
     RegistroDaBaixa registro;
     registro.id = pedido.identificador;
     registro.fonte = pedido.fonte;
