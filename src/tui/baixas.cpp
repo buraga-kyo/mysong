@@ -58,5 +58,17 @@ ftxui::Element controles_da_baixa(const RegistroDaBaixa& registro,
       text(std::to_string(pagina + 1) + "/" + std::to_string(total)),
       text(" V > ") | reflect(caixas.seguinte), filler(), std::move(acao)});
 }
+// O conselho dá ao operador um passo concreto quando o progresso não basta.
+std::string conselho_da_baixa(const RegistroDaBaixa& registro) {
+  if (registro.estado == EstadoDaBaixa::Falhou)
+    return "Não foi possível concluir. Confira a conexão e tente novamente. " + registro.detalhe;
+  if (registro.estado == EstadoDaBaixa::Parado)
+    return "Download interrompido. Recomeçar inicia uma nova tentativa.";
+  if (registro.estado == EstadoDaBaixa::Parando) return "Encerrando a tentativa atual...";
+  if (registro.estado == EstadoDaBaixa::Aguardando) return "Sua música está na fila.";
+  if (!registro.detalhe.empty()) return registro.detalhe;
+  return registro.estado == EstadoDaBaixa::Concluido
+      ? "Tudo pronto. A música está na biblioteca." : "Pode continuar ouvindo enquanto baixamos.";
+}
 }  // namespace
 }  // namespace mysong::tui
