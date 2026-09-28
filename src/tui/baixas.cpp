@@ -71,4 +71,30 @@ std::string conselho_da_baixa(const RegistroDaBaixa& registro) {
       ? "Tudo pronto. A música está na biblioteca." : "Pode continuar ouvindo enquanto baixamos.";
 }
 }  // namespace
+// Retracto puro: caixas só valem para o registro efectivamente desenhado.
+ftxui::Element painel_das_baixas(const nucleo::Andamento& andamento,
+    std::size_t pagina, std::size_t altura, CaixasDasBaixas& caixas) {
+  using namespace ftxui;
+  caixas = {};
+  if (altura == 0) return emptyElement();
+  Elements linhas;
+  linhas.push_back(text(" ↓ TRANSFERÊNCIAS") | bold);
+  if (andamento.registros.empty()) {
+    linhas.push_back(paragraph("Busque uma música com s ou cole um link com u."));
+    linhas.push_back(text("Seus downloads aparecerão aqui.") | dim);
+  } else {
+    pagina %= andamento.registros.size();
+    const auto& registro = andamento.registros[pagina];
+    if (altura >= 7) linhas.push_back(text(" " + std::string(nucleo::nome_da_fonte(registro.fonte)) +
+        " · " + nome_do_estado(registro)) | color(tinta_da_baixa(registro.estado)));
+    linhas.push_back(text(" " + registro.titulo) | bold);
+    linhas.push_back(progresso_da_baixa(registro));
+    if (altura >= 11) linhas.push_back(paragraph(conselho_da_baixa(registro)) |
+        size(HEIGHT, EQUAL, 2));
+    linhas.push_back(controles_da_baixa(registro, pagina, andamento.registros.size(), caixas));
+  }
+  Element painel = vbox(std::move(linhas));
+  if (altura >= 7) painel = painel | borderRounded;
+  return painel | size(HEIGHT, EQUAL, static_cast<int>(altura));
+}
 }  // namespace mysong::tui
