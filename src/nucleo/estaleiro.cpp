@@ -74,11 +74,9 @@ std::string assinatura_das_baixas(const Andamento& andamento) {
 std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
   std::vector<const RegistroDaBaixa*> ordem;
   for (const auto& registro : andamento.registros)
-    if (registro.estado != EstadoDaBaixa::Concluido &&
-        registro.estado != EstadoDaBaixa::Falhou) ordem.push_back(&registro);
+    if (!baixa_terminada(registro.estado)) ordem.push_back(&registro);
   for (auto i = andamento.registros.rbegin(); i != andamento.registros.rend(); ++i)
-    if (i->estado == EstadoDaBaixa::Concluido ||
-        i->estado == EstadoDaBaixa::Falhou) ordem.push_back(&*i);
+    if (baixa_terminada(i->estado)) ordem.push_back(&*i);
   if (ordem.empty()) return {};
   const RegistroDaBaixa& registro = *ordem[pagina % ordem.size()];
   std::string dito = "#" + std::to_string(registro.id) + " " +
@@ -94,6 +92,8 @@ std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
       break;
     case EstadoDaBaixa::Concluido: dito += "concluído"; break;
     case EstadoDaBaixa::Falhou: dito += "falhou"; break;
+    case EstadoDaBaixa::Parando: dito += "parando..."; break;
+    case EstadoDaBaixa::Parado: dito += "parado"; break;
   }
   if (registro.estado == EstadoDaBaixa::Falhou && !registro.detalhe.empty())
     dito += " (" + abrevia_utf8(registro.detalhe, 28) + ")";
@@ -147,6 +147,8 @@ void Estaleiro::encommenda(Pedido pedido) {
     if (fechado_) return;  // estaleiro fechado não aceita obra nova
     ++versao_;
     pedido.identificador = proximo_id_++;
+    pedido.interrupcao = std::make_shared<std::atomic_bool>(false);
+    pedidos_[pedido.identificador] = pedido;
     RegistroDaBaixa registro;
     registro.id = pedido.identificador;
     registro.fonte = pedido.fonte;
@@ -171,12 +173,52 @@ Andamento Estaleiro::andamento() const {
   return agora;
 }
 
+// A tranca decide se a ordem ainda espera ou se o obreiro deve interrompê-la.
+bool Estaleiro::para(std::size_t id) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (fechado_) return false;
+  for (auto& registro : registros_) {
+    if (registro.id != id || baixa_terminada(registro.estado) ||
+        registro.estado == EstadoDaBaixa::Parando) continue;
+    pedidos_.at(id).interrupcao->store(true);
+    const bool aguardava = registro.estado == EstadoDaBaixa::Aguardando;
+    espera_.erase(std::remove_if(espera_.begin(), espera_.end(),
+        [id](const Pedido& pedido) { return pedido.identificador == id; }), espera_.end());
+    registro.estado = aguardava ? EstadoDaBaixa::Parado : EstadoDaBaixa::Parando;
+    registro.detalhe = aguardava ? "Download parado. Pode recomeçar." : "Interrompendo...";
+    ++versao_;
+    sino_.notify_all();
+    return true;
+  }
+  return false;
+}
+
+// Só o termo da tentativa anterior autoriza outra com o mesmo identificador.
+bool Estaleiro::recomeca(std::size_t id) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (fechado_) return false;
+  for (auto& registro : registros_) {
+    if (registro.id != id || (registro.estado != EstadoDaBaixa::Parado &&
+        registro.estado != EstadoDaBaixa::Falhou)) continue;
+    Pedido& pedido = pedidos_.at(id);
+    pedido.interrupcao = std::make_shared<std::atomic_bool>(false);
+    registro.estado = EstadoDaBaixa::Aguardando;
+    registro.porcentagem.reset();
+    registro.detalhe.clear();
+    espera_.push_back(pedido);
+    ++versao_;
+    sino_.notify_all();
+    return true;
+  }
+  return false;
+}
+
 void Estaleiro::limpa_recentes() {
   std::lock_guard<std::mutex> chave(tranca_);
   const auto fim = std::remove_if(registros_.begin(), registros_.end(),
-      [](const RegistroDaBaixa& registro) {
-    return registro.estado == EstadoDaBaixa::Concluido ||
-           registro.estado == EstadoDaBaixa::Falhou;
+      [this](const RegistroDaBaixa& registro) {
+    if (baixa_terminada(registro.estado)) pedidos_.erase(registro.id);
+    return baixa_terminada(registro.estado);
   });
   registros_.erase(fim, registros_.end());
   ++versao_;
@@ -224,7 +266,7 @@ void Estaleiro::obreiro() {
         std::optional<int> porcentagem, std::string_view erro) {
       std::lock_guard<std::mutex> chave(tranca_);
       for (auto& registro : registros_) {
-        if (registro.id != id) continue;
+        if (registro.id != id || registro.estado == EstadoDaBaixa::Parando) continue;
         if (!erro.empty()) registro.detalhe = std::string(erro);
         else {
           registro.estado = EstadoDaBaixa::Baixando;
@@ -234,36 +276,47 @@ void Estaleiro::obreiro() {
         break;
       }
     };
-    const Colheita fim = obra_(pedido, &ficou);
+    Colheita fim = Colheita::FalhouAoBaixar;
+    try {
+      const EscopoDaBaixa escopo(pedido.interrupcao);
+      if (!baixa_interrompida()) fim = obra_(pedido, &ficou);
+    } catch (...) {
+      // Excepção da obra não mata o obreiro nem deixa a fila presa.
+      pedido.noticia(std::nullopt, "Não foi possível concluir. Tente novamente.");
+    }
     {
       std::lock_guard<std::mutex> chave(tranca_);
       --em_curso_;
-      ultima_ = std::string(razao_da_colheita(fim));
+      const bool parado = pedido.interrupcao->load();
+      ultima_ = parado ? "Download parado. Pode recomeçar." : std::string(razao_da_colheita(fim));
       ++versao_;
       for (auto& registro : registros_)
         if (registro.id == pedido.identificador) {
-          registro.estado = fim == Colheita::Colhido ||
+          registro.estado = parado ? EstadoDaBaixa::Parado : fim == Colheita::Colhido ||
                             fim == Colheita::ColhidoDuvidoso ||
                             fim == Colheita::JaExiste
                                 ? EstadoDaBaixa::Concluido : EstadoDaBaixa::Falhou;
-          if (registro.detalhe.empty()) registro.detalhe = ultima_;
+          if (parado || registro.detalhe.empty()) registro.detalhe = ultima_;
           break;
         }
       std::size_t recentes = 0;
       for (const auto& registro : registros_)
-        if (registro.estado == EstadoDaBaixa::Concluido ||
-            registro.estado == EstadoDaBaixa::Falhou) ++recentes;
+        if (baixa_terminada(registro.estado)) ++recentes;
       while (recentes > 4) {
         const auto antigo = std::find_if(registros_.begin(), registros_.end(),
             [](const RegistroDaBaixa& registro) {
-              return registro.estado == EstadoDaBaixa::Concluido ||
-                     registro.estado == EstadoDaBaixa::Falhou;
+              return baixa_terminada(registro.estado);
             });
         if (antigo == registros_.end()) break;
+        pedidos_.erase(antigo->id);
         registros_.erase(antigo);
         --recentes;
       }
-      if (fim == Colheita::Colhido) {
+      if (parado) {
+        if (!ficou.empty()) colheu_ = true;
+      } else if (fim == Colheita::JaExiste) {
+        // Existente não é falha; o registro já diz concluído.
+      } else if (fim == Colheita::Colhido) {
         ++colhidas_;
         colheu_ = true;
       } else if (fim == Colheita::ColhidoDuvidoso) {

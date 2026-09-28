@@ -20,6 +20,8 @@
 #include "nucleo/canvas.hpp"
 
 #include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -200,6 +202,30 @@ bool eh_playlist_url(const std::string& url) {
          url.find("list=") != std::string::npos;
 }
 
+std::string url_da_faixa_na_playlist(const std::string& url) {
+  const bool musica = url.find("https://music.youtube.com/watch?") == 0;
+  const bool video = url.find("https://www.youtube.com/watch?") == 0 ||
+                     url.find("https://youtube.com/watch?") == 0;
+  if (!musica && !video) return {};
+  const auto busca = url.find('?');
+  std::size_t inicio = busca + 1;
+  while (inicio < url.size()) {
+    const auto fim = url.find_first_of("&#", inicio);
+    const auto termo = url.substr(inicio, fim == std::string::npos ? fim : fim - inicio);
+    if (termo.compare(0, 2, "v=") == 0 && termo.size() > 2) {
+      const std::string id = termo.substr(2);
+      const bool valido = std::all_of(id.begin(), id.end(), [](unsigned char c) {
+        return std::isalnum(c) || c == '_' || c == '-';
+      });
+      if (valido) return std::string(musica ? "https://music.youtube.com/watch?v="
+                                              : "https://www.youtube.com/watch?v=") + id;
+    }
+    if (fim == std::string::npos || url[fim] == '#') break;
+    inicio = fim + 1;
+  }
+  return {};
+}
+
 std::vector<std::string> argumentos_da_playlist(const std::string& url,
                                                 bool com_cookie) {
   std::vector<std::string> ditos{"yt-dlp"};
@@ -248,6 +274,7 @@ std::vector<std::string> argumentos_do_download(
           // primeira é a checagem do destino; ter as duas quer dizer que uma
           // corrida entre duas aquisições não apaga o que a outra gravou.
           "--no-overwrites",
+          "--no-continue",  // recomeçar descarta somente o progresso parcial
           "--extract-audio",
           "--audio-format", "mp3",
           "--audio-quality", "0",
@@ -361,13 +388,14 @@ Fonte proxima_fonte(Fonte fonte) {
 
 int corre(const std::vector<std::string>& argumentos, std::string* colhido,
          const std::function<void(std::string_view)>& linha, bool unir_erros) {
-  if (argumentos.empty()) return -1;
+  if (argumentos.empty() || baixa_interrompida()) return -1;
   int cano[2] = {-1, -1};
   if (::pipe(cano) != 0) return -1;
 
   const ::pid_t filho = ::fork();
   if (filho < 0) { ::close(cano[0]); ::close(cano[1]); return -1; }
   if (filho == 0) {
+    if (::setpgid(0, 0) != 0) ::_exit(127);
     ::close(cano[0]);
     ::dup2(cano[1], STDOUT_FILENO);
     // O STDERR NÃO se junta ao stdout. Medido nesta Casa: o yt-dlp escreve no
@@ -397,10 +425,25 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido,
   }
 
   ::close(cano[1]);
+  ::setpgid(filho, filho);
   char pedaco[4096];
   ::ssize_t lidos = 0;
   std::string pendente;
-  while ((lidos = ::read(cano[0], pedaco, sizeof pedaco)) > 0) {
+  for (;;) {
+    if (baixa_interrompida()) {
+      // O grupo pertence só a esta baixa, incluindo eventuaes conversores.
+      ::kill(-filho, SIGKILL);
+      ::kill(filho, SIGKILL);
+      break;
+    }
+    pollfd espera{cano[0], POLLIN, 0};
+    const int pronto = ::poll(&espera, 1, 100);
+    if (pronto < 0 && errno == EINTR) continue;
+    if (pronto < 0) { ::kill(-filho, SIGKILL); break; }
+    if (pronto == 0) continue;
+    lidos = ::read(cano[0], pedaco, sizeof pedaco);
+    if (lidos < 0 && errno == EINTR) continue;
+    if (lidos <= 0) break;
     if (colhido != nullptr) colhido->append(pedaco, static_cast<std::size_t>(lidos));
     if (!linha) continue;
     for (ssize_t i = 0; i < lidos; ++i) {
@@ -416,7 +459,13 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido,
   ::close(cano[0]);
 
   int estado = 0;
-  if (::waitpid(filho, &estado, 0) < 0) return -1;
+  for (;;) {
+    if (baixa_interrompida()) { ::kill(-filho, SIGKILL); ::kill(filho, SIGKILL); }
+    const pid_t visto = ::waitpid(filho, &estado, WNOHANG);
+    if (visto == filho) break;
+    if (visto < 0 && errno != EINTR) return -1;
+    ::poll(nullptr, 0, 50);
+  }
   return WIFEXITED(estado) ? WEXITSTATUS(estado) : -1;
 }
 
@@ -610,6 +659,8 @@ ColheitaCanvas acompanha_com_canvas(const std::filesystem::path& raiz, const Ped
 
 Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
                std::filesystem::path* gravado) {
+  const EscopoDaBaixa escopo(pedido.interrupcao);
+  if (baixa_interrompida()) return Colheita::FalhouAoBaixar;
   if (!id_da_faixa_spotify(pedido.url).empty()) {
     Pedido faixa = pedido;
     if (!resolve_faixa_spotify(&faixa)) return Colheita::UrlRecusada;

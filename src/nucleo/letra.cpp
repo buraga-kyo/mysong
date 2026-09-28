@@ -12,6 +12,7 @@
 #include "nucleo/letra.hpp"
 
 #include <curl/curl.h>
+#include "nucleo/cancelamento.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -176,6 +177,8 @@ bool busca_letra(std::string_view artista, std::string_view titulo,
   // O signal cala-se, pela razão que o tractado do musicbrainz escreve por
   // extenso: o resolvedor do curl arma alarm(), e a obra tem mais de um fio.
   curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(punho, CURLOPT_NOPROGRESS, 0L);
+  curl_easy_setopt(punho, CURLOPT_XFERINFOFUNCTION, consulta_interrupcao);
   curl_easy_setopt(punho, CURLOPT_USERAGENT, "mysong/0.1 (+github.com/bragaus/mysong)");
   const CURLcode desfecho = curl_easy_perform(punho);
   curl_easy_cleanup(punho);

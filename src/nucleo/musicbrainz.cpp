@@ -15,6 +15,7 @@
 #include "nucleo/musicbrainz.hpp"
 
 #include <curl/curl.h>
+#include "nucleo/cancelamento.hpp"
 
 #include <chrono>
 #include <cstddef>
@@ -309,6 +310,8 @@ DesfechoMB consulta_mb_com_estado(const std::string& url, std::string* corpo,
   // tractador por longjmp, e n'um processo de mais de um fio o signal cae no fio
   // errado. É opção DE PUNHO, e por isso repete-se em cada um dos tres.
   curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(punho, CURLOPT_NOPROGRESS, 0L);
+  curl_easy_setopt(punho, CURLOPT_XFERINFOFUNCTION, consulta_interrupcao);
   curl_easy_setopt(punho, CURLOPT_USERAGENT, kAgenteDoMB);
   const CURLcode desfecho = curl_easy_perform(punho);
   long estado = 0;

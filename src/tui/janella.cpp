@@ -57,6 +57,7 @@
 #include "nucleo/capa.hpp"
 #include "nucleo/catalogo.hpp"
 #include "nucleo/estaleiro.hpp"
+#include "tui/baixas.hpp"
 #include "nucleo/aquisicao.hpp"
 #include "nucleo/fila.hpp"
 #include "nucleo/letra.hpp"
@@ -485,11 +486,13 @@ int erguer_tocador(const std::vector<std::string>& faixas,
   // ao índice no pintor seriam vinte consultas por segundo.
   std::string titulo_em_causa;
   std::string termo_em_curso;
+  std::string url_a_decidir;
   // O aviso da rede vive SÓMENTE no fio da tela: quem o escreve é a colheita do
   // correio, que corre no pintor, e quem o lê é o pintor. Fio de fundo algum lhe
   // toca, e por isso elle não pede tranca.
 std::string aviso_da_rede;
 std::size_t pagina_das_baixas = 0;
+  tui::CaixasDasBaixas caixas_das_baixas;
   // O estado que atravessa quadros mora n'um tipo visual, sem recurso externo.
   // As referencias conservam esta etapa pequena; o dono único já fica claro.
   tui::EstadoDaJanella estado;
@@ -788,7 +791,12 @@ std::size_t pagina_das_baixas = 0;
         geometria_anterior ? &*geometria_anterior : nullptr);
     geometria_anterior = geometria;
     reconciliador_da_capa.deseja(geometria);
-    const tui::Sala& sala = geometria.sala;
+    tui::Sala sala = geometria.sala;
+    const bool na_baixa = tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
+    const std::size_t altura_das_baixas = na_baixa ? tui::altura_das_baixas(sala.pauta.altura) : 0;
+    sala.pauta.y += altura_das_baixas;
+    sala.pauta.altura -= altura_das_baixas;
+    caixas_das_baixas = {};
     const std::size_t altura_por_faixa =
         tui::secao_de_faixas(navegador.secao()) ? tui::ALTURA_DA_FAIXA : 1;
     primeira_linha = tui::primeira_a_mostrar(
@@ -843,7 +851,11 @@ std::size_t pagina_das_baixas = 0;
     // O CONTEXTO que o rotulo pede: a fonte na busca da rede, o nome da lista na
     // pergunta do apagar. Os demais modos ignoram-no.
     const std::string contexto_do_campo =
-        digita == Digita::ConfirmaFaixa ? titulo_em_causa
+        digita == Digita::EscolhePlaylist
+            ? (nucleo::url_da_faixa_na_playlist(url_a_decidir).empty()
+                ? "1 lista inteira | Esc cancela"
+                : "1 lista inteira | 2 só esta música | Esc cancela")
+        : digita == Digita::ConfirmaFaixa ? titulo_em_causa
         : digita == Digita::Confirma
             ? navegador.nome_do_rol_eleito()
             : std::string(nucleo::nome_da_fonte(fonte_da_busca));
@@ -869,10 +881,10 @@ std::size_t pagina_das_baixas = 0;
     const nucleo::Andamento retrato_das_baixas = estaleiro.andamento();
     const std::string andamento =
         nucleo::texto_do_andamento(retrato_das_baixas);
-    const bool na_baixa =
-        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download;
-    if (na_baixa) chapa.encommendas =
-        nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
+    if (na_baixa) chapa.encommendas = altura_das_baixas
+        ? std::to_string(retrato_das_baixas.em_curso) + " baixando · " +
+          std::to_string(retrato_das_baixas.na_espera) + " na fila"
+        : nucleo::texto_das_baixas(retrato_das_baixas, pagina_das_baixas);
     if (na_baixa && !chapa.encommendas.empty()) chapa.conselho.clear();
     // O RECADO da chapa: o que a trilha carregava á direita. Junta-se por
     // ordem de urgencia, e cada pedaço sahe INTEIRO ou não sahe: o que não
@@ -1107,6 +1119,8 @@ std::size_t pagina_das_baixas = 0;
     if (!sala.pauta.vazio() || !sala.chapa.vazio()) {
       metades.push_back(ftxui::vbox(
           {tui::elemento_da_chapa(chapa, sala.chapa.largura),
+           tui::painel_das_baixas(retrato_das_baixas, pagina_das_baixas,
+                                  altura_das_baixas, caixas_das_baixas),
            // A caixa da PAUTA INTEIRA pendura-se aqui (issue #107), e não dentro
            // da tabella: é a caixa que o FOCO lê para saltar ás visinhas.
            //
@@ -1138,7 +1152,7 @@ std::size_t pagina_das_baixas = 0;
     // morreu na issue #134: a onda no meio da fita é o progresso.
     const int altura_do_meio = std::max(
         static_cast<int>(sala.painel.altura),
-        static_cast<int>(sala.pauta.altura + (sala.chapa.vazio() ? 0 : 1)));
+        static_cast<int>(sala.pauta.altura + altura_das_baixas + (sala.chapa.vazio() ? 0 : 1)));
     std::vector<ftxui::Element> tudo = {
         ftxui::hbox(std::move(metades)) |
         ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, altura_do_meio)};
@@ -1198,8 +1212,40 @@ std::size_t pagina_das_baixas = 0;
   // A aba DOWNLOAD abre mesmo sem achados: o progresso da baixa por URL
   // vive ali antes de qualquer busca.
   const auto vai_para_aba = [&](tui::Aba qual) {
-    if (navegador.vai_para(tui::secao_da_aba(qual))) return;
+    if (navegador.vai_para(tui::secao_da_aba(qual))) {
+      if (qual == tui::Aba::Download) {
+        const auto quantas = estaleiro.andamento().registros.size();
+        pagina_das_baixas = quantas ? quantas - 1 : 0;
+      }
+      return;
+    }
     aviso_da_rede = "a rede está vazia: busca primeiro (s)";
+  };
+
+  // Depois da escolha, a lista é lida no fio de fundo e só então encommendada.
+  const auto inicia_playlist = [&](const std::string& url) {
+    navegador.vai_para(tui::Secao::Rede);
+    const nucleo::Fonte fonte =
+        !nucleo::id_da_playlist(url).empty() ? nucleo::Fonte::Spotify
+        : url.find("music.youtube.com") != std::string::npos
+            ? nucleo::Fonte::YouTubeMusic : nucleo::Fonte::YouTube;
+    {
+      std::lock_guard<std::mutex> chave(tranca_do_termo);
+      url_da_playlist = url;
+      fonte_da_playlist = fonte;
+    }
+    baixa_playlist_ao_chegar.store(true);
+    if (fonte == nucleo::Fonte::Spotify) {
+      {
+        std::lock_guard<std::mutex> chave(tranca_do_termo);
+        url_da_lista = url;
+      }
+      pede_catalogo.toca();
+      aviso_da_rede = "a ler a playlist do Spotify...";
+    } else {
+      pede_playlist.toca();
+      aviso_da_rede = "a ler a playlist...";
+    }
   };
 
   // abre_o_menu_na, o menu sobre a faixa de indice `qual`, que se ELEGE
@@ -1383,6 +1429,27 @@ std::size_t pagina_das_baixas = 0;
     //
     // A guarda do `digita` é o que deixa o campo e a pergunta ficarem com o
     // Enter d'elles: com modo modal aberto, este ramo não corre.
+    if (tecla.is_mouse() && digita == Digita::Nada &&
+        tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
+      auto copia = tecla;
+      const auto& rato = copia.mouse();
+      if (rato.button == ftxui::Mouse::Left && rato.motion == ftxui::Mouse::Pressed) {
+        if (caixas_das_baixas.acao.Contain(rato.x, rato.y)) {
+          if (caixas_das_baixas.recomecar) estaleiro.recomeca(caixas_das_baixas.id);
+          else estaleiro.para(caixas_das_baixas.id);
+          return true;
+        }
+        if (caixas_das_baixas.seguinte.Contain(rato.x, rato.y)) {
+          ++pagina_das_baixas;
+          return true;
+        }
+        if (caixas_das_baixas.anterior.Contain(rato.x, rato.y)) {
+          const auto total = estaleiro.andamento().registros.size();
+          if (total) pagina_das_baixas = (pagina_das_baixas % total + total - 1) % total;
+          return true;
+        }
+      }
+    }
     const bool pelo_foco = !tecla.is_mouse() && digita == Digita::Nada &&
                            foco != tui::Focavel::Pauta &&
                            (tecla == ftxui::Event::Return ||
@@ -1521,6 +1588,34 @@ std::size_t pagina_das_baixas = 0;
     // por onde uma tecla chegue ás duas leituras.
     // A CONFIRMAÇÃO não é modo de digitar: é uma pergunta de uma tecla. Trata-se
     // antes do resto para que a letra «s» não vá parar ao termo em curso.
+    if (digita == Digita::EscolhePlaylist) {
+      if (tecla == ftxui::Event::Escape) {
+        digita = Digita::Nada;
+        url_a_decidir.clear();
+        return true;
+      }
+      if (tecla == ftxui::Event::Character('1')) {
+        inicia_playlist(url_a_decidir);
+        digita = Digita::Nada;
+        url_a_decidir.clear();
+        return true;
+      }
+      if (tecla == ftxui::Event::Character('2')) {
+        const std::string url = nucleo::url_da_faixa_na_playlist(url_a_decidir);
+        if (url.empty()) return true;
+        nucleo::Pedido pedido;
+        pedido.url = url;
+        pedido.fonte = url.find("music.youtube.com") != std::string::npos
+            ? nucleo::Fonte::YouTubeMusic : nucleo::Fonte::YouTube;
+        estaleiro.encommenda(std::move(pedido));
+        navegador.vai_para(tui::Secao::Rede);
+        digita = Digita::Nada;
+        url_a_decidir.clear();
+        aviso_da_rede = "uma música encommendada";
+        return true;
+      }
+      return true;
+    }
     if (digita == Digita::Confirma || digita == Digita::ConfirmaFaixa) {
       if (tecla == ftxui::Event::Character('s') ||
           tecla == ftxui::Event::Character('S')) {
@@ -1599,33 +1694,13 @@ std::size_t pagina_das_baixas = 0;
           }
         } else if (!termo_em_curso.empty()) {
           const std::string url = termo_em_curso;
-          navegador.vai_para(tui::Secao::Rede);
           if (nucleo::eh_playlist_url(url)) {
-            const nucleo::Fonte fonte =
-                !nucleo::id_da_playlist(url).empty()
-                    ? nucleo::Fonte::Spotify
-                    : (url.find("music.youtube.com") != std::string::npos
-                           ? nucleo::Fonte::YouTubeMusic
-                           : nucleo::Fonte::YouTube);
-            {
-              std::lock_guard<std::mutex> chave(tranca_do_termo);
-              url_da_playlist = url;
-              fonte_da_playlist = fonte;
-            }
-            baixa_playlist_ao_chegar.store(true);
-            if (fonte == nucleo::Fonte::Spotify) {
-              {
-                std::lock_guard<std::mutex> chave(tranca_do_termo);
-                url_da_lista = url;
-              }
-              pede_catalogo.toca();
-              aviso_da_rede = "a ler a playlist do Spotify...";
-            } else {
-              pede_playlist.toca();
-              aviso_da_rede = "a ler a playlist...";
-            }
+            url_a_decidir = url;
+            digita = Digita::EscolhePlaylist;
+            termo_em_curso.clear();
             return true;
           }
+          navegador.vai_para(tui::Secao::Rede);
           // A baixa vae ao ESTALEIRO, e não a um fio erguido aqui. Elle tem o limite
           // declarado, conta o andamento, e a tela lê-o: duas encommendas seguidas
           // não se atropelam, e a segunda espera em vez de disputar a rede.
@@ -1689,15 +1764,7 @@ std::size_t pagina_das_baixas = 0;
             d_ella.gesto) {
       case tui::GestoDaAba::Vai: vai_para_aba(d_ella.aba); return true;
       case tui::GestoDaAba::Cycla: {
-        // Tenta até TRES abas. Todas abrem sem conteúdo prévio.
-        tui::Aba qual = tui::aba_da_secao(navegador.secao());
-        for (int volta = 0; volta < 3; ++volta) {
-          qual = tui::aba_seguinte(qual);
-          if (navegador.vai_para(tui::secao_da_aba(qual))) return true;
-          // Saltou-se, e diz-se PORQUE: aba a passar em silencio deixaria o
-          // operador a crer que o Tab pulou uma por engano d'elle.
-          aviso_da_rede = "DOWNLOAD saltada: a rede está vazia (s busca)";
-        }
+        vai_para_aba(tui::aba_seguinte(tui::aba_da_secao(navegador.secao())));
         return true;
       }
       case tui::GestoDaAba::CyclaVista: {
@@ -1721,6 +1788,12 @@ std::size_t pagina_das_baixas = 0;
     // botão direito. Trata-se AQUI, depois do campo e das abas, e não na
     // taboada do commando: ella não dá Ordem alguma, e verbo que sómente
     // abrisse caixa da tela seria verbo que o tocador nunca cumpriria.
+    if (tui::aba_da_secao(navegador.secao()) == tui::Aba::Download &&
+        (tecla == ftxui::Event::Character('P') || tecla == ftxui::Event::Character('R'))) {
+      if (tecla == ftxui::Event::Character('P')) estaleiro.para(caixas_das_baixas.id);
+      else estaleiro.recomeca(caixas_das_baixas.id);
+      return true;
+    }
     if (tecla == ftxui::Event::Character('C') &&
         tui::aba_da_secao(navegador.secao()) == tui::Aba::Download) {
       estaleiro.limpa_recentes();

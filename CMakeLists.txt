@@ -85,6 +85,8 @@ add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp src/tu
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(mysong_core PRIVATE ${MYSONG_AVISOS})
 
+target_sources(mysong_core PRIVATE src/tui/baixas.cpp)
+
 add_executable(mysong src/tui/janella.cpp)
 target_compile_options(mysong PRIVATE ${MYSONG_AVISOS})
 target_link_libraries(mysong PRIVATE mysong_core
