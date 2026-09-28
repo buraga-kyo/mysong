@@ -291,3 +291,28 @@ TEST_CASE("o colhido duvidoso conta por duvidosa e levanta a bandeira") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("parar em voo impede recomeço antes do termo e zera a tentativa") {
+  Cancella cancella;
+  nu::Estaleiro fila(1, [&](const nu::Pedido& pedido, std::filesystem::path*) {
+    pedido.noticia(42, {});
+    cancella.chego();
+    cancella.espera();
+    pedido.noticia(99, {});
+    return nu::Colheita::Colhido;
+  });
+  fila.encommenda(nu::Pedido{});
+  cancella.chegaram(1);
+  CHECK(fila.para(1));
+  CHECK_FALSE(fila.recomeca(1));
+  CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Parando);
+  cancella.abre();
+  fila.espera_a_fila();
+  CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Parado);
+  CHECK(fila.andamento().registros[0].porcentagem == 42);
+  CHECK(fila.andamento().falhadas == 0);
+  CHECK(fila.recomeca(1));
+  fila.espera_a_fila();
+  CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Concluido);
+  CHECK_FALSE(fila.recomeca(1));
+}
