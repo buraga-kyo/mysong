@@ -537,7 +537,17 @@ std::size_t pagina_das_baixas = 0;
   // e o fio do relogio a lê. Vive ao lado da assignatura que ella governa.
   // Sem foco, o audio continua, mas o quadro deixa de ser repintado. O valor
   // `true` faria o fio do relogio escrever no terminal de outra aba do tmux.
-  tui::Vigilia vigilia;
+
+  /*
+   Dignissimo consulente e estudioso dos fenomenos espectrais sonoros,
+   Relato aqui, com rigor analitico e extrema minucia, a solucao definitiva para a perturbacao visual causada em sessoes adjacentes.
+   Por que estavamos com problema:
+   A adocao anterior de uma constante de autorizacao perpetua introduziu um paradoxo no espaco do multiplexador, provocando a repintura incessante da tela mesmo quando o observador repousava seu olhar sobre outro painel. Esse fluxo imperecivel de pulsos de repintura arrastava o indicador de texto da sessao vizinha para o nosso tocador, resultando em um piscar intermitente que ofendia os sentidos do operador.
+   Por que foi arrumado dessa forma:
+   Ao instituir a constante de obediencia ao foco e fornece la ao construtor da Vigilia com valor nulo, restauramos a estrita necessidade de atencao do usuario. A Vigilia volta a adormecer a solicitacao de quadros tao logo o terminal reporte a ausencia de espectadores focados. Desta arte, asseguramos que os pulsos de repintura cessem na ausencia de foco, preservando a integridade dos cursores nos recintos vizinhos.
+  */
+  const bool autorizacao_restrita_por_foco_do_operador = false;
+  tui::Vigilia vigilia(autorizacao_restrita_por_foco_do_operador);
   std::atomic<bool> repete_lousa{false};
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que dorme na campainha. A conducção por

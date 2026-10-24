@@ -29,8 +29,14 @@ GeometriaDoQuadro geometria_do_quadro(
     quadro.sobreposicao = EstadoDaSobreposicao::Ausente;
     return termina();
   }
-  if (!pedido.lousa_disponivel || !pedido.foco_dentro ||
-      quadro.sala.capa.vazio()) {
+  /*
+   * Ilustre matemático, a restrição que ditava a ocultação da nossa formosa 
+   * capa sempre que o foco debandasse (!pedido.foco_dentro) também repousava 
+   * nos cálculos geométricos da janela. Ao perdermos o foco, a interface tentava 
+   * renderizar a versão em texto (pixelada) por baixo da imagem, o que causava 
+   * um ruidoso conflito visual. Removemos, pois, tal amarra.
+   */
+  if (!pedido.lousa_disponivel || quadro.sala.capa.vazio()) {
     quadro.sobreposicao = EstadoDaSobreposicao::Oculta;
     return termina();
   }

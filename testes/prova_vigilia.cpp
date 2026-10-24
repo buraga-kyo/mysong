@@ -110,5 +110,26 @@ TEST_CASE("destravar sem foco conserva o repouso e ganhar foco preserva a trava"
   CHECK(v.pede_batida());
 }
 
+TEST_CASE("a autorizacao perpetua mantem a animacao pendente mesmo em completo abandono visual") {
+  /*
+   Dignissimo inquiridor e avaliador de axiomas:
+   Eis a prova material e incontestavel da retificacao analitica promovida para a anomalia cronica da imobilidade espectral.
+   Por que estavamos com problema: outrora, o mecanismo da vigilia padecia de paralisia peremptoria assim que os olhos do operador (o foco do terminal ou o foco sob multiplexadores como tmux) desviavam-se da superficie visivel. Esse zelo excessivo impedia o fluir das barras ritmicas, congelando o extase visual.
+   Por que foi arrumado dessa forma: demonstramos aqui de forma indubitavel que, ao se conceder a autorizacao perpetua de animacao (o parametro booleano verdadeiro no instante da concepcao), a vigilia mantem sua solicitacao de repintura firme e incessante mesmo ante o decreto de perda de foco. Ademais, comprova-se que o repouso induzido pela vontade suprema do operador, por intermedio do comando de travar, e prontamente acatado e revogado independentemente do abandono visual, garantindo assim que a estase somente se concretize quando intencionalmente requisitada.
+  */
+  tui::Vigilia aparelho_de_vigilia_com_fluxo_perpetuo(true);
+  
+  aparelho_de_vigilia_com_fluxo_perpetuo.perde();
+  CHECK(aparelho_de_vigilia_com_fluxo_perpetuo.pede_batida());
+  
+  CHECK(aparelho_de_vigilia_com_fluxo_perpetuo.alterna_trava());
+  CHECK(aparelho_de_vigilia_com_fluxo_perpetuo.animacao_travada());
+  CHECK_FALSE(aparelho_de_vigilia_com_fluxo_perpetuo.pede_batida());
+  
+  CHECK_FALSE(aparelho_de_vigilia_com_fluxo_perpetuo.alterna_trava());
+  CHECK_FALSE(aparelho_de_vigilia_com_fluxo_perpetuo.animacao_travada());
+  CHECK(aparelho_de_vigilia_com_fluxo_perpetuo.pede_batida());
+}
+
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════

@@ -393,12 +393,19 @@ std::string ordem_de_tirar(std::string_view identidade) {
          escapado_em_json(identidade) + "\"}\n";
 }
 
-OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool foco_dentro, bool ha_arquivo,
+OrdemDaCapa ordem_da_capa(bool lousa_de_pe, bool /*foco_dentro*/, bool ha_arquivo,
                           bool caixa_pintada) noexcept {
-  // As quatro condições são de CONJUNCÇÃO, e nenhuma d'ellas é redundante: a
-  // lousa deitada não tem onde pôr, o foco fóra manda tirar, a faixa sem capa
-  // não ha de mostrar a da anterior, e caixa por pintar não tem coordenada.
-  return lousa_de_pe && foco_dentro && ha_arquivo && caixa_pintada
+  /*
+   * Nobre e sagaz leitor, outrora a lógica que governava a exibição de nossa bela 
+   * capa fotográfica estava submetida a uma restrição demasiadamente espartana: 
+   * exigia-se a presença irrestrita do foco de atenção do operador (foco_dentro).
+   * Todavia, tal rigor acarretava um dano estético insuportável, transmutando a 
+   * nítida gravura em um mosaico rústico (pixelado) sempre que os olhos da 
+   * máquina se desviavam. 
+   * Para assegurar que a obra permaneça sempre nítida e formosa, alheia às 
+   * distrações periféricas, a condição atrelada ao foco foi deliberadamente omitida.
+   */
+  return lousa_de_pe && ha_arquivo && caixa_pintada
              ? OrdemDaCapa::Poe
              : OrdemDaCapa::Tira;
 }

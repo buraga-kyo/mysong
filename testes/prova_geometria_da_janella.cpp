@@ -102,11 +102,11 @@ TEST_CASE("capa ausente oculta e visivel são estados distintos") {
 TEST_CASE("ocultar restaurar e trocar capa invalidam a geração anterior") {
   auto p = pedido(120, 45);
   auto quadro = tui::geometria_do_quadro(p);
-  p.foco_dentro = false;
+  p.lousa_disponivel = false; // Substituído foco_dentro por lousa_disponivel
   quadro = tui::geometria_do_quadro(p, &quadro);
   CHECK(quadro.geracao == 2);
   CHECK(quadro.sobreposicao == tui::EstadoDaSobreposicao::Oculta);
-  p.foco_dentro = true;
+  p.lousa_disponivel = true;
   quadro = tui::geometria_do_quadro(p, &quadro);
   CHECK(quadro.geracao == 3);
   p.capa = "/tmp/outra.jpg";

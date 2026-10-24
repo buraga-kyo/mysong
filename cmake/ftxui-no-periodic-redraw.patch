@@ -1,9 +1,8 @@
 diff --git a/src/ftxui/component/app.cpp b/src/ftxui/component/app.cpp
-index 0000000..0000000 100644
+index 99b4a6da..c6f26abb 100644
 --- a/src/ftxui/component/app.cpp
 +++ b/src/ftxui/component/app.cpp
 @@ -697,8 +697,6 @@ void App::Internal::Install() {
-   InstallTerminalInfo();
  
    quit_ = false;
  
@@ -12,3 +11,47 @@ index 0000000..0000000 100644
    installed_ = true;
    g_terminal_is_raw = true;
  }
+@@ -1019,7 +1017,7 @@ void App::Internal::Draw(Component component) {
+   }
+ 
+   // Hide cursor to prevent flickering during reset.
+-  TerminalSend("\033[?25l");
++  TerminalSend("\033[?2026h\033[?25l");
+ 
+   const bool resized =
+       frame_count_ == 0 || (dimx != public_->dimx_) || (dimy != public_->dimy_);
+@@ -1074,17 +1072,17 @@ void App::Internal::Draw(Component component) {
+     set_cursor_position_.clear();
+     reset_cursor_position_.clear();
+ 
+-    if (dy != 0) {
+-      set_cursor_position_ += "\x1B[" + std::to_string(dy) + "A";
+-      reset_cursor_position_ += "\x1B[" + std::to_string(dy) + "B";
+-    }
++    if (public_->cursor_.shape != Screen::Cursor::Hidden) {
++      if (dy != 0) {
++        set_cursor_position_ += "\x1B[" + std::to_string(dy) + "A";
++        reset_cursor_position_ += "\x1B[" + std::to_string(dy) + "B";
++      }
+ 
+-    if (dx != 0) {
+-      set_cursor_position_ += "\x1B[" + std::to_string(dx) + "D";
+-      reset_cursor_position_ += "\x1B[" + std::to_string(dx) + "C";
+-    }
++      if (dx != 0) {
++        set_cursor_position_ += "\x1B[" + std::to_string(dx) + "D";
++        reset_cursor_position_ += "\x1B[" + std::to_string(dx) + "C";
++      }
+ 
+-    if (public_->cursor_.shape != Screen::Cursor::Hidden) {
+       set_cursor_position_ += "\033[?25h";
+       set_cursor_position_ +=
+           "\033[" + std::to_string(int(public_->cursor_.shape)) + " q";
+@@ -1093,6 +1091,7 @@ void App::Internal::Draw(Component component) {
+ 
+   public_->ToString(output_buffer);
+   TerminalSend(set_cursor_position_);
++  TerminalSend("\033[?2026l");
+   TerminalFlush();
+ 
+   public_->Clear();
