@@ -452,3 +452,27 @@ ftxui::Element elemento_da_ficha(const Ficha& ficha, std::size_t largura) {
 
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+namespace mysong::tui {
+
+ftxui::Element elemento_das_colunas(const Sala& sala, ftxui::Element esquerda,
+                                   ftxui::Element direita, std::size_t altura) {
+  using namespace ftxui;
+  const auto limita = [altura](Element conteudo, std::size_t largura) {
+    return std::move(conteudo) | size(WIDTH, EQUAL, static_cast<int>(largura)) |
+        size(HEIGHT, EQUAL, static_cast<int>(altura));
+  };
+  Elements colunas;
+  if (!sala.pauta.vazio() || !sala.chapa.vazio())
+    colunas.push_back(limita(std::move(esquerda),
+                            std::max(sala.pauta.largura, sala.chapa.largura)));
+  if (!sala.painel.vazio()) {
+    if (!colunas.empty())
+      colunas.push_back(elemento_do_divisor(altura) |
+          size(WIDTH, EQUAL, static_cast<int>(sala.divisor.largura)));
+    colunas.push_back(limita(std::move(direita), sala.painel.largura));
+  }
+  return hbox(std::move(colunas)) | size(HEIGHT, EQUAL, static_cast<int>(altura));
+}
+
+}  // namespace mysong::tui

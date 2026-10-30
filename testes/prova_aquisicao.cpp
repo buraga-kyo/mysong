@@ -766,3 +766,45 @@ TEST_CASE("parar interrompe filho silencioso e seus descendentes") {
   CHECK(fim != 0);
   CHECK(std::chrono::steady_clock::now() - inicio < std::chrono::seconds(3));
 }
+
+TEST_CASE("HUD le medidas reais e distingue tamanho estimado") {
+  const auto info = nu::le_progresso_da_baixa("MYSONG_DL|downloading|250|1000|NA|50.5|15|END");
+  REQUIRE(info);
+  CHECK(info->etapa == nu::EtapaDaBaixa::Transferindo);
+  CHECK(info->porcentagem == 25);
+  CHECK(info->recebidos == 250);
+  CHECK(info->total == 1000);
+  CHECK(info->velocidade == 50.5);
+  CHECK(info->restante == 15);
+  CHECK_FALSE(info->total_estimado);
+  const auto estimado = nu::le_progresso_da_baixa("MYSONG_DL|downloading|250|NA|2000|NA|NA|END");
+  REQUIRE(estimado);
+  CHECK(estimado->total_estimado);
+  CHECK(estimado->porcentagem == 12);
+  CHECK_FALSE(estimado->velocidade);
+  CHECK_FALSE(estimado->restante);
+}
+
+TEST_CASE("HUD nao inventa porcentagem nem aceita numeros invalidos") {
+  for (const auto* valor : {"NA", "nan", "inf", "-1", "12lixo"}) {
+    const auto info = nu::le_progresso_da_baixa(
+        std::string("MYSONG_DL|downloading|50|") + valor + "|NA|NA|NA|END");
+    REQUIRE(info);
+    CHECK_FALSE(info->porcentagem);
+    CHECK_FALSE(info->total);
+  }
+  CHECK_FALSE(nu::le_progresso_da_baixa("MYSONG_DL|downloading|20|100|NA|10|8"));
+  CHECK_FALSE(nu::le_progresso_da_baixa("ERROR: falha na rede"));
+  CHECK_FALSE(nu::le_progresso_da_baixa("MYSONG_DL|inventado|20|100|NA|10|8|END"));
+}
+
+TEST_CASE("HUD distingue conversao e capa sem repetir etapas finalizadas") {
+  const auto conversao = nu::le_progresso_da_baixa("MYSONG_PP|FFmpegExtractAudio|END|started");
+  REQUIRE(conversao);
+  CHECK(conversao->etapa == nu::EtapaDaBaixa::Convertendo);
+  const auto capa = nu::le_progresso_da_baixa("MYSONG_PP|EmbedThumbnail|END|started");
+  REQUIRE(capa);
+  CHECK(capa->etapa == nu::EtapaDaBaixa::Capa);
+  CHECK_FALSE(nu::le_progresso_da_baixa("MYSONG_PP|EmbedThumbnail|END|finished"));
+  CHECK_FALSE(nu::le_progresso_da_baixa("MYSONG_PP|Outro|END|started"));
+}

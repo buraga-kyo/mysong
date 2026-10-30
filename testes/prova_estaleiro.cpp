@@ -62,8 +62,10 @@ class Cancella {
 
 TEST_CASE("Spotify e YouTube conservam progresso e identidade separados") {
   Cancella cancella;
-  nu::Estaleiro estaleiro(2, [&cancella](const nu::Pedido& pedido,
+  Cancella progresso;
+  nu::Estaleiro estaleiro(2, [&cancella, &progresso](const nu::Pedido& pedido,
                                          std::filesystem::path*) {
+    progresso.espera();
     pedido.noticia(std::nullopt, {});
     pedido.noticia(pedido.fonte == nu::Fonte::Spotify ? 37 : 82, {});
     cancella.chego();
@@ -81,6 +83,7 @@ TEST_CASE("Spotify e YouTube conservam progresso e identidade separados") {
   estaleiro.encommenda(youtube);
   const std::size_t versao_encomendada = estaleiro.andamento().versao;
   CHECK(versao_encomendada >= versao_vazia + 2);
+  progresso.abre();
   cancella.chegaram(2);
   const auto retrato_do_meio = estaleiro.andamento();
   CHECK(retrato_do_meio.versao > versao_encomendada);
@@ -356,4 +359,77 @@ TEST_CASE("erro inesperado permite nova tentativa sem matar o obreiro") {
   CHECK(tentativas == 2);
   CHECK(fila.andamento().registros[0].estado == nu::EstadoDaBaixa::Concluido);
   CHECK(fila.andamento().falhadas == 1);
+}
+
+TEST_CASE("arquivo salvo aguarda confirmacao do indice antes de ficar pronto") {
+  nu::Estaleiro fila(1, [](const nu::Pedido& pedido, std::filesystem::path* arquivo) {
+    nu::ProgressoDaBaixa info;
+    info.etapa = nu::EtapaDaBaixa::Transferindo;
+    info.titulo = "Título resolvido";
+    info.recebidos = 1024; info.total = 1024; info.porcentagem = 100;
+    pedido.progresso(info);
+    info.etapa = nu::EtapaDaBaixa::Etiquetas;
+    info.porcentagem.reset();
+    pedido.progresso(info);
+    pedido.noticia(std::nullopt, "Letra indisponível; áudio preservado");
+    *arquivo = "/acervo/Artista/Album/Musica.mp3";
+    return nu::Colheita::Colhido;
+  });
+  fila.encommenda({});
+  fila.espera_a_fila();
+  const auto salvo = fila.andamento().registros.front();
+  CHECK(salvo.titulo == "Título resolvido");
+  CHECK(salvo.estado == nu::EstadoDaBaixa::Indexando);
+  CHECK(salvo.etapa == nu::EtapaDaBaixa::Biblioteca);
+  CHECK_FALSE(salvo.fim);
+  CHECK_FALSE(salvo.porcentagem);
+  REQUIRE(salvo.avisos.size() == 1);
+  CHECK(salvo.recebidos == 1024);
+  CHECK(fila.colheu());
+  CHECK_FALSE(fila.para(salvo.id));
+  fila.limpa_recentes();
+  REQUIRE(fila.andamento().registros.size() == 1);
+  fila.confirma_biblioteca(salvo.id, true);
+  const auto pronto = fila.andamento().registros.front();
+  CHECK(pronto.estado == nu::EstadoDaBaixa::Concluido);
+  CHECK(pronto.etapa == nu::EtapaDaBaixa::Pronta);
+  CHECK(pronto.fim.has_value());
+  CHECK(pronto.avisos == salvo.avisos);
+  CHECK(pronto.caminho == salvo.caminho);
+  const auto versao = fila.andamento().versao;
+  fila.confirma_biblioteca(salvo.id, false, "resposta antiga");
+  CHECK(fila.andamento().versao == versao);
+}
+
+TEST_CASE("falha ao indexar fica explicita e recomecar limpa telemetria antiga") {
+  nu::Estaleiro fila(1, [](const nu::Pedido&, std::filesystem::path* arquivo) {
+    *arquivo = "/acervo/existente.mp3";
+    return nu::Colheita::JaExiste;
+  });
+  fila.encommenda({}); fila.espera_a_fila();
+  auto registro = fila.andamento().registros.front();
+  REQUIRE(registro.estado == nu::EstadoDaBaixa::Indexando);
+  CHECK(fila.colheu());
+  fila.confirma_biblioteca(registro.id, false, "Disco cheio ao atualizar biblioteca");
+  registro = fila.andamento().registros.front();
+  CHECK(registro.estado == nu::EstadoDaBaixa::Falhou);
+  CHECK(registro.detalhe == "Disco cheio ao atualizar biblioteca");
+  CHECK(fila.recomeca(registro.id));
+  fila.espera_a_fila();
+  registro = fila.andamento().registros.front();
+  CHECK(registro.estado == nu::EstadoDaBaixa::Indexando);
+  CHECK_FALSE(registro.fim);
+  fila.confirma_biblioteca(registro.id, true);
+  CHECK(fila.andamento().registros.front().estado == nu::EstadoDaBaixa::Concluido);
+}
+
+TEST_CASE("historico da playlist permanece ate limpeza manual") {
+  nu::Estaleiro fila(1, [](const nu::Pedido&, std::filesystem::path*) {
+    return nu::Colheita::Colhido;
+  });
+  for (int i = 0; i < 12; ++i) fila.encommenda({});
+  fila.espera_a_fila();
+  CHECK(fila.andamento().registros.size() == 12);
+  fila.limpa_recentes();
+  CHECK(fila.andamento().registros.empty());
 }

@@ -15,6 +15,9 @@
 #include "nucleo/biblioteca.hpp"
 #include "nucleo/rol.hpp"
 #include "tui/navegador.hpp"
+#include "tui/tabella.hpp"
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
 
 namespace nu = mysong::nucleo;
 namespace tui = mysong::tui;
@@ -824,3 +827,84 @@ TEST_CASE("a lista que já não existe recusa a entrada, e nada se muta") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("selecao acompanha trocas de faixa e preserva navegacao manual") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca biblioteca(cova.banco());
+  tui::Navegador navegador(biblioteca);
+  REQUIRE(navegador.vista().size() >= 3);
+  const auto primeira = navegador.vista()[0].chave;
+  const auto terceira = navegador.vista()[2].chave;
+
+  CHECK(navegador.acompanha_faixa(terceira));
+  CHECK(navegador.eleito() == 2);
+  navegador.ao_principio();
+  CHECK_FALSE(navegador.acompanha_faixa(terceira));
+  CHECK(navegador.eleito() == 0);
+  CHECK(navegador.acompanha_faixa(primeira));
+  CHECK(navegador.eleito() == 0);
+  CHECK(navegador.acompanha_faixa(terceira));
+  CHECK(navegador.eleito() == 2);
+}
+
+TEST_CASE("seguir faixa ausente ou parada preserva selecao e filtro") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca biblioteca(cova.banco());
+  tui::Navegador navegador(biblioteca);
+  const auto caminho = navegador.vista().front().chave;
+  navegador.ao_fim();
+  const auto antes = navegador.eleito();
+  CHECK_FALSE(navegador.acompanha_faixa("/fora/ausente.mp3"));
+  CHECK(navegador.eleito() == antes);
+  CHECK_FALSE(navegador.acompanha_faixa(""));
+  CHECK(navegador.eleito() == antes);
+  CHECK(navegador.acompanha_faixa(caminho));
+  CHECK(navegador.eleito() == 0);
+
+  navegador.filtra("inexistente");
+  CHECK_FALSE(navegador.acompanha_faixa("/outra/faixa.mp3"));
+  CHECK(navegador.termo() == "inexistente");
+  CHECK(navegador.vista().empty());
+}
+
+TEST_CASE("acompanhar reproducao nao troca a secao de artistas") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca biblioteca(cova.banco());
+  tui::Navegador navegador(biblioteca);
+  REQUIRE(navegador.vai_para(tui::Secao::Artistas));
+  navegador.ao_fim();
+  const auto antes = navegador.eleito();
+  REQUIRE_FALSE(navegador.vista().empty());
+  // Mesmo uma chave coincidente não representa uma faixa nesta seção.
+  CHECK_FALSE(navegador.acompanha_faixa(navegador.vista().front().chave));
+  CHECK(navegador.secao() == tui::Secao::Artistas);
+  CHECK(navegador.eleito() == antes);
+}
+
+TEST_CASE("lista reserva espaco da imagem sem desenhar simbolos por baixo") {
+  Cova cova;
+  REQUIRE(enche(cova.banco()));
+  nu::Biblioteca biblioteca(cova.banco());
+  tui::Navegador navegador(biblioteca);
+  const std::vector<std::size_t> nativas{0};
+  std::vector<ftxui::Box> caixas;
+  auto tela = ftxui::Screen::Create(ftxui::Dimension::Fixed(50), ftxui::Dimension::Fixed(6));
+  ftxui::Render(tela, tui::elemento_da_tabella(navegador, 0, 6, 50, {}, &caixas,
+      nullptr, true, nullptr, &nativas));
+  REQUIRE(caixas.size() == 2);
+  CHECK(caixas[0].y_min == 0);
+  CHECK(caixas[1].y_min == 3);
+  for (int y = 0; y < 3; ++y)
+    for (int x = 0; x < 8; ++x)
+      CHECK((tela.PixelAt(x, y).character.empty() || tela.PixelAt(x, y).character == " "));
+  bool marcador_sem_imagem = false;
+  for (int y = 3; y < 6; ++y)
+    for (int x = 0; x < 8; ++x) {
+      const auto& glifo = tela.PixelAt(x, y).character;
+      if (!glifo.empty() && glifo != " ") marcador_sem_imagem = true;
+    }
+  CHECK(marcador_sem_imagem);
+}

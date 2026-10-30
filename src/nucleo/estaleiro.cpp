@@ -90,6 +90,7 @@ std::string texto_das_baixas(const Andamento& andamento, std::size_t pagina) {
       dito += registro.porcentagem ? std::to_string(*registro.porcentagem) + "%"
                                     : "baixando...";
       break;
+    case EstadoDaBaixa::Indexando: dito += "atualizando biblioteca"; break;
     case EstadoDaBaixa::Concluido: dito += "concluído"; break;
     case EstadoDaBaixa::Falhou: dito += "falhou"; break;
     case EstadoDaBaixa::Parando: dito += "parando..."; break;
@@ -129,6 +130,7 @@ void Estaleiro::fecha() {
         if (registro.id == pedido.identificador) {
           registro.estado = EstadoDaBaixa::Falhou;
           registro.detalhe = "cancelado ao fechar";
+          registro.fim = std::chrono::steady_clock::now();
         }
     // A ESPERA abandona-se. Esperar por ella faria sahir do programa depender de
     // quantas baixas o operador encommendou, e ninguem espera meia hora para fechar
@@ -179,12 +181,14 @@ bool Estaleiro::para(std::size_t id) {
   if (fechado_) return false;
   for (auto& registro : registros_) {
     if (registro.id != id || baixa_terminada(registro.estado) ||
-        registro.estado == EstadoDaBaixa::Parando) continue;
+        registro.estado == EstadoDaBaixa::Parando ||
+        registro.estado == EstadoDaBaixa::Indexando) continue;
     pedidos_.at(id).interrupcao->store(true);
     const bool aguardava = registro.estado == EstadoDaBaixa::Aguardando;
     espera_.erase(std::remove_if(espera_.begin(), espera_.end(),
         [id](const Pedido& pedido) { return pedido.identificador == id; }), espera_.end());
     registro.estado = aguardava ? EstadoDaBaixa::Parado : EstadoDaBaixa::Parando;
+    if (aguardava) registro.fim = std::chrono::steady_clock::now();
     registro.detalhe = aguardava ? "Download parado. Pode recomeçar." : "Interrompendo...";
     ++versao_;
     sino_.notify_all();
@@ -205,6 +209,13 @@ bool Estaleiro::recomeca(std::size_t id) {
     registro.estado = EstadoDaBaixa::Aguardando;
     registro.porcentagem.reset();
     registro.detalhe.clear();
+    registro.etapa = EtapaDaBaixa::Preparando;
+    registro.recebidos.reset(); registro.total.reset();
+    registro.velocidade.reset(); registro.restante.reset();
+    registro.caminho.clear(); registro.avisos.clear();
+    registro.etapas_concluidas.clear(); registro.fim.reset();
+    registro.inicio = registro.inicio_da_etapa = registro.ultima_noticia =
+        std::chrono::steady_clock::now();
     espera_.push_back(pedido);
     ++versao_;
     sino_.notify_all();
@@ -222,6 +233,27 @@ void Estaleiro::limpa_recentes() {
   });
   registros_.erase(fim, registros_.end());
   ++versao_;
+}
+
+void Estaleiro::confirma_biblioteca(std::size_t id, bool disponivel,
+                                   const std::string& razao) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  for (auto& registro : registros_) {
+    if (registro.id != id || registro.estado != EstadoDaBaixa::Indexando) continue;
+    registro.estado = disponivel ? EstadoDaBaixa::Concluido : EstadoDaBaixa::Falhou;
+    registro.detalhe = disponivel ? "Arquivo confirmado na biblioteca; pronto para tocar"
+        : razao.empty() ? "Arquivo salvo, mas não encontrado no índice. Recomece para verificar novamente."
+                        : razao;
+    registro.fim = registro.ultima_noticia = std::chrono::steady_clock::now();
+    ultima_ = registro.detalhe;
+    if (!disponivel) ++falhadas_;
+    if (disponivel) {
+      registro.etapas_concluidas.push_back(EtapaDaBaixa::Biblioteca);
+      registro.etapa = EtapaDaBaixa::Pronta;
+    }
+    ++versao_;
+    break;
+  }
 }
 
 bool Estaleiro::colheu() {
@@ -267,10 +299,44 @@ void Estaleiro::obreiro() {
       std::lock_guard<std::mutex> chave(tranca_);
       for (auto& registro : registros_) {
         if (registro.id != id || registro.estado == EstadoDaBaixa::Parando) continue;
-        if (!erro.empty()) registro.detalhe = std::string(erro);
+        registro.ultima_noticia = std::chrono::steady_clock::now();
+        if (!erro.empty()) {
+          registro.detalhe = std::string(erro);
+          if (registro.avisos.empty() || registro.avisos.back() != erro)
+            registro.avisos.push_back(std::string(erro));
+        }
         else {
           registro.estado = EstadoDaBaixa::Baixando;
           registro.porcentagem = porcentagem;
+        }
+        ++versao_;
+        break;
+      }
+    };
+    pedido.progresso = [this, id = pedido.identificador](const ProgressoDaBaixa& info) {
+      std::lock_guard<std::mutex> chave(tranca_);
+      for (auto& registro : registros_) {
+        if (registro.id != id || registro.estado == EstadoDaBaixa::Parando) continue;
+        const auto agora = std::chrono::steady_clock::now();
+        if (registro.etapa != info.etapa) {
+          if (std::find(registro.etapas_concluidas.begin(), registro.etapas_concluidas.end(),
+                        registro.etapa) == registro.etapas_concluidas.end())
+            registro.etapas_concluidas.push_back(registro.etapa);
+          registro.inicio_da_etapa = agora;
+        }
+        registro.etapa = info.etapa;
+        if (!info.caminho.empty()) registro.caminho = info.caminho;
+        registro.ultima_noticia = agora;
+        registro.estado = EstadoDaBaixa::Baixando;
+        registro.detalhe = info.detalhe;
+        if (!info.titulo.empty()) registro.titulo = info.titulo;
+        registro.porcentagem = info.porcentagem;
+        if (info.etapa == EtapaDaBaixa::Transferindo) {
+          registro.recebidos = info.recebidos; registro.total = info.total;
+          registro.total_estimado = info.total_estimado;
+          registro.velocidade = info.velocidade; registro.restante = info.restante;
+        } else {
+          registro.velocidade.reset(); registro.restante.reset();
         }
         ++versao_;
         break;
@@ -296,22 +362,28 @@ void Estaleiro::obreiro() {
                             fim == Colheita::ColhidoDuvidoso ||
                             fim == Colheita::JaExiste
                                 ? EstadoDaBaixa::Concluido : EstadoDaBaixa::Falhou;
-          if (parado || registro.detalhe.empty()) registro.detalhe = ultima_;
+          const bool sucesso = registro.estado == EstadoDaBaixa::Concluido;
+          registro.caminho = ficou;
+          registro.ultima_noticia = std::chrono::steady_clock::now();
+          if (sucesso && !ficou.empty()) {
+            registro.estado = EstadoDaBaixa::Indexando;
+            registro.etapas_concluidas.push_back(registro.etapa);
+            registro.etapa = EtapaDaBaixa::Biblioteca;
+            registro.inicio_da_etapa = registro.ultima_noticia;
+            registro.porcentagem.reset();
+            registro.detalhe = "Arquivo salvo; aguardando confirmação na biblioteca";
+            colheu_ = true;
+          } else {
+            registro.fim = registro.ultima_noticia;
+            if (parado || !sucesso || registro.detalhe.empty()) registro.detalhe = ultima_;
+            if (!sucesso && !registro.avisos.empty() &&
+                registro.avisos.back().rfind("ERROR:", 0) == 0)
+              registro.detalhe += ": " + registro.avisos.back();
+          }
+          if (fim == Colheita::ColhidoDuvidoso)
+            registro.avisos.push_back("Versão encontrada por título e duração; confira a gravação");
           break;
         }
-      std::size_t recentes = 0;
-      for (const auto& registro : registros_)
-        if (baixa_terminada(registro.estado)) ++recentes;
-      while (recentes > 4) {
-        const auto antigo = std::find_if(registros_.begin(), registros_.end(),
-            [](const RegistroDaBaixa& registro) {
-              return baixa_terminada(registro.estado);
-            });
-        if (antigo == registros_.end()) break;
-        pedidos_.erase(antigo->id);
-        registros_.erase(antigo);
-        --recentes;
-      }
       if (parado) {
         if (!ficou.empty()) colheu_ = true;
       } else if (fim == Colheita::JaExiste) {

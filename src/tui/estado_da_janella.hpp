@@ -33,6 +33,8 @@ struct EstadoDaJanella {
   ftxui::Box caixa_da_ajuda = caixa_por_pintar();
   std::vector<nucleo::LinhaDaLetra> letra;
   std::string letra_de_qual;
+  std::vector<std::string> letra_plana;
+  std::size_t primeira_linha_da_letra = 0;
   Ficha ficha;
   std::vector<float> onda_da_faixa;
   std::atomic<bool> mostra_letra{true};

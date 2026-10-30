@@ -27,6 +27,7 @@
 //                   «replace», de sorte que a playlist do mpv nunca passa de
 //                   uma entrada, e a ordem das faixas fica inteira com nós.
 // ══════════════════════════════════════════════════════════════════════════
+#include <cstdlib>
 #include "nucleo/motor.hpp"
 
 #include "nucleo/libmpv.hpp"
@@ -108,6 +109,9 @@ MotorMpv::MotorMpv(::mpv_handle* punho) noexcept : punho_(punho) {}
 // vezes o mesmo punho.
 MotorMpv::MotorMpv(MotorMpv&& outro) noexcept
     : Motor(),
+      partes_(std::move(outro.partes_)),
+      ids_partes_(outro.ids_partes_),
+      aid_original_(std::move(outro.aid_original_)),
       punho_(outro.punho_),
       estado_(outro.estado_),
       posicao_(outro.posicao_),
@@ -201,6 +205,7 @@ bool aguarda_carga(::mpv_handle* punho, double prazo) {
 // «replace» é o que mantem a playlist do mpv com uma entrada só: a ordem das
 // faixas é NOSSA, e não d'elle.
 bool MotorMpv::tocar(const std::string& caminho) {
+  limpa_partes();
   fim_natural_ = false;
   const char* ordem[] = {"loadfile", caminho.c_str(), "replace", nullptr};
   if (punho_ == nullptr || mpv().mpv_command(punho_, ordem) < 0) return false;
@@ -262,6 +267,50 @@ bool MotorMpv::volume(int porcento) {
   double valor = static_cast<double>(aparar_volume(porcento));
   return mpv().mpv_set_property(punho_, "volume", MPV_FORMAT_DOUBLE, &valor) >=
          0;
+}
+
+bool MotorMpv::original() {
+  if (!punho_) return false;
+  const char* limpa[] = {"set", "lavfi-complex", "", nullptr};
+  if (mpv().mpv_command(punho_, limpa) < 0) return false;
+  if (!aid_original_.empty()) {
+    const char* seleciona[] = {"set", "aid", aid_original_.c_str(), nullptr};
+    return mpv().mpv_command(punho_, seleciona) >= 0;
+  }
+  return true;
+}
+void MotorMpv::limpa_partes() {
+  original();
+  for (int id : ids_partes_) if (id > 0) {
+    const auto numero = std::to_string(id);
+    const char* remove[] = {"audio-remove", numero.c_str(), nullptr};
+    mpv().mpv_command(punho_, remove);
+  }
+  partes_ = {}; ids_partes_ = {}; aid_original_.clear();
+}
+bool MotorMpv::mistura(const ArquivosDasPartes& arquivos, const VolumesDasPartes& volumes) {
+  if (!punho_ || estado_ == Estado::Parado) return false;
+  if (partes_ != arquivos) {
+    limpa_partes();
+    aid_original_ = propriedade("aid");
+    for (std::size_t i = 0; i < arquivos.size(); ++i) {
+      const char* adiciona[] = {"audio-add", arquivos[i].c_str(), "auto", nullptr};
+      if (arquivos[i].empty() || mpv().mpv_command(punho_, adiciona) < 0) { limpa_partes(); return false; }
+      const auto total = propriedade("track-list/count");
+      const int quantos = std::atoi(total.c_str());
+      for (int n = 0; n < quantos; ++n) {
+        const auto base = "track-list/" + std::to_string(n) + "/";
+        if (propriedade((base + "external-filename").c_str()) == arquivos[i])
+          ids_partes_[i] = std::atoi(propriedade((base + "id").c_str()).c_str());
+      }
+      if (ids_partes_[i] <= 0) { limpa_partes(); return false; }
+    }
+    partes_ = arquivos;
+  }
+  const auto grafo = grafo_da_mistura(ids_partes_, volumes);
+  const char* aplica[] = {"set", "lavfi-complex", grafo.c_str(), nullptr};
+  if (grafo.empty() || mpv().mpv_command(punho_, aplica) < 0) { original(); return false; }
+  return true;
 }
 
 double MotorMpv::posicao() const { return posicao_; }

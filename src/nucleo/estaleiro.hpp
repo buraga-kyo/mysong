@@ -21,6 +21,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <chrono>
 #include <cstddef>
 #include <deque>
 #include <filesystem>
@@ -40,7 +41,7 @@ namespace mysong::nucleo {
 inline constexpr std::size_t OBREIROS_DA_BAIXA = 2;
 
 enum class EstadoDaBaixa {
-  Aguardando, Preparando, Baixando, Concluido, Falhou, Parando, Parado
+  Aguardando, Preparando, Baixando, Indexando, Concluido, Falhou, Parando, Parado
 };
 // Estado terminal não conserva trabalho em voo; pode ser limpo ou refeito.
 inline bool baixa_terminada(EstadoDaBaixa estado) {
@@ -55,6 +56,16 @@ struct RegistroDaBaixa {
   std::optional<int> porcentagem;
   std::string titulo;
   std::string detalhe;
+  EtapaDaBaixa etapa = EtapaDaBaixa::Preparando;
+  std::optional<double> recebidos, total, velocidade, restante;
+  bool total_estimado = false;
+  std::filesystem::path caminho;
+  std::vector<std::string> avisos;
+  std::vector<EtapaDaBaixa> etapas_concluidas;
+  std::chrono::steady_clock::time_point inicio = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point inicio_da_etapa = inicio;
+  std::chrono::steady_clock::time_point ultima_noticia = inicio;
+  std::optional<std::chrono::steady_clock::time_point> fim;
 };
 
 // O ANDAMENTO n'um instante. Cópia, e não punho para dentro: quem pergunta lê um
@@ -97,6 +108,9 @@ class Estaleiro {
   void encommenda(Pedido pedido);
   Andamento andamento() const;
   void limpa_recentes();
+  // Só a confirmação do índice autoriza dizer que o arquivo está disponível.
+  void confirma_biblioteca(std::size_t id, bool disponivel,
+                          const std::string& razao = {});
   bool para(std::size_t id);
   bool recomeca(std::size_t id);
 

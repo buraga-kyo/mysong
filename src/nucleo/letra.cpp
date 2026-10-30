@@ -10,6 +10,7 @@
 //                   tudo o mais sobre corpos escriptos á mão.
 // ══════════════════════════════════════════════════════════════════════════
 #include "nucleo/letra.hpp"
+#include "nucleo/versao.hpp"
 
 #include <curl/curl.h>
 #include "nucleo/cancelamento.hpp"
@@ -21,6 +22,13 @@
 #include <cstdlib>
 #include <cstdio>
 #include <fstream>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <chrono>
+#include <limits>
+#include <ctime>
+#include <cerrno>
 
 #include "api/jsonzinho.hpp"
 
@@ -41,6 +49,36 @@ std::string nome_para_letra(std::string_view nome) {
     resultado += static_cast<char>(letra >= 'A' && letra <= 'Z' ? letra + 32 : letra);
   }
   return resultado;
+}
+
+std::string titulo_para_letra(std::string_view artista, std::string_view titulo) {
+  const auto apara = [](std::string_view valor) {
+    const auto inicio = valor.find_first_not_of(" \t\r\n");
+    if (inicio == std::string_view::npos) return std::string{};
+    return std::string(valor.substr(inicio, valor.find_last_not_of(" \t\r\n") - inicio + 1));
+  };
+  const auto autor = apara(artista);
+  const auto nome = apara(titulo);
+  if (!autor.empty() && nome.size() > autor.size() &&
+      nome_para_letra(std::string_view(nome).substr(0, autor.size())) == nome_para_letra(autor)) {
+    const auto resto = std::string_view(nome).substr(autor.size());
+    for (const auto separador : {" - ", ": ", " \xe2\x80\x93 ", " \xe2\x80\x94 "}) {
+      const std::string_view corte(separador);
+      if (resto.substr(0, corte.size()) == corte && resto.size() > corte.size())
+        return apara(resto.substr(corte.size()));
+    }
+  }
+  return nome;
+}
+
+std::string agente_da_letra() {
+  return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 MySong/" + std::string(versao()) +
+      " (https://github.com/buraga-kyo/mysong)";
+}
+std::vector<std::string> cabecalhos_da_letra() {
+  return {"Accept: application/json", "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8",
+      "Lrclib-Client: MySong/" + std::string(versao()) + " (https://github.com/buraga-kyo/mysong)"};
 }
 
 std::string escapa_para_url(std::string_view crua) {
@@ -66,7 +104,7 @@ std::string escapa_para_url(std::string_view crua) {
 
 std::string url_da_busca(std::string_view artista, std::string_view titulo) {
   std::string url = "https://lrclib.net/api/search?track_name=";
-  url += escapa_para_url(titulo);
+  url += escapa_para_url(titulo_para_letra(artista, titulo));
   if (!artista.empty()) {
     url += "&artist_name=";
     url += escapa_para_url(artista);
@@ -112,7 +150,7 @@ Letra escolhe_letra(std::string_view corpo, std::string_view artista,
                     std::string_view titulo, double duracao) {
   Letra eleita;
   double melhor = TOLERANCIA_DA_LETRA + 1;
-  const auto nome = nome_para_letra(titulo), autor = nome_para_letra(artista);
+  const auto nome = nome_para_letra(titulo_para_letra(artista, titulo)), autor = nome_para_letra(artista);
   if (nome.empty() || autor.empty()) return eleita;
   for (const auto& objeto : api::objectos_do_arranjo(corpo)) {
     if (nome_para_letra(api::texto_de_chave(objeto, "trackName")) != nome ||
@@ -153,38 +191,136 @@ namespace {
 // recolhe, o que o libcurl entrega, pedaço a pedaço. Assignatura fixada por elle.
 std::size_t recolhe(char* pedaco, std::size_t largura, std::size_t quantos,
                     void* alvo) {
+  if (quantos != 0 && largura > std::numeric_limits<std::size_t>::max() / quantos) return 0;
   const std::size_t medida = largura * quantos;
-  static_cast<std::string*>(alvo)->append(pedaco, medida);
+  auto& corpo = *static_cast<std::string*>(alvo);
+  constexpr std::size_t limite = 4 * 1024 * 1024;
+  if (medida > limite || corpo.size() > limite - medida) return 0;
+  corpo.append(pedaco, medida);
   return medida;
+}
+
+std::size_t recolhe_cabecalho(char* bytes, std::size_t largura, std::size_t quantos, void* alvo) {
+  if (quantos != 0 && largura > std::numeric_limits<std::size_t>::max() / quantos) return 0;
+  const auto tamanho = largura * quantos;
+  const std::string_view linha(bytes, tamanho);
+  auto& espera = *static_cast<std::string*>(alvo);
+  if (linha.substr(0, 5) == "HTTP/") espera.clear();
+  const auto separa = linha.find(':');
+  if (separa != std::string_view::npos && nome_para_letra(linha.substr(0, separa)) == "retry-after") {
+    const auto valor = linha.substr(separa + 1);
+    const auto inicio = valor.find_first_not_of(" \t\r\n");
+    if (inicio != std::string_view::npos)
+      espera = std::string(valor.substr(inicio, valor.find_last_not_of(" \t\r\n") - inicio + 1));
+  }
+  return tamanho;
 }
 
 }  // namespace
 
-bool busca_letra(std::string_view artista, std::string_view titulo,
-                 Letra* letra, double duracao) {
-  if (titulo.empty()) return false;
-  CURL* punho = curl_easy_init();
-  if (punho == nullptr) return false;
-  const std::string url = url_da_busca(artista, titulo);
-  std::string corpo;
-  curl_easy_setopt(punho, CURLOPT_URL, url.c_str());
-  curl_easy_setopt(punho, CURLOPT_WRITEFUNCTION, recolhe);
-  curl_easy_setopt(punho, CURLOPT_WRITEDATA, &corpo);
-  curl_easy_setopt(punho, CURLOPT_FOLLOWLOCATION, 1L);
-  // Oito segundos, e não sem prazo: quem baixa uma faixa não ha de esperar por um
-  // serviço de letra mais do que isso, e serviço mudo pendura o download inteiro.
-  curl_easy_setopt(punho, CURLOPT_TIMEOUT, 8L);
-  // O signal cala-se, pela razão que o tractado do musicbrainz escreve por
-  // extenso: o resolvedor do curl arma alarm(), e a obra tem mais de um fio.
-  curl_easy_setopt(punho, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt(punho, CURLOPT_NOPROGRESS, 0L);
-  curl_easy_setopt(punho, CURLOPT_XFERINFOFUNCTION, consulta_interrupcao);
-  curl_easy_setopt(punho, CURLOPT_USERAGENT, "mysong/0.1 (+github.com/bragaus/mysong)");
-  const CURLcode desfecho = curl_easy_perform(punho);
-  curl_easy_cleanup(punho);
-  if (desfecho != CURLE_OK) return false;
-  if (letra != nullptr) *letra = escolhe_letra(corpo, artista, titulo, duracao);
+bool interpreta_busca_da_letra(long estado, std::string_view corpo,
+    std::string_view artista, std::string_view titulo, double duracao,
+    Letra* letra, std::string* razao) {
+  if (letra) *letra = {};
+  if (razao) razao->clear();
+  const auto recusa = [&](const std::string& motivo) {
+    if (razao) *razao = motivo;
+    return false;
+  };
+  if (estado < 200 || estado >= 300) {
+    const std::string contexto = estado == 403 ? "acesso recusado" :
+        estado == 429 ? "limite de consultas atingido" :
+        estado >= 500 ? "serviço indisponível" : "resposta recusada";
+    return recusa("LRCLIB: " + contexto + " (HTTP " + std::to_string(estado) + ")");
+  }
+  const auto inicio = corpo.find_first_not_of(" \t\r\n");
+  const auto fim = corpo.find_last_not_of(" \t\r\n");
+  if (inicio == std::string_view::npos || corpo[inicio] != '[' || corpo[fim] != ']')
+    return recusa("LRCLIB: resposta inválida; era esperado um catálogo JSON");
+  const auto eleita = escolhe_letra(corpo, artista, titulo, duracao);
+  if (letra) *letra = eleita;
+  if (razao && eleita.sincronizada.empty() && eleita.plana.empty())
+    *razao = "LRCLIB: nenhuma letra compatível com o artista e o título";
   return true;
+}
+
+bool busca_letra(std::string_view artista, std::string_view titulo,
+                 Letra* letra, double duracao, std::string* razao) {
+  if (letra) *letra = {};
+  if (razao) razao->clear();
+  const auto recusa = [&](const std::string& motivo) {
+    if (razao) *razao = motivo;
+    return false;
+  };
+  if (titulo.empty()) return recusa("Letra: título não informado");
+  // Duas baixas não disputam a API; espera e pausa respeitam o cancelamento.
+  static std::timed_mutex porta;
+  static auto anterior = std::chrono::steady_clock::time_point::min();
+  static auto bloqueado_ate = std::chrono::steady_clock::time_point::min();
+  std::unique_lock<std::timed_mutex> chave(porta, std::defer_lock);
+  while (!chave.try_lock_for(std::chrono::milliseconds(50)))
+    if (baixa_interrompida()) return recusa("Consulta da letra cancelada");
+  if (std::chrono::steady_clock::now() < bloqueado_ate) {
+    const auto segundos = std::chrono::duration_cast<std::chrono::seconds>(
+        bloqueado_ate - std::chrono::steady_clock::now()).count() + 1;
+    return recusa("LRCLIB: limite de consultas; aguarde " + std::to_string(segundos) + " segundos");
+  }
+  if (anterior != std::chrono::steady_clock::time_point::min())
+    while (std::chrono::steady_clock::now() < anterior + std::chrono::milliseconds(250)) {
+      if (baixa_interrompida()) return recusa("Consulta da letra cancelada");
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+  if (baixa_interrompida()) return recusa("Consulta da letra cancelada");
+  std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> punho(curl_easy_init(), curl_easy_cleanup);
+  if (!punho) return recusa("Não foi possível iniciar a consulta da letra");
+  std::unique_ptr<curl_slist, decltype(&curl_slist_free_all)> cabecalhos(nullptr, curl_slist_free_all);
+  for (const auto& valor : cabecalhos_da_letra()) {
+    auto* nova = curl_slist_append(cabecalhos.get(), valor.c_str());
+    if (!nova) return recusa("Não foi possível preparar os cabeçalhos da letra");
+    cabecalhos.release();
+    cabecalhos.reset(nova);
+  }
+  const auto url = url_da_busca(artista, titulo);
+  const auto agente = agente_da_letra();
+  std::string corpo, espera_pedida;
+  curl_easy_setopt(punho.get(), CURLOPT_URL, url.c_str());
+  curl_easy_setopt(punho.get(), CURLOPT_HTTPHEADER, cabecalhos.get());
+  curl_easy_setopt(punho.get(), CURLOPT_HEADERFUNCTION, recolhe_cabecalho);
+  curl_easy_setopt(punho.get(), CURLOPT_HEADERDATA, &espera_pedida);
+  curl_easy_setopt(punho.get(), CURLOPT_USERAGENT, agente.c_str());
+  curl_easy_setopt(punho.get(), CURLOPT_ACCEPT_ENCODING, "");
+  curl_easy_setopt(punho.get(), CURLOPT_WRITEFUNCTION, recolhe);
+  curl_easy_setopt(punho.get(), CURLOPT_WRITEDATA, &corpo);
+  curl_easy_setopt(punho.get(), CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(punho.get(), CURLOPT_MAXREDIRS, 3L);
+  curl_easy_setopt(punho.get(), CURLOPT_CONNECTTIMEOUT, 4L);
+  curl_easy_setopt(punho.get(), CURLOPT_TIMEOUT, 8L);
+  curl_easy_setopt(punho.get(), CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(punho.get(), CURLOPT_NOPROGRESS, 0L);
+  curl_easy_setopt(punho.get(), CURLOPT_XFERINFOFUNCTION, consulta_interrupcao);
+  const auto desfecho = curl_easy_perform(punho.get());
+  anterior = std::chrono::steady_clock::now();
+  if (desfecho != CURLE_OK)
+    return recusa("LRCLIB: " + std::string(curl_easy_strerror(desfecho)));
+  long estado = 0;
+  curl_easy_getinfo(punho.get(), CURLINFO_RESPONSE_CODE, &estado);
+  if (estado == 429) {
+    long long espera = 60;
+    if (!espera_pedida.empty()) {
+      char* fim = nullptr;
+      errno = 0;
+      const auto segundos = std::strtoll(espera_pedida.c_str(), &fim, 10);
+      if (errno == 0 && fim == espera_pedida.c_str() + espera_pedida.size() && segundos >= 0)
+        espera = segundos;
+      else {
+        const auto data = curl_getdate(espera_pedida.c_str(), nullptr);
+        if (data >= 0) espera = std::max<long long>(0, data - std::time(nullptr));
+      }
+    }
+    bloqueado_ate = espera > 31536000 ? std::chrono::steady_clock::time_point::max()
+        : anterior + std::chrono::seconds(espera);
+  }
+  return interpreta_busca_da_letra(estado, corpo, artista, titulo, duracao, letra, razao);
 }
 
 namespace {
@@ -275,6 +411,21 @@ std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio) {
   const std::string texto((std::istreambuf_iterator<char>(fonte)),
                           std::istreambuf_iterator<char>());
   return analysa_lrc(texto);
+}
+
+std::vector<std::string> le_letra_plana_do_disco(const std::filesystem::path& audio) {
+  auto caminho = caminho_do_lrc(audio);
+  caminho.replace_extension(".letra.txt");
+  std::ifstream arquivo(caminho, std::ios::binary);
+  std::vector<std::string> versos;
+  std::string verso;
+  std::size_t lidos = 0;
+  while (std::getline(arquivo, verso) && lidos < 1024 * 1024) {
+    lidos += verso.size();
+    if (!verso.empty() && verso.back() == '\r') verso.pop_back();
+    versos.push_back(std::move(verso));
+  }
+  return versos;
 }
 
 }  // namespace mysong::nucleo

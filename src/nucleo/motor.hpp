@@ -21,6 +21,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
 
+#include "nucleo/separacao.hpp"
 #include <functional>
 #include <optional>
 #include <string>
@@ -106,6 +107,8 @@ class Motor {
   virtual bool retomar() = 0;
   virtual bool buscar(double segundos) = 0;
   virtual bool volume(int porcento) = 0;
+  virtual bool mistura(const ArquivosDasPartes&, const VolumesDasPartes&) { return false; }
+  virtual bool original() { return true; }
 
   virtual double posicao() const = 0;
   virtual double duracao() const = 0;
@@ -144,6 +147,8 @@ class MotorMpv final : public Motor {
   bool retomar() override;
   bool buscar(double segundos) override;
   bool volume(int porcento) override;
+  bool mistura(const ArquivosDasPartes&, const VolumesDasPartes&) override;
+  bool original() override;
 
   double posicao() const override;
   double duracao() const override;
@@ -160,6 +165,10 @@ class MotorMpv final : public Motor {
  private:
   explicit MotorMpv(::mpv_handle* punho) noexcept;
 
+  void limpa_partes();
+  ArquivosDasPartes partes_{};
+  std::array<int, 4> ids_partes_{};
+  std::string aid_original_;
   ::mpv_handle* punho_ = nullptr;
   Estado estado_ = Estado::Parado;
   double posicao_ = 0.0;

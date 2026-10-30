@@ -133,3 +133,18 @@ TEST_CASE("a autorizacao perpetua mantem a animacao pendente mesmo em completo a
 
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("animacao sem foco continua apos alternar programas e paineis") {
+  tui::Vigilia vigilia(true);
+  for (int troca = 0; troca < 3; ++troca) {
+    vigilia.perde();
+    CHECK_FALSE(vigilia.tem_foco());
+    CHECK(vigilia.pede_batida());
+    CHECK(vigilia.alterna_trava());
+    CHECK_FALSE(vigilia.pede_batida());
+    CHECK_FALSE(vigilia.alterna_trava());
+    CHECK(vigilia.pede_batida());
+    vigilia.ganha();
+    CHECK(vigilia.pede_batida());
+  }
+}

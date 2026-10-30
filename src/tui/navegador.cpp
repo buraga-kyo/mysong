@@ -530,3 +530,21 @@ void Navegador::recarrega() {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+namespace mysong::tui {
+
+bool Navegador::acompanha_faixa(const std::string& caminho) {
+  if (faixa_acompanhada_ == caminho) return false;
+  faixa_acompanhada_ = caminho;
+  if (caminho.empty() || (secao_ != Secao::Busca && secao_ != Secao::Faixas &&
+                          secao_ != Secao::NoRol)) return false;
+  for (std::size_t i = 0; i < vista_.size(); ++i) {
+    if (vista_[i].chave == caminho) {
+      eleito_ = i;
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace mysong::tui

@@ -308,6 +308,10 @@ ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linh
                                    bool letreiro_de_pe, bool foco_dentro,
                                    bool mostra_letra);
 
+// Texto sem carimbos: navegação manual, sem tempos calculados por aproximação.
+ftxui::Element elemento_da_letra_plana(const std::vector<std::string>& versos,
+    std::size_t primeira, std::size_t largura, std::size_t altura);
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒

@@ -87,6 +87,10 @@ class Navegador {
   // com o artista em Albuns, com artista e album em Faixas.
   const std::vector<std::string>& trilha() const noexcept;
 
+  // Segue a faixa somente quando o caminho muda. Navegação manual durante a
+  // mesma música é preservada; faixas fora da vista não alteram a seleção.
+  bool acompanha_faixa(const std::string& caminho);
+
   void desce() noexcept;
   void sobe() noexcept;
   void ao_principio() noexcept;
@@ -215,6 +219,7 @@ class Navegador {
   std::vector<std::string> trilha_;
   std::string termo_;
   std::size_t eleito_ = 0;
+  std::string faixa_acompanhada_;
 };
 
 }  // namespace mysong::tui

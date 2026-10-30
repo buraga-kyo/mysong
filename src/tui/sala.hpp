@@ -116,6 +116,11 @@ struct Sala {
 // pede linha propria ao pé e tira-a ao corpo (issue #125).
 Sala sala_da_tela(std::size_t largura, std::size_t altura, bool campo_aberto);
 
+// A largura de cada coluna vem da sala, inclusive com textos longos no HUD.
+// A posição usada pelas imagens externas coincide com o desenho do terminal.
+ftxui::Element elemento_das_colunas(const Sala& sala, ftxui::Element esquerda,
+                                   ftxui::Element direita, std::size_t altura);
+
 // espectro_abaixo_da, o rectangulo do espectro depois de se saber quantas
 // linhas a capa tomou DE FACTO, e já descontado o bloco da letra (issue #157). Conta a partir da CAPA, e não do painel: a
 // fileira da ficha (issue #134) é do painel e não é da arte. O `capa` da sala é TECTO: a capa de 16 por 9

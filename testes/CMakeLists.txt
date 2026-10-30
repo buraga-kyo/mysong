@@ -210,3 +210,11 @@ target_sources(mysong_testes PRIVATE prova_letra_viva.cpp)
 target_sources(mysong_testes PRIVATE prova_menu_contexto.cpp)
 # A bateria do HELP (issue #133), em linha propria pela mesma regra.
 target_sources(mysong_testes PRIVATE prova_ajuda.cpp)
+
+target_sources(mysong_testes PRIVATE prova_novidades.cpp)
+
+target_sources(mysong_testes PRIVATE prova_miniaturas.cpp)
+
+target_sources(mysong_testes PRIVATE prova_escutas.cpp)
+
+target_sources(mysong_testes PRIVATE prova_separacao.cpp)

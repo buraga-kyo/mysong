@@ -54,6 +54,24 @@ std::string_view nome_da_fonte(Fonte fonte);
 // Spotify, e volta ao começo. A ordem prova-se, em vez de morar na tela.
 Fonte proxima_fonte(Fonte fonte);
 
+// Etapas reais da aquisição, publicadas pelo obreiro antes de cada operação.
+enum class EtapaDaBaixa {
+  Preparando, Identificando, Procurando, Consultando, Transferindo,
+  Convertendo, Capa, Letra, Canvas, Etiquetas, Verificando, Biblioteca, Pronta
+};
+std::string_view nome_da_etapa(EtapaDaBaixa etapa);
+struct ProgressoDaBaixa {
+  EtapaDaBaixa etapa = EtapaDaBaixa::Preparando;
+  std::string detalhe;
+  std::string titulo;
+  std::optional<int> porcentagem;
+  std::optional<double> recebidos, total, velocidade, restante;
+  bool total_estimado = false;
+  std::filesystem::path caminho;
+};
+// Protocolo numérico próprio do --progress-template; ausências ficam ausentes.
+std::optional<ProgressoDaBaixa> le_progresso_da_baixa(std::string_view linha);
+
 // O que se sabe de uma faixa que se vae baixar. Campo vazio quer dizer «não sei»,
 // e ahi vale o que a sonda da URL tiver dito.
 struct Pedido {
@@ -62,6 +80,7 @@ struct Pedido {
   std::shared_ptr<std::atomic_bool> interrupcao;
   // O obreiro observa a baixa sem entregar o fio da tela ao processo externo.
   std::function<void(std::optional<int>, std::string_view)> noticia;
+  std::function<void(const ProgressoDaBaixa&)> progresso;
   std::string artista;
   std::string album;
   std::string titulo;

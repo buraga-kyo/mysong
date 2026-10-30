@@ -14,6 +14,7 @@
 //                   de som acrescenta é o contracto com a libmpv, e não esta
 //                   mechanica.
 // ══════════════════════════════════════════════════════════════════════════
+#include <algorithm>
 #include "nucleo/tocador.hpp"
 
 #include <mutex>
@@ -70,6 +71,8 @@ bool Tocador::tocar_lista(const std::vector<std::string>& faixas,
       estado_ = motor_.estado();
       return false;
     }
+    ++reproducao_;
+    audio_separado_ = false; mistura_silenciosa_ = false;
   } else if (estado_ == Estado::Pausado && !motor_.retomar()) return false;
   if (fila_.todas() != faixas) {
     const bool embaralhada = fila_.embaralhado();
@@ -95,6 +98,8 @@ bool Tocador::tocar(const std::string& caminho) {
                          !fila_.vazia() && fila_.indice() == alvo;
   if (ja_tocava) return true;
   if (!motor_.tocar(caminho)) return false;
+  ++reproducao_;
+  audio_separado_ = false; mistura_silenciosa_ = false;
   if (alvo == faixas.size()) {
     fila_.junta(caminho);
     alvo = fila_.tamanho() - 1;
@@ -116,6 +121,8 @@ bool Tocador::tocar_corrente_trancado() {
     return false;
   }
   ultima_posicao_ = 0.0;
+  ++reproducao_;
+  audio_separado_ = false; mistura_silenciosa_ = false;
   // A faixa nova nasce CALADA se a Casa está muda: o volume guardado é o do
   // operador, e mandá-lo cru faria o F8 desfazer o F9 sem ninguem lh'o pedir.
   motor_.volume(mudo_ ? 0 : volume_);
@@ -210,6 +217,25 @@ double Tocador::duracao() const {
 
 // Tudo debaixo da MESMA chave: estado e posição do mesmo momento, e a faixa
 // copiada antes de a tranca se soltar.
+bool Tocador::aplica_mistura(const std::string& original, const ArquivosDasPartes& arquivos,
+                             const VolumesDasPartes& volumes) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (fila_.vazia() || fila_.corrente() != original || estado_ == Estado::Parado) return false;
+  if (!motor_.mistura(arquivos, volumes)) {
+    motor_.original(); audio_separado_ = false; mistura_silenciosa_ = false;
+    return false;
+  }
+  audio_separado_ = true;
+  mistura_silenciosa_ = std::all_of(volumes.begin(), volumes.end(), [](int v) { return v <= 0; });
+  return true;
+}
+bool Tocador::retorna_original(const std::string& original) {
+  std::lock_guard<std::mutex> chave(tranca_);
+  if (fila_.vazia() || fila_.corrente() != original || !motor_.original()) return false;
+  audio_separado_ = false; mistura_silenciosa_ = false;
+  return true;
+}
+
 Retracto Tocador::retracto() const {
   std::lock_guard<std::mutex> chave(tranca_);
   Retracto obra;
@@ -224,11 +250,13 @@ Retracto Tocador::retracto() const {
   obra.posicao = motor_.posicao();
   obra.duracao = motor_.duracao();
   obra.volume = volume_;
-  obra.mudo = mudo_;
+  obra.mudo = mudo_ || mistura_silenciosa_;
+  obra.audio_separado = audio_separado_;
   obra.indice = fila_.vazia() ? 0 : fila_.indice();
   obra.tamanho = fila_.tamanho();
   obra.embaralhado = fila_.embaralhado();
   obra.repeticao = fila_.repeticao();
+  obra.reproducao = reproducao_;
   return obra;
 }
 

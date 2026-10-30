@@ -33,6 +33,16 @@ struct Letra {
   bool sincronizada_recusada = false;
 };
 
+// Remove o artista repetido no título apenas para consultar a letra.
+std::string titulo_para_letra(std::string_view artista, std::string_view titulo);
+std::string agente_da_letra();
+std::vector<std::string> cabecalhos_da_letra();
+bool interpreta_busca_da_letra(long estado_http, std::string_view corpo,
+    std::string_view artista, std::string_view titulo, double duracao,
+    Letra* letra, std::string* razao = nullptr);
+// Alternativa sem carimbos; nunca transforma texto em sincronização inventada.
+std::vector<std::string> le_letra_plana_do_disco(const std::filesystem::path& audio);
+
 // Dous segundos cobrem arredondamento de metadados; introduções maiores não.
 inline constexpr double TOLERANCIA_DA_LETRA = 2.0;
 Letra escolhe_letra(std::string_view corpo, std::string_view artista,
@@ -95,7 +105,7 @@ std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
 // ordinario e não erro. O prazo é de OITO segundos: quem baixa uma faixa não ha de
 // esperar por um serviço de letra mais do que isso.
 bool busca_letra(std::string_view artista, std::string_view titulo,
-                 Letra* letra, double duracao = 0);
+                 Letra* letra, double duracao = 0, std::string* razao = nullptr);
 
 // grava_lrc, escreve a letra sincronizada em `.lrc` ao lado do audio; sem ella,
 // conserva a alternativa em `.letra.txt`, pois pôr letra sem tempo n'um `.lrc`

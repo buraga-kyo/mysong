@@ -42,6 +42,8 @@ std::vector<GrupoDaAjuda> taboada_da_ajuda() {
         {"/", "filtra a lista à vista"},
         {"r", "varre o acervo outra vez"},
         {"?  F1", "abre e fecha este HELP"},
+        {"e", "estatísticas de músicas e artistas ouvidos"},
+        {"i", "separar voz e instrumentos, ajustar a mistura"},
         {"q", "sai"}}},
       {"FAIXA",
        {{"B", "edita a pasta da biblioteca; reinicie após salvar"},
@@ -73,6 +75,7 @@ std::vector<GrupoDaAjuda> taboada_da_ajuda() {
         {"clique", "na onda busca; na capa pausa"},
         {"direito", "menu de contexto da faixa"},
         {"roda", "anda três linhas na pauta"},
+        {"roda na letra", "rola o texto quando não há sincronização"},
         {"arrastar", "pega a faixa e larga onde ela vai"}}},
   };
 }

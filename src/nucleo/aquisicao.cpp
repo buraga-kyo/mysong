@@ -18,6 +18,7 @@
 
 #include "nucleo/letra.hpp"
 #include "nucleo/canvas.hpp"
+#include "nucleo/capa.hpp"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -269,7 +270,11 @@ std::vector<std::string> argumentos_do_download(
   const std::vector<std::string> resto = {
           "--no-warnings",
           "--no-playlist",
-          "--newline",
+          "--newline", "--progress",
+          "--progress-template",
+          "download:MYSONG_DL|%(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|END",
+          "--progress-template",
+          "postprocess:MYSONG_PP|%(progress.postprocessor)s|END|%(progress.status)s",
           // `--no-overwrites` é a segunda guarda contra perder arquivo. A
           // primeira é a checagem do destino; ter as duas quer dizer que uma
           // corrida entre duas aquisições não apaga o que a outra gravou.
@@ -642,17 +647,34 @@ bool busca_na_rede(const std::string& termo, Fonte fonte, int quantos,
   return true;
 }
 
+namespace {
+void publica_etapa(const Pedido& pedido, EtapaDaBaixa etapa,
+                   std::string detalhe, std::string titulo = {},
+                   std::filesystem::path caminho = {}) {
+  if (!pedido.progresso) return;
+  ProgressoDaBaixa info;
+  info.etapa = etapa;
+  info.detalhe = std::move(detalhe);
+  info.titulo = std::move(titulo);
+  info.caminho = std::move(caminho);
+  pedido.progresso(info);
+}
+}  // namespace
+
 // § O ornamento tem noticia propria; sua falha não altera o desfecho do audio.
 // Sem ID nada consulta; retornos distinguem video novo, antigo e indisponivel.
 ColheitaCanvas acompanha_com_canvas(const std::filesystem::path& raiz, const Pedido& pedido) {
   if (pedido.id_spotify.empty()) return ColheitaCanvas::Indisponivel;
+  publica_etapa(pedido, EtapaDaBaixa::Canvas, "Consultando o vídeo opcional do Spotify");
   const auto fim = baixa_canvas(raiz, pedido);
   if (pedido.noticia) {
     const char* noticia = fim == ColheitaCanvas::Gravado ? "Canvas salvo em Clipes/Canvas"
         : fim == ColheitaCanvas::JaExiste ? "Canvas já presente em Clipes/Canvas"
         : fim == ColheitaCanvas::Indisponivel ? "Canvas não disponibilizado pelo Spotify; áudio preservado"
         : "Canvas não obtido (rede, sessão ou disco); áudio preservado";
-    pedido.noticia(std::nullopt, noticia);
+    if (fim == ColheitaCanvas::Gravado || fim == ColheitaCanvas::JaExiste)
+      publica_etapa(pedido, EtapaDaBaixa::Canvas, noticia);
+    else pedido.noticia(std::nullopt, noticia);
   }
   return fim;
 }
@@ -662,6 +684,7 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   const EscopoDaBaixa escopo(pedido.interrupcao);
   if (baixa_interrompida()) return Colheita::FalhouAoBaixar;
   if (!id_da_faixa_spotify(pedido.url).empty()) {
+    publica_etapa(pedido, EtapaDaBaixa::Identificando, "Lendo os dados da faixa no Spotify");
     Pedido faixa = pedido;
     if (!resolve_faixa_spotify(&faixa)) return Colheita::UrlRecusada;
     return baixa(raiz, faixa, gravado);
@@ -673,6 +696,7 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   // derradeiro, e o que baixar por elle sahe confessando a duvida no desfecho.
   if (pedido.url.empty()) {
     if (pedido.titulo.empty()) return Colheita::UrlRecusada;
+    publica_etapa(pedido, EtapaDaBaixa::Identificando, "Consultando a gravação e os metadados no MusicBrainz");
     FichaMB ficha;
     // A duração do catalogo cinge-se a UM DIA antes de virar milesimos: vinda
     // da rede, um valor absurdo estouraria a conta por mil; cingida, vale «não
@@ -702,6 +726,9 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
       // proximidade e a faixa sahiria por Colhido, casada com confiança e
       // errada. Pinar o ISRC aqui é o que torna essa via inexprimivel.
       const Fonte onde = de_hoje ? pedido.fonte : Fonte::YouTube;
+      publica_etapa(pedido, EtapaDaBaixa::Procurando,
+          "Busca " + std::to_string(i + 1) + "/" + std::to_string(termos.size()) +
+          ": " + termos[i]);
       if (!busca_na_rede(termos[i], onde, 10, &achados))
         return Colheita::SemFerramenta;
       const int qual =
@@ -719,6 +746,7 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     return Colheita::Duvidosa;
   }
 
+  publica_etapa(pedido, EtapaDaBaixa::Consultando, "Obtendo título, artista e formatos disponíveis");
   EtiquetaRemota remota;
   if (!sonda_url(pedido.url, &remota)) {
     // Não se distingue aqui «yt-dlp ausente» de «URL recusada» pelo codigo, que
@@ -729,7 +757,11 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   }
 
   const Pedido feito = resolve(pedido, remota);
+  publica_etapa(pedido, EtapaDaBaixa::Consultando,
+      "Preparando o destino no acervo", feito.titulo);
   const std::filesystem::path molde = destino(raiz, feito);
+  publica_etapa(pedido, EtapaDaBaixa::Consultando,
+      "Destino definido; preparando a transferência", feito.titulo, molde.string() + ".mp3");
   std::error_code erro;
   std::filesystem::create_directories(molde.parent_path(), erro);
   if (erro) return Colheita::FalhouAoBaixar;
@@ -744,11 +776,16 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
     return Colheita::JaExiste;
   }
 
-  if (pedido.noticia) pedido.noticia(std::nullopt, {});
+  publica_etapa(pedido, EtapaDaBaixa::Consultando, "Abrindo a conexão para transferência");
   std::string erro_da_rede;
   const auto observa = [&pedido, &erro_da_rede](std::string_view linha) {
-    if (const auto porcentagem = progresso_do_yt_dlp(linha)) {
+    if (const auto info = le_progresso_da_baixa(linha)) {
+      if (pedido.progresso) pedido.progresso(*info);
+    } else if (const auto porcentagem = progresso_do_yt_dlp(linha)) {
       if (pedido.noticia) pedido.noticia(porcentagem, {});
+    } else if (linha.find("Retrying") != std::string_view::npos ||
+               linha.find("retrying") != std::string_view::npos) {
+      if (pedido.noticia) pedido.noticia(std::nullopt, linha);
     } else if (linha.substr(0, 6) == "ERROR:") {
       erro_da_rede.clear();
       for (const unsigned char letra : linha)
@@ -769,18 +806,33 @@ Colheita baixa(const std::filesystem::path& raiz, const Pedido& pedido,
   // Falhar não custa a faixa: a letra é ornamento, e o desfecho não muda por ella.
   // Corre DEPOIS de o audio estar no logar, para que uma rede lenta não atrase o
   // que o operador de facto pediu.
+  publica_etapa(pedido, EtapaDaBaixa::Capa, "Conferindo a capa do áudio salvo");
+  if (arte_embutida(ficou).empty() && capa_ao_lado(ficou).empty() && pedido.noticia)
+    pedido.noticia(std::nullopt, "Capa indisponível na fonte; áudio preservado");
+  publica_etapa(pedido, EtapaDaBaixa::Letra, "Consultando a letra; o áudio será preservado se não houver resultado");
   Letra letra;
   TagLib::FileRef audio(ficou.c_str());
   const double duracao_real = audio.audioProperties() ? audio.audioProperties()->length() : 0;
-  if (busca_letra(feito.artista, feito.titulo, &letra, duracao_real)) {
-    grava_lrc(ficou, letra);
-    if (letra.sincronizada_recusada && pedido.noticia)
-      pedido.noticia(std::nullopt, "letra temporizada recusada: duração incompatível; áudio preservado");
+  std::string razao_da_letra;
+  if (busca_letra(feito.artista, feito.titulo, &letra, duracao_real, &razao_da_letra)) {
+    const bool gravou = grava_lrc(ficou, letra);
+    if (!gravou && pedido.noticia)
+      pedido.noticia(std::nullopt, razao_da_letra.empty() ? "Não foi possível gravar a letra; áudio preservado" : razao_da_letra);
+    if (gravou && letra.sincronizada_recusada && pedido.noticia)
+      pedido.noticia(std::nullopt, "Letra salva sem sincronização: a duração da outra gravação não corresponde ao áudio");
+  } else if (pedido.noticia) {
+    pedido.noticia(std::nullopt, razao_da_letra.empty() ? "Consulta da letra não respondeu; áudio preservado" : razao_da_letra);
   }
 
   acompanha_com_canvas(raiz, feito);
-  return escreve_etiqueta(ficou, feito) ? Colheita::Colhido
-                                        : Colheita::FalhouAEtiqueta;
+  publica_etapa(pedido, EtapaDaBaixa::Etiquetas, "Gravando título, artista, álbum e número da faixa");
+  if (!escreve_etiqueta(ficou, feito)) return Colheita::FalhouAEtiqueta;
+  publica_etapa(pedido, EtapaDaBaixa::Verificando, "Conferindo o arquivo salvo no destino final");
+  std::error_code erro_final;
+  if (!std::filesystem::is_regular_file(ficou, erro_final) || erro_final ||
+      std::filesystem::file_size(ficou, erro_final) == 0 || erro_final)
+    return Colheita::FalhouAoBaixar;
+  return Colheita::Colhido;
 }
 
 std::string codifica_para_url(std::string_view crua) {

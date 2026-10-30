@@ -7,6 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <cctype>
+#include <cstdlib>
 #include <limits>
 #include <string>
 #include <vector>
@@ -282,3 +283,70 @@ TEST_CASE("o painel mostra o verso do instante, e as vizinhas em volta") {
 
 //   Da lavra do eminente Doutor BRAGA US., Braga Us ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("busca da letra remove apenas artista repetido no titulo") {
+  CHECK(nu::titulo_para_letra("Síntese", "Síntese - Se escute") == "Se escute");
+  CHECK(nu::titulo_para_letra("Síntese", "  Síntese - Se escute  ") == "Se escute");
+  CHECK(nu::titulo_para_letra("Autor", "Autor: Canção") == "Canção");
+  CHECK(nu::titulo_para_letra("Autor", "Outro - Canção") == "Outro - Canção");
+  CHECK(nu::titulo_para_letra("Autor", "Autoridade") == "Autoridade");
+  CHECK(nu::url_da_busca("Síntese", "Síntese - Se escute") == nu::url_da_busca("Síntese", "Se escute"));
+}
+
+TEST_CASE("cabecalhos da letra negociam JSON e preservam identificacao do aplicativo") {
+  CHECK(nu::agente_da_letra().find("Mozilla/5.0") == 0);
+  CHECK(nu::agente_da_letra().find("MySong/") != std::string::npos);
+  CHECK(nu::agente_da_letra().find("https://github.com/buraga-kyo/mysong") != std::string::npos);
+  const auto cabecalhos = nu::cabecalhos_da_letra();
+  CHECK(cabecalhos.front() == "Accept: application/json");
+}
+
+TEST_CASE("HTTP recusado nao pode parecer letra inexistente nem conservar resposta antiga") {
+  for (const long status : {403, 429, 503}) {
+    nu::Letra letra;
+    letra.plana = "resposta antiga";
+    std::string razao;
+    CHECK_FALSE(nu::interpreta_busca_da_letra(status, "<html>erro</html>", "Autor", "Faixa", 196, &letra, &razao));
+    CHECK(letra.plana.empty());
+    CHECK(razao.find(std::to_string(status)) != std::string::npos);
+  }
+  nu::Letra letra;
+  std::string razao;
+  CHECK_FALSE(nu::interpreta_busca_da_letra(200, "<html>bloqueio</html>", "Autor", "Faixa", 196, &letra, &razao));
+  CHECK(razao.find("inválida") != std::string::npos);
+  CHECK(nu::interpreta_busca_da_letra(200, "[]", "Autor", "Faixa", 196, &letra, &razao));
+  CHECK(letra.plana.empty());
+  CHECK(razao.find("nenhuma letra compatível") != std::string::npos);
+}
+
+TEST_CASE("titulo normalizado encontra texto mas nao sincroniza gravacao de outra duracao") {
+  const std::string corpo = R"([{"trackName":"Se Escute","artistName":"Síntese","duration":166,"syncedLyrics":"[00:10] verso de teste","plainLyrics":"verso de teste"}])";
+  nu::Letra letra;
+  std::string razao;
+  CHECK(nu::interpreta_busca_da_letra(200, corpo, "Síntese", "Síntese - Se escute", 196.392, &letra, &razao));
+  CHECK(letra.sincronizada.empty());
+  CHECK(letra.sincronizada_recusada);
+  CHECK(letra.plana == "verso de teste");
+  CHECK(nu::interpreta_busca_da_letra(200, corpo, "Síntese", "Síntese - Se escute", 166, &letra, &razao));
+  CHECK_FALSE(letra.sincronizada.empty());
+  CHECK_FALSE(letra.sincronizada_recusada);
+}
+
+TEST_CASE("letra plana e salva e relida sem criar carimbos") {
+  struct Pasta {
+    std::filesystem::path caminho;
+    ~Pasta() { std::error_code erro; std::filesystem::remove_all(caminho, erro); }
+  };
+  char nome[] = "/tmp/mysong-letra-plana-XXXXXX";
+  const auto* criada = ::mkdtemp(nome);
+  REQUIRE(criada != nullptr);
+  const Pasta pasta{criada};
+  const auto audio = pasta.caminho / "faixa.mp3";
+  nu::Letra letra;
+  letra.plana = "primeiro verso\r\n\r\nterceiro verso";
+  REQUIRE(nu::grava_lrc(audio, letra));
+  CHECK_FALSE(std::filesystem::exists(nu::caminho_do_lrc(audio)));
+  CHECK(nu::le_lrc_do_disco(audio).empty());
+  CHECK(nu::le_letra_plana_do_disco(audio) ==
+      std::vector<std::string>{"primeiro verso", "", "terceiro verso"});
+}

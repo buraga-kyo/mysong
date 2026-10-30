@@ -203,8 +203,8 @@ ftxui::Element elemento_da_linha(const std::vector<PedacoDaPauta>& pedacos,
 ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
                                  int maior, bool eleita, bool soa,
                                  std::size_t largura,
-                                 const nucleo::CapaPintada* capa) {
-  const std::size_t largura_da_capa = 9;
+                                 const nucleo::CapaPintada* capa, bool reserva_imagem) {
+  const std::size_t largura_da_capa = LARGURA_DA_MINIATURA + 1;
   const std::size_t largura_do_texto =
       largura > largura_da_capa + 1 ? largura - largura_da_capa - 1 : largura;
   const std::size_t largura_real = largura_do_texto;
@@ -223,8 +223,11 @@ ftxui::Element elemento_da_faixa(const Linha& linha, const Medidas& medidas,
   ftxui::Element texto = ftxui::vbox({std::move(titulo), std::move(baixo)});
   static const nucleo::CapaPintada nenhuma;
   const nucleo::CapaPintada& imagem = capa == nullptr ? nenhuma : *capa;
-  ftxui::Element miniatura = elemento_da_capa(imagem, 8, 3) |
-                             ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 8);
+  ftxui::Element miniatura =
+      (reserva_imagem ? ftxui::text(std::string(LARGURA_DA_MINIATURA, ' ')) |
+                           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(ALTURA_DA_FAIXA))
+                     : elemento_da_capa(imagem, LARGURA_DA_MINIATURA, ALTURA_DA_FAIXA)) |
+      ftxui::size(ftxui::WIDTH, ftxui::EQUAL, static_cast<int>(LARGURA_DA_MINIATURA));
   return ftxui::hbox({std::move(miniatura), ftxui::text(" "),
                       std::move(texto)}) |
          ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
@@ -328,7 +331,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::vector<ftxui::Box>* caixas,
                                    const Arrasto* arrasto,
                                    bool estilo_spotify,
-                                   nucleo::Galeria* galeria) {
+                                   nucleo::Galeria* galeria,
+                                   const std::vector<std::size_t>* capas_em_imagem) {
   // Limpa-se á entrada, e não sómente nos ramos que pintam linhas: sahida
   // antecipada que deixasse as caixas do quadro anterior faria o clique
   // acertar linhas que já não estão na tela.
@@ -354,7 +358,7 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     const bool pela_conta = navegador.secao() == Secao::Artistas ||
                             navegador.secao() == Secao::Albuns ||
                             navegador.secao() == Secao::Rois;
-    const std::size_t largura_da_capa = 9;
+    const std::size_t largura_da_capa = LARGURA_DA_MINIATURA + 1;
     const std::size_t largura_do_texto =
         largura > largura_da_capa + 1 ? largura - largura_da_capa - 1 : largura;
     medidas = medidas_da_pauta(largura_do_texto, false, pela_conta);
@@ -385,12 +389,14 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
     const bool sob_a_mao = arrasto != nullptr && arrasto->pegou &&
                            arrasto->andou && i == arrasto->alvo;
     const nucleo::CapaPintada* capa = nullptr;
-    if (em_faixas && galeria != nullptr && !linha.chave.empty())
-      capa = &galeria->capa(linha.chave, 8, 3);
+    const bool reserva_imagem = capas_em_imagem != nullptr &&
+        std::find(capas_em_imagem->begin(), capas_em_imagem->end(), i) != capas_em_imagem->end();
+    if (em_faixas && !reserva_imagem && galeria != nullptr && !linha.chave.empty())
+      capa = &galeria->capa(linha.chave, LARGURA_DA_MINIATURA, ALTURA_DA_FAIXA);
     ftxui::Element pintada =
         em_faixas
             ? elemento_da_faixa(linha, medidas, maior, eleita && !na_mao,
-                                soa, largura, capa)
+                                soa, largura, capa, reserva_imagem)
             : elemento_da_linha(
                   pedacos_da_linha(linha, medidas, maior, soa),
                   eleita && !na_mao, soa, largura);

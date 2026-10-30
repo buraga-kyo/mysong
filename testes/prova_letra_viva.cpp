@@ -625,3 +625,20 @@ TEST_CASE("com a chapa de pé a fileira do verso sae em branco") {
 
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("letra plana se identifica como sem sincronizacao e permite ler outros versos") {
+  const auto linha_de = [](const ftxui::Screen& tela, int y, int largura) {
+    std::string texto;
+    for (int x = 0; x < largura; ++x) texto += tela.PixelAt(x, y).character;
+    return texto;
+  };
+  const std::vector<std::string> versos{"primeiro verso", "segundo verso", "terceiro verso"};
+  auto tela = ftxui::Screen::Create(ftxui::Dimension::Fixed(52), ftxui::Dimension::Fixed(3));
+  ftxui::Render(tela, tui::elemento_da_letra_plana(versos, 0, 52, 3));
+  CHECK(linha_de(tela, 0, 52).find("sem sincronização") != std::string::npos);
+  CHECK(linha_de(tela, 1, 52).find("primeiro verso") != std::string::npos);
+  auto rolada = ftxui::Screen::Create(ftxui::Dimension::Fixed(52), ftxui::Dimension::Fixed(3));
+  ftxui::Render(rolada, tui::elemento_da_letra_plana(versos, 1, 52, 3));
+  CHECK(linha_de(rolada, 1, 52).find("segundo verso") != std::string::npos);
+  CHECK(linha_de(rolada, 2, 52).find("terceiro verso") != std::string::npos);
+}

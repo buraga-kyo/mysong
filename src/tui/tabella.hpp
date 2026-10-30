@@ -32,6 +32,7 @@
 namespace mysong::tui {
 
 inline constexpr std::size_t ALTURA_DA_FAIXA = 3;
+inline constexpr std::size_t LARGURA_DA_MINIATURA = 8;
 
 inline bool secao_de_faixas(Secao secao) noexcept {
   return secao == Secao::Busca || secao == Secao::Faixas ||
@@ -149,6 +150,7 @@ std::string conselho_do_vazio(Secao secao, bool ha_termo);
 // apaga-se, e a linha em que ella CAHIRIA veste o `raised`, que é o degrau de
 // repouso do chrome e se distingue do violeta da eleita. Punho nullo, que é o
 // padrão, pinta a tabella de sempre cella a cella.
+// capas_em_imagem reserva o lugar das capas desenhadas pelo renderizador externo.
 ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::size_t primeira, std::size_t altura,
                                    std::size_t largura,
@@ -156,7 +158,8 @@ ftxui::Element elemento_da_tabella(const Navegador& navegador,
                                    std::vector<ftxui::Box>* caixas = nullptr,
                                    const Arrasto* arrasto = nullptr,
                                    bool estilo_spotify = false,
-                                   nucleo::Galeria* galeria = nullptr);
+                                   nucleo::Galeria* galeria = nullptr,
+                                   const std::vector<std::size_t>* capas_em_imagem = nullptr);
 
 // A LETRA no painel (issue #15). Mostra a linha corrente em destaque, com as
 // vizinhas apagadas em volta: `altura` linhas ao todo, e a corrente no meio d'ellas.

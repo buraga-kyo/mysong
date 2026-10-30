@@ -451,3 +451,19 @@ TEST_CASE("o embaralhar alterna, e o retracto o diz do mesmo momento") {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+
+TEST_CASE("reproducao identifica repeticoes mas nao muda ao pausar retomar ou reeleger") {
+  MotorDuble motor;
+  Tocador tocador(motor);
+  REQUIRE(tocador.tocar("a"));
+  const auto primeira = tocador.retracto().reproducao;
+  CHECK(primeira > 0);
+  REQUIRE(tocador.pausar()); REQUIRE(tocador.retomar());
+  REQUIRE(tocador.tocar_lista({"a", "b"}, 0));
+  CHECK(tocador.retracto().reproducao == primeira);
+  REQUIRE(tocador.tocar_corrente());
+  CHECK(tocador.retracto().reproducao == primeira + 1);
+  motor.recusa_tocar = true;
+  CHECK_FALSE(tocador.tocar("b"));
+  CHECK(tocador.retracto().reproducao == primeira + 1);
+}

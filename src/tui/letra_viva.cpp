@@ -490,6 +490,21 @@ ChapaDaLetra ordem_da_chapa_parada(const std::vector<nucleo::LinhaDaLetra>& linh
   return ordem;
 }
 
+ftxui::Element elemento_da_letra_plana(const std::vector<std::string>& versos,
+    std::size_t primeira, std::size_t largura, std::size_t altura) {
+  using namespace ftxui;
+  if (largura == 0 || altura == 0 || versos.empty()) return emptyElement();
+  Elements linhas;
+  linhas.push_back(text(aparado("Letra sem sincronização · role com o mouse", largura)) | dim);
+  primeira = std::min(primeira, versos.size() - 1);
+  for (std::size_t i = 0; i + 1 < altura; ++i) {
+    const auto indice = primeira + i;
+    linhas.push_back(text(indice < versos.size() ? aparado(versos[indice], largura) : ""));
+  }
+  return vbox(std::move(linhas)) | size(WIDTH, EQUAL, static_cast<int>(largura)) |
+      size(HEIGHT, EQUAL, static_cast<int>(altura));
+}
+
 }  // namespace mysong::tui
 
 //   Da lavra do eminente Doutor BURAGA KYO., buraga-kyo ✒

@@ -577,3 +577,131 @@ TEST_CASE("painel de downloads preserva acções e porcentagem em alturas distin
     CHECK(caixas.acao.x_min <= caixas.acao.x_max);
   }
 }
+
+TEST_CASE("HUD de downloads distingue audio transferido de musica disponivel") {
+  nu::Andamento andamento;
+  nu::RegistroDaBaixa registro;
+  registro.id = 9;
+  registro.titulo = "A música da viagem";
+  registro.estado = nu::EstadoDaBaixa::Indexando;
+  registro.etapa = nu::EtapaDaBaixa::Biblioteca;
+  registro.caminho = "/acervo/Artista/Album/Musica.mp3";
+  registro.detalhe = "Arquivo salvo; aguardando confirmação na biblioteca";
+  andamento.registros.push_back(registro);
+  for (const int largura : {32, 46, 100}) {
+    for (const int altura : {4, 7, 11, 17}) {
+      tui::CaixasDasBaixas caixas;
+      const auto ecran = papel(tui::painel_das_baixas(andamento, 0, altura, caixas), largura, altura);
+      std::string texto;
+      for (int y = 0; y < altura; ++y) texto += linha_de(ecran, y);
+      CHECK(texto.find("DISPONÍVEL") == std::string::npos);
+      CHECK(texto.find("PRONTA PARA TOCAR") == std::string::npos);
+      CHECK(caixas.acao.x_max < caixas.acao.x_min);
+      CHECK(caixas.id == 9);
+    }
+  }
+  andamento.registros.front().estado = nu::EstadoDaBaixa::Concluido;
+  andamento.registros.front().etapa = nu::EtapaDaBaixa::Pronta;
+  tui::CaixasDasBaixas caixas;
+  const auto ecran = papel(tui::painel_das_baixas(andamento, 0, 17, caixas), 100, 17);
+  std::string texto;
+  for (int y = 0; y < 17; ++y) texto += linha_de(ecran, y);
+  CHECK(texto.find("PRONTA PARA TOCAR") != std::string::npos);
+  CHECK(texto.find("/acervo/Artista/Album/Musica.mp3") != std::string::npos);
+}
+
+TEST_CASE("segundo download recebe acompanhamento e termino segue o pedido ativo") {
+  tui::AcompanhamentoDasBaixas acompanha;
+  nu::Andamento a;
+  nu::RegistroDaBaixa primeiro;
+  primeiro.id = 1;
+  primeiro.estado = nu::EstadoDaBaixa::Baixando;
+  a.registros.push_back(primeiro);
+  CHECK(acompanha.atualiza(a, 0) == 0);
+  nu::RegistroDaBaixa segundo;
+  segundo.id = 2;
+  segundo.estado = nu::EstadoDaBaixa::Baixando;
+  a.registros.push_back(segundo);
+  CHECK(acompanha.atualiza(a, 0) == 1);
+  CHECK(acompanha.atualiza(a, 1) == 1);
+  a.registros[1].estado = nu::EstadoDaBaixa::Indexando;
+  CHECK(acompanha.atualiza(a, 1) == 1);
+  a.registros[1].estado = nu::EstadoDaBaixa::Concluido;
+  CHECK(acompanha.atualiza(a, 1) == 0);
+  a.registros[0].estado = nu::EstadoDaBaixa::Concluido;
+  CHECK(acompanha.atualiza(a, 0) == 0);
+  a.registros[1].estado = nu::EstadoDaBaixa::Baixando;
+  // A escolha manual de um pedido concluído não é desfeita em cada quadro.
+  CHECK(acompanha.atualiza(a, 0) == 0);
+  CHECK(acompanha.atualiza(a, 0) == 0);
+  a.registros.clear();
+  CHECK(acompanha.atualiza(a, 12) == 0);
+}
+
+TEST_CASE("novo download apos limpar historico atualiza identidade e controles") {
+  tui::AcompanhamentoDasBaixas acompanha;
+  nu::Andamento a;
+  nu::RegistroDaBaixa registro;
+  registro.id = 3;
+  registro.estado = nu::EstadoDaBaixa::Concluido;
+  a.registros.push_back(registro);
+  CHECK(acompanha.atualiza(a, 0) == 0);
+  registro.id = 4;
+  registro.estado = nu::EstadoDaBaixa::Preparando;
+  a.registros.push_back(registro);
+  const auto pagina = acompanha.atualiza(a, 0);
+  CHECK(pagina == 1);
+  tui::CaixasDasBaixas caixas;
+  const auto tela = papel(tui::painel_das_baixas(a, pagina, 11, caixas), 46, 11);
+  (void)tela;
+  CHECK(caixas.id == 4);
+  a.registros.erase(a.registros.begin());
+  CHECK(acompanha.atualiza(a, pagina) == 0);
+}
+
+TEST_CASE("fases e nomes longos do download nao deslocam a coluna da capa") {
+  const auto agora = std::chrono::steady_clock::now();
+  for (const std::size_t largura : {100u, 120u, 167u}) {
+    const auto sala = tui::sala_da_tela(largura, 45, false);
+    const auto altura_hud = tui::altura_das_baixas(sala.pauta.altura);
+    const auto altura_lista = sala.pauta.altura - altura_hud;
+    const auto altura_corpo = sala.pauta.altura + 1;
+    nu::Andamento a;
+    nu::RegistroDaBaixa r;
+    r.id = 1;
+    r.titulo = std::string(180, 'T');
+    r.caminho = "/acervo/" + std::string(200, 'A') + "/musica.mp3";
+    r.detalhe = "Consultando " + std::string(350, 'B');
+    r.avisos.push_back(std::string(250, 'C'));
+    a.registros.push_back(r);
+    for (const auto estado : {nu::EstadoDaBaixa::Preparando, nu::EstadoDaBaixa::Baixando,
+         nu::EstadoDaBaixa::Indexando, nu::EstadoDaBaixa::Concluido, nu::EstadoDaBaixa::Falhou}) {
+      a.registros[0].estado = estado;
+      a.registros[0].etapa = estado == nu::EstadoDaBaixa::Indexando
+          ? nu::EtapaDaBaixa::Biblioteca : nu::EtapaDaBaixa::Transferindo;
+      a.registros[0].porcentagem = estado == nu::EstadoDaBaixa::Baixando
+          ? std::optional<int>{67} : std::nullopt;
+      tui::CaixasDasBaixas caixas;
+      ftxui::Box area_hud, area_lista, area_capa;
+      const auto esquerda = ftxui::vbox({ftxui::text("DOWNLOAD"),
+          tui::painel_das_baixas(a, 0, altura_hud, caixas, agora) | ftxui::reflect(area_hud),
+          ftxui::text("RESULTADOS") |
+              ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, static_cast<int>(altura_lista)) |
+              ftxui::reflect(area_lista)});
+      const auto direita = ftxui::text(std::string(200, 'D')) | ftxui::reflect(area_capa);
+      const auto tela = papel(tui::elemento_das_colunas(sala, esquerda, direita, altura_corpo),
+          static_cast<int>(largura), 45);
+      (void)tela;
+      CHECK(area_hud.x_min == 0);
+      CHECK(area_hud.x_max == static_cast<int>(sala.pauta.largura) - 1);
+      CHECK(area_hud.y_min == 1);
+      CHECK(area_hud.y_max == static_cast<int>(altura_hud));
+      CHECK(area_lista.y_min == static_cast<int>(1 + altura_hud));
+      CHECK(area_lista.x_max == static_cast<int>(sala.pauta.largura) - 1);
+      if (!sala.painel.vazio()) {
+        CHECK(area_capa.x_min == static_cast<int>(sala.painel.x));
+        CHECK(area_capa.x_max == static_cast<int>(sala.painel.x + sala.painel.largura) - 1);
+      }
+    }
+  }
+}

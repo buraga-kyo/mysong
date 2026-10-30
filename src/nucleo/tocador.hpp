@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -48,10 +49,12 @@ struct Retracto {
   // calado. Quem pinta a fita precisa de os distinguir, que zero por escolha
   // do operador mostra o numero e mudo mostra a palavra.
   bool mudo = false;
+  bool audio_separado = false;
   std::size_t indice = 0;  // 0 tambem em fila vazia: pergunte-se ao tamanho
   std::size_t tamanho = 0;
   bool embaralhado = false;
   Repeticao repeticao = Repeticao::Nenhuma;
+  std::uint64_t reproducao = 0;
 };
 
 class Tocador {
@@ -106,6 +109,8 @@ class Tocador {
   // desencontrar não devolvem «exactamente o que havia». Pedir volume DESMUDA:
   // quem carrega no F11 calado quer ouvir, e é assim que a tecla desmuda e
   // sobe sem caminho proprio.
+  bool aplica_mistura(const std::string& original, const ArquivosDasPartes&, const VolumesDasPartes&);
+  bool retorna_original(const std::string& original);
   bool alterna_mudo();
   bool mudo() const noexcept;
 
@@ -144,7 +149,10 @@ class Tocador {
   Estado estado_ = Estado::Parado;
   int volume_ = 100;
   bool mudo_ = false;
+  bool audio_separado_ = false;
+  bool mistura_silenciosa_ = false;
   double ultima_posicao_ = 0.0;
+  std::uint64_t reproducao_ = 0;
   FonteDeBandas* fonte_ = nullptr;  // emprestada, e nullo é caso legitimo
 
   mutable std::shared_ptr<const std::string> faixa_cache_;
