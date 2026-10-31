@@ -1,4 +1,7 @@
+<div align="center">
+  
 # { mysong }
+</div>
 
 ### TOCADOR DE MÚSICA PARA O TERMINAL
 
