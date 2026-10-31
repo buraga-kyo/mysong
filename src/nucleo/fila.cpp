@@ -112,6 +112,14 @@ bool Fila::ir_para(std::size_t alvo) noexcept {
 
 // A permutação e o passo vão com as faixas; os dous MODOS ficam. São assento do
 // operador, e não conteudo da fila: esvaziar não é desligar o embaralhar.
+void Fila::reinicia_percurso() noexcept {
+  if (!embaralhado_ || ordem_.empty()) return;
+  const auto corrente = std::find(ordem_.begin(), ordem_.end(), indice_);
+  if (corrente == ordem_.end()) return;
+  std::rotate(ordem_.begin(), corrente, ordem_.end());
+  passo_ = 0;
+}
+
 void Fila::esvazia() noexcept {
   faixas_.clear();
   indice_ = 0;

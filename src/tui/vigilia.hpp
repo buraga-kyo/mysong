@@ -87,6 +87,9 @@ class Vigilia {
 // alguma existe na taboada d'esta Casa, e um F3 physico que adormeça por
 // engano desfaz-se na tecla seguinte, que tecla de gente acorda (abaixo).
 enum class GestoDoFoco { Alheio, Ganha, Perde };
+inline bool redimensionou(const ftxui::Event& evento) {
+  return evento.input() == "mysong:resize";
+}
 
 inline GestoDoFoco gesto_do_foco(const ftxui::Event& evento) {
   if (evento.input() == "\x1b[I") return GestoDoFoco::Ganha;

@@ -13,6 +13,10 @@
 #include "nucleo/versao.hpp"
 
 #include <curl/curl.h>
+#include <taglib/fileref.h>
+#include <taglib/audioproperties.h>
+#include <unistd.h>
+#include <sstream>
 #include "nucleo/cancelamento.hpp"
 
 #include <algorithm>
@@ -150,6 +154,7 @@ Letra escolhe_letra(std::string_view corpo, std::string_view artista,
                     std::string_view titulo, double duracao) {
   Letra eleita;
   double melhor = TOLERANCIA_DA_LETRA + 1;
+  double distancia_alternativa = std::numeric_limits<double>::infinity();
   const auto nome = nome_para_letra(titulo_para_letra(artista, titulo)), autor = nome_para_letra(artista);
   if (nome.empty() || autor.empty()) return eleita;
   for (const auto& objeto : api::objectos_do_arranjo(corpo)) {
@@ -165,25 +170,100 @@ Letra escolhe_letra(std::string_view corpo, std::string_view artista,
     const double distancia = std::abs(segundos - duracao);
     if (!medida || distancia > TOLERANCIA_DA_LETRA) {
       eleita.sincronizada_recusada = true;
+      if (eleita.sincronizada_alternativa.empty() || (medida && distancia < distancia_alternativa)) {
+        eleita.sincronizada_alternativa = candidata.sincronizada;
+        if (eleita.sincronizada.empty()) eleita.duracao_da_letra = medida ? segundos : 0;
+        distancia_alternativa = medida ? distancia : std::numeric_limits<double>::infinity();
+      }
     } else if (distancia < melhor) {
       melhor = distancia;
       eleita.sincronizada = candidata.sincronizada;
+      eleita.duracao_da_letra = segundos;
     }
   }
   if (!eleita.sincronizada.empty()) eleita.sincronizada_recusada = false;
   return eleita;
 }
+namespace {
+std::string le_arquivo_da_letra(const std::filesystem::path& caminho) {
+  std::ifstream fonte(caminho, std::ios::binary);
+  if (!fonte) return {};
+  std::string texto;
+  char bloco[4096];
+  while (fonte.read(bloco,sizeof bloco) || fonte.gcount()) {
+    texto.append(bloco,static_cast<std::size_t>(fonte.gcount()));
+    if (texto.size() > 4 * 1024 * 1024) return {};
+  }
+  return texto;
+}
+bool escreve_letra(const std::filesystem::path& caminho, const std::string& texto) {
+  auto temporario = caminho;
+  temporario += ".tmp-" + std::to_string(::getpid());
+  std::ofstream saida(temporario,std::ios::binary | std::ios::trunc);
+  if (!saida) return false;
+  saida << texto;
+  if (!texto.empty() && texto.back() != '\n') saida << '\n';
+  saida.close();
+  std::error_code erro;
+  if (saida.good()) std::filesystem::rename(temporario,caminho,erro);
+  if (!saida.good() || erro) { std::filesystem::remove(temporario,erro); return false; }
+  return true;
+}
+double numero_do_cabecalho(std::string_view texto,std::string_view chave) {
+  auto inicio = texto.find(chave);
+  while (inicio != std::string_view::npos && inicio > 0 && texto[inicio-1] != '\n')
+    inicio = texto.find(chave,inicio+1);
+  if (inicio == std::string_view::npos) return 0;
+  const auto desde = inicio + chave.size(), fim = texto.find(']',desde);
+  if (fim == std::string_view::npos) return 0;
+  try {
+    std::size_t usados = 0;
+    const auto campo = std::string(texto.substr(desde,fim-desde));
+    const double valor = std::stod(campo,&usados);
+    return usados == campo.size() && std::isfinite(valor) ? valor : 0;
+  } catch (...) { return 0; }
+}
+}
 bool grava_lrc(const std::filesystem::path& audio, const Letra& letra) {
-  const bool temporizada = !letra.sincronizada.empty();
-  const auto& texto = temporizada ? letra.sincronizada : letra.plana;
-  if (texto.empty()) return false;
-  std::filesystem::path onde = caminho_do_lrc(audio);
-  if (!temporizada) onde.replace_extension(".letra.txt");
-  std::ofstream sahida(onde, std::ios::binary | std::ios::trunc);
-  if (!sahida) return false;
-  sahida << texto;
-  if (texto.back() != '\n') sahida << '\n';
-  return sahida.good();
+  const auto lrc = caminho_do_lrc(audio);
+  const bool segura = !letra.sincronizada.empty();
+  const auto& tempos = segura ? letra.sincronizada : letra.sincronizada_alternativa;
+  if (tempos.empty() && letra.plana.empty()) return false;
+  bool gravou = true;
+  if (!letra.plana.empty()) {
+    auto plano = lrc; plano.replace_extension(".letra.txt");
+    gravou = escreve_letra(plano,letra.plana);
+  }
+  if (!tempos.empty()) {
+    std::string cabecalho = segura ? "" : "[mysong-sync:revisar]\n";
+    if (letra.duracao_da_letra > 0)
+      cabecalho += "[mysong-duration:" + std::to_string(letra.duracao_da_letra) + "]\n";
+    gravou = escreve_letra(lrc,cabecalho + tempos) && gravou;
+  } else {
+    const auto antigo = le_arquivo_da_letra(lrc);
+    if (!antigo.empty() && antigo.find("[mysong-sync:revisar]") == std::string::npos)
+      gravou = escreve_letra(lrc,"[mysong-sync:revisar]\n" + antigo) && gravou;
+  }
+  return gravou;
+}
+double atraso_da_letra(const std::filesystem::path& audio) {
+  return -numero_do_cabecalho(le_arquivo_da_letra(caminho_do_lrc(audio)),"[offset:")/1000.0;
+}
+bool ajusta_atraso_da_letra(const std::filesystem::path& audio, double segundos, bool zerar) {
+  if (!std::isfinite(segundos)) return false;
+  const auto caminho = caminho_do_lrc(audio);
+  const auto texto = le_arquivo_da_letra(caminho);
+  if (analysa_lrc(texto).empty()) return false;
+  const double atraso = zerar ? 0 : std::clamp(atraso_da_letra(audio)+segundos,-600.0,600.0);
+  std::string resultado = "[offset:" + std::to_string(-static_cast<long long>(std::llround(atraso*1000))) +
+      "]\n[mysong-sync:manual]\n";
+  std::istringstream linhas(texto);
+  std::string linha;
+  while (std::getline(linhas,linha)) {
+    if (linha.compare(0,8,"[offset:") == 0 || linha.compare(0,13,"[mysong-sync:") == 0) continue;
+    resultado += linha + '\n';
+  }
+  return escreve_letra(caminho,resultado);
 }
 
 namespace {
@@ -355,6 +435,7 @@ bool carimbo(std::string_view linha, std::size_t* cursor, double* tempo) {
 
 std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto) {
   std::vector<LinhaDaLetra> linhas;
+  const double offset = numero_do_cabecalho(texto,"[offset:")/1000.0;
   std::size_t principio = 0;
   while (principio <= texto.size()) {
     std::size_t fim = texto.find('\n', principio);
@@ -379,7 +460,7 @@ std::vector<LinhaDaLetra> analysa_lrc(std::string_view texto) {
            std::isspace(static_cast<unsigned char>(corpo[desde])) != 0)
       ++desde;
     corpo.erase(0, desde);
-    for (const double quando : tempos) linhas.push_back({quando, corpo});
+    for (const double quando : tempos) linhas.push_back({quando - offset, corpo});
     if (fim == texto.size()) break;
   }
   std::stable_sort(linhas.begin(), linhas.end(),
@@ -405,11 +486,15 @@ int linha_corrente(const std::vector<LinhaDaLetra>& linhas, double posicao) {
 }
 
 std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio) {
-  const std::filesystem::path onde = caminho_do_lrc(audio);
-  std::ifstream fonte(onde, std::ios::binary);
-  if (!fonte) return {};  // não ha letra: caso ordinario, e não erro
-  const std::string texto((std::istreambuf_iterator<char>(fonte)),
-                          std::istreambuf_iterator<char>());
+  const auto texto = le_arquivo_da_letra(caminho_do_lrc(audio));
+  if (texto.find("[mysong-sync:revisar]") != std::string::npos) return {};
+  const auto referencia = numero_do_cabecalho(texto,"[mysong-duration:");
+  if (referencia > 0 && texto.find("[mysong-sync:manual]") == std::string::npos) {
+    TagLib::FileRef arquivo(audio.c_str());
+    if (arquivo.isNull() || !arquivo.audioProperties() ||
+        std::abs(arquivo.audioProperties()->lengthInMilliseconds()/1000.0-referencia) > TOLERANCIA_DA_LETRA)
+      return {};
+  }
   return analysa_lrc(texto);
 }
 
@@ -424,6 +509,10 @@ std::vector<std::string> le_letra_plana_do_disco(const std::filesystem::path& au
     lidos += verso.size();
     if (!verso.empty() && verso.back() == '\r') verso.pop_back();
     versos.push_back(std::move(verso));
+  }
+  if (versos.empty()) {
+    for (const auto& linha : analysa_lrc(le_arquivo_da_letra(caminho_do_lrc(audio))))
+      if (versos.empty() || versos.back() != linha.texto) versos.push_back(linha.texto);
   }
   return versos;
 }

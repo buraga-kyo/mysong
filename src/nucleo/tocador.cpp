@@ -58,6 +58,7 @@ void Tocador::assenta_estado(Estado novo) {
 // de outra sorte nasceria no volume de fabrica do motor.
 bool Tocador::tocar_corrente() {
   std::lock_guard<std::mutex> chave(tranca_);
+  fila_.reinicia_percurso();
   return tocar_corrente_trancado();
 }
 
@@ -83,6 +84,7 @@ bool Tocador::tocar_lista(const std::vector<std::string>& faixas,
     fila_.embaralhar(embaralhada);
   }
   fila_.ir_para(eleito);
+  if (!mesma) fila_.reinicia_percurso();
   motor_.volume(mudo_ ? 0 : volume_);
   estado_ = Estado::Tocando;
   return true;
@@ -105,6 +107,7 @@ bool Tocador::tocar(const std::string& caminho) {
     alvo = fila_.tamanho() - 1;
   }
   fila_.ir_para(alvo);
+  fila_.reinicia_percurso();
   ultima_posicao_ = 0.0;
   motor_.volume(mudo_ ? 0 : volume_);
   assenta_estado(Estado::Tocando);

@@ -218,3 +218,5 @@ target_sources(mysong_testes PRIVATE prova_miniaturas.cpp)
 target_sources(mysong_testes PRIVATE prova_escutas.cpp)
 
 target_sources(mysong_testes PRIVATE prova_separacao.cpp)
+
+target_sources(mysong_testes PRIVATE prova_acertos.cpp)

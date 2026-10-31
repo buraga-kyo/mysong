@@ -158,6 +158,11 @@ bool EscoadouroDaLousa::escolhe_linha() {
       return true;
     }
   }
+  if (comando_final_) {
+    linha_ = Linha{{}, {std::move(*comando_final_),false},0,true};
+    comando_final_.reset();
+    return true;
+  }
   return false;
 }
 
@@ -206,10 +211,10 @@ bool EscoadouroDaLousa::drena() noexcept {
       }
       linha_->deslocamento += static_cast<std::size_t>(postos);
       if (linha_->deslocamento != linha_->intencao.ordem.size()) continue;
-      if (linha_->intencao.posta)
-        entregues_[linha_->identidade] = linha_->intencao;
-      else
-        entregues_.erase(linha_->identidade);
+      if (!linha_->avulsa) {
+        if (linha_->intencao.posta) entregues_[linha_->identidade] = linha_->intencao;
+        else entregues_.erase(linha_->identidade);
+      }
       ++concluidas_;
       linha_.reset();
     }
@@ -221,9 +226,14 @@ bool EscoadouroDaLousa::drena() noexcept {
   }
 }
 
+bool EscoadouroDaLousa::apos_imagens(std::string comando) noexcept {
+  try { comando_final_ = std::move(comando); return drena(); }
+  catch (...) { falhou_ = true; ++falhas_; return false; }
+}
+
 bool EscoadouroDaLousa::pendente() const noexcept {
   if (falhou_) return false;
-  if (linha_) return true;
+  if (linha_ || comando_final_) return true;
   for (const auto& [identidade, desejada] : desejadas_) {
     const auto entregue = entregues_.find(identidade);
     if (!desejada.posta && entregue == entregues_.end()) continue;
@@ -254,6 +264,7 @@ Lousa::Lousa(ModoDaLousa modo) noexcept
     return;
   }
   vivo_ = true;
+  recuperavel_ = true;
   // O PRIMEIRO fica: `store` deixaria uma segunda lousa roubar a rede do
   // atexit da primeira. A regra é uma por processo, e o punho não a impõe.
   int nenhum = -1;
@@ -268,7 +279,7 @@ Lousa::Lousa(ModoDaLousa modo) noexcept
 Lousa::~Lousa() noexcept {
   // Solta-se ANTES de matar: o tratador já não tem filho que valha, e deixál-o
   // posto faria a lousa seguinte achar a rede d'esta na taboa dos «de antes».
-  if (filho_ > 0) solta_os_signaes();
+  if (recuperavel_) solta_os_signaes();
   tira_tudo();
   // O fim do cano é o pedido de sahir em ordem; o SIGTERM vem depois, para o
   // caso de elle estar preso a redimensionar uma imagem grande.
@@ -296,6 +307,32 @@ Lousa::~Lousa() noexcept {
   }
 }
 
+bool Lousa::recupera() noexcept {
+  if (!recuperavel_) return false;
+  if (filho_ > 0) {
+    int estado = 0;
+    const pid_t resultado = ::waitpid(filho_, &estado, WNOHANG);
+    if (resultado == 0) {
+      if (!vivo_) ::kill(filho_, SIGKILL);
+      return vivo_;
+    }
+    if (resultado < 0 && errno != ECHILD) return vivo_;
+    o_filho.store(-1);
+    filho_ = -1; vivo_ = false;
+    if (cano_ >= 0) ::close(cano_);
+    cano_ = -1;
+  }
+  const auto agora = std::chrono::steady_clock::now();
+  if (agora < proxima_tentativa_) return false;
+  proxima_tentativa_ = agora + std::chrono::seconds(2);
+  filho_ = ergue(&cano_);
+  if (filho_ < 0) return false;
+  o_filho.store(filho_);
+  vivo_ = true;
+  escoadouro_.reinicia();
+  return true;
+}
+
 bool Lousa::disponivel() const noexcept { return vivo_ && cano_ >= 0; }
 
 bool Lousa::poe(std::string_view identidade, const std::filesystem::path& imagem,
@@ -315,6 +352,15 @@ bool Lousa::tira(std::string_view identidade) noexcept {
   const bool inteira = escoadouro_.deseja(std::string(identidade),
                                           ordem_de_tirar(identidade), false);
   if (inteira) identidades_.erase(std::string(identidade));
+  if (escoadouro_.falhou()) drena();
+  return inteira;
+}
+
+bool Lousa::reexibe() noexcept {
+  const char* painel = std::getenv("TMUX_PANE");
+  if (!disponivel() || painel == nullptr || *painel == '\0') return false;
+  const bool inteira = escoadouro_.apos_imagens(
+      "{\"action\":\"tmux\",\"hook\":\"session-window-changed\"}\n");
   if (escoadouro_.falhou()) drena();
   return inteira;
 }

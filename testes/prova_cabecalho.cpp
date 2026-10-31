@@ -254,7 +254,7 @@ TEST_CASE("o modo aceso accende, e o apagado guarda o logar sem sommir") {
   // da faixa não salta de sitio quando o operador tecla `z`.
   CHECK(pedaco(aceso, 132, 14) == " \U000f049d EMBARALHAR ");
   // E a repetição de UMA troca o glifo, sem mudar a palavra nem a largura.
-  CHECK(pedaco(aceso, 147, 11) == " \U000f0458 REPETIR ");
+  CHECK(pedaco(aceso, 147, 11) == " \U000f0458 REP: 1  ");
 }
 
 TEST_CASE("as tres teclas de algarismo vão á aba que dizem") {
@@ -398,7 +398,7 @@ TEST_CASE("não cabendo, as peças da direita cedem o logar INTEIRAS") {
   CHECK(linha_em(82).find("00:19") == std::string::npos);
   // As tres ABAS e os botões ficam em toda largura: ellas são a navegação, e
   // navegação que sommisse deixaria o operador sem porta para a secção seguinte.
-  for (const std::size_t larga : {60, 78, 88, 123, 167}) {
+  for (const std::size_t larga : {78, 88, 123, 167}) {
     CHECK(linha_em(larga).find("MY 0 SONG's") != std::string::npos);
     CHECK(linha_em(larga).find("DOWNLOAD") != std::string::npos);
   }

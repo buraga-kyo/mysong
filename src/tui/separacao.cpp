@@ -7,6 +7,12 @@ namespace {
 ftxui::Color cor(std::string_view token) {
   const auto c = tokens::rgb(token); return ftxui::Color::RGB(c.r,c.g,c.b);
 }
+std::string tempo(long long segundos) {
+  segundos = std::max(0LL, segundos);
+  if (segundos >= 3600) return std::to_string(segundos/3600) + "h " + std::to_string(segundos/60%60) + "min";
+  if (segundos >= 60) return std::to_string(segundos/60) + "min " + std::to_string(segundos%60) + "s";
+  return std::to_string(segundos) + "s";
+}
 bool mesma(const std::string& caminho, const std::filesystem::path& outro) {
   std::error_code erro;
   return !caminho.empty() && std::filesystem::equivalent(caminho, outro, erro) && !erro;
@@ -63,6 +69,24 @@ bool PainelDeSeparacao::tecla(const ftxui::Event& e, nucleo::SeparadorDeAudio& s
   else aviso = "Não foi possível aplicar a mistura. O áudio voltou ao original.";
   return true;
 }
+std::string situacao_da_separacao(const nucleo::RetratoDaSeparacao& r,
+                                  std::chrono::steady_clock::time_point agora) {
+  using namespace std::chrono;
+  const auto passou = duration_cast<seconds>(agora-r.inicio).count();
+  const auto sem_novidade = duration_cast<seconds>(agora-r.ultima_atividade).count();
+  std::string situacao = "Decorrido: " + tempo(passou);
+  if (sem_novidade >= 60 && r.estado != nucleo::EstadoDaSeparacao::Cancelando)
+    return situacao + " · Sem atualização de progresso há " + tempo(sem_novidade) + ". Use c para cancelar.";
+  if (r.estado == nucleo::EstadoDaSeparacao::Separando) {
+    if (r.medidas.restante && *r.medidas.restante > 0 && r.porcentagem && *r.porcentagem > 0)
+      situacao += " · Previsão da análise: cerca de " + tempo(*r.medidas.restante) + " restantes";
+    else if (r.porcentagem && *r.porcentagem == 100)
+      situacao += " · Análise concluída; salvando os quatro arquivos";
+    else situacao += " · Calculando a previsão após o primeiro trecho";
+  } else if (r.estado == nucleo::EstadoDaSeparacao::Preparando)
+    situacao += " · A análise começa após a leitura do áudio";
+  return situacao;
+}
 ftxui::Element painel_de_separacao(const PainelDeSeparacao& p, const nucleo::RetratoDaSeparacao& r,
                                   const nucleo::Retracto& atual, int largura, int altura) {
   using namespace ftxui;
@@ -73,8 +97,11 @@ ftxui::Element painel_de_separacao(const PainelDeSeparacao& p, const nucleo::Ret
   if (r.porcentagem) linhas.push_back(hbox({text(" "),gauge(*r.porcentagem/100.f) | flex,
       text(" " + std::to_string(*r.porcentagem) + "% ")}) | color(cor(tokens::glow_ice)));
   if (nucleo::separacao_ocupada(r.estado)) {
-    const auto segundos = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-r.inicio).count();
-    linhas.push_back(text(" Em andamento há " + std::to_string(segundos) + "s · você pode fechar este painel e continuar ouvindo.") | xflex | dim);
+    if (r.estado == nucleo::EstadoDaSeparacao::Separando && r.medidas.processado && r.medidas.total)
+      linhas.push_back(text(" Áudio analisado: " + tempo(static_cast<long long>(*r.medidas.processado)) +
+          " de " + tempo(static_cast<long long>(*r.medidas.total))) | xflex);
+    linhas.push_back(paragraph(" " + situacao_da_separacao(r)) | color(cor(tokens::glow_ice)));
+    linhas.push_back(text(" Processamento local na CPU · você pode fechar este painel e continuar ouvindo.") | xflex | dim);
   }
   linhas.push_back(separator());
   for (int i=0;i<4;++i) {

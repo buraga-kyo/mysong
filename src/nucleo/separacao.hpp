@@ -20,15 +20,23 @@ inline constexpr std::array<const char*, 4> NOMES_DAS_PARTES{"Voz", "Bateria", "
 inline constexpr std::array<const char*, 4> ARQUIVOS_DAS_PARTES{"vocals.flac", "drums.flac", "bass.flac", "other.flac"};
 
 enum class EstadoDaSeparacao { Parado, Preparando, Separando, Conferindo, Pronto, Cancelando, Cancelado, Falhou };
+struct MedidasDaSeparacao {
+  std::optional<double> processado;
+  std::optional<double> total;
+  std::optional<int> restante;
+};
+MedidasDaSeparacao medidas_da_separacao(std::string_view linha);
 struct RetratoDaSeparacao {
   EstadoDaSeparacao estado = EstadoDaSeparacao::Parado;
   std::filesystem::path original;
   ArquivosDasPartes arquivos{};
   std::optional<int> porcentagem;
+  MedidasDaSeparacao medidas;
   std::string detalhe;
   std::size_t versao = 0;
   bool cache = false;
   std::chrono::steady_clock::time_point inicio{};
+  std::chrono::steady_clock::time_point ultima_atividade{};
 };
 bool separacao_ocupada(EstadoDaSeparacao estado);
 std::filesystem::path raiz_das_separacoes();

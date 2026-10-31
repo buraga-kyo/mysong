@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <regex>
 #include <stdexcept>
 #include <unistd.h>
 
@@ -75,6 +76,39 @@ std::optional<int> progresso_da_separacao(std::string_view linha) {
   const int numero = std::stoi(std::string(linha.substr(inicio, fim - inicio)));
   return numero >= 0 && numero <= 100 ? std::optional<int>{numero} : std::nullopt;
 }
+MedidasDaSeparacao medidas_da_separacao(std::string_view linha) {
+  MedidasDaSeparacao medidas;
+  static const std::regex trecho(R"(\|\s*([0-9]+(?:\.[0-9]+)?)/([0-9]+(?:\.[0-9]+)?))");
+  const std::string texto(linha);
+  std::smatch campos;
+  if (std::regex_search(texto, campos, trecho)) {
+    try {
+      const double feito = std::stod(campos[1]), total = std::stod(campos[2]);
+      if (std::isfinite(feito) && std::isfinite(total) && total > 0 && feito <= total) {
+        medidas.processado = feito; medidas.total = total;
+      }
+    } catch (...) {}
+  }
+  const auto abre = linha.rfind('['), seta = linha.find('<', abre);
+  const auto fim = linha.find_first_of(",]", seta);
+  if (abre == std::string_view::npos || seta == std::string_view::npos || fim == std::string_view::npos)
+    return medidas;
+  const auto tempo = linha.substr(seta + 1, fim - seta - 1);
+  int segundos = 0, componente = 0, digitos = 0, partes = 0;
+  for (char c : tempo) {
+    if (c == ':' && digitos > 0 && partes < 2) {
+      if ((partes > 0 && componente >= 60) || componente > 10000) return medidas;
+      segundos = segundos * 60 + componente;
+      componente = 0; digitos = 0; ++partes;
+    } else if (c >= '0' && c <= '9' && digitos < 5) {
+      componente = componente * 10 + c - '0'; ++digitos;
+    } else return medidas;
+  }
+  if (digitos > 0 && partes > 0 && componente < 60)
+    medidas.restante = segundos * 60 + componente;
+  return medidas;
+}
+
 std::string grafo_da_mistura(const std::array<int, 4>& ids, const VolumesDasPartes& volumes) {
   std::string grafo;
   for (std::size_t i = 0; i < ids.size(); ++i) {
@@ -97,7 +131,8 @@ RetratoDaSeparacao SeparadorDeAudio::retrato() const {
 void SeparadorDeAudio::publica(EstadoDaSeparacao estado, std::string detalhe, std::optional<int> percentual) {
   std::lock_guard<std::mutex> chave(tranca_);
   if (cancelar_ && cancelar_->load() && estado != EstadoDaSeparacao::Cancelado && estado != EstadoDaSeparacao::Falhou) return;
-  atual_.estado = estado; atual_.detalhe = std::move(detalhe); atual_.porcentagem = percentual; ++atual_.versao;
+  atual_.estado = estado; atual_.detalhe = std::move(detalhe); atual_.porcentagem = percentual;
+  atual_.ultima_atividade = std::chrono::steady_clock::now(); ++atual_.versao;
 }
 bool SeparadorDeAudio::inicia(const std::filesystem::path& audio) {
   if (separacao_ocupada(retrato().estado)) return false;
@@ -108,6 +143,7 @@ bool SeparadorDeAudio::inicia(const std::filesystem::path& audio) {
     atual_ = {}; atual_.versao = versao; atual_.original = audio;
     atual_.estado = EstadoDaSeparacao::Preparando; atual_.detalhe = "Conferindo a música e o cache";
     atual_.inicio = std::chrono::steady_clock::now();
+    atual_.ultima_atividade = atual_.inicio;
     cancelar_ = std::make_shared<std::atomic_bool>(false);
   }
   try { trabalho_ = std::thread(&SeparadorDeAudio::trabalha, this, audio); }
@@ -143,12 +179,18 @@ void SeparadorDeAudio::trabalha(std::filesystem::path audio) {
           std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
       std::filesystem::create_directories(temporario);
       bool separando = false;
+      bool suspenso = false;
       const auto observa = [&](std::string_view linha) {
+        if (linha == "MYSONG_PROCESSO_SUSPENSO") suspenso = true;
         if (registro.size() < 65536) { registro += std::string(linha); registro += '\n'; }
         if (linha.find("Separating track") != std::string_view::npos) {
-          separando = true; publica(EstadoDaSeparacao::Separando, "Separando voz, bateria, baixo e demais instrumentos");
+          separando = true; publica(EstadoDaSeparacao::Preparando, "Lendo e decodificando o áudio da música");
         }
         if (const auto percentual = progresso_da_separacao(linha)) {
+          if (separando) {
+            std::lock_guard<std::mutex> guarda(tranca_);
+            atual_.medidas = medidas_da_separacao(linha);
+          }
           publica(separando ? EstadoDaSeparacao::Separando : EstadoDaSeparacao::Preparando,
               separando ? (*percentual == 100 ? "Salvando as partes em FLAC" : "Separando as partes da música")
                         : "Obtendo os recursos da separação", percentual);
@@ -161,7 +203,8 @@ void SeparadorDeAudio::trabalha(std::filesystem::path audio) {
         std::filesystem::create_directories(raiz_ / "registros");
         const auto caminho = raiz_ / "registros" / (chave + ".log");
         std::ofstream(caminho) << registro;
-        throw std::runtime_error("Não foi possível separar a música. Detalhes em " + caminho.string());
+        throw std::runtime_error(suspenso ? "O sistema suspendeu o processo. A tarefa foi encerrada; tente novamente." :
+            "Não foi possível separar a música. Detalhes em " + caminho.string());
       }
       publica(EstadoDaSeparacao::Conferindo, "Conferindo os quatro arquivos e a duração do áudio");
       const auto saida = temporario / "htdemucs";

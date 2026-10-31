@@ -9,6 +9,12 @@
 
 #include <algorithm>
 #include <chrono>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <string>
 #include <vector>
 
@@ -807,4 +813,65 @@ TEST_CASE("HUD distingue conversao e capa sem repetir etapas finalizadas") {
   CHECK(capa->etapa == nu::EtapaDaBaixa::Capa);
   CHECK_FALSE(nu::le_progresso_da_baixa("MYSONG_PP|EmbedThumbnail|END|finished"));
   CHECK_FALSE(nu::le_progresso_da_baixa("MYSONG_PP|Outro|END|started"));
+}
+
+TEST_CASE("processo de fundo recebe entrada fechada e não o teclado do terminal") {
+  std::string entrada;
+  REQUIRE(nu::corre({"readlink", "/proc/self/fd/0"}, &entrada) == 0);
+  CHECK(entrada == "/dev/null\n");
+  std::string resultado;
+  CHECK(nu::corre({"sh", "-c", "read -r palavra; printf fim"}, &resultado) == 0);
+  CHECK(resultado == "fim");
+}
+TEST_CASE("processo suspenso é encerrado e comunicado sem espera infinita") {
+  auto cancelar = std::make_shared<std::atomic_bool>(false);
+  nu::EscopoDaBaixa escopo(cancelar);
+  std::mutex tranca;
+  std::condition_variable sino;
+  bool terminou = false, suspenso = false;
+  std::thread limite([&] {
+    std::unique_lock<std::mutex> chave(tranca);
+    if (!sino.wait_for(chave, std::chrono::seconds(2), [&] { return terminou; })) cancelar->store(true);
+  });
+  const auto inicio = std::chrono::steady_clock::now();
+  const int fim = nu::corre({"sh", "-c", "kill -STOP $$"}, nullptr,
+      [&](std::string_view linha) { if (linha == "MYSONG_PROCESSO_SUSPENSO") suspenso = true; });
+  { std::lock_guard<std::mutex> chave(tranca); terminou = true; }
+  sino.notify_all(); limite.join();
+  CHECK(fim != 0);
+  CHECK(suspenso);
+  CHECK(std::chrono::steady_clock::now() - inicio < std::chrono::seconds(1));
+}
+
+TEST_CASE("processo de fundo também conclui com um terminal controlador real") {
+  const int terminal = ::posix_openpt(O_RDWR | O_NOCTTY | O_CLOEXEC);
+  REQUIRE(terminal >= 0);
+  const bool pronto = ::grantpt(terminal) == 0 && ::unlockpt(terminal) == 0;
+  if (!pronto) { ::close(terminal); FAIL("não foi possível preparar o terminal de teste"); return; }
+  const char* nome = ::ptsname(terminal);
+  if (!nome) { ::close(terminal); FAIL("terminal de teste sem caminho"); return; }
+  const std::string caminho(nome);
+  const pid_t filho = ::fork();
+  if (filho == 0) {
+    ::close(terminal);
+    if (::setsid() < 0) ::_exit(80);
+    const int entrada = ::open(caminho.c_str(), O_RDWR);
+    if (entrada < 0 || ::dup2(entrada, STDIN_FILENO) < 0) ::_exit(81);
+    ::close(entrada);
+    auto cancelar = std::make_shared<std::atomic_bool>(false);
+    nu::EscopoDaBaixa escopo(cancelar);
+    // O prazo também encerra a regressão que suspenderia o grupo inteiro.
+    std::thread limite([&] { std::this_thread::sleep_for(std::chrono::seconds(1)); cancelar->store(true); });
+    std::string saida;
+    const int fim = nu::corre({"sh", "-c", "read -r palavra; printf fechado"}, &saida);
+    limite.join();
+    ::_exit(fim == 0 && saida == "fechado" ? 0 : 82);
+  }
+  if (filho < 0) { ::close(terminal); FAIL("não foi possível criar o processo de teste"); return; }
+  int estado = 0;
+  const pid_t esperado = ::waitpid(filho, &estado, 0);
+  ::close(terminal);
+  CHECK(esperado == filho);
+  REQUIRE(WIFEXITED(estado));
+  CHECK(WEXITSTATUS(estado) == 0);
 }

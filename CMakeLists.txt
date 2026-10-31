@@ -81,6 +81,10 @@ if(EXISTS "${MYSONG_FTXUI_APP}")
   endif()
 endif()
 
+execute_process(
+  COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_ftxui_sync.py" "${MYSONG_FTXUI_APP}"
+  COMMAND_ERROR_IS_FATAL ANY)
+
 add_library(mysong_core STATIC src/nucleo/marca.cpp src/tui/arrowline.cpp src/tui/orquestrador.cpp)
 target_include_directories(mysong_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(mysong_core PRIVATE ${MYSONG_AVISOS})
@@ -532,3 +536,9 @@ target_sources(mysong_core PRIVATE src/tui/escutas.cpp)
 target_sources(mysong_core PRIVATE src/nucleo/separacao.cpp)
 
 target_sources(mysong_core PRIVATE src/tui/separacao.cpp)
+
+target_sources(mysong_core PRIVATE src/nucleo/sessao_do_terminal.cpp)
+
+target_sources(mysong_core PRIVATE src/tui/mp3.cpp)
+
+target_sources(mysong_core PRIVATE src/tui/redimensionamento.cpp)

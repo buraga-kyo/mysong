@@ -44,6 +44,8 @@ std::vector<GrupoDaAjuda> taboada_da_ajuda() {
         {"?  F1", "abre e fecha este HELP"},
         {"e", "estatísticas de músicas e artistas ouvidos"},
         {"i", "separar voz e instrumentos, ajustar a mistura"},
+        {"[  ]", "adianta ou atrasa a letra em 0,5s; salva por música"},
+        {"\\", "zera o ajuste de tempo da letra"},
         {"q", "sai"}}},
       {"FAIXA",
        {{"B", "edita a pasta da biblioteca; reinicie após salvar"},

@@ -394,41 +394,38 @@ Fonte proxima_fonte(Fonte fonte) {
 int corre(const std::vector<std::string>& argumentos, std::string* colhido,
          const std::function<void(std::string_view)>& linha, bool unir_erros) {
   if (argumentos.empty() || baixa_interrompida()) return -1;
+  // Nenhum processo de fundo pode disputar o teclado com o tocador.
+  const int entrada = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+  if (entrada < 0) return -1;
   int cano[2] = {-1, -1};
-  if (::pipe(cano) != 0) return -1;
+  if (::pipe2(cano, O_CLOEXEC) != 0) { ::close(entrada); return -1; }
+  // Preparado antes do fork: não alocar no filho de uma aplicação com threads.
+  std::vector<char*> argv;
+  argv.reserve(argumentos.size() + 1);
+  for (const auto& argumento : argumentos) argv.push_back(const_cast<char*>(argumento.c_str()));
+  argv.push_back(nullptr);
 
   const ::pid_t filho = ::fork();
-  if (filho < 0) { ::close(cano[0]); ::close(cano[1]); return -1; }
+  if (filho < 0) { ::close(entrada); ::close(cano[0]); ::close(cano[1]); return -1; }
   if (filho == 0) {
-    if (::setpgid(0, 0) != 0) ::_exit(127);
+    if (::setpgid(0, 0) != 0 || ::dup2(entrada, STDIN_FILENO) < 0) ::_exit(127);
+    ::close(entrada);
     ::close(cano[0]);
-    ::dup2(cano[1], STDOUT_FILENO);
-    // O STDERR NÃO se junta ao stdout. Medido nesta Casa: o yt-dlp escreve no
-    // stderr o aviso «Deprecated Feature: Support for Python version 3.10 has
-    // been deprecated», e juntando-se os dous esse aviso vinha como PRIMEIRA
-    // linha, donde o titulo da faixa passava a ser o aviso e o canal passava a
-    // ser o titulo. O contracto dos `--print` é do stdout, e sómente d'elle.
-    //
-    // E o stderr vae para o buraco, e não para o terminal: esta Casa corre debaixo
-    // de uma tela do FTXUI, e uma linha de aviso no meio do quadro estraga-o.
+    if (::dup2(cano[1], STDOUT_FILENO) < 0) ::_exit(127);
+    // Unir erros é opcional: consultas de metadados só interpretam stdout.
     if (unir_erros) {
-      ::dup2(cano[1], STDERR_FILENO);
+      if (::dup2(cano[1], STDERR_FILENO) < 0) ::_exit(127);
     } else {
       const int buraco = ::open("/dev/null", O_WRONLY);
-      if (buraco >= 0) { ::dup2(buraco, STDERR_FILENO); ::close(buraco); }
+      if (buraco < 0 || ::dup2(buraco, STDERR_FILENO) < 0) ::_exit(127);
+      ::close(buraco);
     }
     ::close(cano[1]);
-    // O vector vira argv aqui, no filho, e sem shell: `execvp` recebe os
-    // argumentos tal e qual, donde a URL não atravessa interpretador algum.
-    std::vector<char*> argv;
-    argv.reserve(argumentos.size() + 1);
-    for (const std::string& um : argumentos)
-      argv.push_back(const_cast<char*>(um.c_str()));
-    argv.push_back(nullptr);
     ::execvp(argv[0], argv.data());
-    ::_exit(127);  // o 127 do shell para «commando não achado»
+    ::_exit(127);
   }
 
+  ::close(entrada);
   ::close(cano[1]);
   ::setpgid(filho, filho);
   char pedaco[4096];
@@ -439,6 +436,14 @@ int corre(const std::vector<std::string>& argumentos, std::string* colhido,
       // O grupo pertence só a esta baixa, incluindo eventuaes conversores.
       ::kill(-filho, SIGKILL);
       ::kill(filho, SIGKILL);
+      break;
+    }
+    siginfo_t suspensao{};
+    if (::waitid(P_PID, static_cast<id_t>(filho), &suspensao, WSTOPPED | WNOHANG) == 0 &&
+        suspensao.si_pid == filho) {
+      ::kill(-filho, SIGKILL);
+      ::kill(filho, SIGKILL);
+      if (linha) linha("MYSONG_PROCESSO_SUSPENSO");
       break;
     }
     pollfd espera{cano[0], POLLIN, 0};

@@ -31,6 +31,8 @@ struct Letra {
   std::string sincronizada;
   std::string plana;
   bool sincronizada_recusada = false;
+  std::string sincronizada_alternativa{};
+  double duracao_da_letra = 0;
 };
 
 // Remove o artista repetido no título apenas para consultar a letra.
@@ -97,6 +99,9 @@ int linha_corrente(const std::vector<LinhaDaLetra>& linhas, double posicao);
 // le_lrc_do_disco, as linhas do `.lrc` que estiver ao lado do audio. Vazio quando
 // não ha arquivo, e isso não é erro: a maior parte do acervo não tem letra.
 std::vector<LinhaDaLetra> le_lrc_do_disco(const std::filesystem::path& audio);
+// Atraso positivo mostra o verso mais tarde; o arquivo usa o offset padrão LRC.
+double atraso_da_letra(const std::filesystem::path& audio);
+bool ajusta_atraso_da_letra(const std::filesystem::path& audio, double segundos, bool zerar = false);
 
 // ── E AGORA O QUE TOCA A REDE. Uma funcção só, e no fim.
 

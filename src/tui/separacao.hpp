@@ -12,6 +12,8 @@ struct PainelDeSeparacao {
   nucleo::VolumesDasPartes volumes{100, 100, 100, 100};
   bool tecla(const ftxui::Event&, nucleo::SeparadorDeAudio&, nucleo::Tocador&);
 };
+std::string situacao_da_separacao(const nucleo::RetratoDaSeparacao&,
+    std::chrono::steady_clock::time_point agora = std::chrono::steady_clock::now());
 ftxui::Element painel_de_separacao(const PainelDeSeparacao&, const nucleo::RetratoDaSeparacao&,
                                   const nucleo::Retracto&, int largura, int altura);
 }

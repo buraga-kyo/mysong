@@ -12,6 +12,7 @@
 //                   écran de papel, cella a cella, sem erguer terminal.
 // ══════════════════════════════════════════════════════════════════════════
 #include "tui/cabecalho.hpp"
+#include "tui/mp3.hpp"
 
 #include <algorithm>
 #include <optional>
@@ -445,7 +446,8 @@ std::vector<Segmento> segmentos_da_direita(const Retracto& retracto,
       std::string(retracto.repeticao == nucleo::Repeticao::Uma
                       ? kRepetirUma
                       : kRepetirTodas) +
-      " REPETIR ";
+      (retracto.repeticao == nucleo::Repeticao::Uma ? " REP: 1  " :
+       retracto.repeticao == nucleo::Repeticao::Todas ? " REP:TOD " : " REPETIR ");
   const std::string anima = animacao_travada ? " 󰏤 PARADO " : " 󰐊 ANIMA ";
   const Segmento todos[6] = {
       {tempo, tokens::raised, tokens::text_bright},
@@ -555,6 +557,7 @@ ftxui::Element elemento_do_cabecalho(const Retracto& retracto, Aba corrente,
   // pintou não ha de deixar caixa do quadro anterior a apanhar cliques.
   if (caixas != nullptr) *caixas = CaixasDoCabecalho();
   if (largura == 0 || altura == 0) return ftxui::text("");
+  if (largura < 76) return controles_do_mp3(retracto, largura, caixas);
   const Fita esquerda = fita_da_esquerda(
       corrente, foco, retracto.estado == nucleo::Estado::Tocando,
       retracto.acervo);

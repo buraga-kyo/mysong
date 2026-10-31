@@ -65,6 +65,7 @@
 #include "nucleo/lixeira.hpp"
 #include "nucleo/letreiro.hpp"
 #include "nucleo/lousa.hpp"
+#include "nucleo/sessao_do_terminal.hpp"
 #include "nucleo/linha.hpp"
 #include "nucleo/marca.hpp"
 #include "nucleo/motor.hpp"
@@ -81,6 +82,8 @@
 #include "tui/miniaturas.hpp"
 #include "tui/escutas.hpp"
 #include "tui/separacao.hpp"
+#include "tui/mp3.hpp"
+#include "tui/redimensionamento.hpp"
 #include "tui/dinamica_do_espectro.hpp"
 #include "tui/estado_da_janella.hpp"
 #include "tui/espectro.hpp"
@@ -543,6 +546,12 @@ std::size_t pagina_das_baixas = 0;
   // O espectro continua animado ao trocar de programa ou painel do tmux.
   // A tecla A ainda permite congelar a animação manualmente.
   tui::Vigilia vigilia(true);
+  const char* painel_tmux = std::getenv("TMUX_PANE");
+  nucleo::SessaoDoTerminal sessao_terminal(painel_tmux ? painel_tmux : "");
+  sessao_terminal.pulsa();
+  sessao_terminal.inicia();
+  tui::Redimensionamento redimensionamento;
+  bool exibir_sobreposicoes = false;
   std::atomic<bool> repete_lousa{false};
   std::vector<std::thread> ao_fundo;
   // A VARREDURA, em fio permanente que dorme na campainha. A conducção por
@@ -776,6 +785,24 @@ std::size_t pagina_das_baixas = 0;
   };
 
   auto pintor = ftxui::Renderer([&] {
+    exibir_sobreposicoes = false;
+    lousa.recupera();
+    const auto cena = sessao_terminal.retrato();
+    const auto dimensoes = ftxui::Terminal::Size();
+    if (!cena.visivel) {
+      for (const auto& alteracao : miniaturas_da_pauta.atualiza({}))
+        lousa.tira(alteracao.miniatura.identidade);
+      lousa.tira_tudo(); lousa.drena();
+      chapa_posta = false;
+      repete_lousa.store(lousa.pendente());
+      return ftxui::emptyElement();
+    }
+    const auto imagens = redimensionamento.observa(dimensoes.dimx,dimensoes.dimy);
+    if (imagens.ocultar) {
+      miniaturas_da_pauta.atualiza({});
+      lousa.tira_tudo(); lousa.drena(); chapa_posta = false;
+    }
+    if (imagens.repor) lousa.redesenha();
     tui::Retracto retracto = retracto_do(tocador, projector);
     retracto.acervo = total_do_acervo;
     if (painel_das_partes.aberto) {
@@ -807,6 +834,17 @@ std::size_t pagina_das_baixas = 0;
       return tui::painel_de_escutas(painel_das_escutas.resumo, painel_das_escutas.dias,
           static_cast<std::size_t>(std::max(0, medida.dimx)),
           static_cast<std::size_t>(std::max(0, medida.dimy)));
+    }
+    if (tui::usa_mp3(std::max(0,dimensoes.dimx),std::max(0,dimensoes.dimy)) &&
+        digita == Digita::Nada && !ajuda.aberta && !menu.aberto) {
+      for (const auto& alteracao : miniaturas_da_pauta.atualiza({}))
+        lousa.tira(alteracao.miniatura.identidade);
+      lousa.tira_tudo(); lousa.drena(); chapa_posta = false;
+      repete_lousa.store(lousa.pendente());
+      caixas = {};
+      if (foco != tui::Focavel::Tocar && foco != tui::Focavel::Anterior && foco != tui::Focavel::Seguinte)
+        foco = tui::Focavel::Tocar;
+      return tui::elemento_do_mp3(retracto,std::max(0,dimensoes.dimx),std::max(0,dimensoes.dimy),&caixas.cabecalho);
     }
     // A tela INTEIRA, sem desconto algum. A conta velha tirava-lhe quatro
     // collunhas de orla e cinco linhas de guarnição (a marca, o topo, o
@@ -846,7 +884,7 @@ std::size_t pagina_das_baixas = 0;
     caixas.primeira_linha = primeira_linha;  // a rolagem d'este quadro
     const auto miniaturas = tui::miniaturas_da_lista(
         navegador.vista(), primeira_linha, sala.pauta,
-        lousa.disponivel() && tui::secao_de_faixas(navegador.secao()),
+        !imagens.suspensas && lousa.disponivel() && tui::secao_de_faixas(navegador.secao()),
         [&](const std::string& faixa) { return arquivario.de(faixa).caminho; });
     std::vector<std::size_t> capas_em_imagem;
     capas_em_imagem.reserve(miniaturas.size());
@@ -884,7 +922,7 @@ std::size_t pagina_das_baixas = 0;
       // muda, e não quando elle chega: o pango-view corre duas vezes na
       // primeira chamada, e esperá-lo com a musica já a andar é o que fazia a
       // primeira fala chegar tarde. As seguintes já se adiantavam.
-      if (!letra.empty() && !sala.letra.vazio())
+      if (!imagens.suspensas && !letra.empty() && !sala.letra.vazio())
         letreiro.chapa(tui::pedido_da_chapa_da_letra(
             tui::verso_do_bloco(letra, -1, sala.letra.largura),
             static_cast<std::size_t>(ftxui::string_width(
@@ -996,7 +1034,7 @@ std::size_t pagina_das_baixas = 0;
         geometria.sobreposicao == tui::EstadoDaSobreposicao::Visivel;
     static const nucleo::CapaPintada kSemArte;
     const nucleo::CapaPintada& arte =
-        pela_lousa ? kSemArte
+        (pela_lousa || imagens.suspensas) ? kSemArte
                    : galeria.capa(retracto.titulo, sala.capa.largura,
                                   sala.capa.altura);
     // O rectangulo da lousa nasce DENTRO do da sala, e guarda a proporção da
@@ -1040,9 +1078,9 @@ std::size_t pagina_das_baixas = 0;
     // da caixa preenchida pelo quadro anterior.
     // O FOCO manda aqui, e em todo quadro: o `tira_tudo` do tratador desfaz-se
     // no desenho que o FTXUI faz logo a seguir ao evento, e a capa voltava.
-    if (nucleo::ordem_da_capa(pela_lousa, vigilia.tem_foco(),
+    if (nucleo::ordem_da_capa(pela_lousa && !imagens.suspensas, vigilia.tem_foco(),
                               !capa_do_painel.empty(),
-                              true) ==
+                              !ajuda.aberta && !menu.aberto) ==
         nucleo::OrdemDaCapa::Tira) {
       if (lousa.tira("capa"))
         reconciliador_da_capa.confirma(geometria.geracao);
@@ -1082,7 +1120,7 @@ std::size_t pagina_das_baixas = 0;
     // verso apparecia duas vezes.
     const tui::ChapaDaLetra da_letra = tui::ordem_da_chapa_parada(
         letra, verso_corrente, caixas.letra,
-        lousa.disponivel() && letreiro.disponivel(), vigilia.tem_foco(),
+        !imagens.suspensas && lousa.disponivel() && letreiro.disponivel(), vigilia.tem_foco(),
         mostra_letra.load());
     // A CHAPA DE PÉ (issue #165) é a MESMA condição que manda pô-la, e não uma
     // segunda conta: assim a cella nunca fica em branco sem que a imagem venha.
@@ -1122,7 +1160,7 @@ std::size_t pagina_das_baixas = 0;
     // a voz já a cantar deixaria em mono o quadro em que a linha cristaliza.
     // O VERSO SEGUINTE rasteriza-se adeantado, para que a troca não apanhe o
     // pango-view a frio: elle corre duas vezes na primeira chamada.
-    if (verso_corrente >= 0 &&
+    if (!imagens.suspensas && verso_corrente >= 0 &&
         static_cast<std::size_t>(verso_corrente) + 1 < letra.size() &&
         !sala.letra.vazio()) {
       const std::string proximo = tui::verso_do_bloco(
@@ -1198,7 +1236,7 @@ std::size_t pagina_das_baixas = 0;
            // cinge, o foco não tornava á pauta d'uma lista de listas vazia.
            tui::elemento_da_tabella(navegador, primeira_linha, sala.pauta.altura,
                                     sala.pauta.largura, retracto.titulo,
-                                    &caixas.linhas, &arrasto, true, &galeria, &capas_em_imagem) |
+                                    &caixas.linhas, &arrasto, true, imagens.suspensas ? nullptr : &galeria, &capas_em_imagem) |
                ftxui::size(ftxui::HEIGHT, ftxui::EQUAL,
                            static_cast<int>(sala.pauta.altura)) |
                ftxui::reflect(caixas.pauta)});
@@ -1253,6 +1291,8 @@ std::size_t pagina_das_baixas = 0;
     // A drenagem corre ao cabo do quadro. Se o cano recusou bytes, pede-se
     // outro passo somente emquanto houver linha pendente; quadro parado e
     // lousa quieta continuam sem despertar algum.
+    exibir_sobreposicoes = !imagens.suspensas && !ajuda.aberta && !menu.aberto && lousa.tem_imagens();
+    if (imagens.repor && exibir_sobreposicoes) lousa.reexibe();
     if (lousa.drena()) reconciliador_da_capa.confirma(geometria.geracao);
     repete_lousa.store(lousa.pendente());
     if (!ajuda.aberta) return corpo;
@@ -1890,6 +1930,18 @@ std::size_t pagina_das_baixas = 0;
       case tui::GestoDaAba::Alheio: break;
     }
 
+    if (digita == Digita::Nada && (tecla == ftxui::Event::Character('[') ||
+        tecla == ftxui::Event::Character(']') || tecla == ftxui::Event::Character('\\'))) {
+      const auto atual = tocador.retracto();
+      if (atual.faixa && nucleo::ajusta_atraso_da_letra(*atual.faixa,
+          tecla == ftxui::Event::Character('[') ? -0.5 : 0.5, tecla == ftxui::Event::Character('\\'))) {
+        letra = nucleo::le_lrc_do_disco(*atual.faixa);
+        estado.letra_plana.clear(); chapa_posta = false;
+        mostra_letra.store(true);
+        aviso_da_rede = "Ajuste da letra salvo: " + std::to_string(nucleo::atraso_da_letra(*atual.faixa)) + "s";
+      } else aviso_da_rede = "Esta faixa não tem letra com tempos para ajustar.";
+      return true;
+    }
     if (digita == Digita::Nada && tecla == ftxui::Event::Character('i')) {
       const auto atual = tocador.retracto();
       const auto tarefa = separador.retrato();
@@ -2162,7 +2214,28 @@ std::size_t pagina_das_baixas = 0;
   // pregões do mpv e faz a posição andar. O fio não toca a tela: pede-lhe que
   // repinte, e a tela é que serializa.
   std::thread relogio([&] {
+    std::size_t cena_anterior = 0;
+    auto verifica_visibilidade_em = std::chrono::steady_clock::now();
     while (!sahir.load()) {
+      const auto agora = std::chrono::steady_clock::now();
+      const auto cena = sessao_terminal.retrato();
+      if (cena.geracao != cena_anterior) {
+        cena_anterior = cena.geracao;
+        tela.PostEvent(ftxui::Event::Custom);
+      }
+      const auto tamanho = ftxui::Terminal::Size();
+      if (redimensionamento.atualiza(tamanho.dimx,tamanho.dimy) || redimensionamento.pulsa())
+        tela.PostEvent(ftxui::Event::Custom);
+      if (agora >= verifica_visibilidade_em) {
+        verifica_visibilidade_em = agora + std::chrono::milliseconds(500);
+        // A tarefa não invalida o quadro: só reconcilia as janelas nativas.
+        tela.Post([&] {
+          if (exibir_sobreposicoes && !redimensionamento.movendo()) {
+            lousa.reexibe();
+            repete_lousa.store(lousa.pendente());
+          }
+        });
+      }
       if (repete_lousa.exchange(false)) tela.PostEvent(ftxui::Event::Custom);
       tocador.pulsa();
       escutas.observa(tocador.retracto());
@@ -2185,7 +2258,7 @@ std::size_t pagina_das_baixas = 0;
       // Ao acordar esquece-se a assignatura, porque o que mudou dormindo não
       // se pintou, e o primeiro quadro desperto ha de sahir completo.
       if (vigilia.acordou()) ultima_assignatura.clear();
-      if (vigilia.pede_batida()) {
+      if (cena.visivel && vigilia.pede_batida()) {
         const nucleo::Andamento baixas = estaleiro.andamento();
         std::string agora = assignatura_do_visivel(
             tocador, nucleo::assinatura_das_baixas(baixas),

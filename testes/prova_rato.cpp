@@ -265,11 +265,11 @@ TEST_CASE("a caixa não muda um pixel do cabeçalho") {
                 largura, 1));
     // E as caixas encheram-se: sem isto, a egualdade valeria tambem para quem
     // se esquecesse de as pôr, e a prova não provaria cousa alguma.
-    CHECK_FALSE(caixas.aba_mysong.IsEmpty());
+    CHECK(caixas.aba_mysong.IsEmpty() == (largura < 76));
     CHECK_FALSE(caixas.botao_tocar.IsEmpty());
     // O MEIO (a onda, que é o trilho) sómente onde ha collunha para elle: as
     // fixas pedem 51, e caixa de largura zero nasce vazia (issue #134).
-    if (largura > 51) CHECK_FALSE(caixas.trilho.IsEmpty());
+    if (largura >= 76) CHECK_FALSE(caixas.trilho.IsEmpty());
     else CHECK(caixas.trilho.IsEmpty());
   }
 }

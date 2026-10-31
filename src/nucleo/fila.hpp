@@ -65,6 +65,7 @@ class Fila {
   bool proxima() noexcept;
   bool anterior() noexcept;
   bool ir_para(std::size_t alvo) noexcept;
+  void reinicia_percurso() noexcept;
 
   void esvazia() noexcept;
 

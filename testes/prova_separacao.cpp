@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
 #include <fstream>
+#include <limits>
 #include <condition_variable>
 #include <cstdlib>
 #include "nucleo/separacao.hpp"
@@ -165,4 +166,45 @@ TEST_CASE("separação registra falha externa sem publicar arquivos parciais") {
   CHECK(std::filesystem::exists(pasta.raiz/"cache/registros"));
   CHECK(separador.retrato().detalhe.find("erro de exemplo")==std::string::npos);
   CHECK(separador.retrato().arquivos[0].empty());
+}
+
+TEST_CASE("separação lê áudio analisado e previsão real da saída de progresso") {
+  const auto medidas = nu::medidas_da_separacao(" 25%|████| 65.5/262.0 [01:20<04:00, 1.22seconds/s]");
+  REQUIRE(medidas.processado); CHECK(*medidas.processado == 65.5);
+  REQUIRE(medidas.total); CHECK(*medidas.total == 262.0);
+  REQUIRE(medidas.restante); CHECK(*medidas.restante == 240);
+  CHECK(nu::medidas_da_separacao("50%|xx| 50/100 [01:10<1:02:03, 1s/seconds]").restante == 3723);
+  const auto inicial = nu::medidas_da_separacao("0%| | 0.0/262.0 [00:00<?, ?seconds/s]");
+  CHECK(inicial.processado == 0.0); CHECK(inicial.total == 262.0);
+  CHECK_FALSE(inicial.restante);
+  CHECK_FALSE(nu::medidas_da_separacao("sem progresso").restante);
+  CHECK_FALSE(nu::medidas_da_separacao("50%|xx| 50/100 [01:10<1:99, 1s/seconds]").restante);
+  CHECK_FALSE(nu::medidas_da_separacao("50%|xx| 200/100 [01:10<?, ?]").processado);
+}
+TEST_CASE("painel mostra previsão somente após progresso e informa falta de atualização") {
+  nu::RetratoDaSeparacao r;
+  r.estado = nu::EstadoDaSeparacao::Separando;
+  r.inicio = std::chrono::steady_clock::now(); r.ultima_atividade = r.inicio;
+  auto texto = mysong::tui::situacao_da_separacao(r, r.inicio);
+  CHECK(texto.find("primeiro trecho") != std::string::npos);
+  r.porcentagem = 25; r.medidas.restante = 240;
+  texto = mysong::tui::situacao_da_separacao(r,r.inicio + std::chrono::seconds(30));
+  CHECK(texto.find("4min") != std::string::npos);
+  CHECK(texto.find("Previsão") != std::string::npos);
+  texto = mysong::tui::situacao_da_separacao(r,r.inicio + std::chrono::seconds(120));
+  CHECK(texto.find("Sem atualização") != std::string::npos);
+  CHECK(texto.find("2min") != std::string::npos);
+  CHECK(texto.find("Previsão") == std::string::npos);
+  r.porcentagem = 100; r.medidas.restante = 0;
+  texto = mysong::tui::situacao_da_separacao(r,r.inicio);
+  CHECK(texto.find("salvando") != std::string::npos);
+}
+TEST_CASE("suspensão do processo de separação informa falha em vez de continuar processando") {
+  PastaSeparacao pasta;const auto audio = pasta.audio();
+  nu::SeparadorDeAudio separador(pasta.raiz/"cache", "teste", [](const auto&,const auto& observa) {
+    observa("MYSONG_PROCESSO_SUSPENSO");return -1;
+  });
+  REQUIRE(separador.inicia(audio)); separador.espera();
+  CHECK(separador.retrato().estado == nu::EstadoDaSeparacao::Falhou);
+  CHECK(separador.retrato().detalhe.find("suspendeu") != std::string::npos);
 }

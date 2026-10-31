@@ -17,6 +17,7 @@
 //                   protocolo inteiro sem X11 vivo e sem erguer processo algum.
 // ══════════════════════════════════════════════════════════════════════════
 #pragma once
+#include <chrono>
 
 #include <cstddef>
 #include <filesystem>
@@ -147,7 +148,12 @@ class EscoadouroDaLousa {
   explicit EscoadouroDaLousa(Escrevedor escrevedor);
   bool deseja(std::string identidade, std::string ordem, bool posta) noexcept;
   bool drena() noexcept;
+  bool apos_imagens(std::string comando) noexcept;
   bool pendente() const noexcept;
+  void invalida() noexcept {
+    for (auto& par : entregues_) if (par.second.posta) par.second.ordem.clear();
+  }
+  void reinicia() noexcept { falhou_ = false; linha_.reset(); entregues_.clear(); }
   bool falhou() const noexcept { return falhou_; }
   std::size_t concluidas() const noexcept { return concluidas_; }
   std::size_t substituidas() const noexcept { return substituidas_; }
@@ -162,6 +168,7 @@ class EscoadouroDaLousa {
     std::string identidade;
     Intencao intencao;
     std::size_t deslocamento = 0;
+    bool avulsa = false;
   };
 
   bool escolhe_linha();
@@ -169,6 +176,7 @@ class EscoadouroDaLousa {
   std::map<std::string, Intencao> desejadas_;
   std::map<std::string, Intencao> entregues_;
   std::optional<Linha> linha_;
+  std::optional<std::string> comando_final_;
   bool falhou_ = false;
   std::size_t concluidas_ = 0;
   std::size_t substituidas_ = 0;
@@ -205,6 +213,10 @@ class Lousa {
   void tira_tudo() noexcept;
   bool drena() noexcept;
   bool pendente() const noexcept { return escoadouro_.pendente(); }
+  void redesenha() noexcept { escoadouro_.invalida(); }
+  bool recupera() noexcept;
+  bool reexibe() noexcept;
+  bool tem_imagens() const noexcept { return !identidades_.empty(); }
 
   // empurra, uma ordem que NADA mostra, e que existe por uma MEDIÇÃO: o
   // Überzug++ (o 2.9.8 e o 2.9.10) não desenha a janella de UMA linha de
@@ -229,6 +241,8 @@ class Lousa {
  private:
   Parecer parecer_;
   bool vivo_ = false;
+  bool recuperavel_ = false;
+  std::chrono::steady_clock::time_point proxima_tentativa_{};
   int cano_ = -1;
   int filho_ = -1;
   EscoadouroDaLousa escoadouro_;
